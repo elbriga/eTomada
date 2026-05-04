@@ -174,7 +174,7 @@ String checkRegra(int num, tm timeinfo) {
   return controlaRele(num + 1, estaNoIntervalo);
 }
 
-void onChangeMinute(tm timeinfo) {
+void onChangeMinute(struct tm timeinfo) {
   for (int r=0; r < 8; r++) {
     String msg = checkRegra(r, timeinfo);
     if (msg != "") {
@@ -182,6 +182,72 @@ void onChangeMinute(tm timeinfo) {
       mostraMsg(msg, 5000);
     }
   }
+}
+
+String getIndexHTML(struct tm timeinfo) {
+  // Display the HTML web page
+  String ret = "<!DOCTYPE html>\n<html>\n";
+  
+  ret += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
+  // CSS to style the on/off buttons 
+  // Feel free to change the background-color and font-size attributes to fit your preferences
+  ret += "<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
+  ret += ".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;\n";
+  ret += "text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}\n";
+  ret += ".button2 {background-color: #555555;}</style></head>\n";
+
+  char formattedTime[32];
+  strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+  
+  // Web Page Heading
+  ret += String("<body><h1>eTomada!</h1><br>") + String(formattedTime) + "<br><br>Reles:<br>\n";
+  
+  for (int r=0; r < 8; r++) {
+    if (regraReles[r] == "") continue;
+    ret += "<p>RELE " + String(r+1) + ": " + nomeReles[r] + " > Regra: [" + regraReles[r] + "] => " +
+        (estadoReles[r] ? "Ligado" : "Desligado") + "</p>\n";
+  }
+
+  /* Display current state, and ON/OFF buttons for GPIO 26  
+  // If the output26State is off, it displays the ON button       
+  if (output26State=="off") {
+    client.println("<p><a href=\"/26/on\"><button class=\"button\">ON</button></a></p>");
+  } else {
+    client.println("<p><a href=\"/26/off\"><button class=\"button button2\">OFF</button></a></p>");
+  } 
+      
+  // Display current state, and ON/OFF buttons for GPIO 27  
+  client.println("<p>GPIO 27 - State " + output27State + "</p>");
+  // If the output27State is off, it displays the ON button       
+  if (output27State=="off") {
+    client.println("<p><a href=\"/27/on\"><button class=\"button\">ON</button></a></p>");
+  } else {
+    client.println("<p><a href=\"/27/off\"><button class=\"button button2\">OFF</button></a></p>");
+  }*/
+
+  ret += "</body></html>\n\n";
+  
+  return ret;
+}
+
+String getDataJSON(struct tm timeinfo) {
+  String ret = "{\n";
+  
+  // Convert struct tm to time_t (Unix timestamp)
+  time_t unix_timestamp = mktime(&timeinfo);
+  ret += "  \"datahora\": " + String(unix_timestamp) + ",\n";
+
+  ret += "  \"reles\": [\n";
+  for (int r=0; r < 8; r++) {
+    ret += "    {\n";
+    ret += "      \"nome\": \"" + nomeReles[r] + "\",\n";
+    ret += "      \"regra\": \"" + regraReles[r] + "\",\n";
+    ret += "      \"estado\": \"" + String(estadoReles[r] ? "ON" : "OFF") + "\"\n";
+    ret += "    } " + String((r < 7) ? "," : "") + "\n";
+  }
+  ret += "  ]\n";
+
+  return ret + "}";
 }
 
 void handleClient(WiFiClient client, struct tm timeinfo) {
@@ -193,94 +259,55 @@ void handleClient(WiFiClient client, struct tm timeinfo) {
   Serial.println("New Client.");
 
   String currentLine = "";                // make a String to hold incoming data from the client
-  String header = "";
+  String httpRequest = "";
   while (client.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
     currentTime = millis();
     if (client.available()) {             // if there's bytes to read from the client,
       char c = client.read();             // read a byte, then
       Serial.write(c);                    // print it out the serial monitor
-      header += c;
+
       if (c == '\n') {                    // if the byte is a newline character
         // if the current line is blank, you got two newline characters in a row.
         // that's the end of the client HTTP request, so send a response:
         if (currentLine.length() == 0) {
+          String contentType = "text/html";
+          String body = "";
+
+          // Verificar o que foi solicitado
+          if (httpRequest.indexOf("GET / ") == 0) { // index.html
+            body = getIndexHTML(timeinfo);
+          } else if (httpRequest.indexOf("GET /data ") == 0) {
+            contentType = "application/json";
+            body = getDataJSON(timeinfo);
+          } else {
+            // 404
+            client.println("HTTP/1.1 404 Not Found");
+            client.println("Content-Length: 0");
+            client.println();
+            break;
+          }
+
           // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
           // and a content-type so the client knows what's coming, then a blank line:
           client.println("HTTP/1.1 200 OK");
-          client.println("Content-type:text/html");
+          client.println("Content-Type: " + contentType);
+          client.println("Content-Length: " + String(body.length()));
           client.println("Connection: close");
           client.println();
+          client.print(body);
           
-          /* turns the GPIOs on and off
-          if (header.indexOf("GET /26/on") >= 0) {
-            Serial.println("GPIO 26 on");
-            output26State = "on";
-            digitalWrite(output26, HIGH);
-          } else if (header.indexOf("GET /26/off") >= 0) {
-            Serial.println("GPIO 26 off");
-            output26State = "off";
-            digitalWrite(output26, LOW);
-          } else if (header.indexOf("GET /27/on") >= 0) {
-            Serial.println("GPIO 27 on");
-            output27State = "on";
-            digitalWrite(output27, HIGH);
-          } else if (header.indexOf("GET /27/off") >= 0) {
-            Serial.println("GPIO 27 off");
-            output27State = "off";
-            digitalWrite(output27, LOW);
-          }*/
-          
-          // Display the HTML web page
-          client.println("<!DOCTYPE html><html>");
-          client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-          // CSS to style the on/off buttons 
-          // Feel free to change the background-color and font-size attributes to fit your preferences
-          client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
-          client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
-          client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
-          client.println(".button2 {background-color: #555555;}</style></head>");
-
-          char formattedTime[32];
-          strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-          
-          // Web Page Heading
-          client.println(String("<body><h1>eTomada!</h1><br>") + String(formattedTime) + "<br><br>Reles:<br>");
-          
-          for (int r=0; r < 8; r++) {
-            if (regraReles[r] == "") continue;
-            client.println("<p>RELE " + String(r+1) + ": " + nomeReles[r] + " > " + regraReles[r] + " = " +
-                (estadoReles[r] ? "Ligado" : "Desligado") + "</p>");
-          }
-
-          /* Display current state, and ON/OFF buttons for GPIO 26  
-          // If the output26State is off, it displays the ON button       
-          if (output26State=="off") {
-            client.println("<p><a href=\"/26/on\"><button class=\"button\">ON</button></a></p>");
-          } else {
-            client.println("<p><a href=\"/26/off\"><button class=\"button button2\">OFF</button></a></p>");
-          } 
-              
-          // Display current state, and ON/OFF buttons for GPIO 27  
-          client.println("<p>GPIO 27 - State " + output27State + "</p>");
-          // If the output27State is off, it displays the ON button       
-          if (output27State=="off") {
-            client.println("<p><a href=\"/27/on\"><button class=\"button\">ON</button></a></p>");
-          } else {
-            client.println("<p><a href=\"/27/off\"><button class=\"button button2\">OFF</button></a></p>");
-          }*/
-
-          client.println("</body></html>");
-          
-          // The HTTP response ends with another blank line
-          client.println();
           // Break out of the while loop
           break;
         } else { // if you got a newline, then clear currentLine
+          if (httpRequest == "")
+            httpRequest = currentLine; // Salvar a 1a linha do request
           currentLine = "";
         }
       } else if (c != '\r') {  // if you got anything else but a carriage return character,
         currentLine += c;      // add it to the end of the currentLine
       }
+    } else {
+      yield();
     }
   }
 
@@ -346,7 +373,14 @@ void setup() {
   tft.drawString(0, 40, "Buscando Hora...");
   tft.display();
   syncTime();
-  Serial.println("OK!");
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo, 2000)) {
+    Serial.println("Failed to obtain time");
+  } else {
+    char formattedTime[32];
+    strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+    Serial.println(formattedTime);
+  }
   
   server.begin();
   delay(100);
