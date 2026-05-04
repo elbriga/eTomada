@@ -10,15 +10,27 @@ IPAddress ipStr;
 // Set web server port number to 80
 WiFiServer server(80);
 
-// TODO :: Struct rele
-// Reles 1 a 8
-int pinosReles[8] = { 15, 13, 12, 14, -1,-1,-1,-1 };
-bool estadoReles[8] = { 0,0,0,0,0,0,0,0 };
+struct Rele {
+  int pino;
+  bool estado;
+  String nome;
+  String regra;
+};
+
+Rele reles[8] = {
+  // Valores default
+  { 15, 0, "Luz", "OF=02:00-07:59" },
+  { 13, 0, "Umidificador", "" },
+  { 12, 0, "Ventilador", "" },
+  { 14, 0, "Desumidificador", "" },
+  { -1, 0, "", "" },
+  { -1, 0, "", "" },
+  { -1, 0, "", "" },
+  { -1, 0, "", "" }
+};
 
 // Salvar as regras na memoria FLASH
 Preferences prefs;
-String nomeReles[8] = { "Luz", "Umidificador", "Ventilador", "Desumidificador", "","","","" };
-String regraReles[8] = { "OF=02:00-07:59", "","","","","","","" }; // Desligado das 2h as 8h
 
 // Display OLED
 #define I2C_DISPLAY_ADDR    0x3C
@@ -35,7 +47,7 @@ const char* tzInfo = "<-03>3";
 
 
 // ==============================================================================================
-int timeoutMsg = 0;
+unsigned long timeoutMsg = 0;
 void mostraMsg(String msg, int timeout = 0) {
   tft.clear();
   tft.drawString(30, 0, "eTomada!");
@@ -68,16 +80,20 @@ String controlaRele(int numRele, bool estado) {
     Serial.printf("controlaRele: numRele [%d] invalido!\n", numRele);
     return "";
   }
+  
+  Rele *rele = &reles[numRele - 1];
+  if (rele->pino == -1) {
+    Serial.printf("controlaRele[%d]: pino invalido!\n", numRele);
+    return "";
+  }
 
   String ret = "";
-
-  int r = numRele - 1;
-  if (estado != estadoReles[r]) {
-    digitalWrite(pinosReles[r], estado);
-    estadoReles[r] = estado;
+  if (estado != rele->estado) {
+    digitalWrite(rele->pino, estado);
+    rele->estado = estado;
 
     char msg[128];
-    sprintf(msg, "%s %s    (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"), nomeReles[r].c_str(), numRele, pinosReles[r]);
+    sprintf(msg, "%s %s    (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"), rele->nome.c_str(), numRele, rele->pino);
     ret = msg;
   }
 
@@ -93,45 +109,40 @@ void loadRegras() {
 
   char nomeAtr[10];
   for (int r=0; r < 8; r++) {
-    String def = regraReles[r];
+    Rele *rele = &reles[r];
+    String def = rele->regra;
     sprintf(nomeAtr, "regra%d", r + 1);
-    regraReles[r] = prefs.isKey(nomeAtr) ? prefs.getString(nomeAtr, "") : "";
-    if (regraReles[r] == "") {
+    rele->regra = prefs.isKey(nomeAtr) ? prefs.getString(nomeAtr, "") : "";
+    if (rele->regra == "") {
       if (def == "") {
         continue;
       }
       // Inicializar as regras Default
-      regraReles[r] = def;
+      rele->regra = def;
       prefs.putString(nomeAtr, def);
     }
-    Serial.printf("Rele %d (%s) > [%s]\n", r+1, nomeReles[r].c_str(), regraReles[r].c_str());
+    Serial.printf("Rele %d (%s) > [%s]\n", r+1, rele->nome.c_str(), rele->regra.c_str());
   }
 
   Serial.println("");
 }
 
 String checkRegra(int num, tm timeinfo) {
-  String strRegra = regraReles[num];
+  Rele *rele = &reles[num];
 
-  if (strRegra == "") {
+  if (rele->regra == "") {
     return "";
   }
 
-  if (strRegra.length() < 10) {
+  if (rele->regra.length() < 10) {
     // ERRO! Nao deve cair aqui!
     Serial.printf("REGRA RELE %d INVALIDA!!!", num+1);
     return "";
   }
 
-  const char* regraCSTR = strRegra.c_str();
-  if (regraCSTR[2] != '=' || regraCSTR[5] != ':' || regraCSTR[8] != '-' || regraCSTR[11] != ':') {
-    Serial.printf("REGRA RELE %d INVALIDA!!! Formato", num+1);
-    return "";
-  }
-  
   int hI=-1, mI=-1, hF=-1, mF=-1;
   char ligar[3] = {0};
-  int lidos = sscanf(regraCSTR, "%2[^=]=%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
+  int lidos = sscanf(rele->regra.c_str(), "%2[^=]=%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
   if (lidos != 5) {
     Serial.printf("REGRA RELE %d INVALIDA!!! Campos", num+1);
     return "";
@@ -155,16 +166,13 @@ String checkRegra(int num, tm timeinfo) {
 
   int tsI = hI * 60 + mI;
   int tsF = hF * 60 + mF;
-  if (tsF <= tsI) {
-    Serial.printf("REGRA RELE %d INVALIDA!!! (tsF >= tsI)", num+1);
-    return "";
-    // TODO flag = 1 E tsF += 24 * 60
-  }
+  int tsAgora = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+  bool virouDia = tsF < tsI;
+  bool estaNoIntervalo = !virouDia ?
+    (tsAgora >= tsI && tsAgora <= tsF) :
+    (tsAgora >= tsI || tsAgora <= tsF);
 
   bool acaoEhLigar = !strncmp(ligar, "ON", 2);
-
-  int tsAgora = timeinfo.tm_hour * 60 + timeinfo.tm_min;
-  bool estaNoIntervalo = (tsAgora >= tsI && tsAgora <= tsF);
   if (!acaoEhLigar) estaNoIntervalo = !estaNoIntervalo;
 
   // Serial.printf("tsI=%d\ntsF=%d\ntsAgora=%d\n", tsI, tsF, tsAgora);
@@ -184,70 +192,72 @@ void onChangeMinute(struct tm timeinfo) {
   }
 }
 
-String getIndexHTML(struct tm timeinfo) {
-  // Display the HTML web page
-  String ret = "<!DOCTYPE html>\n<html>\n";
-  
-  ret += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
-  // CSS to style the on/off buttons 
-  // Feel free to change the background-color and font-size attributes to fit your preferences
-  ret += "<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
-  ret += ".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;\n";
-  ret += "text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}\n";
-  ret += ".button2 {background-color: #555555;}</style></head>\n";
+void getIndexHTML(char *out, size_t maxLen, struct tm timeinfo) {
+  size_t len = 0;
 
   char formattedTime[32];
   strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-  
-  // Web Page Heading
-  ret += String("<body><h1>eTomada!</h1><br>") + String(formattedTime) + "<br><br>Reles:<br>\n";
-  
-  for (int r=0; r < 8; r++) {
-    if (regraReles[r] == "") continue;
-    ret += "<p>RELE " + String(r+1) + ": " + nomeReles[r] + " > Regra: [" + regraReles[r] + "] => " +
-        (estadoReles[r] ? "Ligado" : "Desligado") + "</p>\n";
+
+  len += snprintf(out + len, maxLen - len,
+    "<!DOCTYPE html>\n<html>\n"
+    "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>\n"
+    "<body><h1>eTomada!</h1><br>%s<br><br>Reles:<br>\n",
+    formattedTime
+  );
+
+  for (int r = 0; r < 8; r++) {
+    Rele *rele = &reles[r];
+    if (rele->regra[0] == '\0') continue;
+
+    len += snprintf(out + len, maxLen - len,
+      "<p>RELE %d: %s > Regra: [%s] => %s</p>\n",
+      r + 1,
+      rele->nome.c_str(),
+      rele->regra.c_str(),
+      rele->estado ? "Ligado" : "Desligado"
+    );
+
+    if (len >= maxLen) break;
   }
 
-  /* Display current state, and ON/OFF buttons for GPIO 26  
-  // If the output26State is off, it displays the ON button       
-  if (output26State=="off") {
-    client.println("<p><a href=\"/26/on\"><button class=\"button\">ON</button></a></p>");
-  } else {
-    client.println("<p><a href=\"/26/off\"><button class=\"button button2\">OFF</button></a></p>");
-  } 
-      
-  // Display current state, and ON/OFF buttons for GPIO 27  
-  client.println("<p>GPIO 27 - State " + output27State + "</p>");
-  // If the output27State is off, it displays the ON button       
-  if (output27State=="off") {
-    client.println("<p><a href=\"/27/on\"><button class=\"button\">ON</button></a></p>");
-  } else {
-    client.println("<p><a href=\"/27/off\"><button class=\"button button2\">OFF</button></a></p>");
-  }*/
-
-  ret += "</body></html>\n\n";
-  
-  return ret;
+  snprintf(out + len, maxLen - len, "</body></html>\n");
 }
 
-String getDataJSON(struct tm timeinfo) {
-  String ret = "{\n";
-  
-  // Convert struct tm to time_t (Unix timestamp)
+void getDataJSON(char *out, size_t maxLen, struct tm timeinfo) {
+  size_t len = 0;
+
   time_t unix_timestamp = mktime(&timeinfo);
-  ret += "  \"datahora\": " + String(unix_timestamp) + ",\n";
 
-  ret += "  \"reles\": [\n";
-  for (int r=0; r < 8; r++) {
-    ret += "    {\n";
-    ret += "      \"nome\": \"" + nomeReles[r] + "\",\n";
-    ret += "      \"regra\": \"" + regraReles[r] + "\",\n";
-    ret += "      \"estado\": \"" + String(estadoReles[r] ? "ON" : "OFF") + "\"\n";
-    ret += "    } " + String((r < 7) ? "," : "") + "\n";
+  len += snprintf(out + len, maxLen - len,
+    "{\n"
+    "  \"datahora\": %ld,\n"
+    "  \"reles\": [\n",
+    (long)unix_timestamp
+  );
+
+  for (int r = 0; r < 8; r++) {
+    Rele *rele = &reles[r];
+
+    len += snprintf(out + len, maxLen - len,
+      "    {\n"
+      "      \"nome\": \"%s\",\n"
+      "      \"regra\": \"%s\",\n"
+      "      \"pino\": %d,\n"
+      "      \"estado\": \"%s\"\n"
+      "    }%s\n",
+      rele->nome.c_str(),
+      rele->regra.c_str(),
+      rele->pino,
+      rele->estado ? "ON" : "OFF",
+      (r < 7) ? "," : ""
+    );
+
+    if (len >= maxLen) break;
   }
-  ret += "  ]\n";
 
-  return ret + "}";
+  snprintf(out + len, maxLen - len,
+    "  ]\n"
+    "}");
 }
 
 void handleClient(WiFiClient client, struct tm timeinfo) {
@@ -271,14 +281,14 @@ void handleClient(WiFiClient client, struct tm timeinfo) {
         // that's the end of the client HTTP request, so send a response:
         if (currentLine.length() == 0) {
           String contentType = "text/html";
-          String body = "";
+          char body[2048];
 
           // Verificar o que foi solicitado
           if (httpRequest.indexOf("GET / ") == 0) { // index.html
-            body = getIndexHTML(timeinfo);
+            getIndexHTML(body, sizeof(body), timeinfo);
           } else if (httpRequest.indexOf("GET /data ") == 0) {
             contentType = "application/json";
-            body = getDataJSON(timeinfo);
+            getDataJSON(body, sizeof(body), timeinfo);
           } else {
             // 404
             client.println("HTTP/1.1 404 Not Found");
@@ -291,7 +301,7 @@ void handleClient(WiFiClient client, struct tm timeinfo) {
           // and a content-type so the client knows what's coming, then a blank line:
           client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: " + contentType);
-          client.println("Content-Length: " + String(body.length()));
+          client.println("Content-Length: " + strlen(body));
           client.println("Connection: close");
           client.println();
           client.print(body);
@@ -317,33 +327,7 @@ void handleClient(WiFiClient client, struct tm timeinfo) {
   Serial.println("");
 }
 
-void setup() {
-  Serial.begin(115200);
-
-  delay(1000);
-  Serial.println("\n== eTomada ==\n");
-
-  for(int r=0; r < 8; r++) {
-    int pino = pinosReles[r];
-    if (pino == -1) {
-      // Rele Desativado
-      continue;
-    }
-    pinMode(pino, OUTPUT);
-    digitalWrite(pino, estadoReles[r]);
-  }
-
-  tft.init();
-  tft.clear();
-  tft.setFont(ArialMT_Plain_16);
-  tft.drawString(30, 0, "eTomada!");
-  tft.display();
-
-  loadRegras();
-
-  tft.drawString(0, 20, "Conectando...");
-  tft.display();
-
+void WiFiConnect() {
   // Connect to Wifi.
   Serial.print("Conectando a rede [");
   Serial.print(WIFI_SSID);
@@ -368,6 +352,36 @@ void setup() {
   ipStr = WiFi.localIP();
   Serial.print("Endereço IP: ");
   Serial.println(ipStr);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  delay(1000);
+  Serial.println("\n== eTomada ==\n");
+
+  for(int r=0; r < 8; r++) {
+    Rele *rele = &reles[r];
+    if (rele->pino == -1) {
+      // Rele Desativado
+      continue;
+    }
+    pinMode(rele->pino, OUTPUT);
+    digitalWrite(rele->pino, rele->estado);
+  }
+
+  tft.init();
+  tft.clear();
+  tft.setFont(ArialMT_Plain_16);
+  tft.drawString(30, 0, "eTomada!");
+  tft.display();
+
+  loadRegras();
+
+  tft.drawString(0, 20, "Conectando...");
+  tft.display();
+
+  WiFiConnect();
   
   Serial.print("NTP: ");
   tft.drawString(0, 40, "Buscando Hora...");
@@ -429,7 +443,7 @@ void loop() {
 
     if (timeinfo.tm_hour == 0 && timeinfo.tm_min == 0) {
       // Ao mudar de dia - sync NTP de novo
-      // TODO
+      syncTime();
     }
   }
 
@@ -438,5 +452,13 @@ void loop() {
   WiFiClient client = server.available();   // Listen for incoming clients
   if (client) {                             // If a new client connects,
     handleClient(client, timeinfo);
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("===");
+    Serial.println("WiFi caiu!! Reconectar...");
+    Serial.println("===");
+    mostraMsg("Reconectando...", 10000);
+    WiFiConnect();
   }
 }
