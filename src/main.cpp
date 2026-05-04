@@ -2,6 +2,7 @@
 #include <SSD1306.h>
 #include <WiFi.h>
 #include <Preferences.h>
+#include <esp_task_wdt.h>
 
 // WiFi credentials.
 const char* WIFI_SSID = "Ligga Gabriel 2.4g";
@@ -71,6 +72,7 @@ void syncTime() {
   // 1577836800 is the Unix time for Jan 1, 2020
   time_t now = 0;
   while (time(&now) < 1577836800) {
+    esp_task_wdt_reset(); // alimenta o watchdog
     delay(500);
   }
 }
@@ -192,72 +194,73 @@ void onChangeMinute(struct tm timeinfo) {
   }
 }
 
-void getIndexHTML(char *out, size_t maxLen, struct tm timeinfo) {
-  size_t len = 0;
+String getIndexHTML(struct tm timeinfo) {
+  // Display the HTML web page
+  String ret = "<!DOCTYPE html>\n<html>\n";
+  
+  ret += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
+  // CSS to style the on/off buttons 
+  // Feel free to change the background-color and font-size attributes to fit your preferences
+  ret += "<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
+  ret += ".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;\n";
+  ret += "text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}\n";
+  ret += ".button2 {background-color: #555555;}</style></head>\n";
 
   char formattedTime[32];
   strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-
-  len += snprintf(out + len, maxLen - len,
-    "<!DOCTYPE html>\n<html>\n"
-    "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>\n"
-    "<body><h1>eTomada!</h1><br>%s<br><br>Reles:<br>\n",
-    formattedTime
-  );
-
-  for (int r = 0; r < 8; r++) {
+  
+  // Web Page Heading
+  ret += String("<body><h1>eTomada!</h1><br>") + String(formattedTime) + "<br><br>Reles:<br>\n";
+  
+  for (int r=0; r < 8; r++) {
     Rele *rele = &reles[r];
-    if (rele->regra[0] == '\0') continue;
-
-    len += snprintf(out + len, maxLen - len,
-      "<p>RELE %d: %s > Regra: [%s] => %s</p>\n",
-      r + 1,
-      rele->nome.c_str(),
-      rele->regra.c_str(),
-      rele->estado ? "Ligado" : "Desligado"
-    );
-
-    if (len >= maxLen) break;
+    if (rele->regra == "") continue;
+    ret += "<p>RELE " + String(r+1) + ": " + rele->nome + " > Regra: [" + rele->regra + "] => " +
+        (rele->estado ? "Ligado" : "Desligado") + "</p>\n";
   }
 
-  snprintf(out + len, maxLen - len, "</body></html>\n");
+  /* Display current state, and ON/OFF buttons for GPIO 26  
+  // If the output26State is off, it displays the ON button       
+  if (output26State=="off") {
+    client.println("<p><a href=\"/26/on\"><button class=\"button\">ON</button></a></p>");
+  } else {
+    client.println("<p><a href=\"/26/off\"><button class=\"button button2\">OFF</button></a></p>");
+  } 
+      
+  // Display current state, and ON/OFF buttons for GPIO 27  
+  client.println("<p>GPIO 27 - State " + output27State + "</p>");
+  // If the output27State is off, it displays the ON button       
+  if (output27State=="off") {
+    client.println("<p><a href=\"/27/on\"><button class=\"button\">ON</button></a></p>");
+  } else {
+    client.println("<p><a href=\"/27/off\"><button class=\"button button2\">OFF</button></a></p>");
+  }*/
+
+  ret += "</body></html>\n\n";
+  
+  return ret;
 }
 
-void getDataJSON(char *out, size_t maxLen, struct tm timeinfo) {
-  size_t len = 0;
-
+String getDataJSON(struct tm timeinfo) {
+  String ret = "{\n";
+  
+  // Convert struct tm to time_t (Unix timestamp)
   time_t unix_timestamp = mktime(&timeinfo);
+  ret += "  \"datahora\": " + String(unix_timestamp) + ",\n";
 
-  len += snprintf(out + len, maxLen - len,
-    "{\n"
-    "  \"datahora\": %ld,\n"
-    "  \"reles\": [\n",
-    (long)unix_timestamp
-  );
-
-  for (int r = 0; r < 8; r++) {
+  ret += "  \"reles\": [\n";
+  for (int r=0; r < 8; r++) {
     Rele *rele = &reles[r];
-
-    len += snprintf(out + len, maxLen - len,
-      "    {\n"
-      "      \"nome\": \"%s\",\n"
-      "      \"regra\": \"%s\",\n"
-      "      \"pino\": %d,\n"
-      "      \"estado\": \"%s\"\n"
-      "    }%s\n",
-      rele->nome.c_str(),
-      rele->regra.c_str(),
-      rele->pino,
-      rele->estado ? "ON" : "OFF",
-      (r < 7) ? "," : ""
-    );
-
-    if (len >= maxLen) break;
+    ret += "    {\n";
+    ret += "      \"nome\": \"" + rele->nome + "\",\n";
+    ret += "      \"regra\": \"" + rele->regra + "\",\n";
+    ret += "      \"pino\": " + String(rele->pino) + ",\n";
+    ret += "      \"estado\": " + String(rele->estado) + "\n";
+    ret += "    } " + String((r < 7) ? "," : "") + "\n";
   }
+  ret += "  ]\n";
 
-  snprintf(out + len, maxLen - len,
-    "  ]\n"
-    "}");
+  return ret + "}";
 }
 
 void handleClient(WiFiClient client, struct tm timeinfo) {
@@ -281,14 +284,14 @@ void handleClient(WiFiClient client, struct tm timeinfo) {
         // that's the end of the client HTTP request, so send a response:
         if (currentLine.length() == 0) {
           String contentType = "text/html";
-          char body[2048];
+          String body;
 
           // Verificar o que foi solicitado
           if (httpRequest.indexOf("GET / ") == 0) { // index.html
-            getIndexHTML(body, sizeof(body), timeinfo);
+            body = getIndexHTML(timeinfo);
           } else if (httpRequest.indexOf("GET /data ") == 0) {
             contentType = "application/json";
-            getDataJSON(body, sizeof(body), timeinfo);
+            body = getDataJSON(timeinfo);
           } else {
             // 404
             client.println("HTTP/1.1 404 Not Found");
@@ -301,7 +304,7 @@ void handleClient(WiFiClient client, struct tm timeinfo) {
           // and a content-type so the client knows what's coming, then a blank line:
           client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: " + contentType);
-          client.println("Content-Length: " + strlen(body));
+          client.println("Content-Length: " + String(body.length()));
           client.println("Connection: close");
           client.println();
           client.print(body);
@@ -340,6 +343,8 @@ void WiFiConnect() {
 
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) {
+    esp_task_wdt_reset(); // alimenta o watchdog
+    
     if (WiFi.status() == WL_CONNECT_FAILED) {
       Serial.println("Falha!! Cheque a configuracao!!");
       Serial.println();
@@ -359,6 +364,10 @@ void setup() {
 
   delay(1000);
   Serial.println("\n== eTomada ==\n");
+
+  // WDT : 15 segundos de timeout
+  esp_task_wdt_init(15, true); // true = resetar automaticamente
+  esp_task_wdt_add(NULL);      // adiciona a task atual (loop)
 
   for(int r=0; r < 8; r++) {
     Rele *rele = &reles[r];
@@ -418,6 +427,8 @@ String getDiaSemana(struct tm timeinfo) {
 int lastMinute = -1;
 int lastSecond = -1;
 void loop() {
+  esp_task_wdt_reset(); // alimenta o watchdog
+
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 2000)) {
     Serial.println("Failed to obtain time");
