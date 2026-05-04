@@ -15,7 +15,8 @@ bool estadoReles[8] = { 0,0,0,0,0,0,0,0 };
 
 // Salvar as regras na memoria FLASH
 Preferences prefs;
-String strRegraLuz = "";
+String nomeReles[8] = { "Luz", "Umidificador", "Ventilador", "Desumidificador", "","","","" };
+String regraReles[8] = { "OF=02:00-07:59", "","","","","","","" }; // Desligado das 2h as 8h
 
 // Display OLED
 #define I2C_DISPLAY_ADDR    0x3C
@@ -64,18 +65,25 @@ tm printTime(int px, int py) {
   return timeinfo;
 }
 
-void controlaRele(int numRele, bool estado) {
+String controlaRele(int numRele, bool estado) {
   if (numRele < 1 || numRele > 8) {
     Serial.printf("controlaRele: numRele [%d] invalido!\n", numRele);
-    return;
+    return "";
   }
+
+  String ret = "";
 
   int r = numRele - 1;
   if (estado != estadoReles[r]) {
-    Serial.printf("%s rele %d\n", (estado ? "Ligando" : "Desligando"), numRele);
     digitalWrite(pinosReles[r], estado);
     estadoReles[r] = estado;
+
+    char msg[128];
+    sprintf(msg, "%s rele %d (%s) pino %d", (estado ? "Ligando" : "Desligando"), numRele, nomeReles[r].c_str(), pinosReles[r]);
+    ret = msg;
   }
+
+  return ret;
 }
 
 void loadRegras() {
@@ -83,84 +91,104 @@ void loadRegras() {
 
   prefs.begin("regras", false);
 
-  strRegraLuz = prefs.getString("luz", "");
-  if (strRegraLuz == "") {
-    // Inicializar as regras Default
-    strRegraLuz = "OF=02:00-07:59"; // Desligado das 2h as 8h
-    prefs.putString("luz", strRegraLuz);
+  // para testes : prefs.putString("regra1", "OF=02:00-07:59");
+
+  char nomeAtr[10];
+  for (int r=0; r < 8; r++) {
+    String def = regraReles[r];
+    sprintf(nomeAtr, "regra%d", r + 1);
+    regraReles[r] = prefs.isKey(nomeAtr) ? prefs.getString(nomeAtr, "") : "";
+    if (regraReles[r] == "") {
+      if (def == "") {
+        continue;
+      }
+      // Inicializar as regras Default
+      regraReles[r] = def;
+      prefs.putString(nomeAtr, def);
+    }
+    Serial.printf("Rele %d (%s) > [%s]\n", r+1, nomeReles[r].c_str(), regraReles[r].c_str());
   }
-  Serial.printf("> LUZ: [%s]\n", strRegraLuz.c_str());
 
   Serial.println("");
 }
 
-void checkRegra_Luz(tm timeinfo) {
-  if (strRegraLuz.length() < 10) {
-    // ERRO! Nao deve cair aqui!
-    Serial.println("REGRA DE LUZ INVALIDA!!!");
-    return;
+String checkRegra(int num, tm timeinfo) {
+  String strRegra = regraReles[num];
+
+  if (strRegra == "") {
+    return "";
   }
 
-  const char* regraLuz = strRegraLuz.c_str();
-  if (regraLuz[2] != '=' || regraLuz[5] != ':' || regraLuz[8] != '-' || regraLuz[11] != ':') {
-    Serial.println("REGRA DE LUZ INVALIDA 2!!!");
-    return;
+  if (strRegra.length() < 10) {
+    // ERRO! Nao deve cair aqui!
+    Serial.printf("REGRA RELE %d INVALIDA!!!", num+1);
+    return "";
+  }
+
+  const char* regraCSTR = strRegra.c_str();
+  if (regraCSTR[2] != '=' || regraCSTR[5] != ':' || regraCSTR[8] != '-' || regraCSTR[11] != ':') {
+    Serial.printf("REGRA RELE %d INVALIDA!!! Formato", num+1);
+    return "";
   }
   
   int hI=-1, mI=-1, hF=-1, mF=-1;
-  char ligaLuz[3] = {0};
-  int lidos = sscanf(regraLuz, "%2[^=]=%d:%d-%d:%d", ligaLuz, &hI, &mI, &hF, &mF);
+  char ligar[3] = {0};
+  int lidos = sscanf(regraCSTR, "%2[^=]=%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
   if (lidos != 5) {
-    Serial.println("REGRA DE LUZ INVALIDA 3!!!");
-    return;
+    Serial.printf("REGRA RELE %d INVALIDA!!! Campos", num+1);
+    return "";
   }
   if (hI < 0 || hI > 23) {
-    Serial.println("REGRA DE LUZ INVALIDA 4!!! hI");
-    return;
+    Serial.printf("REGRA RELE %d INVALIDA!!! hI", num+1);
+    return "";
   }
   if (mI < 0 || mI > 59) {
-    Serial.println("REGRA DE LUZ INVALIDA 5!!! mI");
-    return;
+    Serial.printf("REGRA RELE %d INVALIDA!!! mI", num+1);
+    return "";
   }
   if (hF < 0 || hF > 23) {
-    Serial.println("REGRA DE LUZ INVALIDA 6!!! hF");
-    return;
+    Serial.printf("REGRA RELE %d INVALIDA!!! hF", num+1);
+    return "";
   }
   if (mF < 0 || mF > 59) {
-    Serial.println("REGRA DE LUZ INVALIDA 7!!! mF");
-    return;
+    Serial.printf("REGRA RELE %d INVALIDA!!! mF", num+1);
+    return "";
   }
 
   int tsI = hI * 60 + mI;
   int tsF = hF * 60 + mF;
   if (tsF <= tsI) {
-    Serial.println("REGRA DE LUZ INVALIDA 8!!! (tsF >= tsI)");
-    return;
+    Serial.printf("REGRA RELE %d INVALIDA!!! (tsF >= tsI)", num+1);
+    return "";
     // TODO flag = 1 E tsF += 24 * 60
   }
 
-  bool acaoEhLigar = !strncmp(ligaLuz, "ON", 2);
+  bool acaoEhLigar = !strncmp(ligar, "ON", 2);
 
   int tsAgora = timeinfo.tm_hour * 60 + timeinfo.tm_min;
   bool estaNoIntervalo = (tsAgora >= tsI && tsAgora <= tsF);
   if (!acaoEhLigar) estaNoIntervalo = !estaNoIntervalo;
 
-  //Serial.printf("tsI=%d\ntsF=%d\ntsAgora=%d\n", tsI, tsF, tsAgora);
+  // Serial.printf("tsI=%d\ntsF=%d\ntsAgora=%d\n", tsI, tsF, tsAgora);
+  // if (estaNoIntervalo) Serial.printf("LIGAR [%s]\n", nomeReles[num]);
+  // else                 Serial.printf("DESLIGAR [%s]\n", nomeReles[num]);
 
-  if (estaNoIntervalo) Serial.println("LIGAR luz!");
-  else                 Serial.println("DESLIGAR luz!");
-
-  controlaRele(RELE_LUZ, estaNoIntervalo);
+  return controlaRele(num + 1, estaNoIntervalo);
 }
 
 void onChangeMinute(tm timeinfo) {
-  Serial.printf("[%d:%d] > ", timeinfo.tm_hour, timeinfo.tm_min);
-
-  checkRegra_Luz(timeinfo);
+  for (int r=0; r < 8; r++) {
+    String msg = checkRegra(r, timeinfo);
+    if (msg != "") {
+      Serial.printf("[%d:%d] > %s\n", timeinfo.tm_hour, timeinfo.tm_min, msg.c_str());
+    }
+  }
 }
 
 void setup() {
   Serial.begin(115200);
+
+  delay(1000);
   Serial.println("\n== eTomada ==\n");
 
   for(int r=0; r < 8; r++) {
