@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <Preferences.h>
 #include <esp_task_wdt.h>
+#include <LittleFS.h>
 
 // WiFi credentials.
 const char* WIFI_SSID = "Ligga Gabriel 2.4g";
@@ -46,6 +47,8 @@ const char* ntpServer2 = "pool.ntp.org";
 // See list of timezone strings https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 const char* tzInfo = "<-03>3";
 
+// FS - LittleFS
+bool FSOK = false;
 
 // ==============================================================================================
 unsigned long timeoutMsg = 0;
@@ -102,28 +105,36 @@ String controlaRele(int numRele, bool estado) {
   return ret;
 }
 
-void loadRegras() {
-  Serial.println("Carregando Regras:");
+String getPrefsAtr(int num, String nomeAtr) {
+  char buff[10];
+  sprintf(buff, "%s%d", nomeAtr.c_str(), num);
+  return prefs.isKey(buff) ? prefs.getString(buff, "") : "";
+}
 
-  prefs.begin("regras", false);
+void setPrefsAtr(int num, String nomeAtr, String val) {
+  char buff[10];
+  sprintf(buff, "%s%d", nomeAtr.c_str(), num);
+  prefs.putString(buff, val);
+}
 
-  // para testes : prefs.putString("regra1", "OF=02:00-07:59");
+void loadConfig() {
+  Serial.println("Carregando Configuracao dos reles:");
 
-  char nomeAtr[10];
+  prefs.begin("reles", false);
+
+  // Para testes
+  // prefs.putString("nome1", "Luz");
+  // prefs.putString("regra1", "OF-02:00-07:59");
+  // prefs.putString("pino1", "15");
+
   for (int r=0; r < 8; r++) {
     Rele *rele = &reles[r];
-    String def = rele->regra;
-    sprintf(nomeAtr, "regra%d", r + 1);
-    rele->regra = prefs.isKey(nomeAtr) ? prefs.getString(nomeAtr, "") : "";
-    if (rele->regra == "") {
-      if (def == "") {
-        continue;
-      }
-      // Inicializar as regras Default
-      rele->regra = def;
-      prefs.putString(nomeAtr, def);
-    }
-    Serial.printf("Rele %d (%s) > [%s]\n", r+1, rele->nome.c_str(), rele->regra.c_str());
+
+    rele->nome  = getPrefsAtr(r+1, "nome");
+    rele->regra = getPrefsAtr(r+1, "regra");
+    rele->pino  = atoi(getPrefsAtr(r+1, "pino").c_str());
+
+    Serial.printf("Rele %d:%d (%s) > [%s]\n", r+1, rele->pino, rele->nome.c_str(), rele->regra.c_str());
   }
 
   Serial.println("");
@@ -144,7 +155,7 @@ String checkRegra(int num, tm timeinfo) {
 
   int hI=-1, mI=-1, hF=-1, mF=-1;
   char ligar[3] = {0};
-  int lidos = sscanf(rele->regra.c_str(), "%2[^=]=%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
+  int lidos = sscanf(rele->regra.c_str(), "%2[^-]-%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
   if (lidos != 5) {
     Serial.printf("REGRA RELE %d INVALIDA!!! Campos", num+1);
     return "";
@@ -194,52 +205,6 @@ void onChangeMinute(struct tm timeinfo) {
   }
 }
 
-String getIndexHTML(struct tm timeinfo) {
-  // Display the HTML web page
-  String ret = "<!DOCTYPE html>\n<html>\n";
-  
-  ret += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
-  // CSS to style the on/off buttons 
-  // Feel free to change the background-color and font-size attributes to fit your preferences
-  ret += "<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
-  ret += ".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;\n";
-  ret += "text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}\n";
-  ret += ".button2 {background-color: #555555;}</style></head>\n";
-
-  char formattedTime[32];
-  strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-  
-  // Web Page Heading
-  ret += String("<body><h1>eTomada!</h1><br>") + String(formattedTime) + "<br><br>Reles:<br>\n";
-  
-  for (int r=0; r < 8; r++) {
-    Rele *rele = &reles[r];
-    if (rele->regra == "") continue;
-    ret += "<p>RELE " + String(r+1) + ": " + rele->nome + " > Regra: [" + rele->regra + "] => " +
-        (rele->estado ? "Ligado" : "Desligado") + "</p>\n";
-  }
-
-  /* Display current state, and ON/OFF buttons for GPIO 26  
-  // If the output26State is off, it displays the ON button       
-  if (output26State=="off") {
-    client.println("<p><a href=\"/26/on\"><button class=\"button\">ON</button></a></p>");
-  } else {
-    client.println("<p><a href=\"/26/off\"><button class=\"button button2\">OFF</button></a></p>");
-  } 
-      
-  // Display current state, and ON/OFF buttons for GPIO 27  
-  client.println("<p>GPIO 27 - State " + output27State + "</p>");
-  // If the output27State is off, it displays the ON button       
-  if (output27State=="off") {
-    client.println("<p><a href=\"/27/on\"><button class=\"button\">ON</button></a></p>");
-  } else {
-    client.println("<p><a href=\"/27/off\"><button class=\"button button2\">OFF</button></a></p>");
-  }*/
-
-  ret += "</body></html>\n\n";
-  
-  return ret;
-}
 
 String getDataJSON(struct tm timeinfo) {
   String ret = "{\n";
@@ -247,6 +212,10 @@ String getDataJSON(struct tm timeinfo) {
   // Convert struct tm to time_t (Unix timestamp)
   time_t unix_timestamp = mktime(&timeinfo);
   ret += "  \"datahora\": " + String(unix_timestamp) + ",\n";
+
+   char formattedTime[32];
+    strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
+  ret += "  \"datahorastr\": \"" + String(formattedTime) + "\",\n";
 
   ret += "  \"reles\": [\n";
   for (int r=0; r < 8; r++) {
@@ -261,6 +230,104 @@ String getDataJSON(struct tm timeinfo) {
   ret += "  ]\n";
 
   return ret + "}";
+}
+
+String getQueryStringValue(String qs, String nomeAtr, String def) {
+  int pos = qs.indexOf(nomeAtr + "=");
+  if (pos < 0) {
+    return def;
+  }
+
+  int start = pos + nomeAtr.length() + 1;
+  int end = qs.indexOf("&", start);
+  if (end < 0) end = qs.length();
+
+  return qs.substring(start, end);
+}
+
+int getQueryStringValueInt(String qs, String nomeAtr, int def) {
+  String intStr = getQueryStringValue(qs, nomeAtr, String(def));
+  return intStr.toInt();
+}
+
+String setReleConfig(String httpRequest, struct tm timeinfo) {
+  int numRele = -1;
+  char querystring[128] = {0};
+  int lidos = sscanf(httpRequest.c_str(), "GET /setReleConfig/%d?%127s ", &numRele, querystring);
+  if (lidos != 2) {
+    return "501 Bad Format";
+  } else if (numRele < 1 || numRele > 8) {
+    return "533 Bad RELE";
+  }
+
+  String qs = String(querystring);
+
+  Rele *rele = &reles[numRele - 1];
+  rele->nome  = getQueryStringValue(qs, "nome", rele->nome);
+  rele->regra = getQueryStringValue(qs, "regra", rele->regra);
+  rele->pino  = getQueryStringValueInt(qs, "pino", rele->pino);
+
+  Serial.println("setReleConfig ::");
+  Serial.println("RELE " + String(numRele) + " nome:" + rele->nome + " regra:" + rele->regra + " pino:" + String(rele->pino));
+
+  // Setar no prefs
+  setPrefsAtr(numRele, "nome", rele->nome);
+  setPrefsAtr(numRele, "regra", rele->regra);
+  setPrefsAtr(numRele, "pino", String(rele->pino));
+
+  // Checar as regras novamente
+  onChangeMinute(timeinfo);
+
+  return "200 OK";
+}
+
+void enviaParaClient(WiFiClient client, String msg) {
+  Serial.println("httpResponse: " + msg);
+  client.println(msg);
+}
+
+String getContentType(String path) {
+  if (path.endsWith(".html")) return "text/html";
+  if (path.endsWith(".css"))  return "text/css";
+  if (path.endsWith(".js"))   return "application/javascript";
+  if (path.endsWith(".json")) return "application/json";
+  if (path.endsWith(".png"))  return "image/png";
+  if (path.endsWith(".jpg"))  return "image/jpeg";
+  return "text/plain";
+}
+
+void serveFile(WiFiClient &client, String path) {
+  if (!FSOK) {
+    client.println("HTTP/1.1 505 No FS");
+    client.println();
+    return;
+  }
+
+  File file = LittleFS.open(path, "r");
+
+  if (!file) {
+    client.println("HTTP/1.1 404 Not Found");
+    client.println();
+    return;
+  }
+
+  enviaParaClient(client, "HTTP/1.1 200 OK");
+  enviaParaClient(client, "Content-Type: " + getContentType(path));
+  enviaParaClient(client, "Content-Length: " + String(file.size()));
+  enviaParaClient(client, "Connection: close");
+  enviaParaClient(client, "Access-Control-Allow-Origin: *");
+  enviaParaClient(client, "");
+
+  uint8_t buffer[512];
+
+  while (file.available()) {
+    size_t len = file.read(buffer, sizeof(buffer));
+    client.write(buffer, len);
+
+    esp_task_wdt_reset();
+  }
+
+  file.close();
 }
 
 void handleClient(WiFiClient client, struct tm timeinfo) {
@@ -284,30 +351,52 @@ void handleClient(WiFiClient client, struct tm timeinfo) {
         // that's the end of the client HTTP request, so send a response:
         if (currentLine.length() == 0) {
           String contentType = "text/html";
-          String body;
+          String responseBody;
+          responseBody.reserve(2048);
 
           // Verificar o que foi solicitado
           if (httpRequest.indexOf("GET / ") == 0) { // index.html
-            body = getIndexHTML(timeinfo);
+            serveFile(client, "/index.html");
+            break;
           } else if (httpRequest.indexOf("GET /data ") == 0) {
             contentType = "application/json";
-            body = getDataJSON(timeinfo);
+            responseBody = getDataJSON(timeinfo);
+          } else if (httpRequest.indexOf("GET /setReleConfig/") == 0) {
+            // Ler query string
+            contentType = "application/json";
+            responseBody = setReleConfig(httpRequest, timeinfo);
+            if (responseBody != "200 OK") {
+              enviaParaClient(client, "HTTP/1.1 " + responseBody);
+              enviaParaClient(client, "");
+              break;
+            }
+            responseBody = "{\"response\": \"" + responseBody + "\"}"; // 200 ok!
+          } else if (httpRequest.indexOf("OPTIONS") == 0) {
+            enviaParaClient(client, "HTTP/1.1 204 No Content");
+            enviaParaClient(client, "Access-Control-Allow-Origin: *");
+            enviaParaClient(client, "Access-Control-Allow-Methods: GET, PUT, OPTIONS");
+            enviaParaClient(client, "Access-Control-Allow-Headers: Content-Type");
+            enviaParaClient(client, "");
+            return;
           } else {
             // 404
-            client.println("HTTP/1.1 404 Not Found");
-            client.println("Content-Length: 0");
-            client.println();
+            enviaParaClient(client, "HTTP/1.1 404 Not Found");
+            enviaParaClient(client, "Content-Length: 0");
+            enviaParaClient(client, "");
             break;
           }
 
           // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
           // and a content-type so the client knows what's coming, then a blank line:
-          client.println("HTTP/1.1 200 OK");
-          client.println("Content-Type: " + contentType);
-          client.println("Content-Length: " + String(body.length()));
-          client.println("Connection: close");
-          client.println();
-          client.print(body);
+          enviaParaClient(client, "HTTP/1.1 200 OK");
+          enviaParaClient(client, "Content-Type: " + contentType);
+          enviaParaClient(client, "Content-Length: " + String(responseBody.length() + 1)); // + 1 para o \n final
+          enviaParaClient(client, "Connection: close");
+          enviaParaClient(client, "Access-Control-Allow-Origin: *");
+          enviaParaClient(client, "Access-Control-Allow-Methods: GET, PUT, OPTIONS");
+          enviaParaClient(client, "Access-Control-Allow-Headers: Content-Type");
+          enviaParaClient(client, "");
+          enviaParaClient(client, responseBody);
           
           // Break out of the while loop
           break;
@@ -344,7 +433,7 @@ void WiFiConnect() {
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) {
     esp_task_wdt_reset(); // alimenta o watchdog
-    
+
     if (WiFi.status() == WL_CONNECT_FAILED) {
       Serial.println("Falha!! Cheque a configuracao!!");
       Serial.println();
@@ -385,7 +474,12 @@ void setup() {
   tft.drawString(30, 0, "eTomada!");
   tft.display();
 
-  loadRegras();
+  FSOK = !!LittleFS.begin(true);
+  if (!FSOK) {
+    Serial.println("Erro LittleFS - Desativando File-system");
+  }
+
+  loadConfig();
 
   tft.drawString(0, 20, "Conectando...");
   tft.display();
