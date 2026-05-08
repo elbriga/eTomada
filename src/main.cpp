@@ -3,14 +3,13 @@
 #include <WiFi.h>
 #include <Preferences.h>
 #include <esp_task_wdt.h>
+#include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 
 // WiFi credentials.
 const char* WIFI_SSID = "Ligga Gabriel 2.4g";
 const char* WIFI_PASS = "09876543";
 IPAddress ipStr;
-// Set web server port number to 80
-WiFiServer server(80);
 
 struct Rele {
   int pino;
@@ -49,6 +48,9 @@ const char* tzInfo = "<-03>3";
 
 // FS - LittleFS
 bool FSOK = false;
+
+// Web Server
+AsyncWebServer httpServer(80);
 
 // ==============================================================================================
 unsigned long timeoutMsg = 0;
@@ -205,33 +207,6 @@ void onChangeMinute(struct tm timeinfo) {
   }
 }
 
-
-String getDataJSON(struct tm timeinfo) {
-  String ret = "{\n";
-  
-  // Convert struct tm to time_t (Unix timestamp)
-  time_t unix_timestamp = mktime(&timeinfo);
-  ret += "  \"datahora\": " + String(unix_timestamp) + ",\n";
-
-   char formattedTime[32];
-    strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
-  ret += "  \"datahorastr\": \"" + String(formattedTime) + "\",\n";
-
-  ret += "  \"reles\": [\n";
-  for (int r=0; r < 8; r++) {
-    Rele *rele = &reles[r];
-    ret += "    {\n";
-    ret += "      \"nome\": \"" + rele->nome + "\",\n";
-    ret += "      \"regra\": \"" + rele->regra + "\",\n";
-    ret += "      \"pino\": " + String(rele->pino) + ",\n";
-    ret += "      \"estado\": " + String(rele->estado) + "\n";
-    ret += "    } " + String((r < 7) ? "," : "") + "\n";
-  }
-  ret += "  ]\n";
-
-  return ret + "}";
-}
-
 String getQueryStringValue(String qs, String nomeAtr, String def) {
   int pos = qs.indexOf(nomeAtr + "=");
   if (pos < 0) {
@@ -281,142 +256,51 @@ String setReleConfig(String httpRequest, struct tm timeinfo) {
   return "200 OK";
 }
 
-void enviaParaClient(WiFiClient client, String msg) {
-  Serial.println("httpResponse: " + msg);
-  client.println(msg);
-}
+void httpServerInit() {
+  httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+  
+  httpServer.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String json = "{";
 
-String getContentType(String path) {
-  if (path.endsWith(".html")) return "text/html";
-  if (path.endsWith(".css"))  return "text/css";
-  if (path.endsWith(".js"))   return "application/javascript";
-  if (path.endsWith(".json")) return "application/json";
-  if (path.endsWith(".png"))  return "image/png";
-  if (path.endsWith(".jpg"))  return "image/jpeg";
-  return "text/plain";
-}
-
-void serveFile(WiFiClient &client, String path) {
-  if (!FSOK) {
-    client.println("HTTP/1.1 505 No FS");
-    client.println();
-    return;
-  }
-
-  File file = LittleFS.open(path, "r");
-
-  if (!file) {
-    client.println("HTTP/1.1 404 Not Found");
-    client.println();
-    return;
-  }
-
-  enviaParaClient(client, "HTTP/1.1 200 OK");
-  enviaParaClient(client, "Content-Type: " + getContentType(path));
-  enviaParaClient(client, "Content-Length: " + String(file.size()));
-  enviaParaClient(client, "Connection: close");
-  enviaParaClient(client, "Access-Control-Allow-Origin: *");
-  enviaParaClient(client, "");
-
-  uint8_t buffer[512];
-
-  while (file.available()) {
-    size_t len = file.read(buffer, sizeof(buffer));
-    client.write(buffer, len);
-
-    esp_task_wdt_reset();
-  }
-
-  file.close();
-}
-
-void handleClient(WiFiClient client, struct tm timeinfo) {
-  unsigned long currentTime = millis();
-  unsigned long previousTime = currentTime; 
-  // Define timeout time in milliseconds (example: 2000ms = 2s)
-  const long timeoutTime = 5000;
-
-  Serial.println("New Client.");
-
-  String currentLine = "";                // make a String to hold incoming data from the client
-  String httpRequest = "";
-  while (client.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
-    currentTime = millis();
-    if (client.available()) {             // if there's bytes to read from the client,
-      char c = client.read();             // read a byte, then
-      Serial.write(c);                    // print it out the serial monitor
-
-      if (c == '\n') {                    // if the byte is a newline character
-        // if the current line is blank, you got two newline characters in a row.
-        // that's the end of the client HTTP request, so send a response:
-        if (currentLine.length() == 0) {
-          String contentType = "text/html";
-          String responseBody;
-          responseBody.reserve(2048);
-
-          // Verificar o que foi solicitado
-          if (httpRequest.indexOf("GET / ") == 0) { // index.html
-            serveFile(client, "/index.html");
-            break;
-          } else if (httpRequest.indexOf("GET /data ") == 0) {
-            contentType = "application/json";
-            responseBody = getDataJSON(timeinfo);
-          } else if (httpRequest.indexOf("GET /setReleConfig/") == 0) {
-            // Ler query string
-            contentType = "application/json";
-            responseBody = setReleConfig(httpRequest, timeinfo);
-            if (responseBody != "200 OK") {
-              enviaParaClient(client, "HTTP/1.1 " + responseBody);
-              enviaParaClient(client, "");
-              break;
-            }
-            responseBody = "{\"response\": \"" + responseBody + "\"}"; // 200 ok!
-          } else if (httpRequest.indexOf("OPTIONS") == 0) {
-            enviaParaClient(client, "HTTP/1.1 204 No Content");
-            enviaParaClient(client, "Access-Control-Allow-Origin: *");
-            enviaParaClient(client, "Access-Control-Allow-Methods: GET, PUT, OPTIONS");
-            enviaParaClient(client, "Access-Control-Allow-Headers: Content-Type");
-            enviaParaClient(client, "");
-            return;
-          } else {
-            // 404
-            enviaParaClient(client, "HTTP/1.1 404 Not Found");
-            enviaParaClient(client, "Content-Length: 0");
-            enviaParaClient(client, "");
-            break;
-          }
-
-          // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-          // and a content-type so the client knows what's coming, then a blank line:
-          enviaParaClient(client, "HTTP/1.1 200 OK");
-          enviaParaClient(client, "Content-Type: " + contentType);
-          enviaParaClient(client, "Content-Length: " + String(responseBody.length() + 1)); // + 1 para o \n final
-          enviaParaClient(client, "Connection: close");
-          enviaParaClient(client, "Access-Control-Allow-Origin: *");
-          enviaParaClient(client, "Access-Control-Allow-Methods: GET, PUT, OPTIONS");
-          enviaParaClient(client, "Access-Control-Allow-Headers: Content-Type");
-          enviaParaClient(client, "");
-          enviaParaClient(client, responseBody);
-          
-          // Break out of the while loop
-          break;
-        } else { // if you got a newline, then clear currentLine
-          if (httpRequest == "")
-            httpRequest = currentLine; // Salvar a 1a linha do request
-          currentLine = "";
-        }
-      } else if (c != '\r') {  // if you got anything else but a carriage return character,
-        currentLine += c;      // add it to the end of the currentLine
-      }
-    } else {
-      yield();
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo, 2000)) {
+      Serial.println("httpServer :: Failed to obtain time");
+      return;
     }
-  }
 
-  // Close the connection
-  client.stop();
-  Serial.println("Client disconnected.");
-  Serial.println("");
+    // Convert struct tm to time_t (Unix timestamp)
+    time_t unix_timestamp = mktime(&timeinfo);
+    json += "  \"datahora\": " + String(unix_timestamp) + ",\n";
+
+    char formattedTime[32];
+      strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
+    json += "  \"datahorastr\": \"" + String(formattedTime) + "\",\n";
+
+    json += "\"reles\":[";
+    for (int i = 0; i < 8; i++) {
+        json += "{";
+        json += "\"nome\":\"" + reles[i].nome + "\",";
+        json += "\"regra\":\"" + reles[i].regra + "\",";
+        json += "\"pino\":\"" + String(reles[i].pino) + "\",";
+        json += "\"estado\":" + String(reles[i].estado ? "1" : "0");
+        json += "}";
+
+        if (i < 7)
+            json += ",";
+    }
+    json += "]}";
+
+    request->send(200, "application/json", json);
+  });
+
+  httpServer.on("/setReleConfig", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String json = "{";
+    json += "}";
+
+    request->send(200, "application/json", json);
+  });
+  
+  httpServer.begin();
 }
 
 void WiFiConnect() {
@@ -485,7 +369,7 @@ void setup() {
   tft.display();
 
   WiFiConnect();
-  
+
   Serial.print("NTP: ");
   tft.drawString(0, 40, "Buscando Hora...");
   tft.display();
@@ -499,8 +383,11 @@ void setup() {
     Serial.println(formattedTime);
   }
   
-  server.begin();
   delay(100);
+
+  if (FSOK) {
+    httpServerInit();
+  }
 
   Serial.println("");
 }
@@ -553,11 +440,6 @@ void loop() {
   }
 
   delay(1);
-
-  WiFiClient client = server.available();   // Listen for incoming clients
-  if (client) {                             // If a new client connects,
-    handleClient(client, timeinfo);
-  }
 
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("===");
