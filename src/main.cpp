@@ -214,13 +214,6 @@ void onChangeMinute() {
   }
 }
 
-String getJsonStr(JsonDocument doc, String nomeAtr, String def) {
-  return (doc[nomeAtr] == NULL) ? def : doc[nomeAtr];
-}
-int getJsonInt(JsonDocument doc, String nomeAtr, int def) {
-  return (doc[nomeAtr] == NULL) ? def : doc[nomeAtr];
-}
-
 void httpServerInit() {
   httpServer.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request) {
     String json = "{";
@@ -280,17 +273,18 @@ void httpServerInit() {
     }
 
     Rele *rele = &reles[numRele - 1];
-    rele->nome  = getJsonStr(doc, "nome",  rele->nome);
-    rele->regra = getJsonStr(doc, "regra", rele->regra);
-    rele->pino  = getJsonInt(doc, "pino",  rele->pino);
+    rele->nome  = doc["nome"]  | rele->nome;
+    rele->regra = doc["regra"] | rele->regra;
+    rele->pino  = doc["pino"]  | rele->pino;
 
     Serial.println("setReleConfig ::");
-    Serial.println("RELE " + String(numRele) + " nome:" + rele->nome + " regra:" + rele->regra + " pino:" + String(rele->pino));
+    Serial.println("RELE " + String(numRele) + " nome:" + rele->nome +
+        " regra:" + rele->regra + " pino:" + String(rele->pino));
 
     // Setar no prefs
-    setPrefsAtr(numRele, "nome", rele->nome);
+    setPrefsAtr(numRele, "nome",  rele->nome);
     setPrefsAtr(numRele, "regra", rele->regra);
-    setPrefsAtr(numRele, "pino", String(rele->pino));
+    setPrefsAtr(numRele, "pino",  String(rele->pino));
 
     // Checar as regras novamente
     onChangeMinute();
