@@ -103,7 +103,7 @@
 
       async function load() {
         try {
-          const res = await fetch(`${API_BASE}/data`);
+          const res = await fetch(`${API_BASE}/api/data`);
           const data = await res.json();
 
           document.getElementById("datahora").innerHTML = data.datahorastr;
@@ -144,7 +144,16 @@
         btn.disabled = true;
 
         try {
-          await fetch(`${API_BASE}/setReleConfig/${i + 1}?regra=${regra}`);
+          await fetch(`${API_BASE}/api/setReleConfig`, {
+            method: "PUT",
+            body: JSON.stringify({
+              rele: i + 1,
+              regra: regra,
+            }),
+            headers: {
+              "Content-type": "application/json; charset=UTF-8",
+            },
+          });
         } catch (e) {
           alert("Erro ao salvar");
         }

@@ -5,6 +5,7 @@
 #include <esp_task_wdt.h>
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
+#include <ArduinoJson.h>
 
 // WiFi credentials.
 const char* WIFI_SSID = "Ligga Gabriel 2.4g";
@@ -197,7 +198,13 @@ String checkRegra(int num, tm timeinfo) {
   return controlaRele(num + 1, estaNoIntervalo);
 }
 
-void onChangeMinute(struct tm timeinfo) {
+void onChangeMinute() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo, 2000)) {
+    Serial.println("Failed to obtain time");
+    return;
+  }
+
   for (int r=0; r < 8; r++) {
     String msg = checkRegra(r, timeinfo);
     if (msg != "") {
@@ -207,59 +214,15 @@ void onChangeMinute(struct tm timeinfo) {
   }
 }
 
-String getQueryStringValue(String qs, String nomeAtr, String def) {
-  int pos = qs.indexOf(nomeAtr + "=");
-  if (pos < 0) {
-    return def;
-  }
-
-  int start = pos + nomeAtr.length() + 1;
-  int end = qs.indexOf("&", start);
-  if (end < 0) end = qs.length();
-
-  return qs.substring(start, end);
+String getJsonStr(JsonDocument doc, String nomeAtr, String def) {
+  return (doc[nomeAtr] == NULL) ? def : doc[nomeAtr];
 }
-
-int getQueryStringValueInt(String qs, String nomeAtr, int def) {
-  String intStr = getQueryStringValue(qs, nomeAtr, String(def));
-  return intStr.toInt();
-}
-
-String setReleConfig(String httpRequest, struct tm timeinfo) {
-  int numRele = -1;
-  char querystring[128] = {0};
-  int lidos = sscanf(httpRequest.c_str(), "GET /setReleConfig/%d?%127s ", &numRele, querystring);
-  if (lidos != 2) {
-    return "501 Bad Format";
-  } else if (numRele < 1 || numRele > 8) {
-    return "533 Bad RELE";
-  }
-
-  String qs = String(querystring);
-
-  Rele *rele = &reles[numRele - 1];
-  rele->nome  = getQueryStringValue(qs, "nome", rele->nome);
-  rele->regra = getQueryStringValue(qs, "regra", rele->regra);
-  rele->pino  = getQueryStringValueInt(qs, "pino", rele->pino);
-
-  Serial.println("setReleConfig ::");
-  Serial.println("RELE " + String(numRele) + " nome:" + rele->nome + " regra:" + rele->regra + " pino:" + String(rele->pino));
-
-  // Setar no prefs
-  setPrefsAtr(numRele, "nome", rele->nome);
-  setPrefsAtr(numRele, "regra", rele->regra);
-  setPrefsAtr(numRele, "pino", String(rele->pino));
-
-  // Checar as regras novamente
-  onChangeMinute(timeinfo);
-
-  return "200 OK";
+int getJsonInt(JsonDocument doc, String nomeAtr, int def) {
+  return (doc[nomeAtr] == NULL) ? def : doc[nomeAtr];
 }
 
 void httpServerInit() {
-  httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
-  
-  httpServer.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
+  httpServer.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request) {
     String json = "{";
 
     struct tm timeinfo;
@@ -293,12 +256,49 @@ void httpServerInit() {
     request->send(200, "application/json", json);
   });
 
-  httpServer.on("/setReleConfig", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String json = "{";
-    json += "}";
+  httpServer.on("/api/setReleConfig",
+    HTTP_PUT,
+    [](AsyncWebServerRequest *request){},
+    NULL,
+    [](AsyncWebServerRequest *request,
+    uint8_t *data,
+    size_t len,
+    size_t index,
+    size_t total)
+  {
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, data);
+    if (err) {
+        request->send(400, "text/plain", "JSON invalido");
+        return;
+    }
 
-    request->send(200, "application/json", json);
+    int numRele = doc["rele"];
+    if (numRele < 1 || numRele > 8) {
+      request->send(400, "text/plain", "Rele invalido");
+      return;
+    }
+
+    Rele *rele = &reles[numRele - 1];
+    rele->nome  = getJsonStr(doc, "nome",  rele->nome);
+    rele->regra = getJsonStr(doc, "regra", rele->regra);
+    rele->pino  = getJsonInt(doc, "pino",  rele->pino);
+
+    Serial.println("setReleConfig ::");
+    Serial.println("RELE " + String(numRele) + " nome:" + rele->nome + " regra:" + rele->regra + " pino:" + String(rele->pino));
+
+    // Setar no prefs
+    setPrefsAtr(numRele, "nome", rele->nome);
+    setPrefsAtr(numRele, "regra", rele->regra);
+    setPrefsAtr(numRele, "pino", String(rele->pino));
+
+    // Checar as regras novamente
+    onChangeMinute();
+
+    request->send(200, "application/json", "{\"msg\": \"OK\"}");
   });
+
+  httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
   
   httpServer.begin();
 }
@@ -431,7 +431,8 @@ void loop() {
 
   if (timeinfo.tm_min != lastMinute) {
     lastMinute = timeinfo.tm_min;
-    onChangeMinute(timeinfo);
+
+    onChangeMinute();
 
     if (timeinfo.tm_hour == 0 && timeinfo.tm_min == 0) {
       // Ao mudar de dia - sync NTP de novo
