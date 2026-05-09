@@ -42,7 +42,9 @@ async function load() {
   <button onclick="tomadaToggleEdit(${numRele}, false)">❌ Cancelar</button>
 </div>
 <div id="tomadaView-${numRele}">
-  <button onclick="tomadaOverride(${numRele}, ${rele.estado ? "false" : "true"})">${rele.estado ? "🔴 Desligar" : "🟢 Ligar"} por 30 minutos</button>
+  <button onclick="tomadaOverride(${numRele}, ${rele.estado ? "false" : "true"})">
+    ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
+  </button>
   <br><br>
   <button onclick="tomadaToggleEdit(${numRele}, true)">✏️ Editar</button>
 </div>
