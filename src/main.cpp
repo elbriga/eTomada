@@ -188,9 +188,9 @@ String validaRegra(String regra) {
   char acao[3] = {0};
   char param1[17] = {0};
   char param2[17] = {0};
-  int lidos = sscanf(regra.c_str(), "%2[^-]-%16s-%16s", acao, param1, param2);
+  int lidos = sscanf(regra.c_str(), "%2[^-]-%16[^-]-%16[^-]", acao, param1, param2);
   if (lidos < 3) {
-    return "campos";
+    return "campos:" + String(lidos) + ":" + String(acao) + ":" + String(param1) + ":" + String(param2);
   }
 
   // Validar as Acoes
@@ -215,7 +215,7 @@ String checkRegra(int num) {
 
   String regraOK = validaRegra(rele->regra);
   if (regraOK != "") {
-    return "regraInvalida:" + regraOK;
+    return "Regra[" + String(num+1) + "] Invalida:" + regraOK;
   }
 
   int hI=-1, mI=-1, hF=-1, mF=-1;
@@ -245,7 +245,7 @@ void onChangeMinute() {
 
   for (int r=0; r < 8; r++) {
     rele = &reles[r];
-    if (rele->regra == "") continue;;
+    if (rele->regra == "") continue;
 
     String msg = checkRegra(r);
     if (msg != "") {
@@ -259,8 +259,8 @@ void logaRequest(AsyncWebServerRequest *request, String resultado) {
   loga("[org:%s] %s %s => [%s]",
     request->client()->remoteIP().toString(),
     request->methodToString(),
-    request->url(),
-    resultado);
+    request->url().c_str(),
+    resultado.c_str());
 }
 
 void httpServerInit() {
