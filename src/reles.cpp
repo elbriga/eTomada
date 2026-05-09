@@ -1,11 +1,36 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-#include "rele.h"
-#include "regra.h"
+#include "reles.h"
+#include "regras.h"
 #include "eTomada.h"
 
-String releAtualizaConfigFromJSON(uint8_t *json) {
+#define MAX_RELES 8
+static Rele reles[MAX_RELES] = {
+  // Valores default
+  { 15, 0, "Luz", "OF=02:00-07:59" },
+  { 13, 0, "Umidificador", "" },
+  { 12, 0, "Ventilador", "" },
+  { 14, 0, "Desumidificador", "" },
+  { -1, 0, "", "" },
+  { -1, 0, "", "" },
+  { -1, 0, "", "" },
+  { -1, 0, "", "" }
+};
+
+int relesGetCount() {
+  return MAX_RELES;
+}
+
+Rele *releGet(int numRele) {
+  if (numRele < 1 || numRele > MAX_RELES) {
+    return NULL;
+  }
+
+  return &reles[numRele - 1];
+}
+
+String relesAtualizaConfigFromJSON(uint8_t *json) {
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, json);
   if (err) {
@@ -13,7 +38,7 @@ String releAtualizaConfigFromJSON(uint8_t *json) {
   }
 
   int numRele = doc["rele"];
-  if (numRele < 1 || numRele > 8) {
+  if (numRele < 1 || numRele > MAX_RELES) {
     return "Rele invalido";
   }
 
@@ -45,7 +70,7 @@ String releAtualizaConfigFromJSON(uint8_t *json) {
 }
 
 String releControla(int numRele, bool estado) {
-  if (numRele < 1 || numRele > 8) {
+  if (numRele < 1 || numRele > MAX_RELES) {
     Serial.printf("controlaRele: numRele [%d] invalido!\n", numRele);
     return "";
   }

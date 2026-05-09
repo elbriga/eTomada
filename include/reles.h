@@ -8,7 +8,8 @@ struct Rele {
   String regra;
 };
 
-extern Rele reles[8];
+int relesGetCount();
+String relesAtualizaConfigFromJSON(uint8_t *json);
 
+Rele *releGet(int numRele);
 String releControla(int numRele, bool estado);
-String releAtualizaConfigFromJSON(uint8_t *json);

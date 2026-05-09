@@ -1,8 +1,8 @@
 #include "eTomada.h"
 #include "http.h"
 #include "loga.h"
-#include "rele.h"
-#include "regra.h"
+#include "reles.h"
+#include "regras.h"
 
 // Web Server
 AsyncWebServer httpServer(80);
@@ -35,7 +35,7 @@ void httpServerInit(HttpConfigChangedCallback cb)
   });
 
   httpServer.on("/api/setReleConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-    String atzCfgOK = releAtualizaConfigFromJSON(data);
+    String atzCfgOK = relesAtualizaConfigFromJSON(data);
     if (atzCfgOK == "OK") {
       if (g_onConfigChanged) {
           g_onConfigChanged();

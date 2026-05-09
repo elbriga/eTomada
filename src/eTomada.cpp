@@ -2,7 +2,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
-#include "rele.h"
+#include "reles.h"
 
 // Salvar as regras na memoria FLASH
 Preferences prefs;
@@ -19,14 +19,17 @@ void eTomadaLoadConfig() {
   // prefs.putString("regra1", "OF-02:00-07:59");
   // prefs.putString("pino1", "15");
 
-  for (int r=0; r < 8; r++) {
-    Rele *rele = &reles[r];
+  Rele *rele;
+  int totReles = relesGetCount();
+  for (int r=1; r <= totReles; r++) {
+    rele = releGet(r);
+    if (!rele) continue;
 
-    rele->nome  = getPrefsAtr(r+1, "nome");
-    rele->regra = getPrefsAtr(r+1, "regra");
-    rele->pino  = atoi(getPrefsAtr(r+1, "pino").c_str());
+    rele->nome  = getPrefsAtr(r, "nome");
+    rele->regra = getPrefsAtr(r, "regra");
+    rele->pino  = atoi(getPrefsAtr(r, "pino").c_str());
 
-    Serial.printf("Rele %d:%d (%s) > [%s]\n", r+1, rele->pino, rele->nome.c_str(), rele->regra.c_str());
+    Serial.printf("Rele %d:%d (%s) > [%s]\n", r, rele->pino, rele->nome.c_str(), rele->regra.c_str());
   }
 
   Serial.println("");
@@ -43,14 +46,18 @@ String eTomadaGetDataJSON() {
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
   doc["datahorastr"] = formattedTime;
 
+  Rele *rele;
+  int totReles = relesGetCount();
   JsonArray arr = doc["reles"].to<JsonArray>();
-  for (int i = 0; i < 8; i++) {
-      JsonObject r = arr.add<JsonObject>();
-      Rele *rele = &reles[i];
-      r["nome"]   = rele->nome;
-      r["regra"]  = rele->regra;
-      r["pino"]   = rele->pino;
-      r["estado"] = rele->estado;
+  for (int i = 1; i <= totReles; i++) {
+    rele = releGet(i);
+    if (!rele) continue;
+
+    JsonObject r = arr.add<JsonObject>();
+    r["nome"]   = rele->nome;
+    r["regra"]  = rele->regra;
+    r["pino"]   = rele->pino;
+    r["estado"] = rele->estado;
   }
 
   String out;

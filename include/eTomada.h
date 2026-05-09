@@ -1,5 +1,5 @@
 #pragma once
-#include "rele.h"
+#include "reles.h"
 
 void eTomadaLoadConfig();
 String eTomadaGetDataJSON();

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <stdarg.h>
+
 #include "loga.h"
 
 void logaMensagem(const char* fmt, ...) {

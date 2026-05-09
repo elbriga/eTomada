@@ -7,27 +7,11 @@
 #include "display.h"
 #include "ntp.h"
 #include "http.h"
-#include "rele.h"
-#include "regra.h"
-
-// TODO :: Alterar para rele.h > getRele(r), para nao depender desta global ??
-Rele reles[8] = {
-  // Valores default
-  { 15, 0, "Luz", "OF=02:00-07:59" },
-  { 13, 0, "Umidificador", "" },
-  { 12, 0, "Ventilador", "" },
-  { 14, 0, "Desumidificador", "" },
-  { -1, 0, "", "" },
-  { -1, 0, "", "" },
-  { -1, 0, "", "" },
-  { -1, 0, "", "" }
-};
+#include "reles.h"
+#include "regras.h"
 
 // Display OLED
 SSD1306Wire tft(I2C_DISPLAY_ADDR, SDA, SCL);
-
-// FS - LittleFS
-bool FSOK = false;
 
 // ==============================================================================================
 void processaRegras() {
@@ -36,8 +20,9 @@ void processaRegras() {
   localtime_r(&agora, &timeinfo);
 
   Rele *rele;
-  for (int r=0; r < 8; r++) {
-    rele = &reles[r];
+  int totReles = relesGetCount();
+  for (int r=1; r <= totReles; r++) {
+    rele = releGet(r);
     if (rele->regra == "") continue;
 
     String msg = checkRegra(r, timeinfo);
@@ -58,8 +43,10 @@ void setup() {
   esp_task_wdt_init(15, true); // true = resetar automaticamente
   esp_task_wdt_add(NULL);      // adiciona a task atual (loop)
 
-  for(int r=0; r < 8; r++) {
-    Rele *rele = &reles[r];
+  Rele *rele;
+  int totReles = relesGetCount();
+  for(int r=1; r <= totReles; r++) {
+    rele = releGet(r);
     if (rele->pino == -1) {
       // Rele Desativado
       continue;
@@ -70,9 +57,11 @@ void setup() {
 
   displayInit();
 
-  FSOK = !!LittleFS.begin(true);
+  bool FSOK = !!LittleFS.begin(true);
   if (!FSOK) {
-    Serial.println("Erro LittleFS - Desativando File-system");
+    Serial.println("===");
+    Serial.println("Erro LittleFS - Desativando Servidor Web");
+    Serial.println("===");
   }
 
   eTomadaLoadConfig();
@@ -100,7 +89,7 @@ void setup() {
     httpServerInit(processaRegras);
   }
 
-  logaMensagem("Setup() OK!");
+  logaMensagem("Setup OK!");
   Serial.println("");
 }
 

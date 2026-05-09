@@ -1,5 +1,6 @@
 #include <Arduino.h>
-#include "rele.h"
+
+#include "reles.h"
 
 String validaHora(String hora) {
   int h, m;
@@ -46,12 +47,15 @@ String validaRegra(String regra) {
   return "";
 }
 
-String checkRegra(int num, struct tm timeinfo) {
-  Rele *rele = &reles[num];
+String checkRegra(int numRele, struct tm timeinfo) {
+  Rele *rele = releGet(numRele);
+  if (!rele) {
+    return "Rele invalido";
+  }
 
   String regraOK = validaRegra(rele->regra);
   if (regraOK != "") {
-    return "Regra[" + String(num+1) + "] Invalida:" + regraOK;
+    return "Regra[" + String(numRele) + "] Invalida:" + regraOK;
   }
 
   int hI=-1, mI=-1, hF=-1, mF=-1;
@@ -73,5 +77,5 @@ String checkRegra(int num, struct tm timeinfo) {
   // if (estaNoIntervalo) Serial.printf("LIGAR [%s]\n", nomeReles[num]);
   // else                 Serial.printf("DESLIGAR [%s]\n", nomeReles[num]);
 
-  return releControla(num + 1, estaNoIntervalo);
+  return releControla(numRele, estaNoIntervalo);
 }
