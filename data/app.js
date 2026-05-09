@@ -3,6 +3,10 @@ const API_BASE =
     ? "http://192.168.18.105" // IP do ESP quando o frontend esta hospedado para DEV
     : window.location.origin;
 
+function getRegraTXT(regra) {
+  return regra;
+}
+
 async function load() {
   try {
     const res = await fetch(`${API_BASE}/api/data`);
@@ -16,19 +20,39 @@ async function load() {
     data.reles.forEach((rele, i) => {
       if (!rele.nome) rele.nome = "---";
 
+      let numRele = i + 1;
+
       const card = document.createElement("div");
+      card.id = "tomadaCard-" + numRele;
       card.className = "card";
 
-      card.innerHTML = `
-<div class="title">Tomada ${i + 1}: ${rele.nome}</div>
-<div class="small">(pino ${rele.pino})</div><br>
-<div class="status ${rele.estado ? "on" : "off"}">
-    ${rele.estado ? "● Ligado" : "● Desligado"}
+      let html = `
+<div class="title">Tomada ${numRele}: ${escapeHtml(rele.nome || "")}</div>
+<div class="small">Regra: ${getRegraTXT(rele.regra)}</div>
+<div class="small">pino: ${rele.pino}</div>
+<br>`;
+      if (rele.ativo) {
+        html += `
+<div class="status ${rele.estado ? "on" : "off"}">${rele.estado ? "● Ligado" : "● Desligado"}</div>
+<div id="tomadaEdit-${numRele}" style="display: none">
+  Nome: <input id="nome-${numRele}" value="${escapeHtml(rele.nome || "")}"><br>
+  Regra: <input id="regra-${numRele}" value="${escapeHtml(rele.regra || "")}" placeholder="ON=08:00-18:00">
+  <button onclick="tomadaSalvar(${numRele}, this)">💾 Salvar</button>
+  <br><br>
+  <button onclick="tomadaToggleEdit(${numRele}, false)">❌ Cancelar</button>
 </div>
-<input id="regra-${i}" value="${rele.regra || ""}" placeholder="ON=08:00-18:00">
-<button onclick="salvar(${i}, this)">Salvar</button>
+<div id="tomadaView-${numRele}">
+  <button onclick="tomadaOverride(${numRele}, ${rele.estado ? "false" : "true"})">${rele.estado ? "🔴 Desligar" : "🟢 Ligar"} por 30 minutos</button>
+  <br><br>
+  <button onclick="tomadaToggleEdit(${numRele}, true)">✏️ Editar</button>
+</div>
 `;
+      } else {
+        html += `
+<div class="status off">● Desativado</div>`;
+      }
 
+      card.innerHTML = html;
       container.appendChild(card);
     });
   } catch (e) {
@@ -36,19 +60,19 @@ async function load() {
   }
 }
 
-async function salvar(i, btn) {
-  const input = document.getElementById(`regra-${i}`);
-  const regra = input.value;
-
+async function tomadaSalvar(numRele, btn) {
   btn.innerText = "Salvando...";
   btn.disabled = true;
+
+  document.getElementById(`tomadaCard-${numRele}`).classList.add("saving");
 
   try {
     await fetch(`${API_BASE}/api/setReleConfig`, {
       method: "PUT",
       body: JSON.stringify({
-        rele: i + 1,
-        regra: regra,
+        rele: numRele,
+        nome: document.getElementById(`nome-${numRele}`).value,
+        regra: document.getElementById(`regra-${numRele}`).value,
       }),
       headers: {
         "Content-type": "application/json; charset=UTF-8",
@@ -56,13 +80,29 @@ async function salvar(i, btn) {
     });
   } catch (e) {
     alert("Erro ao salvar");
+    btn.disabled = false;
+    btn.innerText = "💾 Salvar";
   }
-
-  btn.innerText = "Salvar";
-  btn.disabled = false;
 
   load();
 }
 
+function tomadaToggleEdit(id, editing) {
+  document.getElementById(`tomadaEdit-${id}`).style.display = editing
+    ? "block"
+    : "none";
+  document.getElementById(`tomadaView-${id}`).style.display = !editing
+    ? "block"
+    : "none";
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 load();
-//setInterval(load, 5000);

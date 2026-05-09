@@ -19,6 +19,10 @@ String validaHora(String hora) {
 }
 
 String validaRegra(String regra) {
+  if (regra == "") {
+    return "OK";
+  }
+
   if (regra.length() < 10) {
     return "len";
   }
@@ -45,7 +49,7 @@ String validaRegra(String regra) {
     return "acao";
   }
 
-  return "";
+  return "OK";
 }
 
 String checkRegra(int numRele) {
@@ -54,8 +58,12 @@ String checkRegra(int numRele) {
     return "Rele invalido";
   }
 
+  if (rele->regra == "") {
+    return "";
+  }
+
   String regraOK = validaRegra(rele->regra);
-  if (regraOK != "") {
+  if (regraOK != "OK") {
     return "Regra[" + String(numRele) + "] Invalida:" + regraOK;
   }
 
@@ -77,10 +85,6 @@ String checkRegra(int numRele) {
 
   bool acaoEhLigar = !strncmp(ligar, "ON", 2);
   if (!acaoEhLigar) estaNoIntervalo = !estaNoIntervalo;
-
-  // Serial.printf("tsI=%d\ntsF=%d\ntsAgora=%d\n", tsI, tsF, tsAgora);
-  // if (estaNoIntervalo) Serial.printf("LIGAR [%s]\n", nomeReles[num]);
-  // else                 Serial.printf("DESLIGAR [%s]\n", nomeReles[num]);
 
   return releControla(numRele, estaNoIntervalo);
 }
