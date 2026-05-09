@@ -19,7 +19,7 @@ void processaRegras() {
   int totReles = relesGetCount();
   for (int r=1; r <= totReles; r++) {
     rele = releGet(r);
-    if (rele->regra == "") continue;
+    if (!rele->ativo) continue;
 
     String msg = checkRegra(r);
     if (msg != "") {

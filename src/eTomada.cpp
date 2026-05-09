@@ -28,6 +28,7 @@ void eTomadaLoadConfig() {
 
     rele->nome  = getPrefsAtr(r, "nome");
     rele->regra = getPrefsAtr(r, "regra");
+    rele->ativo = getPrefsAtr(r, "ativo") == "1";
     rele->pino  = atoi(getPrefsAtr(r, "pino").c_str());
 
     Serial.printf("Rele %d:%d (%s) > [%s]\n", r, rele->pino, rele->nome.c_str(), rele->regra.c_str());
@@ -60,6 +61,7 @@ String eTomadaGetDataJSON() {
     r["regra"]  = rele->regra;
     r["pino"]   = rele->pino;
     r["estado"] = rele->estado;
+    r["ativo"]  = rele->ativo;
   }
 
   String out;
@@ -71,6 +73,7 @@ String eTomadaGetDataJSON() {
 void eTomadaSalvaRele(int numRele, Rele *rele) { // TODO Rele->num
   setPrefsAtr(numRele, "nome",  rele->nome);
   setPrefsAtr(numRele, "regra", rele->regra);
+  setPrefsAtr(numRele, "ativo", String(rele->ativo));
 
   int oldPin = atoi(setPrefsAtr(numRele, "pino",  String(rele->pino)).c_str());
   if (rele->pino != oldPin) {

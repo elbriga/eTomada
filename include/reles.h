@@ -6,6 +6,7 @@ struct Rele {
   bool estado;
   String nome;
   String regra;
+  bool ativo;
 };
 
 int relesGetCount();
