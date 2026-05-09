@@ -54,6 +54,19 @@ bool FSOK = false;
 AsyncWebServer httpServer(80);
 
 // ==============================================================================================
+void loga(String msg) {
+  struct tm timeinfo;
+  char formattedTime[32] = {0};
+
+  if (!getLocalTime(&timeinfo, 2000)) {
+    Serial.println("# loga :: Failed to obtain time");
+  } else {
+    strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
+  }
+
+  Serial.println("[" + String(formattedTime) + "] " + msg);
+}
+
 unsigned long timeoutMsg = 0;
 void mostraMsg(String msg, int timeout = 0) {
   tft.clear();
@@ -101,7 +114,7 @@ String controlaRele(int numRele, bool estado) {
     rele->estado = estado;
 
     char msg[128];
-    sprintf(msg, "%s %s    (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"), rele->nome.c_str(), numRele, rele->pino);
+    sprintf(msg, "%s %s (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"), rele->nome.c_str(), numRele, rele->pino);
     ret = msg;
   }
 
@@ -208,13 +221,25 @@ void onChangeMinute() {
   for (int r=0; r < 8; r++) {
     String msg = checkRegra(r, timeinfo);
     if (msg != "") {
-      Serial.printf("[%d:%d] > %s\n", timeinfo.tm_hour, timeinfo.tm_min, msg.c_str());
+      loga(msg);
       mostraMsg(msg, 5000);
     }
   }
 }
 
+void logaRequest(AsyncWebServerRequest *request) {
+  loga("[org:" + request->client()->remoteIP().toString() + "] " + 
+      request->methodToString() + " " + request->url());
+}
+
 void httpServerInit() {
+//#ifdef DEV   TODO
+  // Adicionar headers para functionar o CORS quando em DEV localhost
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "*");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
+//#endif
+
   httpServer.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request) {
     String json = "{";
 
@@ -229,7 +254,7 @@ void httpServerInit() {
     json += "  \"datahora\": " + String(unix_timestamp) + ",\n";
 
     char formattedTime[32];
-      strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
+    strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
     json += "  \"datahorastr\": \"" + String(formattedTime) + "\",\n";
 
     json += "\"reles\":[";
@@ -245,6 +270,8 @@ void httpServerInit() {
             json += ",";
     }
     json += "]}";
+
+    logaRequest(request);
 
     request->send(200, "application/json", json);
   });
@@ -277,8 +304,9 @@ void httpServerInit() {
     rele->regra = doc["regra"] | rele->regra;
     rele->pino  = doc["pino"]  | rele->pino;
 
-    Serial.println("setReleConfig ::");
-    Serial.println("RELE " + String(numRele) + " nome:" + rele->nome +
+    logaRequest(request);
+    
+    Serial.println(">> RELE " + String(numRele) + " nome:" + rele->nome +
         " regra:" + rele->regra + " pino:" + String(rele->pino));
 
     // Setar no prefs
@@ -293,6 +321,17 @@ void httpServerInit() {
   });
 
   httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+
+  httpServer.onNotFound([](AsyncWebServerRequest *request) {
+    logaRequest(request);
+    
+    // Tratar o OPTIONS
+    if (request->method() == HTTP_OPTIONS) {
+      request->send(200);
+    } else {
+      request->send(404);
+    }
+  });
   
   httpServer.begin();
 }
@@ -383,6 +422,7 @@ void setup() {
     httpServerInit();
   }
 
+  loga("Setup() OK!");
   Serial.println("");
 }
 
@@ -406,8 +446,7 @@ void loop() {
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 2000)) {
-    Serial.println("Failed to obtain time");
-    //return NULL;
+    loga("[LOOP] > Failed to obtain time");
   }
 
   if (timeinfo.tm_sec != lastSecond && timeoutMsg < millis()) {
@@ -437,9 +476,7 @@ void loop() {
   delay(1);
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("===");
-    Serial.println("WiFi caiu!! Reconectar...");
-    Serial.println("===");
+    loga("WiFi caiu!! Reconectar...");
     mostraMsg("Reconectando...", 10000);
     WiFiConnect();
   }
