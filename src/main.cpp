@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <SSD1306.h>
-#include <WiFi.h>
 #include <Preferences.h>
 #include <esp_task_wdt.h>
 #include <ESPAsyncWebServer.h>
@@ -8,10 +7,7 @@
 #include <ArduinoJson.h>
 #include <stdarg.h>
 
-// WiFi credentials.
-const char* WIFI_SSID = "Ligga Gabriel 2.4g";
-const char* WIFI_PASS = "09876543";
-IPAddress ipStr;
+#include "wifi.h"
 
 struct Rele {
   int pino;
@@ -81,7 +77,7 @@ void mostraMsg(String msg, int timeout = 0) {
   tft.clear();
   tft.drawString(30, 0, "eTomada!");
   tft.drawString(0, 20, msg);
-  tft.drawString(0, 40, ipStr.toString());
+  tft.drawString(0, 40, WiFi.localIP().toString());
   tft.display();
 
   if (timeout > 0)
@@ -383,35 +379,6 @@ void httpServerInit() {
   });
   
   httpServer.begin();
-}
-
-void WiFiConnect() {
-  // Connect to Wifi.
-  Serial.print("Conectando a rede [");
-  Serial.print(WIFI_SSID);
-  Serial.print("]: ");
-
-  // Set WiFi to station mode and disconnect from an AP if it was previously connected
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  delay(100);
-
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  while (WiFi.status() != WL_CONNECTED) {
-    esp_task_wdt_reset(); // alimenta o watchdog
-
-    if (WiFi.status() == WL_CONNECT_FAILED) {
-      Serial.println("Falha!! Cheque a configuracao!!");
-      Serial.println();
-      delay(5000);
-    }
-    delay(500);
-  }
-  Serial.println("OK!");
-
-  ipStr = WiFi.localIP();
-  Serial.print("Endereço IP: ");
-  Serial.println(ipStr);
 }
 
 void setup() {
