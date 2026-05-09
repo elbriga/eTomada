@@ -6,6 +6,7 @@
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include <stdarg.h>
 
 // WiFi credentials.
 const char* WIFI_SSID = "Ligga Gabriel 2.4g";
@@ -53,18 +54,26 @@ bool FSOK = false;
 // Web Server
 AsyncWebServer httpServer(80);
 
+// DataHora Global do sistema, atualizada no loop()
+time_t agora;
+struct tm timeinfo;
+
 // ==============================================================================================
-void loga(String msg) {
-  struct tm timeinfo;
+void loga(const char* fmt, ...) {
+  char msg[512];
+
+  // Formatar mensagem variadica
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(msg, sizeof(msg), fmt, args);
+  va_end(args);
+
+  // Obter horario
   char formattedTime[32] = {0};
+  strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
 
-  if (!getLocalTime(&timeinfo, 2000)) {
-    Serial.println("# loga :: Failed to obtain time");
-  } else {
-    strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
-  }
-
-  Serial.println("[" + String(formattedTime) + "] " + msg);
+  // Log final
+  Serial.printf("[%s] %s\n", formattedTime, msg);
 }
 
 unsigned long timeoutMsg = 0;
@@ -156,42 +165,62 @@ void loadConfig() {
   Serial.println("");
 }
 
-String checkRegra(int num, tm timeinfo) {
-  Rele *rele = &reles[num];
+String validaHora(String hora) {
+  int h, m;
+  int lidos = sscanf(hora.c_str(), "%d:%d", &h, &m);
+  if (lidos != 2) {
+    return "campos";
+  }
+  if (h < 0 || h > 23) {
+    return "hora";
+  }
+  if (m < 0 || m > 59) {
+    return "minuto";
+  }
+  return "";
+}
 
-  if (rele->regra == "") {
-    return "";
+String validaRegra(String regra) {
+  if (regra.length() < 10) {
+    return "len";
   }
 
-  if (rele->regra.length() < 10) {
-    // ERRO! Nao deve cair aqui!
-    Serial.printf("REGRA RELE %d INVALIDA!!!", num+1);
-    return "";
+  char acao[3] = {0};
+  char param1[17] = {0};
+  char param2[17] = {0};
+  int lidos = sscanf(regra.c_str(), "%2[^-]-%16s-%16s", acao, param1, param2);
+  if (lidos < 3) {
+    return "campos";
+  }
+
+  // Validar as Acoes
+  if (!strncmp(acao, "ON", 2) || !strncmp(acao, "OF", 2)) {
+    String hOK = validaHora(param1);
+    if (hOK != "") {
+      return "hI:" + hOK;
+    }
+    hOK = validaHora(param2);
+    if (hOK != "") {
+      return "hF:" + hOK;
+    }
+  } else {
+    return "acao";
+  }
+
+  return "";
+}
+
+String checkRegra(int num) {
+  Rele *rele = &reles[num];
+
+  String regraOK = validaRegra(rele->regra);
+  if (regraOK != "") {
+    return "regraInvalida:" + regraOK;
   }
 
   int hI=-1, mI=-1, hF=-1, mF=-1;
   char ligar[3] = {0};
-  int lidos = sscanf(rele->regra.c_str(), "%2[^-]-%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
-  if (lidos != 5) {
-    Serial.printf("REGRA RELE %d INVALIDA!!! Campos", num+1);
-    return "";
-  }
-  if (hI < 0 || hI > 23) {
-    Serial.printf("REGRA RELE %d INVALIDA!!! hI", num+1);
-    return "";
-  }
-  if (mI < 0 || mI > 59) {
-    Serial.printf("REGRA RELE %d INVALIDA!!! mI", num+1);
-    return "";
-  }
-  if (hF < 0 || hF > 23) {
-    Serial.printf("REGRA RELE %d INVALIDA!!! hF", num+1);
-    return "";
-  }
-  if (mF < 0 || mF > 59) {
-    Serial.printf("REGRA RELE %d INVALIDA!!! mF", num+1);
-    return "";
-  }
+  sscanf(rele->regra.c_str(), "%2[^-]-%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
 
   int tsI = hI * 60 + mI;
   int tsF = hF * 60 + mF;
@@ -212,24 +241,26 @@ String checkRegra(int num, tm timeinfo) {
 }
 
 void onChangeMinute() {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo, 2000)) {
-    Serial.println("Failed to obtain time");
-    return;
-  }
+  Rele *rele;
 
   for (int r=0; r < 8; r++) {
-    String msg = checkRegra(r, timeinfo);
+    rele = &reles[r];
+    if (rele->regra == "") continue;;
+
+    String msg = checkRegra(r);
     if (msg != "") {
-      loga(msg);
+      loga("%s", msg.c_str());
       mostraMsg(msg, 5000);
     }
   }
 }
 
-void logaRequest(AsyncWebServerRequest *request) {
-  loga("[org:" + request->client()->remoteIP().toString() + "] " + 
-      request->methodToString() + " " + request->url());
+void logaRequest(AsyncWebServerRequest *request, String resultado) {
+  loga("[org:%s] %s %s => [%s]",
+    request->client()->remoteIP().toString(),
+    request->methodToString(),
+    request->url(),
+    resultado);
 }
 
 void httpServerInit() {
@@ -241,39 +272,29 @@ void httpServerInit() {
 //#endif
 
   httpServer.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String json = "{";
+    JsonDocument doc;
 
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo, 2000)) {
-      Serial.println("httpServer :: Failed to obtain time");
-      return;
-    }
-
-    // Convert struct tm to time_t (Unix timestamp)
-    time_t unix_timestamp = mktime(&timeinfo);
-    json += "  \"datahora\": " + String(unix_timestamp) + ",\n";
+    doc["datahora"] = (unsigned long)agora;
 
     char formattedTime[32];
     strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
-    json += "  \"datahorastr\": \"" + String(formattedTime) + "\",\n";
+    doc["datahorastr"] = formattedTime;
 
-    json += "\"reles\":[";
+    JsonArray arr = doc["reles"].to<JsonArray>();
     for (int i = 0; i < 8; i++) {
-        json += "{";
-        json += "\"nome\":\"" + reles[i].nome + "\",";
-        json += "\"regra\":\"" + reles[i].regra + "\",";
-        json += "\"pino\":\"" + String(reles[i].pino) + "\",";
-        json += "\"estado\":" + String(reles[i].estado ? "1" : "0");
-        json += "}";
-
-        if (i < 7)
-            json += ",";
+        JsonObject r = arr.add<JsonObject>();
+        Rele *rele = &reles[i];
+        r["nome"]   = rele->nome;
+        r["regra"]  = rele->regra;
+        r["pino"]   = rele->pino;
+        r["estado"] = rele->estado;
     }
-    json += "]}";
 
-    logaRequest(request);
+    String out;
+    serializeJson(doc, out);
 
-    request->send(200, "application/json", json);
+    logaRequest(request, "200 OK");
+    request->send(200, "application/json", out);
   });
 
   httpServer.on("/api/setReleConfig",
@@ -289,30 +310,58 @@ void httpServerInit() {
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, data);
     if (err) {
-        request->send(400, "text/plain", "JSON invalido");
-        return;
+      logaRequest(request, "400 JSON invalido");
+      request->send(400, "text/plain", "JSON invalido");
+      return;
     }
 
     int numRele = doc["rele"];
     if (numRele < 1 || numRele > 8) {
+      logaRequest(request, "400 Rele invalido");
       request->send(400, "text/plain", "Rele invalido");
       return;
     }
 
+    String novaRegra = doc["regra"];
+    if (!novaRegra) {
+      logaRequest(request, "400 Regra Zerada");
+      request->send(400, "text/plain", "Regra Zerada");
+      return;
+    }
+
+    String regraOK = validaRegra(novaRegra);
+    if (regraOK != "") {
+      logaRequest(request, "400 Regra Invalida :: " + regraOK);
+      request->send(400, "text/plain", "Regra Invalida :: " + regraOK);
+      return;
+    }
+
     Rele *rele = &reles[numRele - 1];
+    String nome  = rele->nome;
+    String regra = rele->regra;
+    int    pino  = rele->pino;
     rele->nome  = doc["nome"]  | rele->nome;
     rele->regra = doc["regra"] | rele->regra;
     rele->pino  = doc["pino"]  | rele->pino;
 
-    logaRequest(request);
+    logaRequest(request, "200 OK");
     
     Serial.println(">> RELE " + String(numRele) + " nome:" + rele->nome +
         " regra:" + rele->regra + " pino:" + String(rele->pino));
 
     // Setar no prefs
-    setPrefsAtr(numRele, "nome",  rele->nome);
-    setPrefsAtr(numRele, "regra", rele->regra);
-    setPrefsAtr(numRele, "pino",  String(rele->pino));
+    if (rele->nome != nome) {
+      setPrefsAtr(numRele, "nome",  rele->nome);
+    }
+    if (rele->regra != regra) {
+      setPrefsAtr(numRele, "regra", rele->regra);
+    }
+    if (rele->pino != pino) {
+      setPrefsAtr(numRele, "pino",  String(rele->pino));
+      pinMode(rele->pino, OUTPUT);
+      // Desligar pino antigo
+      digitalWrite(pino, LOW);
+    }
 
     // Checar as regras novamente
     onChangeMinute();
@@ -323,12 +372,12 @@ void httpServerInit() {
   httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
 
   httpServer.onNotFound([](AsyncWebServerRequest *request) {
-    logaRequest(request);
-    
     // Tratar o OPTIONS
     if (request->method() == HTTP_OPTIONS) {
+      logaRequest(request, "OPTIONS");
       request->send(200);
     } else {
+      logaRequest(request, "404 Not Found");
       request->send(404);
     }
   });
@@ -407,14 +456,13 @@ void setup() {
   tft.drawString(0, 40, "Buscando Hora...");
   tft.display();
   syncTime();
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo, 2000)) {
-    Serial.println("Failed to obtain time");
-  } else {
-    char formattedTime[32];
-    strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-    Serial.println(formattedTime);
-  }
+
+  agora = time(nullptr);
+  localtime_r(&agora, &timeinfo);
+
+  char formattedTime[32];
+  strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+  Serial.println(formattedTime);
   
   delay(100);
 
@@ -426,7 +474,7 @@ void setup() {
   Serial.println("");
 }
 
-String getDiaSemana(struct tm timeinfo) {
+String getDiaSemana() {
   switch (timeinfo.tm_wday) {
     case 0: return "Dom";
     case 1: return "Seg";
@@ -444,10 +492,8 @@ int lastSecond = -1;
 void loop() {
   esp_task_wdt_reset(); // alimenta o watchdog
 
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo, 2000)) {
-    loga("[LOOP] > Failed to obtain time");
-  }
+  agora = time(nullptr);
+  localtime_r(&agora, &timeinfo);
 
   if (timeinfo.tm_sec != lastSecond && timeoutMsg < millis()) {
     lastSecond = timeinfo.tm_sec;
@@ -458,7 +504,7 @@ void loop() {
     char msgDataHora[32];
     //strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
     strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
-    sprintf(msgDataHora, "  %s    %s", getDiaSemana(timeinfo).c_str(), formattedTime);
+    sprintf(msgDataHora, "  %s    %s", getDiaSemana().c_str(), formattedTime);
     mostraMsg(msgDataHora);
   }
 
@@ -473,11 +519,11 @@ void loop() {
     }
   }
 
-  delay(1);
-
   if (WiFi.status() != WL_CONNECTED) {
     loga("WiFi caiu!! Reconectar...");
     mostraMsg("Reconectando...", 10000);
     WiFiConnect();
   }
+
+  vTaskDelay(1);
 }
