@@ -8,14 +8,14 @@
 #define MAX_RELES 8
 static Rele reles[MAX_RELES] = {
   // Valores default
-  { 15, 0, "Luz", "OF=02:00-07:59" },
-  { 13, 0, "Umidificador", "" },
-  { 12, 0, "Ventilador", "" },
-  { 14, 0, "Desumidificador", "" },
-  { -1, 0, "", "" },
-  { -1, 0, "", "" },
-  { -1, 0, "", "" },
-  { -1, 0, "", "" }
+  { 15, 0, "Luz", "OF=02:00-07:59", 1 },
+  { 13, 0, "Umidificador", "", 0 },
+  { 12, 0, "Ventilador", "", 0 },
+  { 14, 0, "Desumidificador", "", 0 },
+  { -1, 0, "", "", 0 },
+  { -1, 0, "", "", 0 },
+  { -1, 0, "", "", 0 },
+  { -1, 0, "", "", 0 }
 };
 
 int relesGetCount() {
@@ -42,26 +42,21 @@ String relesAtualizaConfigFromJSON(uint8_t *json) {
     return "Rele invalido";
   }
 
-  String novaRegra = doc["regra"];
-  if (!novaRegra) {
-    return "Regra Zerada";
-  }
-
-  String regraOK = validaRegra(novaRegra);
-  if (regraOK != "") {
-    return "Regra Invalida";
-  }
-
   Rele *rele = &reles[numRele - 1];
-  String nome  = rele->nome;
-  String regra = rele->regra;
-  int    pino  = rele->pino;
-  rele->nome  = doc["nome"]  | rele->nome;
-  rele->regra = doc["regra"] | rele->regra;
-  rele->pino  = doc["pino"]  | rele->pino;
+
+  String novaRegra = doc["regra"].isNull() ? rele->regra : doc["regra"];
+  String regraOK = validaRegra(novaRegra);
+  if (regraOK != "OK") {
+    return "Regra Invalida :: " + regraOK;
+  }
+
+  rele->regra = novaRegra;
+  rele->nome  = doc["nome"].isNull()  ? rele->nome  : doc["nome"];
+  rele->pino  = doc["pino"].isNull()  ? rele->pino  : atoi(doc["pino"].as<String>().c_str());
+  rele->ativo = doc["ativo"].isNull() ? rele->ativo : (doc["ativo"] == "1" || doc["ativo"] == 1);
   
   Serial.println(">> RELE " + String(numRele) + " nome:" + rele->nome +
-    " regra:" + rele->regra + " pino:" + String(rele->pino));
+    " regra:" + rele->regra + " pino:" + String(rele->pino) + " ativo:" + String(rele->ativo ? "1" : "0"));
   
   // Setar no prefs
   eTomadaSalvaRele(numRele, rele);
