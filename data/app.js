@@ -1,6 +1,6 @@
 const API_BASE =
-  window.location.protocol === "file:"
-    ? "http://192.168.18.105" // TODO : remover
+  window.location.host === "localhost"
+    ? "http://192.168.18.105" // IP do ESP quando o frontend esta hospedado para DEV
     : window.location.origin;
 
 async function load() {
