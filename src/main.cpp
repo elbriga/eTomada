@@ -15,17 +15,13 @@ SSD1306Wire tft(I2C_DISPLAY_ADDR, SDA, SCL);
 
 // ==============================================================================================
 void processaRegras() {
-  time_t agora = time(nullptr);
-  struct tm timeinfo;
-  localtime_r(&agora, &timeinfo);
-
   Rele *rele;
   int totReles = relesGetCount();
   for (int r=1; r <= totReles; r++) {
     rele = releGet(r);
     if (rele->regra == "") continue;
 
-    String msg = checkRegra(r, timeinfo);
+    String msg = checkRegra(r);
     if (msg != "") {
       logaMensagem("%s", msg.c_str());
       displayMostraMsg(msg.c_str(), 5000);
@@ -75,9 +71,8 @@ void setup() {
   tft.display();
   ntpSyncTime();
 
-  time_t agora = time(nullptr);
   struct tm timeinfo;
-  localtime_r(&agora, &timeinfo);
+  ntpGetTime(&timeinfo);
 
   char formattedTime[32];
   strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
@@ -111,9 +106,8 @@ int lastSecond = -1;
 void loop() {
   esp_task_wdt_reset(); // alimenta o watchdog
 
-  time_t agora = time(nullptr);
   struct tm timeinfo;
-  localtime_r(&agora, &timeinfo);
+  ntpGetTime(&timeinfo);
 
   if (timeinfo.tm_sec != lastSecond && displayPodeMostrar()) {
     lastSecond = timeinfo.tm_sec;

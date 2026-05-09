@@ -24,3 +24,11 @@ void ntpSyncTime() {
     delay(500);
   }
 }
+
+void ntpGetTime(struct tm *out, time_t *agora) {
+    time_t now = time(nullptr);
+    if (agora != NULL) {
+      *agora = now;
+    }
+    localtime_r(&now, out);
+}

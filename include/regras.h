@@ -1,4 +1,4 @@
 #pragma once
 
 String validaRegra(String regra);
-String checkRegra(int num, struct tm timeinfo);
+String checkRegra(int num);

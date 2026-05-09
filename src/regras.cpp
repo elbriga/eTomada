@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "reles.h"
+#include "ntp.h"
 
 String validaHora(String hora) {
   int h, m;
@@ -47,7 +48,7 @@ String validaRegra(String regra) {
   return "";
 }
 
-String checkRegra(int numRele, struct tm timeinfo) {
+String checkRegra(int numRele) {
   Rele *rele = releGet(numRele);
   if (!rele) {
     return "Rele invalido";
@@ -64,7 +65,11 @@ String checkRegra(int numRele, struct tm timeinfo) {
 
   int tsI = hI * 60 + mI;
   int tsF = hF * 60 + mF;
+
+  struct tm timeinfo;
+  ntpGetTime(&timeinfo);
   int tsAgora = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+
   bool virouDia = tsF < tsI;
   bool estaNoIntervalo = !virouDia ?
     (tsAgora >= tsI && tsAgora <= tsF) :

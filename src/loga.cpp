@@ -2,6 +2,7 @@
 #include <stdarg.h>
 
 #include "loga.h"
+#include "ntp.h"
 
 void logaMensagem(const char* fmt, ...) {
   char msg[512];
@@ -12,9 +13,9 @@ void logaMensagem(const char* fmt, ...) {
   va_end(args);
 
   // Obter horario
-  time_t agora = time(nullptr);
   struct tm timeinfo;
-  localtime_r(&agora, &timeinfo);
+  ntpGetTime(&timeinfo);
+
   char formattedTime[32] = {0};
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
 

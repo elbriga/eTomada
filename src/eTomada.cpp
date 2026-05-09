@@ -3,6 +3,7 @@
 #include <Preferences.h>
 
 #include "reles.h"
+#include "ntp.h"
 
 // Salvar as regras na memoria FLASH
 Preferences prefs;
@@ -38,9 +39,10 @@ void eTomadaLoadConfig() {
 String eTomadaGetDataJSON() {
   JsonDocument doc;
 
-  time_t agora = time(nullptr);
+  time_t agora;
   struct tm timeinfo;
-  localtime_r(&agora, &timeinfo);
+  ntpGetTime(&timeinfo, &agora);
+  
   doc["datahora"] = (unsigned long)agora;
   char formattedTime[32];
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
