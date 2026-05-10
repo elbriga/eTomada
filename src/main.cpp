@@ -8,6 +8,7 @@
 #include "ntp.h"
 #include "http.h"
 #include "regras.h"
+#include "mutex.h"
 
 // Display OLED
 SSD1306Wire tft(I2C_DISPLAY_ADDR, SDA, SCL);
@@ -22,17 +23,7 @@ void setup() {
   esp_task_wdt_init(15, true); // true = resetar automaticamente
   esp_task_wdt_add(NULL);      // adiciona a task atual (loop)
 
-  Rele *rele;
-  int totReles = relesGetCount();
-  for(int r=1; r <= totReles; r++) {
-    rele = releGet(r);
-    if (rele->pino == -1) {
-      // Rele Desativado
-      continue;
-    }
-    pinMode(rele->pino, OUTPUT);
-    digitalWrite(rele->pino, rele->estado);
-  }
+  mutexInit();
 
   displayInit();
 
@@ -44,6 +35,18 @@ void setup() {
   }
 
   eTomadaLoadConfig();
+
+  Rele *rele;
+  int totReles = relesGetCount();
+  for(int r=1; r <= totReles; r++) {
+    rele = releGet(r);
+    if (rele->pino == -1) {
+      // Rele Desativado
+      continue;
+    }
+    pinMode(rele->pino, OUTPUT);
+    digitalWrite(rele->pino, rele->estado);
+  }
 
   tft.drawString(0, 20, "Conectando...");
   tft.display();
@@ -121,5 +124,5 @@ void loop() {
     WiFiConnect();
   }
 
-  vTaskDelay(1);
+  vTaskDelay(pdMS_TO_TICKS(10));
 }

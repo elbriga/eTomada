@@ -8,9 +8,9 @@
 
 // Valores default
 static Rele relesConfigDefault[MAX_RELES] = {
-  { 1, 15, "Luz",             "OF>02:00-07:59", 1, 0 },
+  { 1, 16, "Luz",             "OF>02:00-07:59", 1, 0 },
   { 2, 13, "Umidificador",    "ON>08:00-20:00", 1, 0 },
-  { 3, 12, "Ventilador",      "OF>01:00-02:00", 1, 0 },
+  { 3, 17, "Ventilador",      "OF>01:00-02:00", 1, 0 },
   { 4, 14, "Desumidificador", "",               1, 0 },
   { 5, -1, "", "", 0, 0 },
   { 6, -1, "", "", 0, 0 },
@@ -18,10 +18,21 @@ static Rele relesConfigDefault[MAX_RELES] = {
   { 8, -1, "", "", 0, 0 }
 };
 
+// Whitelist de pinos
+int pinosOK[] = { 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
+
 // Salvar as regras na memoria FLASH
 Preferences prefs;
 String getPrefsAtr(int num, String nomeAtr);
 String setPrefsAtr(int num, String nomeAtr, String val);
+
+bool eTomadaPinoOK(int pino) {
+  int totPinosOK = sizeof(pinosOK);
+  for (int i=0; i < totPinosOK; i++) {
+    if (pino == pinosOK[i]) return true;
+  }
+  return false;
+}
 
 void eTomadaLoadConfig() {
   Serial.println("Carregando Configuracao dos reles:");
@@ -30,7 +41,7 @@ void eTomadaLoadConfig() {
 
   // Para testes
   // prefs.putString("nome1", "Luz");
-  // prefs.putString("regra1", "OF-02:00-07:59");
+  // prefs.putString("regra1", "OF>02:00-07:59");
   // prefs.putString("pino1", "15");
 
   Rele *rele;
@@ -41,11 +52,18 @@ void eTomadaLoadConfig() {
 
     rele->num   = r;
     strncpy(rele->nome,  getPrefsAtr(r, "nome").c_str(),  sizeof(rele->nome) - 1);
-    strncpy(rele->regra, getPrefsAtr(r, "regra").c_str(), sizeof(rele->regra) - 1);
-    rele->ativo = getPrefsAtr(r, "ativo") == "1";
+    rele->nome[sizeof(rele->nome) - 1] = '\0';
+
     rele->pino  = atoi(getPrefsAtr(r, "pino").c_str());
 
-    Serial.printf("Rele %d:%d (%s) > [%s]\n", r, rele->pino, rele->nome, rele->regra);
+    strncpy(rele->regra, getPrefsAtr(r, "regra").c_str(), sizeof(rele->regra) - 1);
+    rele->regra[sizeof(rele->regra) - 1] = '\0';
+
+    rele->ativo = (validaRegra(rele->regra) == "OK" && eTomadaPinoOK(rele->pino)) ?
+      (getPrefsAtr(r, "ativo") == "1") : false;
+
+    Serial.printf("Rele %d:%d:%s (%s) > [%s]\n",
+      r, rele->pino, rele->nome, (rele->ativo ? "on" : "off"), rele->regra);
   }
 
   Serial.println("");

@@ -5,19 +5,24 @@
 #include "display.h"
 #include "reles.h"
 #include "ntp.h"
+#include "mutex.h"
 
 void processaRegras() {
-  Rele *rele;
-  int totReles = relesGetCount();
-  for (int r=1; r <= totReles; r++) {
-    rele = releGet(r);
-    if (!rele->ativo) continue;
+  if (xSemaphoreTake(releMutex, pdMS_TO_TICKS(1000))) {
+    Rele *rele;
+    int totReles = relesGetCount();
+    for (int r=1; r <= totReles; r++) {
+      rele = releGet(r);
+      if (!rele->ativo) continue;
 
-    String msg = checkRegra(r);
-    if (msg != "") {
-      logaMensagem("%s", msg.c_str());
-      displayMostraMsg(msg.c_str(), 5000);
+      String msg = checkRegra(r);
+      if (msg != "") {
+        logaMensagem("%s", msg.c_str());
+        displayMostraMsg(msg.c_str(), 5000);
+      }
     }
+
+    xSemaphoreGive(releMutex);
   }
 }
 

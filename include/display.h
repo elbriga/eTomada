@@ -1,4 +1,5 @@
 #pragma once
+
 #include <SSD1306.h>
 
 #define I2C_DISPLAY_ADDR    0x3C
