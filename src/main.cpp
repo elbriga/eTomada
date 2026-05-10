@@ -109,16 +109,25 @@ void loop() {
   struct tm timeinfo;
   ntpGetTime(&timeinfo);
 
-  if (timeinfo.tm_sec != lastSecond && displayPodeMostrar()) {
+  if (timeinfo.tm_sec != lastSecond) {
     lastSecond = timeinfo.tm_sec;
 
-    // Atualizar o relogio
-    char formattedTime[10];
-    char msgDataHora[32];
-    //strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-    strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
-    sprintf(msgDataHora, "  %s    %s", getDiaSemana(timeinfo).c_str(), formattedTime);
-    displayMostraMsg(msgDataHora);
+    if (displayPodeMostrar()) {
+      // Atualizar o relogio
+      char formattedTime[10];
+      char msgDataHora[32];
+      //strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+      strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
+      sprintf(msgDataHora, "  %s    %s", getDiaSemana(timeinfo).c_str(), formattedTime);
+      displayMostraMsg(msgDataHora);
+    }
+
+    // Verificar o WiFi
+    if (WiFi.status() != WL_CONNECTED) {
+      logaMensagem("WiFi caiu!! Reconectar...");
+      displayMostraMsg("Reconectando...", 10000);
+      WiFiConnect();
+    }
   }
 
   if (timeinfo.tm_min != lastMinute) {
@@ -131,14 +140,6 @@ void loop() {
       ntpSyncTime();
     }
   }
-
-  /*
-  if (WiFi.status() != WL_CONNECTED) {
-    logaMensagem("WiFi caiu!! Reconectar...");
-    displayMostraMsg("Reconectando...", 10000);
-    WiFiConnect();
-  }
-  */
 
   vTaskDelay(pdMS_TO_TICKS(10));
 }

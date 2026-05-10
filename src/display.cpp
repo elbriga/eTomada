@@ -3,7 +3,8 @@
 
 static unsigned long displayTimeoutMsg = 0;
 
-void displayInit() {
+void displayInit()
+{
     tft.init();
     tft.clear();
     tft.setFont(ArialMT_Plain_16);
@@ -11,19 +12,26 @@ void displayInit() {
     tft.display();
 }
 
-bool displayPodeMostrar() {
+bool displayPodeMostrar()
+{
     return displayTimeoutMsg < millis();
 }
 
-void displayMostraMsg(const char* msg, int timeout) {
-    IPAddress ip = (WiFi.getMode() == WIFI_AP) ? WiFi.softAPIP() : WiFi.localIP();
-
+void displayMostraMsg(const char* msg, int timeout)
+{
     tft.clear();
+    
     tft.drawString(30, 0, "eTomada!");
     tft.drawString(0, 20, msg);
-    tft.drawString(0, 40, ip.toString());
+    
+    IPAddress ip = (WiFi.getMode() == WIFI_AP) ? WiFi.softAPIP() : WiFi.localIP();
+    if (ip > 0) {
+        tft.drawString(0, 40, ip.toString());
+    }
+
     tft.display();
 
-    if (timeout > 0)
+    if (timeout > 0) {
         displayTimeoutMsg = millis() + timeout;
+    }
 }
