@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>eTomada Setup</title>
+    <style>
+      body {
+        background: #0f172a;
+        color: white;
+        font-family: Arial;
+        padding: 20px;
+      }
+
+      .card {
+        background: #1e293b;
+        border-radius: 10px;
+        padding: 20px;
+        max-width: 400px;
+        margin: auto;
+      }
+
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        border-radius: 6px;
+        border: none;
+        box-sizing: border-box;
+      }
+
+      button {
+        background: #2563eb;
+        color: white;
+        font-weight: bold;
+      }
+
+      .small {
+        opacity: 0.7;
+        font-size: 12px;
+      }
+    </style>
+
+    <script>
+      function setStatus(msg) {
+        const status = document.getElementById("status");
+        status.innerHTML = msg;
+      }
+
+      async function salvar() {
+        const ssid = document.getElementById("ssid").value;
+        if (!ssid) {
+          alert("Selecione uma rede");
+          return;
+        }
+        const pass = document.getElementById("pass").value;
+
+        setStatus("Salvando...");
+        try {
+          const res = await fetch("/api/setWiFiConfig", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              ssid,
+              pass,
+            }),
+          });
+
+          if (!res.ok) {
+            throw new Error();
+          }
+
+          setStatus("Configuração salva.<br>Reiniciando dispositivo...");
+        } catch (e) {
+          setStatus("Erro ao salvar configuração");
+        }
+      }
+
+      async function loadRedes() {
+        setStatus("Carregando...");
+        try {
+          const res = await fetch("/api/redes");
+          if (!res.ok) {
+            throw new Error();
+          }
+
+          const redes = await res.json();
+
+          let combo = "<select id='ssid'>";
+          combo += "<option value=''>Selecione uma rede</option>";
+          for (const rede of redes) {
+            combo += `<option value="${rede}">${rede}</option>`;
+          }
+          combo += "</select>";
+
+          document.getElementById("redeConfig").innerHTML = combo;
+
+          setStatus("Selecione a rede");
+        } catch (e) {
+          setStatus("Erro ao salvar configuração");
+        }
+      }
+
+      window.addEventListener("load", loadRedes);
+    </script>
+  </head>
+  <body>
+    <div class="card">
+      <h2>⚡ eTomada Setup</h2>
+      <div class="small">Configure sua rede WiFi</div>
+      <br />
+      Rede:
+      <div id="redeConfig">Carregando...</div>
+      <input id="pass" type="password" placeholder="Senha WiFi" />
+      <button onclick="salvar()">Conectar</button>
+      <br />
+      <br />
+      <div id="status"></div>
+    </div>
+  </body>
+</html>

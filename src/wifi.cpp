@@ -10,7 +10,8 @@
 static Preferences wifiPrefs;
 static DNSServer dnsServer;
 
-void WiFiConnect() {
+void WiFiConnect()
+{
   wifiPrefs.begin("wifi", true);
   String ssid = wifiPrefs.getString("ssid", "");
   String pass = wifiPrefs.getString("pass", "");
@@ -61,7 +62,8 @@ void WiFiConnect() {
   Serial.println(WiFi.localIP().toString());
 }
 
-String WiFiGetSSID() {
+String WiFiGetSSID()
+{
   wifiPrefs.begin("wifi", true);
 
   String ssid = wifiPrefs.getString("ssid", "");
@@ -71,7 +73,8 @@ String WiFiGetSSID() {
   return ssid;
 }
 
-void WiFiSalvaConfig(String ssid, String senha) {
+void WiFiSalvaConfig(String ssid, String senha)
+{
   wifiPrefs.begin("wifi", false);
 
   wifiPrefs.putString("ssid", ssid);
@@ -80,15 +83,23 @@ void WiFiSalvaConfig(String ssid, String senha) {
   wifiPrefs.end();
 }
 
-bool WiFiTemConfig() {
+void WiFiResetConfig()
+{
+  WiFiSalvaConfig("", "");
+}
+
+bool WiFiTemConfig()
+{
   return WiFiGetSSID() != "";
 }
 
-void WiFiLoop() {
+void WiFiLoop()
+{
   dnsServer.processNextRequest();
 }
 
-void WiFiModoAP() {
+void WiFiModoAP()
+{
   WiFi.mode(WIFI_AP);
 
   IPAddress apIP(192, 168, 4, 1);
