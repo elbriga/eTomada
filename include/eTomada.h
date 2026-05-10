@@ -3,4 +3,4 @@
 
 void eTomadaLoadConfig();
 String eTomadaGetDataJSON();
-void eTomadaSalvaRele(int numRele, Rele *rele);
+void eTomadaSalvaRele(Rele *rele);

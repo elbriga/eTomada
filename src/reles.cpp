@@ -5,18 +5,7 @@
 #include "regras.h"
 #include "eTomada.h"
 
-#define MAX_RELES 8
-static Rele reles[MAX_RELES] = {
-  // Valores default
-  { 15, 0, "Luz", "OF=02:00-07:59", 1 },
-  { 13, 0, "Umidificador", "", 0 },
-  { 12, 0, "Ventilador", "", 0 },
-  { 14, 0, "Desumidificador", "", 0 },
-  { -1, 0, "", "", 0 },
-  { -1, 0, "", "", 0 },
-  { -1, 0, "", "", 0 },
-  { -1, 0, "", "", 0 }
-};
+static Rele reles[MAX_RELES];
 
 int relesGetCount() {
   return MAX_RELES;
@@ -59,18 +48,18 @@ String relesAtualizaConfigFromJSON(uint8_t *json) {
     " regra:" + rele->regra + " pino:" + String(rele->pino) + " ativo:" + String(rele->ativo ? "1" : "0"));
   
   // Setar no prefs
-  eTomadaSalvaRele(numRele, rele);
+  eTomadaSalvaRele(rele);
 
   return "OK";
 }
 
 String releControla(int numRele, bool estado) {
-  if (numRele < 1 || numRele > MAX_RELES) {
+  Rele *rele = releGet(numRele);
+  if (!rele) {
     Serial.printf("controlaRele: numRele [%d] invalido!\n", numRele);
     return "";
   }
   
-  Rele *rele = &reles[numRele - 1];
   if (rele->pino == -1) {
     Serial.printf("controlaRele[%d]: pino invalido!\n", numRele);
     return "";
@@ -88,4 +77,3 @@ String releControla(int numRele, bool estado) {
 
   return ret;
 }
-

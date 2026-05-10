@@ -1,7 +1,10 @@
 #pragma once
 #include <Arduino.h>
 
+#define MAX_RELES 8
+
 struct Rele {
+  int num;
   int pino;
   bool estado;
   String nome;

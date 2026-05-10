@@ -5,6 +5,18 @@
 #include "reles.h"
 #include "ntp.h"
 
+// Valores default
+static Rele relesConfigDefault[MAX_RELES] = {
+  { 1, 15, 0, "Luz",             "OF>02:00-07:59", 1 },
+  { 2, 13, 0, "Umidificador",    "ON>08:00-20:00", 1 },
+  { 3, 12, 0, "Ventilador",      "OF>01:00-02:00", 1 },
+  { 4, 14, 0, "Desumidificador", "",               1 },
+  { 5, -1, 0, "", "", 0 },
+  { 6, -1, 0, "", "", 0 },
+  { 7, -1, 0, "", "", 0 },
+  { 8, -1, 0, "", "", 0 }
+};
+
 // Salvar as regras na memoria FLASH
 Preferences prefs;
 String getPrefsAtr(int num, String nomeAtr);
@@ -26,6 +38,7 @@ void eTomadaLoadConfig() {
     rele = releGet(r);
     if (!rele) continue;
 
+    rele->num   = r;
     rele->nome  = getPrefsAtr(r, "nome");
     rele->regra = getPrefsAtr(r, "regra");
     rele->ativo = getPrefsAtr(r, "ativo") == "1";
@@ -57,6 +70,7 @@ String eTomadaGetDataJSON() {
     if (!rele) continue;
 
     JsonObject r = arr.add<JsonObject>();
+    r["num"]    = rele->num;
     r["nome"]   = rele->nome;
     r["regra"]  = rele->regra;
     r["pino"]   = rele->pino;
@@ -70,18 +84,31 @@ String eTomadaGetDataJSON() {
   return out;
 }
 
-void eTomadaSalvaRele(int numRele, Rele *rele) { // TODO Rele->num
-  setPrefsAtr(numRele, "nome",  rele->nome);
-  setPrefsAtr(numRele, "regra", rele->regra);
-  setPrefsAtr(numRele, "ativo", String(rele->ativo));
+void eTomadaSalvaRele(Rele *rele) { // TODO Rele->num
+  setPrefsAtr(rele->num, "nome",  rele->nome);
+  setPrefsAtr(rele->num, "regra", rele->regra);
+  setPrefsAtr(rele->num, "ativo", String(rele->ativo));
 
-  int oldPin = atoi(setPrefsAtr(numRele, "pino",  String(rele->pino)).c_str());
+  int oldPin = atoi(setPrefsAtr(rele->num, "pino",  String(rele->pino)).c_str());
   if (rele->pino != oldPin) {
     // Desligar pino antigo
     digitalWrite(oldPin, LOW);
     // Ativar o pino novo
     pinMode(rele->pino, OUTPUT);
   }
+}
+
+void eTomadaFactoryReset() {
+
+    Preferences prefs;
+
+    prefs.begin("reles", false);
+
+    prefs.clear();
+
+    prefs.end();
+
+    ESP.restart();
 }
 
 String getPrefsAtr(int num, String nomeAtr) {
