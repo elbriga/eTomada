@@ -48,7 +48,7 @@ String validaRegra(String regra) {
   char acao[3] = {0};
   char param1[17] = {0};
   char param2[17] = {0};
-  int lidos = sscanf(regra.c_str(), "%2[^-]-%16[^-]-%16[^-]", acao, param1, param2);
+  int lidos = sscanf(regra.c_str(), "%2[^>]>%16[^-]-%16[^-]", acao, param1, param2);
   if (lidos < 3) {
     return "campos:" + String(lidos) + ":" + String(acao) + ":" + String(param1) + ":" + String(param2);
   }
@@ -87,7 +87,7 @@ String checkRegra(int numRele) {
 
   int hI=-1, mI=-1, hF=-1, mF=-1;
   char ligar[3] = {0};
-  sscanf(rele->regra.c_str(), "%2[^-]-%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
+  sscanf(rele->regra.c_str(), "%2[^>]>%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
 
   int tsI = hI * 60 + mI;
   int tsF = hF * 60 + mF;
