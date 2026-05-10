@@ -85,7 +85,7 @@ String eTomadaGetDataJSON() {
   return out;
 }
 
-void eTomadaSalvaRele(Rele *rele) { // TODO Rele->num
+void eTomadaSalvaRele(Rele *rele) {
   setPrefsAtr(rele->num, "nome",  rele->nome);
   setPrefsAtr(rele->num, "regra", rele->regra);
   setPrefsAtr(rele->num, "ativo", String(rele->ativo));
