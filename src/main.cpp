@@ -52,17 +52,19 @@ void setup() {
   tft.display();
   WiFiConnect();
 
-  Serial.print("NTP: ");
-  tft.drawString(0, 40, "Buscando Hora...");
-  tft.display();
-  ntpSyncTime();
+  if (WiFi.getMode() != WIFI_AP) {
+    Serial.print("NTP: ");
+    tft.drawString(0, 40, "Buscando Hora...");
+    tft.display();
+    ntpSyncTime();
 
-  struct tm timeinfo;
-  ntpGetTime(&timeinfo);
+    struct tm timeinfo;
+    ntpGetTime(&timeinfo);
 
-  char formattedTime[32];
-  strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-  Serial.println(formattedTime);
+    char formattedTime[32];
+    strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+    Serial.println(formattedTime);
+  }
   
   delay(100);
 
@@ -91,6 +93,14 @@ int lastMinute = -1;
 int lastSecond = -1;
 void loop() {
   esp_task_wdt_reset(); // alimenta o watchdog
+
+  if (WiFi.getMode() == WIFI_AP) {
+    WiFiLoop();
+
+    // No modo AP não processa as regras
+    vTaskDelay(pdMS_TO_TICKS(10));
+    return;
+  }
 
   struct tm timeinfo;
   ntpGetTime(&timeinfo);
