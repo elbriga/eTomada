@@ -69,14 +69,17 @@ void httpServerInit()
   } else {
     // Android
     httpServer.on("/generate_204", HTTP_GET, [](AsyncWebServerRequest *request) {
+      logaRequest(request, "Redir /");
       request->redirect("/");
     });
     // iOS
     httpServer.on("/hotspot-detect.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+      logaRequest(request, "Redir /");
       request->redirect("/");
     });
     // Windows
     httpServer.on("/connecttest.txt", HTTP_GET, [](AsyncWebServerRequest *request) {
+      logaRequest(request, "Redir /");
       request->redirect("/");
     });
 
@@ -98,6 +101,7 @@ void httpServerInit()
       }
       redes += "\n]";
 
+      logaRequest(request, "200 OK");
       request->send(200, "application/json", redes);
     });
 
@@ -106,12 +110,14 @@ void httpServerInit()
 
       DeserializationError err = deserializeJson(doc, data);
       if (err) {
+        logaRequest(request, "400 JSON Invalido");
         request->send(400, "application/json", "{\"msg\":\"json invalido\"}");
         return;
       }
 
       String ssid = doc["ssid"] | "";
       if (ssid == "") {
+        logaRequest(request, "400 SSID Invalido");
         request->send(400, "application/json", "{\"msg\":\"ssid invalido\"}");
         return;
       }
@@ -119,6 +125,7 @@ void httpServerInit()
 
       WiFiSalvaConfig(ssid, pass);
 
+      logaRequest(request, "200 OK");
       request->send(200, "application/json", "{\"msg\":\"OK\"}");
 
       delay(1000);
@@ -131,6 +138,7 @@ void httpServerInit()
 
   httpServer.onNotFound([](AsyncWebServerRequest *request) {
     if ((WiFi.getMode() == WIFI_AP)) {
+      logaRequest(request, "Redir /");
       request->redirect("/");
       return;
     }
