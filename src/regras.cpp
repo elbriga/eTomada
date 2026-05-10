@@ -1,7 +1,25 @@
 #include <Arduino.h>
 
+#include "regras.h"
+#include "loga.h"
+#include "display.h"
 #include "reles.h"
 #include "ntp.h"
+
+void processaRegras() {
+  Rele *rele;
+  int totReles = relesGetCount();
+  for (int r=1; r <= totReles; r++) {
+    rele = releGet(r);
+    if (!rele->ativo) continue;
+
+    String msg = checkRegra(r);
+    if (msg != "") {
+      logaMensagem("%s", msg.c_str());
+      displayMostraMsg(msg.c_str(), 5000);
+    }
+  }
+}
 
 String validaHora(String hora) {
   int h, m;

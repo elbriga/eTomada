@@ -3,6 +3,7 @@
 #include <Preferences.h>
 
 #include "reles.h"
+#include "regras.h"
 #include "ntp.h"
 
 // Valores default
@@ -92,23 +93,37 @@ void eTomadaSalvaRele(Rele *rele) { // TODO Rele->num
   int oldPin = atoi(setPrefsAtr(rele->num, "pino",  String(rele->pino)).c_str());
   if (rele->pino != oldPin) {
     // Desligar pino antigo
-    digitalWrite(oldPin, LOW);
+    if (oldPin != -1) {
+      digitalWrite(oldPin, LOW);
+    }
+
     // Ativar o pino novo
-    pinMode(rele->pino, OUTPUT);
+    if (rele->pino != -1) {
+      pinMode(rele->pino, OUTPUT);
+    }
   }
 }
 
 void eTomadaFactoryReset() {
-
-    Preferences prefs;
-
-    prefs.begin("reles", false);
-
     prefs.clear();
 
-    prefs.end();
+    Rele *rele;
+    int totReles = relesGetCount();
+    for (int r=1; r <= totReles; r++) {
+      rele = releGet(r);
+      // TODO nome > char[32]
+      // TODO regra > char[32]
+      // TODO memcpy
+      rele->nome   = relesConfigDefault[r - 1].nome;
+      rele->regra  = relesConfigDefault[r - 1].regra;
+      rele->pino   = relesConfigDefault[r - 1].pino;
+      rele->ativo  = relesConfigDefault[r - 1].ativo;
+      rele->estado = relesConfigDefault[r - 1].estado;
 
-    ESP.restart();
+      eTomadaSalvaRele(rele);
+    }
+
+    processaRegras();
 }
 
 String getPrefsAtr(int num, String nomeAtr) {

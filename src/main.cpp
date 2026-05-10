@@ -7,27 +7,10 @@
 #include "display.h"
 #include "ntp.h"
 #include "http.h"
-#include "reles.h"
 #include "regras.h"
 
 // Display OLED
 SSD1306Wire tft(I2C_DISPLAY_ADDR, SDA, SCL);
-
-// ==============================================================================================
-void processaRegras() {
-  Rele *rele;
-  int totReles = relesGetCount();
-  for (int r=1; r <= totReles; r++) {
-    rele = releGet(r);
-    if (!rele->ativo) continue;
-
-    String msg = checkRegra(r);
-    if (msg != "") {
-      logaMensagem("%s", msg.c_str());
-      displayMostraMsg(msg.c_str(), 5000);
-    }
-  }
-}
 
 void setup() {
   Serial.begin(115200);
@@ -81,7 +64,7 @@ void setup() {
   delay(100);
 
   if (FSOK) {
-    httpServerInit(processaRegras);
+    httpServerInit();
   }
 
   logaMensagem("Setup OK!");
