@@ -44,6 +44,12 @@ void httpServerInit()
     }
   });
 
+  httpServer.on("/api/factoryReset", HTTP_GET, [](AsyncWebServerRequest *request) {
+    eTomadaFactoryReset();
+    logaRequest(request, "200 OK");
+    request->send(200, "application/json", "{\"msg\": \"OK\"}");
+  });
+
   httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
 
   httpServer.onNotFound([](AsyncWebServerRequest *request) {

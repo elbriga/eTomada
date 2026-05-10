@@ -105,25 +105,27 @@ void eTomadaSalvaRele(Rele *rele) { // TODO Rele->num
 }
 
 void eTomadaFactoryReset() {
-    prefs.clear();
+  int totReles = relesGetCount();
 
-    Rele *rele;
-    int totReles = relesGetCount();
-    for (int r=1; r <= totReles; r++) {
-      rele = releGet(r);
-      // TODO nome > char[32]
-      // TODO regra > char[32]
-      // TODO memcpy
-      rele->nome   = relesConfigDefault[r - 1].nome;
-      rele->regra  = relesConfigDefault[r - 1].regra;
-      rele->pino   = relesConfigDefault[r - 1].pino;
-      rele->ativo  = relesConfigDefault[r - 1].ativo;
-      rele->estado = relesConfigDefault[r - 1].estado;
+  prefs.clear();
+  // TODO :: prefs.putString("totReles", String(totReles));
 
-      eTomadaSalvaRele(rele);
-    }
+  Rele *rele;
+  for (int r=1; r <= totReles; r++) {
+    rele = releGet(r);
+    // TODO nome > char[32]
+    // TODO regra > char[32]
+    // TODO memcpy
+    rele->nome   = relesConfigDefault[r - 1].nome;
+    rele->regra  = relesConfigDefault[r - 1].regra;
+    rele->pino   = relesConfigDefault[r - 1].pino;
+    rele->ativo  = relesConfigDefault[r - 1].ativo;
+    rele->estado = relesConfigDefault[r - 1].estado;
 
-    processaRegras();
+    eTomadaSalvaRele(rele);
+  }
+
+  processaRegras();
 }
 
 String getPrefsAtr(int num, String nomeAtr) {
