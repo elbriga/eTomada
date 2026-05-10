@@ -62,6 +62,8 @@ void eTomadaLoadConfig() {
     rele->ativo = (validaRegra(rele->regra) == "OK" && eTomadaPinoOK(rele->pino)) ?
       (getPrefsAtr(r, "ativo") == "1") : false;
 
+    rele->estado = 0;
+
     Serial.printf("Rele %d:%d:%s (%s) > [%s]\n",
       r, rele->pino, rele->nome, (rele->ativo ? "on" : "off"), rele->regra);
   }

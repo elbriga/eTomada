@@ -49,7 +49,7 @@ String relesAtualizaConfigFromJSON(uint8_t *json) {
   rele->regra[sizeof(rele->regra) - 1] = '\0';
 
   int novoPino = doc["pino"].isNull() ? rele->pino :atoi(doc["pino"].as<String>().c_str());
-  if (!eTomadaPinoOK(novoPino)) {
+  if (novoPino != -1 && !eTomadaPinoOK(novoPino)) {
     xSemaphoreGive(releMutex);
     return "Pino Invalido";
   }
