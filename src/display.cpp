@@ -24,10 +24,8 @@ void displayMostraMsg(const char* msg, int timeout)
     tft.drawString(30, 0, "eTomada!");
     tft.drawString(0, 20, msg);
     
-    IPAddress ip = (WiFi.getMode() == WIFI_AP) ? WiFi.softAPIP() : WiFi.localIP();
-    if (ip > 0) {
-        tft.drawString(0, 40, ip.toString());
-    }
+    IPAddress ip = WiFiGetModoAP() ? WiFi.softAPIP() : WiFi.localIP();
+    tft.drawString(0, 40, ip.toString());
 
     tft.display();
 

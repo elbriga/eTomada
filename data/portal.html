@@ -82,27 +82,38 @@
 
       async function loadRedes() {
         setStatus("Carregando...");
+
+        const select = document.getElementById("ssid");
+        select.innerHTML = "<option>Buscando redes...</option>";
         try {
           const res = await fetch("/api/redes");
           if (!res.ok) {
             throw new Error();
           }
 
-          const redes = await res.json();
+          const data = await res.json();
 
-          let combo = "<select id='ssid'>";
-          combo += "<option value=''>Selecione uma rede</option>";
-          for (const rede of redes) {
-            let ssid = escapeHtml(rede);
-            combo += `<option value="${ssid}">${ssid}</option>`;
+          if (data.scanning) {
+            select.innerHTML = "<option>Buscando redes...</option>";
+            setTimeout(loadRedes, 1000);
+            return;
           }
-          combo += "</select>";
 
-          document.getElementById("redeConfig").innerHTML = combo;
+          select.innerHTML = "";
+          data.redes.forEach((rede) => {
+            const opt = document.createElement("option");
+            opt.value = rede.ssid;
+            opt.innerText = `${rede.ssid} (${rede.rssi} dBm)`;
+            select.appendChild(opt);
+          });
+
+          if (!data.redes.length) {
+            select.innerHTML = "<option>Nenhuma rede encontrada</option>";
+          }
 
           setStatus("Selecione a rede");
         } catch (e) {
-          setStatus("Erro ao salvar configuração");
+          setStatus("Erro ao buscar redes!");
         }
       }
 
@@ -123,8 +134,7 @@
       <h2>⚡ eTomada Setup</h2>
       <div class="small">Configure sua rede WiFi</div>
       <br />
-      Rede:
-      <div id="redeConfig">Carregando...</div>
+      <select id="ssid"></select>
       <input id="pass" type="password" placeholder="Senha WiFi" />
       <button onclick="salvar()">Conectar</button>
       <br />

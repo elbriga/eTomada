@@ -13,9 +13,6 @@
 // Display OLED
 SSD1306Wire tft(I2C_DISPLAY_ADDR, SDA, SCL);
 
-// flag de config de WiFi
-bool modoAP = false;
-
 void setup() {
   Serial.begin(115200);
 
@@ -55,29 +52,19 @@ void setup() {
   tft.display();
   WiFiConnect();
 
-  modoAP = (WiFi.getMode() == WIFI_AP);
-  if (!modoAP) {
-    Serial.print("NTP: ");
+  // NTP somente no modo STA
+  if (!WiFiGetModoAP()) {
+    logaMensagem("Buscando Data/Hora");
     tft.drawString(0, 40, "Buscando Hora...");
     tft.display();
     ntpSyncTime();
-
-    struct tm timeinfo;
-    ntpGetTime(&timeinfo);
-
-    char formattedTime[32];
-    strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-    Serial.println(formattedTime);
   }
   
-  delay(100);
-
   if (FSOK) {
     httpServerInit();
   }
 
-  logaMensagem("Setup OK!");
-  Serial.println("");
+  logaMensagem("Setup OK!\n");
 }
 
 String getDiaSemana(struct tm timeinfo) {
@@ -98,7 +85,7 @@ int lastSecond = -1;
 void loop() {
   esp_task_wdt_reset(); // alimenta o watchdog
 
-  if (modoAP) {
+  if (WiFiGetModoAP()) {
     WiFiLoop();
 
     // No modo AP não processa as regras

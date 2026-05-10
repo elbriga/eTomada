@@ -30,7 +30,7 @@ void httpServerInit()
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
 #endif
 
-  if ((WiFi.getMode() != WIFI_AP)) {
+  if (!WiFiGetModoAP()) {
     httpServer.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request) {
       String out = eTomadaGetDataJSON();
       logaRequest(request, "200 OK");
@@ -84,25 +84,8 @@ void httpServerInit()
     });
 
     httpServer.on("/api/redes", HTTP_GET, [](AsyncWebServerRequest *request) {
-      int totRedes = WiFi.scanNetworks();
-      String redes = "[\n";
-      for (int i = 0; i < totRedes; i++) {
-        String ssid = WiFi.SSID(i);
-        if (!ssid.length()) {
-          continue;
-        }
-
-        //redes += "<option value=\"" + ssid + "\">" + ssid + " (" + WiFi.RSSI(i) + " dBm)</option>";
-
-        if (i > 0) {
-          redes += ",\n";
-        }
-        redes += "\"" + ssid + "\"";
-      }
-      redes += "\n]";
-
       logaRequest(request, "200 OK");
-      request->send(200, "application/json", redes);
+      request->send(200, "application/json", WiFiGetScanJSON());
     });
 
     httpServer.on("/api/setWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
@@ -137,7 +120,7 @@ void httpServerInit()
   
 
   httpServer.onNotFound([](AsyncWebServerRequest *request) {
-    if ((WiFi.getMode() == WIFI_AP)) {
+    if (WiFiGetModoAP()) {
       logaRequest(request, "Redir /");
       request->redirect("/");
       return;

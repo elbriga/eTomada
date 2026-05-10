@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <WiFi.h>
 #include <esp_task_wdt.h>
 #include <Preferences.h>
@@ -6,9 +7,15 @@
 
 #include "display.h"
 #include "wifi.h"
+#include "loga.h"
 
 static Preferences wifiPrefs;
 static DNSServer dnsServer;
+
+// Scanning
+static bool wifiScanning = false;
+static unsigned long lastWiFiScan = 0;
+static JsonDocument wifiScanDoc;
 
 void WiFiConnect()
 {
@@ -18,13 +25,13 @@ void WiFiConnect()
   wifiPrefs.end();
 
   if (ssid == "") {
-    Serial.println("Sem WiFi configurado");
+    logaMensagem("Sem WiFi configurado");
     WiFiModoAP();
     return;
   }
 
   // Connect to Wifi.
-  Serial.print("Conectando a rede [" + ssid + "]");
+  logaMensagem("Conectando a rede [%s]", ssid.c_str());
 
   // Set WiFi to station mode and disconnect from an AP if it was previously connected
   WiFi.mode(WIFI_STA);
@@ -40,13 +47,12 @@ void WiFiConnect()
     esp_task_wdt_reset(); // alimenta o watchdog
 
     if (WiFi.status() == WL_CONNECT_FAILED) {
-      Serial.println("Falha!! Cheque a configuracao!!");
-      Serial.println();
+      logaMensagem("Falha!! Cheque a configuracao!!");
       delay(5000);
     }
 
     if (millis() - start > 20000) {
-      Serial.println("Timeout WiFi");
+      logaMensagem("Timeout WiFi");
 
       WiFi.disconnect(true);
 
@@ -56,10 +62,13 @@ void WiFiConnect()
 
     delay(500);
   }
-  Serial.println("OK!");
 
-  Serial.print("Endereço IP: ");
-  Serial.println(WiFi.localIP().toString());
+  logaMensagem("Endereço IP: [%s]", WiFi.localIP().toString().c_str());
+}
+
+bool WiFiGetModoAP()
+{
+  return (WiFi.getMode() == WIFI_AP_STA);
 }
 
 String WiFiGetSSID()
@@ -93,14 +102,61 @@ bool WiFiTemConfig()
   return WiFiGetSSID() != "";
 }
 
+void WiFiScanLoop()
+{
+  if (!wifiScanning) {
+    if (millis() - lastWiFiScan > 30000) {
+      WiFiStartScan();
+    }
+    return;
+  }
+
+  int numRedes = WiFi.scanComplete();
+  if (numRedes == -1) {
+    // ainda escaneando
+    return;
+  }
+  if (numRedes < 0) {
+    wifiScanning = false;
+    wifiScanDoc.clear();
+    wifiScanDoc["scanning"] = false;
+    wifiScanDoc["coderro"]  = numRedes;
+    logaMensagem("Erro scan WiFi [%d]", numRedes);
+    return;
+  }
+
+  wifiScanDoc.clear();
+  wifiScanDoc["scanning"] = false;
+
+  JsonArray arr = wifiScanDoc["redes"].to<JsonArray>();
+  for (int i = 0; i < numRedes; i++) {
+    String ssid = WiFi.SSID(i);
+    if (!ssid.length()) {
+      continue;
+    }
+
+    JsonObject r = arr.add<JsonObject>();
+    r["ssid"] = ssid;
+    r["rssi"] = WiFi.RSSI(i);
+    r["enc"] = WiFi.encryptionType(i);
+  }
+
+  WiFi.scanDelete();
+  
+  //logaMensagem("Scan OK [%d redes]", numRedes);
+  wifiScanning = false;
+}
+
 void WiFiLoop()
 {
   dnsServer.processNextRequest();
+
+  WiFiScanLoop();
 }
 
 void WiFiModoAP()
 {
-  WiFi.mode(WIFI_AP);
+  WiFi.mode(WIFI_AP_STA);
 
   IPAddress apIP(192, 168, 4, 1);
   IPAddress netMsk(255, 255, 255, 0);
@@ -114,10 +170,35 @@ void WiFiModoAP()
   dnsServer.start(53, "*", apIP);
 
   IPAddress ip = WiFi.softAPIP();
-  Serial.println("");
-  Serial.println("=== MODO AP ===");
-  Serial.print("IP: ");
-  Serial.println(ip);
+  logaMensagem("=== MODO AP ===");
+  logaMensagem("IP: [%s]", ip.toString().c_str());
 
-  displayMostraMsg("Modo AP");
+  WiFiStartScan();
+
+  displayMostraMsg("Configure o WiFi!");
+}
+
+void WiFiStartScan()
+{
+  if (wifiScanning) {
+    return;
+  }
+
+  wifiScanDoc.clear();
+  wifiScanDoc["scanning"] = true;
+  wifiScanDoc["redes"].to<JsonArray>();
+
+  WiFi.scanDelete();
+  WiFi.scanNetworks(true);
+  
+  //logaMensagem("WiFi scan iniciado");
+
+  lastWiFiScan = millis();
+  wifiScanning = true;
+}
+
+String WiFiGetScanJSON() {
+  String out;
+  serializeJson(wifiScanDoc, out);
+  return out;
 }
