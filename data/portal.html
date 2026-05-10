@@ -93,7 +93,8 @@
           let combo = "<select id='ssid'>";
           combo += "<option value=''>Selecione uma rede</option>";
           for (const rede of redes) {
-            combo += `<option value="${rede}">${rede}</option>`;
+            let ssid = escapeHtml(rede);
+            combo += `<option value="${ssid}">${ssid}</option>`;
           }
           combo += "</select>";
 
@@ -103,6 +104,15 @@
         } catch (e) {
           setStatus("Erro ao salvar configuração");
         }
+      }
+
+      function escapeHtml(str) {
+        return str
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
       }
 
       window.addEventListener("load", loadRedes);
