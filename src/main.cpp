@@ -13,6 +13,9 @@
 // Display OLED
 SSD1306Wire tft(I2C_DISPLAY_ADDR, SDA, SCL);
 
+// flag de config de WiFi
+bool modoAP = false;
+
 void setup() {
   Serial.begin(115200);
 
@@ -52,7 +55,8 @@ void setup() {
   tft.display();
   WiFiConnect();
 
-  if (WiFi.getMode() != WIFI_AP) {
+  modoAP = (WiFi.getMode() == WIFI_AP);
+  if (!modoAP) {
     Serial.print("NTP: ");
     tft.drawString(0, 40, "Buscando Hora...");
     tft.display();
@@ -94,7 +98,7 @@ int lastSecond = -1;
 void loop() {
   esp_task_wdt_reset(); // alimenta o watchdog
 
-  if (WiFi.getMode() == WIFI_AP) {
+  if (modoAP) {
     WiFiLoop();
 
     // No modo AP não processa as regras
@@ -128,11 +132,13 @@ void loop() {
     }
   }
 
+  /*
   if (WiFi.status() != WL_CONNECTED) {
     logaMensagem("WiFi caiu!! Reconectar...");
     displayMostraMsg("Reconectando...", 10000);
     WiFiConnect();
   }
+  */
 
   vTaskDelay(pdMS_TO_TICKS(10));
 }
