@@ -76,7 +76,7 @@ String checkRegra(int numRele) {
     return "Rele invalido";
   }
 
-  if (rele->regra == "") {
+  if (!strlen(rele->regra)) {
     return "";
   }
 
@@ -87,7 +87,7 @@ String checkRegra(int numRele) {
 
   int hI=-1, mI=-1, hF=-1, mF=-1;
   char ligar[3] = {0};
-  sscanf(rele->regra.c_str(), "%2[^>]>%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
+  sscanf(rele->regra, "%2[^>]>%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
 
   int tsI = hI * 60 + mI;
   int tsF = hF * 60 + mF;

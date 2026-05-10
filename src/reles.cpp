@@ -1,9 +1,10 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
+#include "eTomada.h"
+#include "loga.h"
 #include "reles.h"
 #include "regras.h"
-#include "eTomada.h"
 
 static Rele reles[MAX_RELES];
 
@@ -33,19 +34,25 @@ String relesAtualizaConfigFromJSON(uint8_t *json) {
 
   Rele *rele = &reles[numRele - 1];
 
-  String novaRegra = doc["regra"].isNull() ? rele->regra : doc["regra"];
+  String novaRegra = doc["regra"].isNull() ? String(rele->regra) : doc["regra"].as<String>();
   String regraOK = validaRegra(novaRegra);
   if (regraOK != "OK") {
     return "Regra Invalida :: " + regraOK;
   }
 
-  rele->regra = novaRegra;
-  rele->nome  = doc["nome"].isNull()  ? rele->nome  : doc["nome"];
-  rele->pino  = doc["pino"].isNull()  ? rele->pino  : atoi(doc["pino"].as<String>().c_str());
-  rele->ativo = doc["ativo"].isNull() ? rele->ativo : (doc["ativo"] == "1" || doc["ativo"] == 1);
+  strncpy(rele->regra, novaRegra.c_str(), sizeof(rele->regra) - 1);
+  if (!doc["nome"].isNull()) {
+    strncpy(rele->nome, doc["nome"].as<String>().c_str(), sizeof(rele->nome) - 1);
+  }
+  if (!doc["pino"].isNull()) {
+    rele->pino  = atoi(doc["pino"].as<String>().c_str());
+  }
+  if (!doc["ativo"].isNull()) {
+    rele->ativo = (doc["ativo"] == "1" || doc["ativo"] == 1);
+  }
   
-  Serial.println(">> RELE " + String(numRele) + " nome:" + rele->nome +
-    " regra:" + rele->regra + " pino:" + String(rele->pino) + " ativo:" + String(rele->ativo ? "1" : "0"));
+  logaMensagem(">> RELE [%d] nome[%s] regra[%s] pino[%d] ativo[%d]",
+    numRele, rele->nome, rele->regra, rele->pino, rele->ativo);
   
   // Setar no prefs
   eTomadaSalvaRele(rele);
@@ -56,12 +63,12 @@ String relesAtualizaConfigFromJSON(uint8_t *json) {
 String releControla(int numRele, bool estado) {
   Rele *rele = releGet(numRele);
   if (!rele) {
-    Serial.printf("controlaRele: numRele [%d] invalido!\n", numRele);
+    logaMensagem("controlaRele: numRele [%d] invalido!\n", numRele);
     return "";
   }
   
   if (rele->pino == -1) {
-    Serial.printf("controlaRele[%d]: pino invalido!\n", numRele);
+    logaMensagem("controlaRele[%d]: pino invalido!\n", numRele);
     return "";
   }
 
@@ -71,7 +78,8 @@ String releControla(int numRele, bool estado) {
     rele->estado = estado;
 
     char msg[128];
-    sprintf(msg, "%s %s (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"), rele->nome.c_str(), numRele, rele->pino);
+    sprintf(msg, "%s %s (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"),
+      rele->nome, numRele, rele->pino);
     ret = msg;
   }
 

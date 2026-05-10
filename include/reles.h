@@ -6,10 +6,10 @@
 struct Rele {
   int num;
   int pino;
-  bool estado;
-  String nome;
-  String regra;
+  char nome[32];
+  char regra[32];
   bool ativo;
+  bool estado;
 };
 
 int relesGetCount();

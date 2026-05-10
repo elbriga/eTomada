@@ -8,14 +8,14 @@
 
 // Valores default
 static Rele relesConfigDefault[MAX_RELES] = {
-  { 1, 15, 0, "Luz",             "OF>02:00-07:59", 1 },
-  { 2, 13, 0, "Umidificador",    "ON>08:00-20:00", 1 },
-  { 3, 12, 0, "Ventilador",      "OF>01:00-02:00", 1 },
-  { 4, 14, 0, "Desumidificador", "",               1 },
-  { 5, -1, 0, "", "", 0 },
-  { 6, -1, 0, "", "", 0 },
-  { 7, -1, 0, "", "", 0 },
-  { 8, -1, 0, "", "", 0 }
+  { 1, 15, "Luz",             "OF>02:00-07:59", 1, 0 },
+  { 2, 13, "Umidificador",    "ON>08:00-20:00", 1, 0 },
+  { 3, 12, "Ventilador",      "OF>01:00-02:00", 1, 0 },
+  { 4, 14, "Desumidificador", "",               1, 0 },
+  { 5, -1, "", "", 0, 0 },
+  { 6, -1, "", "", 0, 0 },
+  { 7, -1, "", "", 0, 0 },
+  { 8, -1, "", "", 0, 0 }
 };
 
 // Salvar as regras na memoria FLASH
@@ -40,12 +40,12 @@ void eTomadaLoadConfig() {
     if (!rele) continue;
 
     rele->num   = r;
-    rele->nome  = getPrefsAtr(r, "nome");
-    rele->regra = getPrefsAtr(r, "regra");
+    strncpy(rele->nome,  getPrefsAtr(r, "nome").c_str(),  sizeof(rele->nome) - 1);
+    strncpy(rele->regra, getPrefsAtr(r, "regra").c_str(), sizeof(rele->regra) - 1);
     rele->ativo = getPrefsAtr(r, "ativo") == "1";
     rele->pino  = atoi(getPrefsAtr(r, "pino").c_str());
 
-    Serial.printf("Rele %d:%d (%s) > [%s]\n", r, rele->pino, rele->nome.c_str(), rele->regra.c_str());
+    Serial.printf("Rele %d:%d (%s) > [%s]\n", r, rele->pino, rele->nome, rele->regra);
   }
 
   Serial.println("");
@@ -86,8 +86,8 @@ String eTomadaGetDataJSON() {
 }
 
 void eTomadaSalvaRele(Rele *rele) {
-  setPrefsAtr(rele->num, "nome",  rele->nome);
-  setPrefsAtr(rele->num, "regra", rele->regra);
+  setPrefsAtr(rele->num, "nome",  String(rele->nome));
+  setPrefsAtr(rele->num, "regra", String(rele->regra));
   setPrefsAtr(rele->num, "ativo", String(rele->ativo));
 
   int oldPin = atoi(setPrefsAtr(rele->num, "pino",  String(rele->pino)).c_str());
@@ -113,15 +113,7 @@ void eTomadaFactoryReset() {
   Rele *rele;
   for (int r=1; r <= totReles; r++) {
     rele = releGet(r);
-    // TODO nome > char[32]
-    // TODO regra > char[32]
-    // TODO memcpy
-    rele->nome   = relesConfigDefault[r - 1].nome;
-    rele->regra  = relesConfigDefault[r - 1].regra;
-    rele->pino   = relesConfigDefault[r - 1].pino;
-    rele->ativo  = relesConfigDefault[r - 1].ativo;
-    rele->estado = relesConfigDefault[r - 1].estado;
-
+    memcpy(rele, &relesConfigDefault[r - 1], sizeof(Rele));
     eTomadaSalvaRele(rele);
   }
 
