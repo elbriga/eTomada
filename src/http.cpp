@@ -6,7 +6,6 @@
 
 // Web Server
 AsyncWebServer httpServer(80);
-static HttpConfigChangedCallback g_onConfigChanged = nullptr;
 
 void logaRequest(AsyncWebServerRequest *request, String resultado)
 {
@@ -17,10 +16,8 @@ void logaRequest(AsyncWebServerRequest *request, String resultado)
     resultado.c_str());
 }
 
-void httpServerInit(HttpConfigChangedCallback cb)
+void httpServerInit()
 {
-  g_onConfigChanged = cb;
-
   // #ifdef DEV   TODO
   //  Adicionar headers para functionar o CORS quando em DEV localhost
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
@@ -37,9 +34,8 @@ void httpServerInit(HttpConfigChangedCallback cb)
   httpServer.on("/api/setReleConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     String atzCfgOK = relesAtualizaConfigFromJSON(data);
     if (atzCfgOK == "OK") {
-      if (g_onConfigChanged) {
-          g_onConfigChanged();
-      }
+      processaRegras();
+      
       logaRequest(request, "200 OK");
       request->send(200, "application/json", "{\"msg\": \"OK\"}");
     } else {
