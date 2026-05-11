@@ -68,7 +68,8 @@ void WiFiConnect()
 
 bool WiFiGetModoAP()
 {
-  return (WiFi.getMode() == WIFI_AP_STA);
+  wifi_mode_t mode = WiFi.getMode();
+  return mode == WIFI_AP_STA || mode == WIFI_AP;
 }
 
 String WiFiGetSSID()
