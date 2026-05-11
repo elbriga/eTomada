@@ -7,10 +7,34 @@ function getRegraTXT(regra) {
   return regra;
 }
 
+async function tomadaAPI(endpoint, body = undefined, method = "GET") {
+  let httpConfig = {
+    method,
+    headers: {
+      "Content-type": "application/json; charset=UTF-8",
+    },
+  };
+  if (body != undefined) {
+    httpConfig["body"] = JSON.stringify(body);
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/${endpoint}`, httpConfig);
+    return await res.json();
+  } catch (e) {
+    alert("Erro API");
+    return { message: "erro" };
+  }
+}
+
 async function load() {
   try {
-    const res = await fetch(`${API_BASE}/api/data`);
-    const data = await res.json();
+    const data = await tomadaAPI("data");
+
+    if (!data.reles) {
+      // TODO msg de erro!
+      return;
+    }
 
     document.getElementById("datahora").innerHTML = data.datahorastr;
 
@@ -68,23 +92,31 @@ async function tomadaSalvar(numRele, btn) {
 
   document.getElementById(`tomadaCard-${numRele}`).classList.add("saving");
 
-  try {
-    await fetch(`${API_BASE}/api/setReleConfig`, {
-      method: "PUT",
-      body: JSON.stringify({
-        rele: numRele,
-        nome: document.getElementById(`nome-${numRele}`).value,
-        regra: document.getElementById(`regra-${numRele}`).value,
-      }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    });
-  } catch (e) {
-    alert("Erro ao salvar");
-    btn.disabled = false;
-    btn.innerText = "💾 Salvar";
-  }
+  await tomadaAPI(
+    "setReleConfig",
+    {
+      rele: numRele,
+      nome: document.getElementById(`nome-${numRele}`).value,
+      regra: document.getElementById(`regra-${numRele}`).value,
+    },
+    "PUT",
+  );
+
+  btn.disabled = false;
+  btn.innerText = "💾 Salvar";
+
+  load();
+}
+
+async function tomadaOverride(numRele, novoEstado) {
+  await tomadaAPI(
+    "setRele",
+    {
+      rele: numRele,
+      estado: novoEstado ? "1" : "0",
+    },
+    "PUT",
+  );
 
   load();
 }
