@@ -4,7 +4,48 @@ const API_BASE =
     : window.location.origin;
 
 function getRegraTXT(regra) {
-  return regra;
+  if (!regra || regra.trim() === "") {
+    return "Modo Manual";
+  }
+
+  regra = regra.trim();
+
+  const match = regra.match(/^([A-Z]+)([><=])(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+
+  if (!match) {
+    return regra;
+  }
+
+  const [, acao, operador, inicio, fim] = match;
+
+  let acaoTXT = acao;
+  if (acao === "ON") acaoTXT = "Ligado";
+  else if (acao === "OF") acaoTXT = "Desligado";
+
+  let operadorTXT = "";
+
+  switch (operador) {
+    case ">":
+      operadorTXT = "das";
+      break;
+
+    case "<":
+      operadorTXT = "fora do período";
+      break;
+
+    case "=":
+      operadorTXT = "exatamente das";
+      break;
+
+    default:
+      operadorTXT = "";
+  }
+
+  if (operador === "<") {
+    return `${acaoTXT} fora do período ${inicio} às ${fim}`;
+  }
+
+  return `${acaoTXT} ${operadorTXT} ${inicio} às ${fim}`;
 }
 
 async function tomadaAPI(endpoint, body = undefined, method = "GET") {
@@ -52,7 +93,7 @@ async function load() {
 
       let html = `
 <div class="title">Tomada ${numRele}: ${escapeHtml(rele.nome || "")}</div>
-<div class="small">Regra: ${getRegraTXT(rele.regra)}</div>
+<div class="medio">${getRegraTXT(rele.regra)}</div>
 <div class="small">pino: ${rele.pino}</div>
 <br>`;
       if (rele.ativo) {
