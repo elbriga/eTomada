@@ -78,11 +78,11 @@ async function tomadaAPI(
     clearTimeout(timer);
 
     if (e.name === "AbortError") {
-      alert("Timeout da conexão");
+      // TODO alert("Timeout da conexão");
       return { msg: "timeout" };
     }
 
-    alert("Erro API");
+    // TODO alert("Erro API");
     return { msg: "erro" };
   }
 }
