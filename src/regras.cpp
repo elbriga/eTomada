@@ -17,7 +17,7 @@ void processaRegras() {
 
       String msg = checkRegra(r);
       if (msg != "") {
-        logaMensagem("%s", msg.c_str());
+        logaMensagem(msg.c_str());
         displayMostraMsg(msg.c_str(), 5000);
       }
     }

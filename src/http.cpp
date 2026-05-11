@@ -37,6 +37,17 @@ void httpServerInit()
       request->send(200, "application/json", out);
     });
 
+    httpServer.on("/api/setRele", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+      String setOK = relesSetFromJSON(data);
+      if (setOK == "OK") {
+        logaRequest(request, "200 OK");
+        request->send(200, "application/json", "{\"msg\": \"OK\"}");
+      } else {
+        logaRequest(request, "400 " + setOK);
+        request->send(400, "application/json", "{\"msg\": \""+setOK+"\"}"); 
+      }
+    });
+
     httpServer.on("/api/setReleConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
       String atzCfgOK = relesAtualizaConfigFromJSON(data);
       if (atzCfgOK == "OK") {

@@ -14,7 +14,8 @@ struct Rele {
 };
 
 int relesGetCount();
-String relesAtualizaConfigFromJSON(uint8_t *json);
-
 Rele *releGet(int numRele);
 String releControla(int numRele, bool estado);
+
+String relesSetFromJSON(uint8_t *json);
+String relesAtualizaConfigFromJSON(uint8_t *json);

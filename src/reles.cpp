@@ -9,11 +9,13 @@
 
 static Rele reles[MAX_RELES];
 
-int relesGetCount() {
+int relesGetCount()
+{
   return MAX_RELES;
 }
 
-Rele *releGet(int numRele) {
+Rele *releGet(int numRele)
+{
   if (numRele < 1 || numRele > MAX_RELES) {
     return NULL;
   }
@@ -21,7 +23,31 @@ Rele *releGet(int numRele) {
   return &reles[numRele - 1];
 }
 
-String relesAtualizaConfigFromJSON(uint8_t *json) {
+String relesSetFromJSON(uint8_t *json)
+{
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, json);
+  if (err) {
+    return "JSON Invalido";
+  }
+ 
+  int numRele = doc["rele"];
+  if (numRele < 1 || numRele > MAX_RELES) {
+    return "Rele invalido";
+  }
+
+  bool estado = (doc["estado"].as<String>() == "1");
+
+  String msg = releControla(numRele, estado);
+  if (msg != "") {
+    logaMensagem(msg.c_str());
+  }
+
+  return "OK";
+}
+
+String relesAtualizaConfigFromJSON(uint8_t *json)
+{
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, json);
   if (err) {
@@ -75,7 +101,8 @@ String relesAtualizaConfigFromJSON(uint8_t *json) {
   return "OK";
 }
 
-String releControla(int numRele, bool estado) {
+String releControla(int numRele, bool estado)
+{
   Rele *rele = releGet(numRele);
   if (!rele) {
     logaMensagem("controlaRele: numRele [%d] invalido!\n", numRele);
