@@ -48,23 +48,42 @@ function getRegraTXT(regra) {
   return `${acaoTXT} ${operadorTXT} ${inicio} às ${fim}`;
 }
 
-async function tomadaAPI(endpoint, body = undefined, method = "GET") {
+async function tomadaAPI(
+  endpoint,
+  body = undefined,
+  method = "GET",
+  timeout = 5000,
+) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, timeout);
+
   let httpConfig = {
     method,
+    signal: controller.signal,
     headers: {
       "Content-type": "application/json; charset=UTF-8",
     },
   };
   if (body != undefined) {
-    httpConfig["body"] = JSON.stringify(body);
+    httpConfig.body = JSON.stringify(body);
   }
 
   try {
     const res = await fetch(`${API_BASE}/api/${endpoint}`, httpConfig);
+    clearTimeout(timer);
     return await res.json();
   } catch (e) {
+    clearTimeout(timer);
+
+    if (e.name === "AbortError") {
+      alert("Timeout da conexão");
+      return { msg: "timeout" };
+    }
+
     alert("Erro API");
-    return { message: "erro" };
+    return { msg: "erro" };
   }
 }
 
@@ -94,11 +113,14 @@ async function load() {
       let html = `
 <div class="title">Tomada ${numRele}: ${escapeHtml(rele.nome || "")}</div>
 <div class="medio">${getRegraTXT(rele.regra)}</div>
-<div class="small">pino: ${rele.pino}</div>
+<div class="small">pino: ${escapeHtml(rele.pino)}</div>
 <br>`;
       if (rele.ativo) {
         html += `
-<div class="status ${rele.estado ? "on" : "off"}">${rele.estado ? "● Ligado" : "● Desligado"}</div>
+<div class="status ${rele.estado ? "on" : "off"}">
+  ${rele.estado ? "● Ligado" : "● Desligado"}
+  ${rele.override && rele.regra != "" ? ` (Manual até ${getHoraFromTS(rele.override)})` : ""}
+</div>
 <div id="tomadaEdit-${numRele}" style="display: none">
   Nome: <input id="nome-${numRele}" value="${escapeHtml(rele.nome || "")}"><br>
   Regra: <input id="regra-${numRele}" value="${escapeHtml(rele.regra || "")}" placeholder="ON=08:00-18:00">
@@ -178,6 +200,13 @@ function escapeHtml(str) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function getHoraFromTS(ts) {
+  var date = new Date(ts * 1000);
+  var h = "0" + date.getHours();
+  var m = "0" + date.getMinutes();
+  return h.slice(-2) + ":" + m.slice(-2);
 }
 
 load();
