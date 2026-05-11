@@ -15,6 +15,9 @@ void processaRegras() {
       rele = releGet(r);
       if (!rele->ativo) continue;
 
+      // Verificar se esta em modo manual
+      if (rele->override > time(nullptr)) continue;
+
       String msg = checkRegra(r);
       if (msg != "") {
         logaMensagem(msg.c_str());

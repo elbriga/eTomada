@@ -27,7 +27,7 @@ String getPrefsAtr(int num, String nomeAtr);
 String setPrefsAtr(int num, String nomeAtr, String val);
 
 bool eTomadaPinoOK(int pino) {
-  int totPinosOK = sizeof(pinosOK);
+  int totPinosOK = sizeof(pinosOK) / sizeof(pinosOK[0]);
   for (int i=0; i < totPinosOK; i++) {
     if (pino == pinosOK[i]) return true;
   }
@@ -50,11 +50,11 @@ void eTomadaLoadConfig() {
     rele = releGet(r);
     if (!rele) continue;
 
-    rele->num   = r;
+    rele->num = r;
     strncpy(rele->nome,  getPrefsAtr(r, "nome").c_str(),  sizeof(rele->nome) - 1);
     rele->nome[sizeof(rele->nome) - 1] = '\0';
 
-    rele->pino  = atoi(getPrefsAtr(r, "pino").c_str());
+    rele->pino = atoi(getPrefsAtr(r, "pino").c_str());
 
     strncpy(rele->regra, getPrefsAtr(r, "regra").c_str(), sizeof(rele->regra) - 1);
     rele->regra[sizeof(rele->regra) - 1] = '\0';
@@ -62,7 +62,9 @@ void eTomadaLoadConfig() {
     rele->ativo = (validaRegra(rele->regra) == "OK" && eTomadaPinoOK(rele->pino)) ?
       (getPrefsAtr(r, "ativo") == "1") : false;
 
+    // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
     rele->estado = 0;
+    rele->override = 0;
 
     Serial.printf("Rele %d:%d:%s (%s) > [%s]\n",
       r, rele->pino, rele->nome, (rele->ativo ? "on" : "off"), rele->regra);
@@ -91,12 +93,13 @@ String eTomadaGetDataJSON() {
     if (!rele) continue;
 
     JsonObject r = arr.add<JsonObject>();
-    r["num"]    = rele->num;
-    r["nome"]   = rele->nome;
-    r["regra"]  = rele->regra;
-    r["pino"]   = rele->pino;
-    r["estado"] = rele->estado;
-    r["ativo"]  = rele->ativo;
+    r["num"]      = rele->num;
+    r["nome"]     = rele->nome;
+    r["regra"]    = rele->regra;
+    r["pino"]     = rele->pino;
+    r["estado"]   = rele->estado;
+    r["ativo"]    = rele->ativo;
+    r["override"] = rele->override;
   }
 
   String out;
@@ -141,8 +144,8 @@ void eTomadaFactoryReset() {
 }
 
 String getPrefsAtr(int num, String nomeAtr) {
-  char buff[10];
-  sprintf(buff, "%s%d", nomeAtr.c_str(), num);
+  char buff[32];
+  snprintf(buff, sizeof(buff), "%s%d", nomeAtr.c_str(), num);
   return prefs.isKey(buff) ? prefs.getString(buff, "") : "";
 }
 
@@ -150,8 +153,8 @@ String setPrefsAtr(int num, String nomeAtr, String val) {
   String old = getPrefsAtr(num, nomeAtr);
 
   if (val != old) {
-    char buff[10];
-    sprintf(buff, "%s%d", nomeAtr.c_str(), num);
+    char buff[32];
+    snprintf(buff, sizeof(buff), "%s%d", nomeAtr.c_str(), num);
     prefs.putString(buff, val);
   }
 

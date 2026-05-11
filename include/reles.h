@@ -11,11 +11,12 @@ struct Rele {
   char regra[32];
   bool ativo;
   bool estado;
+  unsigned long override; // TS para sobrepor o estado manual as regras
 };
 
 int relesGetCount();
 Rele *releGet(int numRele);
-String releControla(int numRele, bool estado);
+String releControla(int numRele, bool estado, int override = 0);
 
 String relesSetFromJSON(uint8_t *json);
 String relesAtualizaConfigFromJSON(uint8_t *json);

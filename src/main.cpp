@@ -105,7 +105,7 @@ void loop() {
       char msgDataHora[32];
       //strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
       strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
-      sprintf(msgDataHora, "  %s    %s", getDiaSemana(timeinfo).c_str(), formattedTime);
+      snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", getDiaSemana(timeinfo).c_str(), formattedTime);
       displayMostraMsg(msgDataHora);
     }
 

@@ -38,7 +38,7 @@ String relesSetFromJSON(uint8_t *json)
 
   bool estado = (doc["estado"].as<String>() == "1");
 
-  String msg = releControla(numRele, estado);
+  String msg = releControla(numRele, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   if (msg != "") {
     logaMensagem(msg.c_str());
   }
@@ -101,7 +101,7 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
   return "OK";
 }
 
-String releControla(int numRele, bool estado)
+String releControla(int numRele, bool estado, int override)
 {
   Rele *rele = releGet(numRele);
   if (!rele) {
@@ -119,8 +119,10 @@ String releControla(int numRele, bool estado)
     digitalWrite(rele->pino, estado);
     rele->estado = estado;
 
+    rele->override = (override > 0) ? time(nullptr) + override : 0;
+
     char msg[128];
-    sprintf(msg, "%s %s (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"),
+    snprintf(msg, sizeof(msg), "%s %s (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"),
       rele->nome, numRele, rele->pino);
     ret = msg;
   }
