@@ -87,7 +87,11 @@ async function tomadaAPI(
   }
 }
 
+let loading = false;
 async function load() {
+  if (loading) return;
+  loading = true;
+
   try {
     const data = await tomadaAPI("data");
 
@@ -146,6 +150,8 @@ async function load() {
     });
   } catch (e) {
     console.error("Erro ao carregar:", e);
+  } finally {
+    loading = false;
   }
 }
 
