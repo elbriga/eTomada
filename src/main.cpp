@@ -10,14 +10,11 @@
 #include "regras.h"
 #include "mutex.h"
 
-// Display OLED
-SSD1306Wire tft(I2C_DISPLAY_ADDR, SDA, SCL);
-
 void setup() {
   Serial.begin(115200);
 
   delay(1000);
-  logaMensagem("== eTomada ==\n");
+  logaTitulo("eTomada");
 
   // WDT : 15 segundos de timeout
   esp_task_wdt_init(15, true); // true = resetar automaticamente
@@ -29,9 +26,7 @@ void setup() {
 
   bool FSOK = !!LittleFS.begin(true);
   if (!FSOK) {
-    logaMensagem("===");
-    logaMensagem("Erro LittleFS - Desativando Servidor Web");
-    logaMensagem("===");
+    logaTitulo("Erro LittleFS - Desativando Servidor Web");
   }
 
   eTomadaLoadConfig();
@@ -48,15 +43,13 @@ void setup() {
     digitalWrite(rele->pino, rele->estado);
   }
 
-  tft.drawString(0, 20, "Conectando...");
-  tft.display();
+  displayMostraString(0, 20, "Conectando...");
   WiFiConnect();
 
   // NTP somente no modo STA
   if (!WiFiGetModoAP()) {
     logaMensagem("Buscando Data/Hora");
-    tft.drawString(0, 40, "Buscando Hora...");
-    tft.display();
+    displayMostraString(0, 40, "Buscando Hora...");
     ntpSyncTime();
   }
   
@@ -64,7 +57,7 @@ void setup() {
     httpServerInit();
   }
 
-  logaMensagem("Setup OK!\n");
+  logaTitulo("Setup OK!");
 }
 
 String getDiaSemana(struct tm timeinfo) {
@@ -111,7 +104,7 @@ void loop() {
 
     // Verificar o WiFi
     if (WiFi.status() != WL_CONNECTED) {
-      logaMensagem("WiFi caiu!! Reconectar...");
+      logaTitulo("WiFi caiu!! Reconectar...");
       displayMostraMsg("Reconectando...", 10000);
       WiFiConnect();
     }

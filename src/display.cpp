@@ -1,6 +1,9 @@
 #include "display.h"
 #include "wifi.h"
 
+// Display OLED
+SSD1306Wire tft(I2C_DISPLAY_ADDR, SDA, SCL);
+
 static unsigned long displayTimeoutMsg = 0;
 
 void displayInit()
@@ -15,6 +18,12 @@ void displayInit()
 bool displayPodeMostrar()
 {
     return displayTimeoutMsg < millis();
+}
+
+void displayMostraString(int x, int y, const char *msg)
+{
+    tft.drawString(x, y, msg);
+    tft.display();
 }
 
 void displayMostraMsg(const char* msg, int timeout)

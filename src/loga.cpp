@@ -21,3 +21,9 @@ void logaMensagem(const char* fmt, ...) {
 
   Serial.printf("[%s] %s\n", formattedTime, msg);
 }
+
+void logaTitulo(const char *msg) {
+  logaMensagem("== = ==");
+  logaMensagem("== %s ==", msg);
+  logaMensagem("== = ==");
+}
