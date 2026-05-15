@@ -29,6 +29,9 @@ footer {
   color: red;
   font-size: 20px;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .container {

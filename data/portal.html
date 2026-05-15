@@ -80,6 +80,7 @@
         }
       }
 
+      let tentativas = 0;
       async function loadRedes() {
         setStatus("Carregando...");
 
@@ -95,7 +96,11 @@
 
           if (data.scanning) {
             select.innerHTML = "<option>Buscando redes...</option>";
-            setTimeout(loadRedes, 1000);
+            if (tentativas++ < 30) {
+              setTimeout(loadRedes, 1000);
+            } else {
+              setStatus("Timeout ao buscar redes");
+            }
             return;
           }
 

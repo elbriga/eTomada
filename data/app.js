@@ -72,11 +72,13 @@ async function tomadaAPI(
 
   try {
     const res = await fetch(`${API_BASE}/api/${endpoint}`, httpConfig);
-    clearTimeout(timer);
-    return await res.json();
+    const data = await res.json();
+    return data;
   } catch (e) {
     clearTimeout(timer);
     throw e;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -84,8 +86,6 @@ let loading = false;
 async function load() {
   if (loading) return;
   loading = true;
-
-  statusMsg("LOAD!");
 
   try {
     const data = await tomadaAPI("data");
@@ -120,6 +120,7 @@ async function load() {
   ${rele.estado ? "● Ligado" : "● Desligado"}
   ${rele.override && rele.regra != "" ? ` (Manual até ${getHoraFromTS(rele.override)})` : ""}
 </div>
+
 <div id="tomadaEdit-${numRele}" style="display: none">
   Nome: <input id="nome-${numRele}" value="${escapeHtml(rele.nome || "")}"><br>
   Regra: <input id="regra-${numRele}" value="${escapeHtml(rele.regra || "")}" placeholder="ON=08:00-18:00">
@@ -127,6 +128,7 @@ async function load() {
   <br><br>
   <button onclick="tomadaToggleEdit(${numRele}, false)">❌ Cancelar</button>
 </div>
+
 <div id="tomadaView-${numRele}">
   <button onclick="tomadaOverride(${numRele}, ${rele.estado ? "false" : "true"})">
     ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
