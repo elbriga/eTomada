@@ -23,9 +23,8 @@ static Rele relesConfigDefault[MAX_RELES] = {
 int pinosOK[] = { 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
 
 // Salvar as regras na memoria FLASH
-Preferences prefs;
-String getPrefsAtr(int num, String nomeAtr);
-String setPrefsAtr(int num, String nomeAtr, String val);
+String getPrefsAtr(Preferences prefs, int num, String nomeAtr);
+String setPrefsAtr(Preferences prefs, int num, String nomeAtr, String val);
 
 bool eTomadaPinoOK(int pino) {
   int totPinosOK = sizeof(pinosOK) / sizeof(pinosOK[0]);
@@ -36,6 +35,8 @@ bool eTomadaPinoOK(int pino) {
 }
 
 void eTomadaLoadConfig() {
+  Preferences prefs;
+
   Serial.println("Carregando Configuracao dos reles:");
 
   prefs.begin("reles", true);
@@ -52,16 +53,16 @@ void eTomadaLoadConfig() {
     if (!rele) continue;
 
     rele->num = r;
-    strncpy(rele->nome,  getPrefsAtr(r, "nome").c_str(),  sizeof(rele->nome) - 1);
+    strncpy(rele->nome,  getPrefsAtr(prefs, r, "nome").c_str(),  sizeof(rele->nome) - 1);
     rele->nome[sizeof(rele->nome) - 1] = '\0';
 
-    rele->pino = atoi(getPrefsAtr(r, "pino").c_str());
+    rele->pino = atoi(getPrefsAtr(prefs, r, "pino").c_str());
 
-    strncpy(rele->regra, getPrefsAtr(r, "regra").c_str(), sizeof(rele->regra) - 1);
+    strncpy(rele->regra, getPrefsAtr(prefs, r, "regra").c_str(), sizeof(rele->regra) - 1);
     rele->regra[sizeof(rele->regra) - 1] = '\0';
 
     rele->ativo = (validaRegra(rele->regra) == "OK" && eTomadaPinoOK(rele->pino)) ?
-      (getPrefsAtr(r, "ativo") == "1") : false;
+      (getPrefsAtr(prefs, r, "ativo") == "1") : false;
 
     // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
     rele->estado = 0;
@@ -92,24 +93,27 @@ String eTomadaGetDataJSON() {
   int totReles = relesGetCount();
   JsonArray arr = doc["reles"].to<JsonArray>();
 
-  if (!xSemaphoreTake(releMutex, pdMS_TO_TICKS(2500))) {
-    for (int i = 1; i <= totReles; i++) {
-      rele = releGet(i);
-      if (!rele) continue;
+  {
+    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
 
-      JsonObject r = arr.add<JsonObject>();
-      r["num"]      = rele->num;
-      r["nome"]     = rele->nome;
-      r["regra"]    = rele->regra;
-      r["pino"]     = rele->pino;
-      r["estado"]   = rele->estado;
-      r["ativo"]    = rele->ativo;
-      r["override"] = rele->override;
+    if (!lock) {
+      doc["erro"] = "mutex timeout";
+    } else {
+      for (int i = 1; i <= totReles; i++) {
+        rele = releGet(i);
+        if (!rele) continue;
+
+        JsonObject r = arr.add<JsonObject>();
+        r["num"]      = rele->num;
+        r["nome"]     = rele->nome;
+        r["regra"]    = rele->regra;
+        r["pino"]     = rele->pino;
+        r["estado"]   = rele->estado;
+        r["ativo"]    = rele->ativo;
+        r["override"] = rele->override;
+      }
     }
-  } else {
-    doc["erro"] = "mutex timeout";
   }
-  xSemaphoreGive(releMutex);
 
   String out;
   serializeJson(doc, out);
@@ -118,13 +122,15 @@ String eTomadaGetDataJSON() {
 }
 
 void eTomadaSalvaRele(Rele *rele) {
+  Preferences prefs;
+
   prefs.begin("reles", false);
   
-  setPrefsAtr(rele->num, "nome",  String(rele->nome));
-  setPrefsAtr(rele->num, "regra", String(rele->regra));
-  setPrefsAtr(rele->num, "ativo", String(rele->ativo));
+  setPrefsAtr(prefs, rele->num, "nome",  String(rele->nome));
+  setPrefsAtr(prefs, rele->num, "regra", String(rele->regra));
+  setPrefsAtr(prefs, rele->num, "ativo", String(rele->ativo));
 
-  int oldPin = atoi(setPrefsAtr(rele->num, "pino",  String(rele->pino)).c_str());
+  int oldPin = atoi(setPrefsAtr(prefs, rele->num, "pino",  String(rele->pino)).c_str());
   if (rele->pino != oldPin) {
     // Desligar pino antigo
     if (oldPin != -1) {
@@ -142,9 +148,12 @@ void eTomadaSalvaRele(Rele *rele) {
 
 void eTomadaFactoryReset() {
   int totReles = relesGetCount();
-
+  
+  Preferences prefs;
+  prefs.begin("reles", false);
   prefs.clear();
   // TODO :: prefs.putString("totReles", String(totReles));
+  prefs.end();
 
   Rele *rele;
   for (int r=1; r <= totReles; r++) {
@@ -156,14 +165,14 @@ void eTomadaFactoryReset() {
   processaRegras();
 }
 
-String getPrefsAtr(int num, String nomeAtr) {
+String getPrefsAtr(Preferences prefs, int num, String nomeAtr) {
   char buff[32];
   snprintf(buff, sizeof(buff), "%s%d", nomeAtr.c_str(), num);
   return prefs.isKey(buff) ? prefs.getString(buff, "") : "";
 }
 
-String setPrefsAtr(int num, String nomeAtr, String val) {
-  String old = getPrefsAtr(num, nomeAtr);
+String setPrefsAtr(Preferences prefs, int num, String nomeAtr, String val) {
+  String old = getPrefsAtr(prefs, num, nomeAtr);
 
   if (val != old) {
     char buff[32];
