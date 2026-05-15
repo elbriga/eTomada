@@ -112,5 +112,5 @@ String checkRegra(int numRele) {
   bool acaoEhLigar = !strncmp(ligar, "ON", 2);
   if (!acaoEhLigar) estaNoIntervalo = !estaNoIntervalo;
 
-  return releControla(numRele, estaNoIntervalo);
+  return releControlaUnsafe(numRele, estaNoIntervalo);
 }

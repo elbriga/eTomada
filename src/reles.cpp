@@ -103,6 +103,19 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
 
 String releControla(int numRele, bool estado, int override)
 {
+    if (!xSemaphoreTake(releMutex, pdMS_TO_TICKS(1000))) {
+      return "mutex timeout";
+    }
+
+    String ret = releControlaUnsafe(numRele, estado, override);
+
+    xSemaphoreGive(releMutex);
+
+    return ret;
+}
+
+String releControlaUnsafe(int numRele, bool estado, int override)
+{
   Rele *rele = releGet(numRele);
   if (!rele) {
     logaMensagem("controlaRele: numRele [%d] invalido!\n", numRele);

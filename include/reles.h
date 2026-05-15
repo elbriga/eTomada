@@ -16,6 +16,8 @@ struct Rele {
 
 int relesGetCount();
 Rele *releGet(int numRele);
+
+String releControlaUnsafe(int numRele, bool estado, int override = 0);
 String releControla(int numRele, bool estado, int override = 0);
 
 String relesSetFromJSON(uint8_t *json);
