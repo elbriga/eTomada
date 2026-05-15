@@ -37,7 +37,7 @@ bool eTomadaPinoOK(int pino) {
 void eTomadaLoadConfig() {
   Serial.println("Carregando Configuracao dos reles:");
 
-  prefs.begin("reles", false);
+  prefs.begin("reles", true);
 
   // Para testes
   // prefs.putString("nome1", "Luz");
@@ -69,6 +69,8 @@ void eTomadaLoadConfig() {
     Serial.printf("Rele %d:%d:%s (%s) > [%s]\n",
       r, rele->pino, rele->nome, (rele->ativo ? "on" : "off"), rele->regra);
   }
+
+  prefs.end();
 
   Serial.println("");
 }
@@ -109,6 +111,8 @@ String eTomadaGetDataJSON() {
 }
 
 void eTomadaSalvaRele(Rele *rele) {
+  prefs.begin("reles", false);
+  
   setPrefsAtr(rele->num, "nome",  String(rele->nome));
   setPrefsAtr(rele->num, "regra", String(rele->regra));
   setPrefsAtr(rele->num, "ativo", String(rele->ativo));
@@ -125,6 +129,8 @@ void eTomadaSalvaRele(Rele *rele) {
       pinMode(rele->pino, OUTPUT);
     }
   }
+
+  prefs.end();
 }
 
 void eTomadaFactoryReset() {
