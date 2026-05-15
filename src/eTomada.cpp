@@ -23,8 +23,8 @@ static Rele relesConfigDefault[MAX_RELES] = {
 int pinosOK[] = { 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
 
 // Salvar as regras na memoria FLASH
-String getPrefsAtr(Preferences prefs, int num, String nomeAtr);
-String setPrefsAtr(Preferences prefs, int num, String nomeAtr, String val);
+String getPrefsAtr(Preferences &prefs, int num, String nomeAtr);
+String setPrefsAtr(Preferences &prefs, int num, String nomeAtr, String val);
 
 bool eTomadaPinoOK(int pino) {
   int totPinosOK = sizeof(pinosOK) / sizeof(pinosOK[0]);
@@ -39,12 +39,13 @@ void eTomadaLoadConfig() {
 
   Serial.println("Carregando Configuracao dos reles:");
 
-  prefs.begin("reles", true);
+  prefs.begin("reles", false);
 
   // Para testes
   // prefs.putString("nome1", "Luz");
   // prefs.putString("regra1", "OF>02:00-07:59");
-  // prefs.putString("pino1", "15");
+  // prefs.putString("pino1", "16");
+  // prefs.putString("ativo1", "1");
 
   Rele *rele;
   int totReles = relesGetCount();
@@ -79,6 +80,7 @@ void eTomadaLoadConfig() {
 
 String eTomadaGetDataJSON() {
   JsonDocument doc;
+  doc["api"] = 1; // versão da API
 
   time_t agora;
   struct tm timeinfo;
@@ -124,6 +126,12 @@ String eTomadaGetDataJSON() {
 void eTomadaSalvaRele(Rele *rele) {
   Preferences prefs;
 
+  MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
+  if (!lock) {
+    // TODO msg
+    return;
+  }
+
   prefs.begin("reles", false);
   
   setPrefsAtr(prefs, rele->num, "nome",  String(rele->nome));
@@ -149,11 +157,19 @@ void eTomadaSalvaRele(Rele *rele) {
 void eTomadaFactoryReset() {
   int totReles = relesGetCount();
   
-  Preferences prefs;
-  prefs.begin("reles", false);
-  prefs.clear();
-  // TODO :: prefs.putString("totReles", String(totReles));
-  prefs.end();
+  {
+    MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
+    if (!lock) {
+      // TODO msg
+      return;
+    }
+
+    Preferences prefs;
+    prefs.begin("reles", false);
+    prefs.clear();
+    // TODO :: prefs.putString("totReles", String(totReles));
+    prefs.end();
+  }
 
   Rele *rele;
   for (int r=1; r <= totReles; r++) {
@@ -165,13 +181,13 @@ void eTomadaFactoryReset() {
   processaRegras();
 }
 
-String getPrefsAtr(Preferences prefs, int num, String nomeAtr) {
+String getPrefsAtr(Preferences &prefs, int num, String nomeAtr) {
   char buff[32];
   snprintf(buff, sizeof(buff), "%s%d", nomeAtr.c_str(), num);
   return prefs.isKey(buff) ? prefs.getString(buff, "") : "";
 }
 
-String setPrefsAtr(Preferences prefs, int num, String nomeAtr, String val) {
+String setPrefsAtr(Preferences &prefs, int num, String nomeAtr, String val) {
   String old = getPrefsAtr(prefs, num, nomeAtr);
 
   if (val != old) {

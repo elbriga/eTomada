@@ -72,18 +72,33 @@ async function tomadaAPI(
 
   try {
     const res = await fetch(`${API_BASE}/api/${endpoint}`, httpConfig);
+    if (!res.ok) {
+      let erro = `HTTP ${res.status}`;
+
+      try {
+        const body = await res.json();
+        if (body.msg) erro = body.msg;
+      } catch {}
+
+      throw new Error(erro);
+    }
+
     const data = await res.json();
     return data;
-  } catch (e) {
-    clearTimeout(timer);
-    throw e;
   } finally {
     clearTimeout(timer);
   }
 }
 
 let loading = false;
+let editingTomada = null;
+
 async function load() {
+  if (editingTomada !== null) {
+    statusMsg("Reload desligado ao editar");
+    return;
+  }
+
   if (loading) return;
   loading = true;
 
@@ -118,19 +133,19 @@ async function load() {
         html += `
 <div class="status ${rele.estado ? "on" : "off"}">
   ${rele.estado ? "● Ligado" : "● Desligado"}
-  ${rele.override && rele.regra != "" ? ` (Manual até ${getHoraFromTS(rele.override)})` : ""}
+  ${rele.override > Date.now() / 1000 && rele.regra != "" ? ` (Manual até ${getHoraFromTS(rele.override)})` : ""}
 </div>
 
 <div id="tomadaEdit-${numRele}" style="display: none">
   Nome: <input id="nome-${numRele}" value="${escapeHtml(rele.nome || "")}"><br>
-  Regra: <input id="regra-${numRele}" value="${escapeHtml(rele.regra || "")}" placeholder="ON=08:00-18:00">
+  Regra: <input id="regra-${numRele}" value="${escapeHtml(rele.regra || "")}" placeholder="ON=08:00-18:00" maxlength="31">
   <button onclick="tomadaSalvar(${numRele}, this)">💾 Salvar</button>
   <br><br>
   <button onclick="tomadaToggleEdit(${numRele}, false)">❌ Cancelar</button>
 </div>
 
 <div id="tomadaView-${numRele}">
-  <button onclick="tomadaOverride(${numRele}, ${rele.estado ? "false" : "true"})">
+  <button onclick="tomadaOverride(${numRele}, ${rele.estado ? "false" : "true"}, this)">
     ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
   </button>
   <br><br>
@@ -172,13 +187,14 @@ async function tomadaSalvar(numRele, btn) {
     statusMsg("Erro ao salvar: " + e);
   }
 
-  btn.disabled = false;
-  btn.innerText = "💾 Salvar";
-
+  // load recria o HTML com o botão habilitado
   load();
 }
 
-async function tomadaOverride(numRele, novoEstado) {
+async function tomadaOverride(numRele, novoEstado, btn) {
+  btn.innerText = "Processando...";
+  btn.disabled = true;
+
   try {
     await tomadaAPI(
       "setRele",
@@ -192,10 +208,12 @@ async function tomadaOverride(numRele, novoEstado) {
     statusMsg("Erro ao setar: " + e);
   }
 
+  // load recria o HTML com o botão habilitado
   load();
 }
 
 function tomadaToggleEdit(id, editing) {
+  editingTomada = editing ? id : null;
   document.getElementById(`tomadaEdit-${id}`).style.display = editing
     ? "block"
     : "none";

@@ -23,7 +23,7 @@ void logaMensagem(const char* fmt, ...) {
 }
 
 void logaTitulo(const char *msg) {
-  logaMensagem("== = ==");
+  logaMensagem("====");
   logaMensagem("== %s ==", msg);
-  logaMensagem("== = ==");
+  logaMensagem("====");
 }

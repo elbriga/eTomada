@@ -59,41 +59,48 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
     return "Rele invalido";
   }
 
-  MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
-  if (!lock) {
-    return "mutex timeout";
-  }
+  Rele releCopy;
+  {
+    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
+    if (!lock) {
+      return "mutex timeout";
+    }
 
-  Rele *rele = &reles[numRele - 1];
+    Rele *rele = &reles[numRele - 1];
 
-  String novaRegra = doc["regra"].isNull() ? String(rele->regra) : doc["regra"].as<String>();
-  String regraOK = validaRegra(novaRegra);
-  if (regraOK != "OK") {
-    return "Regra Invalida :: " + regraOK;
-  }
-  strncpy(rele->regra, novaRegra.c_str(), sizeof(rele->regra) - 1);
-  rele->regra[sizeof(rele->regra) - 1] = '\0';
+    String novaRegra = doc["regra"].isNull() ? String(rele->regra) : doc["regra"].as<String>();
+    String regraOK = validaRegra(novaRegra);
+    if (regraOK != "OK") {
+      return "Regra Invalida :: " + regraOK;
+    }
+    strncpy(rele->regra, novaRegra.c_str(), sizeof(rele->regra) - 1);
+    rele->regra[sizeof(rele->regra) - 1] = '\0';
 
-  int novoPino = doc["pino"].isNull() ? rele->pino :atoi(doc["pino"].as<String>().c_str());
-  if (novoPino != -1 && !eTomadaPinoOK(novoPino)) {
-    return "Pino Invalido";
-  }
-  rele->pino = novoPino;
+    int novoPino = doc["pino"].isNull() ? rele->pino :atoi(doc["pino"].as<String>().c_str());
+    if (novoPino != -1 && !eTomadaPinoOK(novoPino)) {
+      return "Pino Invalido";
+    }
+    rele->pino = novoPino;
 
-  if (!doc["nome"].isNull()) {
-    strncpy(rele->nome, doc["nome"].as<String>().c_str(), sizeof(rele->nome) - 1);
-    rele->nome[sizeof(rele->nome) - 1] = '\0';
-  }
+    if (!doc["nome"].isNull()) {
+      strncpy(rele->nome, doc["nome"].as<String>().c_str(), sizeof(rele->nome) - 1);
+      rele->nome[sizeof(rele->nome) - 1] = '\0';
+    }
 
-  if (!doc["ativo"].isNull()) {
-    rele->ativo = (doc["ativo"] == "1" || doc["ativo"] == 1);
+    if (!doc["ativo"].isNull()) {
+      rele->ativo = (doc["ativo"] == "1" || doc["ativo"] == 1);
+    }
+
+    memcpy(&releCopy, rele, sizeof(Rele));
   }
   
   logaMensagem(">> RELE [%d] nome[%s] regra[%s] pino[%d] ativo[%d]",
-    numRele, rele->nome, rele->regra, rele->pino, rele->ativo);
+    numRele, releCopy.nome, releCopy.regra, releCopy.pino, releCopy.ativo);
   
   // Setar no prefs
-  eTomadaSalvaRele(rele);
+  eTomadaSalvaRele(&releCopy);
+
+  return "OK";
 }
 
 String releControla(int numRele, bool estado, int override)
@@ -106,6 +113,7 @@ String releControla(int numRele, bool estado, int override)
   return releControlaUnsafe(numRele, estado, override);
 }
 
+// REQUIRE releMutex locked
 String releControlaUnsafe(int numRele, bool estado, int override)
 {
   Rele *rele = releGet(numRele);
