@@ -13,9 +13,22 @@ header {
   font-weight: bold;
 }
 
+footer {
+  text-align: right;
+  padding: 10px;
+  background: #1e293b;
+  font-weight: bold;
+}
+
 #datahora {
   font-size: 14px;
   margin-top: 5px;
+}
+
+#status {
+  color: red;
+  font-size: 20px;
+  font-weight: bold;
 }
 
 .container {

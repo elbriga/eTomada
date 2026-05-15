@@ -76,14 +76,7 @@ async function tomadaAPI(
     return await res.json();
   } catch (e) {
     clearTimeout(timer);
-
-    if (e.name === "AbortError") {
-      // TODO alert("Timeout da conexão");
-      return { msg: "timeout" };
-    }
-
-    // TODO alert("Erro API");
-    return { msg: "erro" };
+    throw e;
   }
 }
 
@@ -91,6 +84,8 @@ let loading = false;
 async function load() {
   if (loading) return;
   loading = true;
+
+  statusMsg("LOAD!");
 
   try {
     const data = await tomadaAPI("data");
@@ -149,7 +144,7 @@ async function load() {
       container.appendChild(card);
     });
   } catch (e) {
-    console.error("Erro ao carregar:", e);
+    statusMsg("Erro ao carregar: " + e);
   } finally {
     loading = false;
   }
@@ -161,15 +156,19 @@ async function tomadaSalvar(numRele, btn) {
 
   document.getElementById(`tomadaCard-${numRele}`).classList.add("saving");
 
-  await tomadaAPI(
-    "setReleConfig",
-    {
-      rele: numRele,
-      nome: document.getElementById(`nome-${numRele}`).value,
-      regra: document.getElementById(`regra-${numRele}`).value,
-    },
-    "PUT",
-  );
+  try {
+    await tomadaAPI(
+      "setReleConfig",
+      {
+        rele: numRele,
+        nome: document.getElementById(`nome-${numRele}`).value,
+        regra: document.getElementById(`regra-${numRele}`).value,
+      },
+      "PUT",
+    );
+  } catch (e) {
+    statusMsg("Erro ao salvar: " + e);
+  }
 
   btn.disabled = false;
   btn.innerText = "💾 Salvar";
@@ -178,14 +177,18 @@ async function tomadaSalvar(numRele, btn) {
 }
 
 async function tomadaOverride(numRele, novoEstado) {
-  await tomadaAPI(
-    "setRele",
-    {
-      rele: numRele,
-      estado: novoEstado ? "1" : "0",
-    },
-    "PUT",
-  );
+  try {
+    await tomadaAPI(
+      "setRele",
+      {
+        rele: numRele,
+        estado: novoEstado ? "1" : "0",
+      },
+      "PUT",
+    );
+  } catch (e) {
+    statusMsg("Erro ao setar: " + e);
+  }
 
   load();
 }
@@ -215,4 +218,6 @@ function getHoraFromTS(ts) {
   return h.slice(-2) + ":" + m.slice(-2);
 }
 
-load();
+function statusMsg(msg) {
+  document.getElementById("status").innerHTML = msg;
+}
