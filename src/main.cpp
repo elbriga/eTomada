@@ -17,7 +17,7 @@ void setup() {
   Serial.begin(115200);
 
   delay(1000);
-  Serial.println("\n== eTomada ==\n");
+  logaMensagem("== eTomada ==\n");
 
   // WDT : 15 segundos de timeout
   esp_task_wdt_init(15, true); // true = resetar automaticamente
@@ -29,9 +29,9 @@ void setup() {
 
   bool FSOK = !!LittleFS.begin(true);
   if (!FSOK) {
-    Serial.println("===");
-    Serial.println("Erro LittleFS - Desativando Servidor Web");
-    Serial.println("===");
+    logaMensagem("===");
+    logaMensagem("Erro LittleFS - Desativando Servidor Web");
+    logaMensagem("===");
   }
 
   eTomadaLoadConfig();
