@@ -8,6 +8,7 @@
 #include "mutex.h"
 
 void processaRegras() {
+  String msg, msgDisplay = "";
   if (xSemaphoreTake(releMutex, pdMS_TO_TICKS(1000))) {
     Rele *rele;
     int totReles = relesGetCount();
@@ -18,14 +19,17 @@ void processaRegras() {
       // Verificar se esta em modo manual
       if (rele->override > time(nullptr)) continue;
 
-      String msg = checkRegra(r);
+      msg = checkRegra(r);
       if (msg != "") {
         logaMensagem(msg.c_str());
-        displayMostraMsg(msg.c_str(), 5000);
+        msgDisplay = msg; // Mostra no display a ultima msg
       }
     }
 
     xSemaphoreGive(releMutex);
+  }
+  if (msgDisplay != "") {
+    displayMostraMsg(msgDisplay.c_str(), 5000);
   }
 }
 

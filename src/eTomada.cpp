@@ -5,6 +5,7 @@
 #include "reles.h"
 #include "regras.h"
 #include "ntp.h"
+#include "mutex.h"
 
 // Valores default
 static Rele relesConfigDefault[MAX_RELES] = {
@@ -90,19 +91,25 @@ String eTomadaGetDataJSON() {
   Rele *rele;
   int totReles = relesGetCount();
   JsonArray arr = doc["reles"].to<JsonArray>();
-  for (int i = 1; i <= totReles; i++) {
-    rele = releGet(i);
-    if (!rele) continue;
 
-    JsonObject r = arr.add<JsonObject>();
-    r["num"]      = rele->num;
-    r["nome"]     = rele->nome;
-    r["regra"]    = rele->regra;
-    r["pino"]     = rele->pino;
-    r["estado"]   = rele->estado;
-    r["ativo"]    = rele->ativo;
-    r["override"] = rele->override;
+  if (!xSemaphoreTake(releMutex, pdMS_TO_TICKS(2500))) {
+    for (int i = 1; i <= totReles; i++) {
+      rele = releGet(i);
+      if (!rele) continue;
+
+      JsonObject r = arr.add<JsonObject>();
+      r["num"]      = rele->num;
+      r["nome"]     = rele->nome;
+      r["regra"]    = rele->regra;
+      r["pino"]     = rele->pino;
+      r["estado"]   = rele->estado;
+      r["ativo"]    = rele->ativo;
+      r["override"] = rele->override;
+    }
+  } else {
+    doc["erro"] = "mutex timeout";
   }
+  xSemaphoreGive(releMutex);
 
   String out;
   serializeJson(doc, out);
