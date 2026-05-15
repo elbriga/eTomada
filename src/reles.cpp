@@ -59,7 +59,8 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
     return "Rele invalido";
   }
 
-  if (!xSemaphoreTake(releMutex, pdMS_TO_TICKS(1000))) {
+  MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
+  if (!lock) {
     return "mutex timeout";
   }
 
@@ -68,7 +69,6 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
   String novaRegra = doc["regra"].isNull() ? String(rele->regra) : doc["regra"].as<String>();
   String regraOK = validaRegra(novaRegra);
   if (regraOK != "OK") {
-    xSemaphoreGive(releMutex);
     return "Regra Invalida :: " + regraOK;
   }
   strncpy(rele->regra, novaRegra.c_str(), sizeof(rele->regra) - 1);
@@ -76,7 +76,6 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
 
   int novoPino = doc["pino"].isNull() ? rele->pino :atoi(doc["pino"].as<String>().c_str());
   if (novoPino != -1 && !eTomadaPinoOK(novoPino)) {
-    xSemaphoreGive(releMutex);
     return "Pino Invalido";
   }
   rele->pino = novoPino;
@@ -95,23 +94,16 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
   
   // Setar no prefs
   eTomadaSalvaRele(rele);
-
-  xSemaphoreGive(releMutex);
-
-  return "OK";
 }
 
 String releControla(int numRele, bool estado, int override)
 {
-    if (!xSemaphoreTake(releMutex, pdMS_TO_TICKS(1000))) {
-      return "mutex timeout";
-    }
+  MutexLock lock(releMutex);
+  if (!lock) {
+    return "releControla: mutex timeout";
+  }
 
-    String ret = releControlaUnsafe(numRele, estado, override);
-
-    xSemaphoreGive(releMutex);
-
-    return ret;
+  return releControlaUnsafe(numRele, estado, override);
 }
 
 String releControlaUnsafe(int numRele, bool estado, int override)

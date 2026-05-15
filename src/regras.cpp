@@ -9,25 +9,30 @@
 
 void processaRegras() {
   String msg, msgDisplay = "";
-  if (xSemaphoreTake(releMutex, pdMS_TO_TICKS(1000))) {
-    Rele *rele;
-    int totReles = relesGetCount();
-    for (int r=1; r <= totReles; r++) {
-      rele = releGet(r);
-      if (!rele->ativo) continue;
+  {
+    MutexLock lock(releMutex);
 
-      // Verificar se esta em modo manual
-      if (rele->override > time(nullptr)) continue;
+    if (!lock) {
+      logaMensagem("processaRegras: erro mutex");
+    } else {
+      Rele *rele;
+      int totReles = relesGetCount();
+      for (int r=1; r <= totReles; r++) {
+        rele = releGet(r);
+        if (!rele->ativo) continue;
 
-      msg = checkRegra(r);
-      if (msg != "") {
-        logaMensagem(msg.c_str());
-        msgDisplay = msg; // Mostra no display a ultima msg
+        // Verificar se esta em modo manual
+        if (rele->override > time(nullptr)) continue;
+
+        msg = checkRegra(r);
+        if (msg != "") {
+          logaMensagem(msg.c_str());
+          msgDisplay = msg; // Mostra no display a ultima msg
+        }
       }
     }
-
-    xSemaphoreGive(releMutex);
   }
+
   if (msgDisplay != "") {
     displayMostraMsg(msgDisplay.c_str(), 5000);
   }
