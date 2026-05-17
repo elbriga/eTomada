@@ -6,6 +6,7 @@
 #include "reles.h"
 #include "regras.h"
 #include "mutex.h"
+#include "display.h"
 
 static Rele reles[MAX_RELES];
 
@@ -40,7 +41,8 @@ String relesSetFromJSON(uint8_t *json)
 
   String msg = releControla(numRele, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   if (msg != "") {
-    logaMensagem(msg.c_str());
+    // logaMensagem(msg.c_str());
+    displayMostraMsg(msg.c_str(), 5000);
   }
 
   return "OK";
