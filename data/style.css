@@ -53,7 +53,7 @@ footer {
 }
 
 .title {
-  font-size: 18px;
+  font-size: 28px;
 }
 
 .status {
@@ -95,4 +95,84 @@ button:hover {
 .small {
   font-size: 12px;
   opacity: 0.7;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.configBtn {
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  padding: 0;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: 0.2s;
+}
+
+.overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.sidePanel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+
+  width: 350px;
+  max-width: 100%;
+  height: 100%;
+
+  background: #1e293b;
+
+  padding: 20px;
+  box-sizing: border-box;
+
+  transition: right 0.2s;
+
+  overflow-y: auto;
+
+  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.sidePanel.open {
+  right: 0;
+}
+
+.sideHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 22px;
+  font-weight: bold;
+
+  margin-bottom: 20px;
+}
+
+.sideHeader button {
+  width: 15%;
+}
+
+.configCard {
+  background: #0f172a;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.configCard span {
+  display: flex;
 }

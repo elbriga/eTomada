@@ -12,10 +12,14 @@
 
   <body>
     <header>
-      ⚡ eTomada <br />
-      <div id="status"></div>
-      <br />
-      <button onclick="load()" style="width: 120px">🔄 Reload</button>
+      <div class="headerTop">
+        <div>
+          ⚡ eTomada <br />
+          <div id="status"></div>
+          <button onclick="load()" style="width: 120px">🔄 Reload</button>
+        </div>
+        <button class="configBtn" onclick="openConfig()">⚙️</button>
+      </div>
     </header>
 
     <div class="container" id="reles"></div>
@@ -23,5 +27,16 @@
     <footer>
       <div id="datahora">--</div>
     </footer>
+
+    <div id="configOverlay" class="overlay" onclick="closeConfig()"></div>
+    <div id="configPanel" class="sidePanel">
+      <div class="sideHeader">
+        <div>⚙️</div>
+        <button onclick="closeConfig()">✖</button>
+      </div>
+      <div id="configContent"></div>
+      <br />
+      <button onclick="salvarConfigGeral()">💾 Salvar Configuração</button>
+    </div>
   </body>
 </html>

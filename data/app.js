@@ -3,6 +3,8 @@ const API_BASE =
     ? "http://192.168.18.105" // IP do ESP quando o frontend esta hospedado para DEV
     : window.location.origin;
 
+let configData = null;
+
 function getRegraTXT(regra) {
   if (!regra || regra.trim() === "") {
     return "Modo Manual";
@@ -94,6 +96,8 @@ let loading = false;
 let editingTomada = null;
 
 async function load() {
+  statusMsg("");
+
   if (editingTomada !== null) {
     statusMsg("Reload desligado ao editar");
     return;
@@ -116,6 +120,7 @@ async function load() {
     container.innerHTML = "";
 
     data.reles.forEach((rele, i) => {
+      if (!rele.ativo) return;
       if (!rele.nome) rele.nome = "---";
 
       let numRele = i + 1;
@@ -125,12 +130,12 @@ async function load() {
       card.className = "card";
 
       let html = `
-<div class="title">Tomada ${numRele}: ${escapeHtml(rele.nome || "")}</div>
+<div class="medio">Tomada ${numRele}</div>
+<div class="title">${escapeHtml(rele.nome || "")}</div>
 <div class="medio">${getRegraTXT(rele.regra)}</div>
 <div class="small">pino: ${escapeHtml(rele.pino)}</div>
-<br>`;
-      if (rele.ativo) {
-        html += `
+<br>
+
 <div class="status ${rele.estado ? "on" : "off"}">
   ${rele.estado ? "● Ligado" : "● Desligado"}
   ${rele.override > Date.now() / 1000 && rele.regra != "" ? ` (Manual até ${getHoraFromTS(rele.override)})` : ""}
@@ -152,10 +157,6 @@ async function load() {
   <button onclick="tomadaToggleEdit(${numRele}, true)">✏️ Editar</button>
 </div>
 `;
-      } else {
-        html += `
-<div class="status off">● Desativado</div>`;
-      }
 
       card.innerHTML = html;
       container.appendChild(card);
@@ -220,6 +221,102 @@ function tomadaToggleEdit(id, editing) {
   document.getElementById(`tomadaView-${id}`).style.display = !editing
     ? "block"
     : "none";
+}
+
+async function openConfig() {
+  document.getElementById("configPanel").classList.add("open");
+  document.getElementById("configOverlay").classList.add("open");
+
+  try {
+    const data = await tomadaAPI("data");
+
+    configData = data;
+
+    renderConfig();
+  } catch (e) {
+    statusMsg("Erro config: " + e);
+  }
+}
+
+function closeConfig() {
+  document.getElementById("configPanel").classList.remove("open");
+  document.getElementById("configOverlay").classList.remove("open");
+}
+
+function renderConfig() {
+  const container = document.getElementById("configContent");
+
+  let html = "";
+
+  configData.reles.forEach((rele, i) => {
+    const num = i + 1;
+
+    html += `
+<div class="configCard">
+  <div class="headerTop">
+    <div><b>Tomada ${num}</b></div>
+    <span>
+      <select id="cfg-pino-${num}">
+        ${getPinosOptions(rele.pino)}
+      </select>
+    </span>
+  </div>
+</div>
+`;
+  });
+
+  container.innerHTML = html;
+}
+
+function getPinosOptions(selected) {
+  const pinos = [13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33];
+
+  return (
+    `<option value="-1">Desativada!</option>\n` +
+    pinos
+      .map((p) => {
+        return `
+<option value="${p}" ${p == selected ? "selected" : ""}>
+  GPIO ${p}
+</option>
+`;
+      })
+      .join("")
+  );
+}
+
+async function salvarConfigGeral() {
+  try {
+    await Promise.all(
+      configData.reles.map(async (old, i) => {
+        const rele = i + 1;
+        const pino = parseInt(
+          document.getElementById(`cfg-pino-${rele}`).value,
+        );
+        const ativo = pino != -1;
+
+        if (old.ativo != ativo || old.pino != pino) {
+          await tomadaAPI(
+            "setReleConfig",
+            {
+              rele,
+              ativo,
+              pino,
+            },
+            "PUT",
+          );
+        }
+      }),
+    );
+
+    statusMsg("Configuração salva");
+
+    closeConfig();
+
+    load();
+  } catch (e) {
+    statusMsg("Erro config: " + e);
+  }
 }
 
 function escapeHtml(str) {
