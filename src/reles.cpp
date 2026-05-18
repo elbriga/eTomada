@@ -48,6 +48,7 @@ String relesSetFromJSON(uint8_t *json)
   return "OK";
 }
 
+// TODO :: reescrever para receber um array de reles ao iinves de um só
 String relesAtualizaConfigFromJSON(uint8_t *json)
 {
   JsonDocument doc;
