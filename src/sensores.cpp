@@ -18,21 +18,3 @@ SensorConfig *sensorGet(int numSensor) {
 
   return &sensores[numSensor - 1];
 }
-
-
-// ==========================
-void sensorTemperaturaLer(SensorConfig *self, char *out, int outLen) {
-  snprintf(out, outLen, "25 C");
-}
-void sensorUmidadeLer(SensorConfig *self, char *out, int outLen) {
-  snprintf(out, outLen, "80%");
-}
-void sensorLUXLer(SensorConfig *self, char *out, int outLen) {
-  snprintf(out, outLen, "33");
-}
-
-Sensor sensoresDisponiveis[3] = {
-  { temperatura, "Temperatura", sensorTemperaturaLer },
-  { umidade, "Umidade", sensorUmidadeLer },
-  { lux, "LUX", sensorLUXLer },
-};

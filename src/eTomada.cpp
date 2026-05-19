@@ -4,6 +4,7 @@
 
 #include "reles.h"
 #include "regras.h"
+#include "tipoSensores.h"
 #include "ntp.h"
 #include "mutex.h"
 
@@ -118,12 +119,26 @@ String eTomadaGetDataJSON() {
   }
 
   JsonArray sensores = doc["sensores"].to<JsonArray>();
-  JsonObject r = sensores.add<JsonObject>();
-        r["num"]   = 1;
-        r["ativo"] = true;
-        r["nome"]  = "Temperatura";
-        r["valor"] = "10o C";
-        r["pino"]  = "1";
+  JsonObject s = sensores.add<JsonObject>();
+  s["num"]   = 1;
+  s["ativo"] = true;
+  s["nome"]  = "Temperatura";
+  s["valor"] = "10o C";
+  s["pino"]  = "1";
+  
+  TipoSensor *ts;
+  int totTS = tipoSensorGetCount();
+  JsonArray tipoSensores = doc["tiposensores"].to<JsonArray>();
+  for (SensorType tipo = SENSORTIPO_temperatura;
+     tipo < SENSORTIPO_MAX;
+     tipo = (SensorType)(tipo + 1)) {
+    ts = tipoSensorGet(tipo);
+    if (!ts) continue;
+
+    JsonObject t = tipoSensores.add<JsonObject>();
+    t["num"]  = tipo;
+    t["nome"] = ts->nome;
+  }
 
   String out;
   serializeJson(doc, out);
