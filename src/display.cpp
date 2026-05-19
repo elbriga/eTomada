@@ -1,5 +1,6 @@
 #include "display.h"
 #include "wifi.h"
+#include "loga.h"
 
 #ifdef TEM_OLED
 
@@ -32,7 +33,7 @@ void displayMostraString(int x, int y, const char *msg)
     tft.display();
 }
 
-void displayMostraMsg(const char* msg, int timeout)
+void displayMostraMsg(const char* msg, int timeout, bool loga)
 {
     tft.clear();
 
@@ -50,13 +51,17 @@ void displayMostraMsg(const char* msg, int timeout)
     if (timeout > 0) {
         displayTimeoutMsg = millis() + timeout;
     }
+
+    if (loga) {
+        logaMensagem("[DISPLAY][%s]", msg);
+    }
 }
 
 #else
 
 void displayInit()
 {
-    Serial.println("[DISPLAY] OLED desabilitado");
+    logaMensagem("[DISPLAY] OLED desabilitado");
 }
 
 bool displayPodeMostrar()
@@ -66,18 +71,12 @@ bool displayPodeMostrar()
 
 void displayMostraString(int x, int y, const char *msg)
 {
-    Serial.printf("[DISPLAY] (%d,%d): %s\n", x, y, msg);
+    logaMensagem("[DISPLAY] (%d,%d): %s", x, y, msg);
 }
 
 void displayMostraMsg(const char* msg, int timeout)
 {
-    Serial.printf("[DISPLAY] %s\n", msg);
-
-    IPAddress ip = WiFiGetModoAP()
-        ? WiFi.softAPIP()
-        : WiFi.localIP();
-
-    Serial.printf("[DISPLAY] IP: %s\n", ip.toString().c_str());
+    logaMensagem("[DISPLAY] %s", msg);
 }
 
 #endif

@@ -93,7 +93,7 @@ String eTomadaGetDataJSON() {
 
   Rele *rele;
   int totReles = relesGetCount();
-  JsonArray arr = doc["reles"].to<JsonArray>();
+  JsonArray reles = doc["reles"].to<JsonArray>();
 
   {
     MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
@@ -105,7 +105,7 @@ String eTomadaGetDataJSON() {
         rele = releGet(i);
         if (!rele) continue;
 
-        JsonObject r = arr.add<JsonObject>();
+        JsonObject r = reles.add<JsonObject>();
         r["num"]      = rele->num;
         r["nome"]     = rele->nome;
         r["regra"]    = rele->regra;
@@ -116,6 +116,14 @@ String eTomadaGetDataJSON() {
       }
     }
   }
+
+  JsonArray sensores = doc["sensores"].to<JsonArray>();
+  JsonObject r = sensores.add<JsonObject>();
+        r["num"]   = 1;
+        r["ativo"] = true;
+        r["nome"]  = "Temperatura";
+        r["valor"] = "10o C";
+        r["pino"]  = "1";
 
   String out;
   serializeJson(doc, out);

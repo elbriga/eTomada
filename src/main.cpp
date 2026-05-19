@@ -9,6 +9,7 @@
 #include "http.h"
 #include "regras.h"
 #include "mutex.h"
+#include "sensores.h"
 
 void setup() {
   Serial.begin(115200);
@@ -75,6 +76,7 @@ String getDiaSemana(struct tm timeinfo) {
 
 int lastMinute = -1;
 int lastSecond = -1;
+int last10Second = -1;
 void loop() {
   esp_task_wdt_reset(); // alimenta o watchdog
 
@@ -89,8 +91,18 @@ void loop() {
   struct tm timeinfo;
   ntpGetTime(&timeinfo);
 
+  // 1s/1s
   if (timeinfo.tm_sec != lastSecond) {
     lastSecond = timeinfo.tm_sec;
+
+    // 10s/10s
+    if ((int)(timeinfo.tm_sec / 10) != last10Second) {
+      last10Second = timeinfo.tm_sec / 10;
+
+      sensoresAtualiza();
+
+      processaRegras();
+    }
 
     if (displayPodeMostrar()) {
       // Atualizar o relogio
@@ -99,7 +111,7 @@ void loop() {
       //strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
       strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
       snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", getDiaSemana(timeinfo).c_str(), formattedTime);
-      displayMostraMsg(msgDataHora);
+      displayMostraMsg(msgDataHora, 0, false);
     }
 
     // Verificar o WiFi
@@ -110,10 +122,9 @@ void loop() {
     }
   }
 
+  // 1m/1m
   if (timeinfo.tm_min != lastMinute) {
     lastMinute = timeinfo.tm_min;
-
-    processaRegras();
 
     if (timeinfo.tm_hour == 0 && timeinfo.tm_min == 0) {
       // Ao mudar de dia - sync NTP de novo

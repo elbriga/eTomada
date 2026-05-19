@@ -109,27 +109,43 @@ async function load() {
   try {
     const data = await tomadaAPI("data");
 
-    if (!data.reles) {
+    if (!data.reles || !data.sensores) {
       // TODO msg de erro!
       return;
     }
 
     document.getElementById("datahora").innerHTML = data.datahorastr;
 
-    const container = document.getElementById("reles");
-    container.innerHTML = "";
+    renderReles(data.reles);
 
-    data.reles.forEach((rele, i) => {
-      if (!rele.ativo) return;
-      if (!rele.nome) rele.nome = "---";
+    let sensores = [
+      { num: 1, ativo: 1, nome: "Temperatura", valor: "10o C", pino: 1 },
+      { num: 2, ativo: 1, nome: "Umidade", valor: "80%", pino: 2 },
+      { num: 3, ativo: 1, nome: "LUX", valor: "230", pino: 3 },
+    ];
+    renderSensores(sensores);
+  } catch (e) {
+    statusMsg("Erro ao carregar: " + e);
+  } finally {
+    loading = false;
+  }
+}
 
-      let numRele = i + 1;
+function renderReles(reles) {
+  const container = document.getElementById("reles");
+  container.innerHTML = "";
 
-      const card = document.createElement("div");
-      card.id = "tomadaCard-" + numRele;
-      card.className = "card";
+  reles.forEach((rele, i) => {
+    if (!rele.ativo) return;
+    if (!rele.nome) rele.nome = "---";
 
-      let html = `
+    let numRele = rele.num;
+
+    const card = document.createElement("div");
+    card.id = "tomadaCard-" + numRele;
+    card.className = "card cardRele";
+
+    let html = `
 <div class="medio">Tomada ${numRele}</div>
 <div class="title">${escapeHtml(rele.nome || "")}</div>
 <div class="medio">${getRegraTXT(rele.regra)}</div>
@@ -158,14 +174,48 @@ async function load() {
 </div>
 `;
 
-      card.innerHTML = html;
-      container.appendChild(card);
-    });
-  } catch (e) {
-    statusMsg("Erro ao carregar: " + e);
-  } finally {
-    loading = false;
-  }
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+
+function renderSensores(sensores) {
+  const container = document.getElementById("sensores");
+  container.innerHTML = "";
+
+  sensores.forEach((sensor, i) => {
+    if (!sensor.ativo) return;
+    if (!sensor.nome) sensor.nome = "---";
+
+    let numSensor = sensor.num;
+
+    const card = document.createElement("div");
+    card.id = "sensorCard-" + numSensor;
+    card.className = "card cardSensor";
+
+    let html = `
+<div class="medio">Sensor ${numSensor}</div>
+<div class="title">${escapeHtml(sensor.nome || "")}</div>
+<div class="small">pino: ${escapeHtml(sensor.pino)}</div>
+<br>
+
+<div class="status on">${sensor.valor}</div>
+
+<div id="sensorEdit-${numSensor}" style="display: none">
+  Nome: <input id="nomeSensor-${numSensor}" value="${escapeHtml(sensor.nome || "")}"><br>
+  <button onclick="sensorSalvar(${numSensor}, this)">💾 Salvar</button>
+  <br><br>
+  <button onclick="sensorToggleEdit(${numSensor}, false)">❌ Cancelar</button>
+</div>
+
+<div id="sensorView-${numSensor}">
+  <button onclick="sensorToggleEdit(${numSensor}, true)">✏️ Editar</button>
+</div>
+`;
+
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
 }
 
 async function tomadaSalvar(numRele, btn) {

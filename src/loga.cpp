@@ -19,7 +19,7 @@ void logaMensagem(const char* fmt, ...) {
   char formattedTime[32] = {0};
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
 
-  Serial.printf("[%s] %s\n", formattedTime, msg);
+  Serial.printf("[%s][%d] %s\n", formattedTime, millis(), msg);
 }
 
 void logaTitulo(const char *msg) {
