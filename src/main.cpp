@@ -55,6 +55,7 @@ void setup() {
   }
   
   if (FSOK) {
+    // TODO :: Iniciar o server assim que conectar, mostrar INICIALIZANDO
     httpServerInit();
   }
 

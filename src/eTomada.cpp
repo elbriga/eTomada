@@ -7,12 +7,13 @@
 #include "tipoSensores.h"
 #include "ntp.h"
 #include "mutex.h"
+#include "loga.h"
 
 // Valores default
 static Rele relesConfigDefault[MAX_RELES] = {
-  { 1, 16, "Luz",             "OF>02:00-07:59", 1, 0 },
-  { 2, 13, "Umidificador",    "ON>08:00-20:00", 1, 0 },
-  { 3, 17, "Ventilador",      "OF>01:00-02:00", 1, 0 },
+  { 1, 16, "Luz",             "OF|02:00|07:59", 1, 0 },
+  { 2, 13, "Umidificador",    "ON|08:00|20:00", 1, 0 },
+  { 3, 17, "Ventilador",      "SE|S1>20|S1<10", 1, 0 },
   { 4, 14, "Desumidificador", "",               1, 0 },
   { 5, -1, "", "", 0, 0 },
   { 6, -1, "", "", 0, 0 },
@@ -38,13 +39,13 @@ bool eTomadaPinoOK(int pino) {
 void eTomadaLoadConfig() {
   Preferences prefs;
 
-  Serial.println("Carregando Configuracao dos reles:");
+  logaMensagem("Carregando Configuracao dos reles:");
 
   prefs.begin("reles", false);
 
   // Para testes
   // prefs.putString("nome1", "Luz");
-  // prefs.putString("regra1", "OF>02:00-07:59");
+  // prefs.putString("regra1", "OF|02:00|07:59");
   // prefs.putString("pino1", "16");
   // prefs.putString("ativo1", "1");
 
@@ -63,14 +64,22 @@ void eTomadaLoadConfig() {
     strncpy(rele->regra, getPrefsAtr(prefs, r, "regra").c_str(), sizeof(rele->regra) - 1);
     rele->regra[sizeof(rele->regra) - 1] = '\0';
 
-    rele->ativo = (validaRegra(rele->regra) == "OK" && eTomadaPinoOK(rele->pino)) ?
+    String regraOK = validaRegra(rele->regra);
+    if (regraOK != "OK") {
+      logaMensagem("Regra [%s] INVALIDA! [%s] Desativando Rele[%d]", rele->regra, regraOK.c_str(), r);
+    }
+    bool pinoOK = eTomadaPinoOK(rele->pino);
+    if (!pinoOK && rele->pino != -1) {
+      logaMensagem("Pino [%d] INVALIDO! Desativando Rele[%d]", rele->pino, r);
+    }
+    rele->ativo = (regraOK == "OK" && pinoOK) ?
       (getPrefsAtr(prefs, r, "ativo") == "1") : false;
 
     // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
     rele->estado = 0;
     rele->override = 0;
 
-    Serial.printf("Rele %d:%d:%s (%s) > [%s]\n",
+    logaMensagem("Rele %d:%d:%s (%s) > [%s]",
       r, rele->pino, rele->nome, (rele->ativo ? "on" : "off"), rele->regra);
   }
 

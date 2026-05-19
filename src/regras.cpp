@@ -65,7 +65,7 @@ String validaRegra(String regra) {
   char acao[3] = {0};
   char param1[17] = {0};
   char param2[17] = {0};
-  int lidos = sscanf(regra.c_str(), "%2[^>]>%16[^-]-%16[^-]", acao, param1, param2);
+  int lidos = sscanf(regra.c_str(), "%2[^|]|%16[^|]|%16[^|]", acao, param1, param2);
   if (lidos < 3) {
     return "campos:" + String(lidos) + ":" + String(acao) + ":" + String(param1) + ":" + String(param2);
   }
@@ -80,6 +80,8 @@ String validaRegra(String regra) {
     if (hOK != "") {
       return "hF:" + hOK;
     }
+  } else if (!strncmp(acao, "SE", 2)) {
+    // TODO validar param1 e 2 - ex: "S1>20" = sensor 1 > 20
   } else {
     return "acao";
   }
@@ -102,24 +104,38 @@ String checkRegra(int numRele) {
     return "Regra[" + String(numRele) + "] Invalida:" + regraOK;
   }
 
-  int hI=-1, mI=-1, hF=-1, mF=-1;
-  char ligar[3] = {0};
-  sscanf(rele->regra, "%2[^>]>%d:%d-%d:%d", ligar, &hI, &mI, &hF, &mF);
+  bool ligaRele = false;
+  char acao[3] = { rele->regra[0], rele->regra[1], 0 };
 
-  int tsI = hI * 60 + mI;
-  int tsF = hF * 60 + mF;
+  if (!strcmp(acao, "ON") || !strcmp(acao, "OF")) {
+    int hI=-1, mI=-1, hF=-1, mF=-1;
+    char ligar[3] = {0};
+    sscanf(rele->regra, "%2[^|]|%d:%d|%d:%d", ligar, &hI, &mI, &hF, &mF);
 
-  struct tm timeinfo;
-  ntpGetTime(&timeinfo);
-  int tsAgora = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+    int tsI = hI * 60 + mI;
+    int tsF = hF * 60 + mF;
 
-  bool virouDia = tsF < tsI;
-  bool estaNoIntervalo = !virouDia ?
-    (tsAgora >= tsI && tsAgora <= tsF) :
-    (tsAgora >= tsI || tsAgora <= tsF);
+    struct tm timeinfo;
+    ntpGetTime(&timeinfo);
+    int tsAgora = timeinfo.tm_hour * 60 + timeinfo.tm_min;
 
-  bool acaoEhLigar = !strncmp(ligar, "ON", 2);
-  if (!acaoEhLigar) estaNoIntervalo = !estaNoIntervalo;
+    bool virouDia = tsF < tsI;
+    bool estaNoIntervalo = !virouDia ?
+      (tsAgora >= tsI && tsAgora <= tsF) :
+      (tsAgora >= tsI || tsAgora <= tsF);
 
-  return releControlaUnsafe(numRele, estaNoIntervalo);
+    bool acaoEhLigar = !strncmp(ligar, "ON", 2);
+    if (!acaoEhLigar) estaNoIntervalo = !estaNoIntervalo;
+    ligaRele = estaNoIntervalo;
+  } else if (!strcmp(acao, "SE")) {
+    char se[3] = {0}, condLiga[32] = {0}, condDesliga[32] = {0};
+    sscanf(rele->regra, "%2[^|]|%31[^|]|%31s", se, condLiga, condDesliga);
+
+    ligaRele = true;
+logaMensagem("SE[%s] :::: [%s] [%s]", se, condLiga, condDesliga);
+  } else {
+    return "Acao invalida";
+  }
+
+  return releControlaUnsafe(numRele, ligaRele);
 }

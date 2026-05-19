@@ -12,42 +12,27 @@ function getRegraTXT(regra) {
 
   regra = regra.trim();
 
-  const match = regra.match(/^([A-Z]+)([><=])(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+  const [acao, param1, param2] = regra.split("|");
 
-  if (!match) {
-    return regra;
+  if (acao === "ON" || acao === "OF") {
+    return (
+      (acao === "ON" ? "Ligado" : "Desligado") +
+      " das " +
+      param1 +
+      " às " +
+      param2
+    );
   }
 
-  const [, acao, operador, inicio, fim] = match;
-
-  let acaoTXT = acao;
-  if (acao === "ON") acaoTXT = "Ligado";
-  else if (acao === "OF") acaoTXT = "Desligado";
-
-  let operadorTXT = "";
-
-  switch (operador) {
-    case ">":
-      operadorTXT = "das";
-      break;
-
-    case "<":
-      operadorTXT = "fora do período";
-      break;
-
-    case "=":
-      operadorTXT = "exatamente das";
-      break;
-
-    default:
-      operadorTXT = "";
+  if (acao === "SE") {
+    return (
+      (param1 !== "" ? `Ligar SE ${param1}` : "") +
+      (param1 !== "" && param2 != "" ? "<br>\n" : "") +
+      (param2 !== "" ? `Desligar SE ${param2}` : "")
+    );
   }
 
-  if (operador === "<") {
-    return `${acaoTXT} fora do período ${inicio} às ${fim}`;
-  }
-
-  return `${acaoTXT} ${operadorTXT} ${inicio} às ${fim}`;
+  return "??" + regra;
 }
 
 async function tomadaAPI(
@@ -413,17 +398,23 @@ function getHoraFromTS(ts) {
 function formataTempo(millis) {
   const secs = Math.floor(millis / 1000);
 
-  const horas = Math.floor(secs / 3600);
+  const dias = Math.floor(secs / 86400);
+  const horas = Math.floor((secs % 86400) / 3600);
   const minutos = Math.floor((secs % 3600) / 60);
   const segundos = secs % 60;
 
-  return (
+  const tempo =
     String(horas).padStart(2, "0") +
     ":" +
     String(minutos).padStart(2, "0") +
     ":" +
-    String(segundos).padStart(2, "0")
-  );
+    String(segundos).padStart(2, "0");
+
+  if (dias > 0) {
+    return `${dias}d ${tempo}`;
+  }
+
+  return tempo;
 }
 
 function statusMsg(msg) {
