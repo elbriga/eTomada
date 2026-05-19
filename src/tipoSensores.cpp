@@ -1,9 +1,9 @@
 #include "sensores.h"
 #include "tipoSensores.h"
 
-void sensorTemperaturaLer(SensorConfig *self, char *out, int outLen);
-void sensorUmidadeLer(SensorConfig *self, char *out, int outLen);
-void sensorLUXLer(SensorConfig *self, char *out, int outLen);
+void sensorTemperaturaLer(Sensor *self, char *out, int outLen);
+void sensorUmidadeLer(Sensor *self, char *out, int outLen);
+void sensorLUXLer(Sensor *self, char *out, int outLen);
 
 static TipoSensor sensoresDisponiveis[3] = {
   { SENSORTIPO_temperatura, "Temperatura", sensorTemperaturaLer },
@@ -12,15 +12,15 @@ static TipoSensor sensoresDisponiveis[3] = {
 };
 
 
-void sensorTemperaturaLer(SensorConfig *self, char *out, int outLen) {
+void sensorTemperaturaLer(Sensor *self, char *out, int outLen) {
   snprintf(out, outLen, "25 C");
 }
 
-void sensorUmidadeLer(SensorConfig *self, char *out, int outLen) {
+void sensorUmidadeLer(Sensor *self, char *out, int outLen) {
   snprintf(out, outLen, "80%");
 }
 
-void sensorLUXLer(SensorConfig *self, char *out, int outLen) {
+void sensorLUXLer(Sensor *self, char *out, int outLen) {
   snprintf(out, outLen, "33");
 }
 

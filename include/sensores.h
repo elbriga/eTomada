@@ -4,7 +4,7 @@
 
 #define MAX_SENSORES 4
 
-struct SensorConfig {
+struct Sensor {
     int num;
     bool ativo;
     int pino;

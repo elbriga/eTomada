@@ -3,6 +3,7 @@
 #include "sensores.h"
 
 enum SensorType {
+    SENSORTIPO_DESATIVADO,
     SENSORTIPO_temperatura,
     SENSORTIPO_umidade,
     SENSORTIPO_lux,
@@ -12,7 +13,7 @@ enum SensorType {
 struct TipoSensor {
     SensorType tipo;
     char nome[32];
-    void (*ler)(SensorConfig *self, char *out, int outLen);
+    void (*ler)(Sensor *self, char *out, int outLen);
 };
 
 int tipoSensorGetCount();

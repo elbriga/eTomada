@@ -114,16 +114,11 @@ async function load() {
       return;
     }
 
-    document.getElementById("datahora").innerHTML = data.datahorastr;
+    document.getElementById("datahora").innerHTML =
+      "uptime: " + formataTempo(data.uptime) + " - " + data.datahorastr;
 
     renderReles(data.reles);
-
-    let sensores = [
-      { num: 1, ativo: 1, nome: "Temperatura", valor: "10o C", pino: 1 },
-      { num: 2, ativo: 1, nome: "Umidade", valor: "80%", pino: 2 },
-      { num: 3, ativo: 1, nome: "LUX", valor: "230", pino: 3 },
-    ];
-    renderSensores(sensores);
+    renderSensores(data.sensores);
   } catch (e) {
     statusMsg("Erro ao carregar: " + e);
   } finally {
@@ -184,7 +179,7 @@ function renderSensores(sensores) {
   container.innerHTML = "";
 
   sensores.forEach((sensor, i) => {
-    if (!sensor.ativo) return;
+    if (!sensor.tipo) return;
     if (!sensor.nome) sensor.nome = "---";
 
     let numSensor = sensor.num;
@@ -278,13 +273,11 @@ async function openConfig() {
   document.getElementById("configOverlay").classList.add("open");
 
   try {
-    const data = await tomadaAPI("data");
-
-    configData = data;
-
+    configData = await tomadaAPI("data");
     renderConfig();
   } catch (e) {
-    statusMsg("Erro config: " + e);
+    statusMsg("Erro openConfig: " + e);
+    throw e;
   }
 }
 
@@ -302,12 +295,29 @@ function renderConfig() {
     const num = i + 1;
 
     html += `
-<div class="configCard">
+<div class="configCard cardRele">
   <div class="headerTop">
     <div><b>Tomada ${num}</b></div>
     <span>
       <select id="cfg-pino-${num}">
         ${getPinosOptions(rele.pino)}
+      </select>
+    </span>
+  </div>
+</div>
+`;
+  });
+
+  configData.sensores.forEach((sensor, i) => {
+    const num = i + 1;
+
+    html += `
+<div class="configCard cardSensor">
+  <div class="headerTop">
+    <div><b>Sensor ${num}</b></div>
+    <span>
+      <select id="cfg-sensor-${num}">
+        ${getTipoSensorOptions(sensor.tipo)}
       </select>
     </span>
   </div>
@@ -328,6 +338,21 @@ function getPinosOptions(selected) {
         return `
 <option value="${p}" ${p == selected ? "selected" : ""}>
   GPIO ${p}
+</option>
+`;
+      })
+      .join("")
+  );
+}
+
+function getTipoSensorOptions(selected) {
+  return (
+    `<option value="0">Desativado!</option>\n` +
+    configData.tipoSensores
+      .map((ts) => {
+        return `
+<option value="${ts.num}" ${ts.num == selected ? "selected" : ""}>
+  ${ts.nome}
 </option>
 `;
       })
@@ -365,7 +390,7 @@ async function salvarConfigGeral() {
 
     load();
   } catch (e) {
-    statusMsg("Erro config: " + e);
+    statusMsg("Erro salvarConfigGeral: " + e);
   }
 }
 
@@ -383,6 +408,22 @@ function getHoraFromTS(ts) {
   var h = "0" + date.getHours();
   var m = "0" + date.getMinutes();
   return h.slice(-2) + ":" + m.slice(-2);
+}
+
+function formataTempo(millis) {
+  const secs = Math.floor(millis / 1000);
+
+  const horas = Math.floor(secs / 3600);
+  const minutos = Math.floor((secs % 3600) / 60);
+  const segundos = secs % 60;
+
+  return (
+    String(horas).padStart(2, "0") +
+    ":" +
+    String(minutos).padStart(2, "0") +
+    ":" +
+    String(segundos).padStart(2, "0")
+  );
 }
 
 function statusMsg(msg) {

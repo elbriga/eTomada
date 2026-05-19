@@ -81,7 +81,8 @@ void eTomadaLoadConfig() {
 
 String eTomadaGetDataJSON() {
   JsonDocument doc;
-  doc["api"] = 1; // versão da API
+  doc["api"]    = 1; // versão da API
+  doc["uptime"] = millis();
 
   time_t agora;
   struct tm timeinfo;
@@ -121,14 +122,32 @@ String eTomadaGetDataJSON() {
   JsonArray sensores = doc["sensores"].to<JsonArray>();
   JsonObject s = sensores.add<JsonObject>();
   s["num"]   = 1;
-  s["ativo"] = true;
+  s["tipo"]  = 1;
   s["nome"]  = "Temperatura";
   s["valor"] = "10o C";
   s["pino"]  = "1";
+  s = sensores.add<JsonObject>();
+  s["num"]   = 2;
+  s["tipo"]  = 2;
+  s["nome"]  = "Umidade";
+  s["valor"] = "81 %";
+  s["pino"]  = "2";
+  s = sensores.add<JsonObject>();
+  s["num"]   = 3;
+  s["tipo"]  = 3;
+  s["nome"]  = "LUX";
+  s["valor"] = "66";
+  s["pino"]  = "3";
+  s = sensores.add<JsonObject>();
+  s["num"]   = 4;
+  s["tipo"]  = 0;
+  s["nome"]  = "";
+  s["valor"] = "";
+  s["pino"]  = "-1";
   
   TipoSensor *ts;
   int totTS = tipoSensorGetCount();
-  JsonArray tipoSensores = doc["tiposensores"].to<JsonArray>();
+  JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
   for (SensorType tipo = SENSORTIPO_temperatura;
      tipo < SENSORTIPO_MAX;
      tipo = (SensorType)(tipo + 1)) {
