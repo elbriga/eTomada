@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 
+#include "loga.h"
+
 // NTP
 const char* ntpServer1 = "ntp.br";
 const char* ntpServer2 = "pool.ntp.org";
@@ -19,9 +21,16 @@ void ntpSyncTime() {
   // Wait until a valid time is received from the NTP server
   // 1577836800 is the Unix time for Jan 1, 2020
   time_t now = 0;
+  int count = 0;
   while (time(&now) < 1577836800) {
     esp_task_wdt_reset(); // alimenta o watchdog
     delay(500);
+
+    if (count++ > 60) {
+      logaMensagem("Falha ao sincronizar hora");
+      logaMensagem("TODO - Tentar novamente em 1 minuto");
+      break;
+    }
   }
 }
 

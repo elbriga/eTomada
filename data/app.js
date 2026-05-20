@@ -179,7 +179,7 @@ function renderSensores(sensores) {
 <div class="small">pino: ${escapeHtml(sensor.pino)}</div>
 <br>
 
-<div class="status on">${sensor.valor}</div>
+<div class="status on">${sensor.valorStr}</div>
 
 <div id="sensorEdit-${numSensor}" style="display: none">
   Nome: <input id="nomeSensor-${numSensor}" value="${escapeHtml(sensor.nome || "")}"><br>

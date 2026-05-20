@@ -105,7 +105,6 @@ String checkRegra(int numRele) {
     return "Regra[" + String(numRele) + "] Invalida:" + regraOK;
   }
 
-  bool ligaRele = false;
   char acao[3] = { rele->regra[0], rele->regra[1], 0 };
 
   if (!strcmp(acao, "ON") || !strcmp(acao, "OF")) {
@@ -127,8 +126,11 @@ String checkRegra(int numRele) {
 
     bool acaoEhLigar = !strncmp(ligar, "ON", 2);
     if (!acaoEhLigar) estaNoIntervalo = !estaNoIntervalo;
-    ligaRele = estaNoIntervalo;
-  } else if (!strcmp(acao, "SE")) {
+
+    return releControlaUnsafe(numRele, estaNoIntervalo);
+  }
+  
+  if (!strcmp(acao, "SE")) {
     char se[3] = {0}, condLiga[32] = {0}, condDesliga[32] = {0};
     sscanf(rele->regra, "%2[^|]|%31[^|]|%31s", se, condLiga, condDesliga);
 
@@ -143,6 +145,7 @@ String checkRegra(int numRele) {
         return "Sensor ON invalido!";
       }
 
+      bool ligaRele;
       int valorTeste = atoi(&condLiga[3]);
       if (condLiga[2] == '>') {
         ligaRele = (s->valor > valorTeste);
@@ -157,7 +160,7 @@ String checkRegra(int numRele) {
       }
     }
 
-    // Verificar a condicao LIGA:
+    // Verificar a condicao DESLIGA:
     if (condDesliga[0] == 'S') {
       int numSensor = condDesliga[1] - '0';
       if (numSensor < 1 || numSensor > MAX_SENSORES) {
@@ -168,24 +171,23 @@ String checkRegra(int numRele) {
         return "Sensor OF invalido!";
       }
 
+      bool desligaRele;
       int valorTeste = atoi(&condDesliga[3]);
       if (condDesliga[2] == '>') {
-        ligaRele = (s->valor > valorTeste);
+        desligaRele = (s->valor > valorTeste);
       } else if (condDesliga[2] == '<') {
-        ligaRele = (s->valor < valorTeste);
+        desligaRele = (s->valor < valorTeste);
       } else {
         return "Condicao OF invalida!";
       }
 
-      if (!ligaRele) {
+      if (desligaRele) {
         return releControlaUnsafe(numRele, false);
       }
     }
 
     return "";
-  } else {
-    return "Acao invalida";
   }
 
-  return releControlaUnsafe(numRele, ligaRele);
+  return "Acao invalida";
 }
