@@ -10,9 +10,9 @@ void sensorUmidadeLer(Sensor *s);
 void sensorLUXLer(Sensor *s);
 
 static TipoSensor sensoresDisponiveis[] = {
-  { SENSORTIPO_temperatura, "Temperatura", "%d° C", sensorTemperaturaLer },
-  { SENSORTIPO_umidade,     "Umidade",     "%d %%", sensorUmidadeLer },
-  { SENSORTIPO_lux,         "LUX",         "%d L",  sensorLUXLer },
+  { "Temperatura", "%d° C", sensorTemperaturaLer },
+  { "Umidade",     "%d %%", sensorUmidadeLer },
+  { "LUX",         "%d L",  sensorLUXLer },
 };
 
 static int temp=12, umid=50, LUX=200; // MOCK
@@ -40,12 +40,20 @@ int tipoSensorGetCount() {
   return sizeof(sensoresDisponiveis) / sizeof(sensoresDisponiveis[0]);
 }
 
-TipoSensor *tipoSensorGet(SensorType tipo) {
+TipoSensor *tipoSensorGet(const char *nome) {
   int totTS = tipoSensorGetCount();
   for (int i=0; i < totTS; i++) {
-    if (sensoresDisponiveis[i].tipo == tipo) {
+    if (!strcmp(sensoresDisponiveis[i].nome, nome)) {
       return &sensoresDisponiveis[i];
     }
   }
   return NULL;
+}
+
+TipoSensor *tipoSensorGetAux(int i) {
+  if (i < 0 || i >= tipoSensorGetCount()) {
+    return NULL;
+  }
+
+  return &sensoresDisponiveis[i];
 }

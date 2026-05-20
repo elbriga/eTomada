@@ -96,7 +96,7 @@ void eTomadaLoadConfig() {
 // MOCK
 sensor = sensorGet(1);
 sensor->num  = 1;
-sensor->tipo = tipoSensorGet(SENSORTIPO_temperatura);
+sensor->tipo = tipoSensorGet("Temperatura");
 strcpy(sensor->nome, "Temp");
 sensor->valor = 0;
 strcpy(sensor->valorStr, "");
@@ -104,7 +104,7 @@ sensor->pino = 1;
 
 sensor = sensorGet(2);
 sensor->num  = 2;
-sensor->tipo = tipoSensorGet(SENSORTIPO_umidade);
+sensor->tipo = tipoSensorGet("Umidade");
 strcpy(sensor->nome, "Umid");
 sensor->valor = 0;
 strcpy(sensor->valorStr, "");
@@ -112,7 +112,7 @@ sensor->pino = 2;
 
 sensor = sensorGet(3);
 sensor->num  = 3;
-sensor->tipo = tipoSensorGet(SENSORTIPO_lux);
+sensor->tipo = tipoSensorGet("LUX");
 strcpy(sensor->nome, "lux");
 sensor->valor = 0;
 strcpy(sensor->valorStr, "");
@@ -196,7 +196,7 @@ String eTomadaGetDataJSON() {
 
         JsonObject s = sensores.add<JsonObject>();
         s["num"]      = sensor->num;
-        s["tipo"]     = sensor->tipo->nome;
+        s["tipo"]     = sensor->tipo ? sensor->tipo->nome : "";
         s["nome"]     = sensor->nome;
         s["pino"]     = sensor->pino;
         s["valor"]    = sensor->valor;
@@ -208,14 +208,12 @@ String eTomadaGetDataJSON() {
   TipoSensor *ts;
   int totTS = tipoSensorGetCount();
   JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
-  for (SensorType tipo = SENSORTIPO_temperatura;
-     tipo < SENSORTIPO_MAX;
-     tipo = (SensorType)(tipo + 1)) {
-    ts = tipoSensorGet(tipo);
+  for (int i=0; i < totTS; i++) {
+    ts = tipoSensorGetAux(i);
     if (!ts) continue;
 
     JsonObject t = tipoSensores.add<JsonObject>();
-    t["num"]  = tipo;
+    t["num"]  = i;
     t["nome"] = ts->nome;
   }
 
