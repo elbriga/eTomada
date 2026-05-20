@@ -5,7 +5,7 @@ struct Sensor;
 struct TipoSensor {
     const char *nome;
     const char *format;
-    void (*ler)(Sensor *s);
+    int (*ler)(Sensor *s);
 };
 
 int tipoSensorGetCount();

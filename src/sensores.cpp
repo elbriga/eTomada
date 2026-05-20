@@ -1,7 +1,9 @@
 #include <Arduino.h>
+
 #include "sensores.h"
 #include "tipoSensores.h"
 #include "loga.h"
+#include "http.h"
 
 static Sensor sensores[MAX_SENSORES];
 
@@ -34,10 +36,14 @@ void sensoresAtualiza() {
       continue;
     }
 
-    sensor->tipo->ler(sensor);
+    int novoValor = sensor->tipo->ler(sensor);
+    String msg = sensorAtualiza(s, novoValor);
+    if (msg != "") {
+      logaMensagem("Sensor[%d] => [%d] [%s]", s, novoValor, msg.c_str());
+    }
   }
 }
-/*
+
 String sensorAtualiza(int numSensor, int valor)
 {
   // MutexLock lock(sensorMutex);
@@ -51,17 +57,28 @@ String sensorAtualiza(int numSensor, int valor)
 // REQUIRE sensorMutex locked
 String sensorAtualizaUnsafe(int numSensor, int valor)
 {
+  Sensor *sensor = sensorGet(numSensor);
+  if (!sensor) {
+    return "Sensor Invalido";
+  }
+
+  String ret = "";
+  if (sensor->valor != valor) {
+    sensor->valor = valor;
+    snprintf(sensor->valorStr, sizeof(sensor->valorStr), sensor->tipo->format, valor);
+
+    httpEnviaEvento("{ \"valor\": "+String(valor)+" }", "sensor");
+
+    ret = "MUDOU!";
+  }
+
+  return ret;
 }
-*/
+
 Sensor *sensorGet(int numSensor) {
   if (numSensor < 1 || numSensor > MAX_SENSORES) {
     return NULL;
   }
 
   return &sensores[numSensor - 1];
-}
-
-void sensorSet(Sensor *sensor, int valor) {
-  sensor->valor = valor;
-  snprintf(sensor->valorStr, sizeof(sensor->valorStr), sensor->tipo->format, valor);
 }

@@ -98,7 +98,7 @@ sensor = sensorGet(1);
 sensor->num  = 1;
 sensor->tipo = tipoSensorGet("Temperatura");
 strcpy(sensor->nome, "Temp");
-sensor->valor = 0;
+sensor->valor = 12;
 strcpy(sensor->valorStr, "");
 sensor->pino = 1;
 
@@ -106,7 +106,7 @@ sensor = sensorGet(2);
 sensor->num  = 2;
 sensor->tipo = tipoSensorGet("Umidade");
 strcpy(sensor->nome, "Umid");
-sensor->valor = 0;
+sensor->valor = 50;
 strcpy(sensor->valorStr, "");
 sensor->pino = 2;
 
@@ -114,7 +114,7 @@ sensor = sensorGet(3);
 sensor->num  = 3;
 sensor->tipo = tipoSensorGet("LUX");
 strcpy(sensor->nome, "lux");
-sensor->valor = 0;
+sensor->valor = 220;
 strcpy(sensor->valorStr, "");
 sensor->pino = 3;
 
