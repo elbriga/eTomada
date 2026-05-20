@@ -4,6 +4,7 @@
 #include "loga.h"
 #include "display.h"
 #include "reles.h"
+#include "sensores.h"
 #include "ntp.h"
 #include "mutex.h"
 
@@ -131,8 +132,57 @@ String checkRegra(int numRele) {
     char se[3] = {0}, condLiga[32] = {0}, condDesliga[32] = {0};
     sscanf(rele->regra, "%2[^|]|%31[^|]|%31s", se, condLiga, condDesliga);
 
-    ligaRele = true;
-logaMensagem("SE[%s] :::: [%s] [%s]", se, condLiga, condDesliga);
+    // Verificar a condicao LIGA:
+    if (condLiga[0] == 'S') {
+      int numSensor = condLiga[1] - '0';
+      if (numSensor < 1 || numSensor > MAX_SENSORES) {
+        return "Sensor ON invalido";
+      }
+      Sensor *s = sensorGet(numSensor);
+      if (!s) {
+        return "Sensor ON invalido!";
+      }
+
+      int valorTeste = atoi(&condLiga[3]);
+      if (condLiga[2] == '>') {
+        ligaRele = (s->valor > valorTeste);
+      } else if (condLiga[2] == '<') {
+        ligaRele = (s->valor < valorTeste);
+      } else {
+        return "Condicao ON invalida!";
+      }
+
+      if (ligaRele) {
+        return releControlaUnsafe(numRele, true);
+      }
+    }
+
+    // Verificar a condicao LIGA:
+    if (condDesliga[0] == 'S') {
+      int numSensor = condDesliga[1] - '0';
+      if (numSensor < 1 || numSensor > MAX_SENSORES) {
+        return "Sensor OF invalido";
+      }
+      Sensor *s = sensorGet(numSensor);
+      if (!s) {
+        return "Sensor OF invalido!";
+      }
+
+      int valorTeste = atoi(&condDesliga[3]);
+      if (condDesliga[2] == '>') {
+        ligaRele = (s->valor > valorTeste);
+      } else if (condDesliga[2] == '<') {
+        ligaRele = (s->valor < valorTeste);
+      } else {
+        return "Condicao OF invalida!";
+      }
+
+      if (!ligaRele) {
+        return releControlaUnsafe(numRele, false);
+      }
+    }
+
+    return "";
   } else {
     return "Acao invalida";
   }
