@@ -10,6 +10,14 @@
 
 static Rele reles[MAX_RELES];
 
+void relesInit() {
+  for (int i = 0; i < MAX_RELES; i++) {
+    reles[i].num   = i + 1;
+    reles[i].ativo = false;
+    reles[i].pino  = -1;
+  }
+}
+
 int relesGetCount()
 {
   return MAX_RELES;

@@ -13,7 +13,7 @@ enum SensorType {
 struct TipoSensor {
     SensorType tipo;
     char nome[32];
-    void (*ler)(Sensor *self, char *out, int outLen);
+    void (*ler)(Sensor *s);
 };
 
 int tipoSensorGetCount();

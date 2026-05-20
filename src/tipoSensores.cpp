@@ -1,27 +1,40 @@
+#include <Arduino.h>
+#include "esp_system.h" // MOCK
+
 #include "sensores.h"
 #include "tipoSensores.h"
 
-void sensorTemperaturaLer(Sensor *self, char *out, int outLen);
-void sensorUmidadeLer(Sensor *self, char *out, int outLen);
-void sensorLUXLer(Sensor *self, char *out, int outLen);
+void sensorTemperaturaLer(Sensor *s);
+void sensorUmidadeLer(Sensor *s);
+void sensorLUXLer(Sensor *s);
 
-static TipoSensor sensoresDisponiveis[3] = {
+static TipoSensor sensoresDisponiveis[] = {
   { SENSORTIPO_temperatura, "Temperatura", sensorTemperaturaLer },
   { SENSORTIPO_umidade, "Umidade", sensorUmidadeLer },
   { SENSORTIPO_lux, "LUX", sensorLUXLer },
 };
 
+static int temp=20, umid=50, LUX=200; // MOCK
 
-void sensorTemperaturaLer(Sensor *self, char *out, int outLen) {
-  snprintf(out, outLen, "25 C");
+void sensorTemperaturaLer(Sensor *s) {
+  temp += (esp_random() % 6) - 3; // MOCK
+
+  s->valor = temp;
+  snprintf(s->valorStr, sizeof(s->valorStr), "%d C", s->valor);
 }
 
-void sensorUmidadeLer(Sensor *self, char *out, int outLen) {
-  snprintf(out, outLen, "80%");
+void sensorUmidadeLer(Sensor *s) {
+  umid += (esp_random() % 10) - 5; // MOCK
+
+  s->valor = umid;
+  snprintf(s->valorStr, sizeof(s->valorStr), "%d %", s->valor);
 }
 
-void sensorLUXLer(Sensor *self, char *out, int outLen) {
-  snprintf(out, outLen, "33");
+void sensorLUXLer(Sensor *s) {
+  LUX += (esp_random() % 14) - 7; // MOCK
+
+  s->valor = LUX;
+  snprintf(s->valorStr, sizeof(s->valorStr), "%d L", s->valor);
 }
 
 int tipoSensorGetCount() {

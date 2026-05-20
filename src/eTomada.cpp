@@ -49,6 +49,8 @@ void eTomadaLoadConfig() {
   // prefs.putString("pino1", "16");
   // prefs.putString("ativo1", "1");
 
+  relesInit();
+
   Rele *rele;
   int totReles = relesGetCount();
   for (int r=1; r <= totReles; r++) {
@@ -82,8 +84,54 @@ void eTomadaLoadConfig() {
     logaMensagem("Rele %d:%d:%s (%s) > [%s]",
       r, rele->pino, rele->nome, (rele->ativo ? "on" : "off"), rele->regra);
   }
-
   prefs.end();
+
+  sensoresInit();
+
+  Sensor *sensor;
+// MOCK
+sensor = sensorGet(1);
+sensor->num  = 1;
+sensor->tipo = SENSORTIPO_temperatura;
+strcpy(sensor->nome, "Temp");
+sensor->valor = 0;
+strcpy(sensor->valorStr, "");
+sensor->pino = 1;
+
+sensor = sensorGet(2);
+sensor->num  = 2;
+sensor->tipo = SENSORTIPO_umidade;
+strcpy(sensor->nome, "Umid");
+sensor->valor = 0;
+strcpy(sensor->valorStr, "");
+sensor->pino = 2;
+
+sensor = sensorGet(3);
+sensor->num  = 3;
+sensor->tipo = SENSORTIPO_lux;
+strcpy(sensor->nome, "lux");
+sensor->valor = 0;
+strcpy(sensor->valorStr, "");
+sensor->pino = 3;
+
+sensor = sensorGet(4);
+sensor->num  = 4;
+sensor->tipo = SENSORTIPO_DESATIVADO;
+strcpy(sensor->nome, "");
+sensor->valor = 0;
+strcpy(sensor->valorStr, "");
+sensor->pino = -1;
+
+  TipoSensor *TS;
+  int totSensores = sensoresGetCount();
+  for (int s=1; s <= totSensores; s++) {
+      sensor = sensorGet(s);
+      TS = tipoSensorGet((SensorType)sensor->tipo);
+
+      logaMensagem("Sensor %d:%d:%s (%s) > [%s]",
+        s, sensor->pino, sensor->nome, (sensor->tipo > 0 ? "on" : "off"), TS ? TS->nome : "???");
+  }
+
 
   Serial.println("");
 }
@@ -128,31 +176,29 @@ String eTomadaGetDataJSON() {
     }
   }
 
+  Sensor *sensor;
+  int totSensores = sensoresGetCount();
   JsonArray sensores = doc["sensores"].to<JsonArray>();
-  JsonObject s = sensores.add<JsonObject>();
-  s["num"]   = 1;
-  s["tipo"]  = 1;
-  s["nome"]  = "Temperatura";
-  s["valor"] = "10o C";
-  s["pino"]  = "1";
-  s = sensores.add<JsonObject>();
-  s["num"]   = 2;
-  s["tipo"]  = 2;
-  s["nome"]  = "Umidade";
-  s["valor"] = "81 %";
-  s["pino"]  = "2";
-  s = sensores.add<JsonObject>();
-  s["num"]   = 3;
-  s["tipo"]  = 3;
-  s["nome"]  = "LUX";
-  s["valor"] = "66";
-  s["pino"]  = "3";
-  s = sensores.add<JsonObject>();
-  s["num"]   = 4;
-  s["tipo"]  = 0;
-  s["nome"]  = "";
-  s["valor"] = "";
-  s["pino"]  = "-1";
+  {
+    //MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
+
+    // if (!lock) {
+    //   doc["erro"] = "mutex timeout";
+    // } else {
+      for (int i = 1; i <= totSensores; i++) {
+        sensor = sensorGet(i);
+        if (!sensor) continue;
+
+        JsonObject s = sensores.add<JsonObject>();
+        s["num"]      = sensor->num;
+        s["tipo"]     = sensor->tipo;
+        s["nome"]     = sensor->nome;
+        s["pino"]     = sensor->pino;
+        s["valor"]    = sensor->valor;
+        s["valorStr"] = sensor->valorStr;
+      }
+    // }
+  }
   
   TipoSensor *ts;
   int totTS = tipoSensorGetCount();

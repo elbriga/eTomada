@@ -14,6 +14,7 @@ struct Rele {
   unsigned long override; // TS para sobrepor o estado manual as regras
 };
 
+void relesInit();
 int relesGetCount();
 Rele *releGet(int numRele);
 
