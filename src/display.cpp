@@ -74,9 +74,11 @@ void displayMostraString(int x, int y, const char *msg)
     logaMensagem("[DISPLAY] (%d,%d): %s", x, y, msg);
 }
 
-void displayMostraMsg(const char* msg, int timeout)
+void displayMostraMsg(const char* msg, int timeout, bool loga)
 {
-    logaMensagem("[DISPLAY] %s", msg);
+    if (loga) {
+        logaMensagem("[DISPLAY] %s", msg);
+    }
 }
 
 #endif

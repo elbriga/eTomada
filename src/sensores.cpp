@@ -30,7 +30,7 @@ void sensoresAtualiza() {
     }
 
     if (!sensor->tipo->ler) {
-      logaMensagem("Sensor[%d] tipo invalido [%d]", s, sensor->tipo);
+      logaMensagem("Sensor[%d] tipo invalido [%p]", s, sensor->tipo);
       continue;
     }
 
