@@ -420,3 +420,31 @@ function formataTempo(millis) {
 function statusMsg(msg) {
   document.getElementById("status").innerHTML = msg;
 }
+
+function init() {
+  const evt = new EventSource(API_BASE + "/events");
+
+  evt.onopen = () => {
+    console.log("SSE conectado");
+  };
+
+  evt.onerror = (err) => {
+    console.log("Erro SSE", err);
+  };
+
+  evt.addEventListener("teste", (e) => {
+    const data = JSON.parse(e.data);
+
+    console.log("TESTE!");
+    console.log(data);
+  });
+
+  evt.addEventListener("sensor", (e) => {
+    const data = JSON.parse(e.data);
+
+    console.log("SENSOR!");
+    console.log(data);
+  });
+
+  load();
+}

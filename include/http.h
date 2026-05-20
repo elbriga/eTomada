@@ -4,3 +4,4 @@
 #include <ESPAsyncWebServer.h>
 
 void httpServerInit();
+void httpEnviaEvento(String msg, String tipo);

@@ -7,10 +7,9 @@
 
 #define DEV // TODO :: remover
 
-String getPortalHtml();
-
 // Web Server
 AsyncWebServer httpServer(80);
+AsyncEventSource sse("/events");
 
 void logaRequest(AsyncWebServerRequest *request, String resultado)
 {
@@ -75,6 +74,16 @@ void httpServerInit()
       delay(1000);
       ESP.restart();
     });
+
+    // Eventos de conexão/desconexão
+    sse.onConnect([](AsyncEventSourceClient *client) {
+      Serial.println("Cliente SSE conectado");
+
+      // mensagem inicial opcional
+      client->send("conectado", NULL, millis(), 1000);
+    });
+
+    httpServer.addHandler(&sse);
 
     httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
   } else {
@@ -148,4 +157,8 @@ void httpServerInit()
   });
 
   httpServer.begin();
+}
+
+void httpEnviaEvento(String msg, String tipo) {
+  sse.send(msg, tipo);
 }
