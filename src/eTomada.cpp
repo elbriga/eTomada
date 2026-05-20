@@ -5,6 +5,7 @@
 #include "reles.h"
 #include "regras.h"
 #include "tipoSensores.h"
+#include "sensores.h"
 #include "ntp.h"
 #include "mutex.h"
 #include "loga.h"
@@ -55,7 +56,10 @@ void eTomadaLoadConfig() {
   int totReles = relesGetCount();
   for (int r=1; r <= totReles; r++) {
     rele = releGet(r);
-    if (!rele) continue;
+    if (!rele) {
+      // TODO ERRO!
+      continue;
+    }
 
     rele->num = r;
     strncpy(rele->nome,  getPrefsAtr(prefs, r, "nome").c_str(),  sizeof(rele->nome) - 1);
@@ -92,7 +96,7 @@ void eTomadaLoadConfig() {
 // MOCK
 sensor = sensorGet(1);
 sensor->num  = 1;
-sensor->tipo = SENSORTIPO_temperatura;
+sensor->tipo = tipoSensorGet(SENSORTIPO_temperatura);
 strcpy(sensor->nome, "Temp");
 sensor->valor = 0;
 strcpy(sensor->valorStr, "");
@@ -100,7 +104,7 @@ sensor->pino = 1;
 
 sensor = sensorGet(2);
 sensor->num  = 2;
-sensor->tipo = SENSORTIPO_umidade;
+sensor->tipo = tipoSensorGet(SENSORTIPO_umidade);
 strcpy(sensor->nome, "Umid");
 sensor->valor = 0;
 strcpy(sensor->valorStr, "");
@@ -108,7 +112,7 @@ sensor->pino = 2;
 
 sensor = sensorGet(3);
 sensor->num  = 3;
-sensor->tipo = SENSORTIPO_lux;
+sensor->tipo = tipoSensorGet(SENSORTIPO_lux);
 strcpy(sensor->nome, "lux");
 sensor->valor = 0;
 strcpy(sensor->valorStr, "");
@@ -116,20 +120,21 @@ sensor->pino = 3;
 
 sensor = sensorGet(4);
 sensor->num  = 4;
-sensor->tipo = SENSORTIPO_DESATIVADO;
+sensor->tipo = NULL;
 strcpy(sensor->nome, "");
 sensor->valor = 0;
 strcpy(sensor->valorStr, "");
 sensor->pino = -1;
 
-  TipoSensor *TS;
   int totSensores = sensoresGetCount();
   for (int s=1; s <= totSensores; s++) {
       sensor = sensorGet(s);
-      TS = tipoSensorGet((SensorType)sensor->tipo);
 
       logaMensagem("Sensor %d:%d:%s (%s) > [%s]",
-        s, sensor->pino, sensor->nome, (sensor->tipo > 0 ? "on" : "off"), TS ? TS->nome : "???");
+        s, sensor->pino, sensor->nome,
+        (sensor->tipo ? "on" : "off"),
+        sensor->tipo ? sensor->tipo->nome : "???"
+      );
   }
 
 
@@ -191,7 +196,7 @@ String eTomadaGetDataJSON() {
 
         JsonObject s = sensores.add<JsonObject>();
         s["num"]      = sensor->num;
-        s["tipo"]     = sensor->tipo;
+        s["tipo"]     = sensor->tipo->nome;
         s["nome"]     = sensor->nome;
         s["pino"]     = sensor->pino;
         s["valor"]    = sensor->valor;

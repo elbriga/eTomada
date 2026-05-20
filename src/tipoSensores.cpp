@@ -10,32 +10,30 @@ void sensorUmidadeLer(Sensor *s);
 void sensorLUXLer(Sensor *s);
 
 static TipoSensor sensoresDisponiveis[] = {
-  { SENSORTIPO_temperatura, "Temperatura", sensorTemperaturaLer },
-  { SENSORTIPO_umidade, "Umidade", sensorUmidadeLer },
-  { SENSORTIPO_lux, "LUX", sensorLUXLer },
+  { SENSORTIPO_temperatura, "Temperatura", "%d° C", sensorTemperaturaLer },
+  { SENSORTIPO_umidade,     "Umidade",     "%d %%", sensorUmidadeLer },
+  { SENSORTIPO_lux,         "LUX",         "%d L",  sensorLUXLer },
 };
 
 static int temp=12, umid=50, LUX=200; // MOCK
 
 void sensorTemperaturaLer(Sensor *s) {
+  // Ler sensor de temperatura
   temp += (esp_random() % 6) - 3; // MOCK
 
-  s->valor = temp;
-  snprintf(s->valorStr, sizeof(s->valorStr), "%d° C", s->valor);
+  sensorSet(s, temp);
 }
 
 void sensorUmidadeLer(Sensor *s) {
   umid += (esp_random() % 10) - 5; // MOCK
 
-  s->valor = umid;
-  snprintf(s->valorStr, sizeof(s->valorStr), "%d %%", s->valor);
+  sensorSet(s, umid);
 }
 
 void sensorLUXLer(Sensor *s) {
   LUX += (esp_random() % 14) - 7; // MOCK
 
-  s->valor = LUX;
-  snprintf(s->valorStr, sizeof(s->valorStr), "%d L", s->valor);
+  sensorSet(s, LUX);
 }
 
 int tipoSensorGetCount() {

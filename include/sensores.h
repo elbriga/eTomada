@@ -1,9 +1,11 @@
 #pragma once
 
+#include "tipoSensores.h"
+
 #define MAX_SENSORES 4
 
 struct Sensor {
-    int tipo; // SensorType
+    TipoSensor *tipo;
     int num;
     int pino;
     char nome[32];
@@ -15,5 +17,6 @@ void sensoresInit();
 
 int sensoresGetCount();
 Sensor *sensorGet(int numSensor);
+void sensorSet(Sensor *sensor, int valor);
 
 void sensoresAtualiza();

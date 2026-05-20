@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sensores.h"
+struct Sensor;
 
 enum SensorType {
     SENSORTIPO_DESATIVADO,
@@ -13,6 +13,7 @@ enum SensorType {
 struct TipoSensor {
     SensorType tipo;
     char nome[32];
+    char format[32];
     void (*ler)(Sensor *s);
 };
 
