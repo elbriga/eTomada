@@ -1,4 +1,5 @@
 #include <Arduino.h>
+
 #include "esp_system.h" // MOCK
 
 #include "sensores.h"
@@ -14,20 +15,20 @@ static TipoSensor sensoresDisponiveis[] = {
   { SENSORTIPO_lux, "LUX", sensorLUXLer },
 };
 
-static int temp=20, umid=50, LUX=200; // MOCK
+static int temp=12, umid=50, LUX=200; // MOCK
 
 void sensorTemperaturaLer(Sensor *s) {
   temp += (esp_random() % 6) - 3; // MOCK
 
   s->valor = temp;
-  snprintf(s->valorStr, sizeof(s->valorStr), "%d C", s->valor);
+  snprintf(s->valorStr, sizeof(s->valorStr), "%d° C", s->valor);
 }
 
 void sensorUmidadeLer(Sensor *s) {
   umid += (esp_random() % 10) - 5; // MOCK
 
   s->valor = umid;
-  snprintf(s->valorStr, sizeof(s->valorStr), "%d %", s->valor);
+  snprintf(s->valorStr, sizeof(s->valorStr), "%d %%", s->valor);
 }
 
 void sensorLUXLer(Sensor *s) {
