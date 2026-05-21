@@ -88,9 +88,12 @@ Sensor *sensorGet(int numSensor) {
 // REQUIRE sensorMutex locked
 String sensorGetJSON(Sensor *s) {
   JsonDocument doc;
-  doc["num"] = s->num; 
-  doc["valor"] = s->valor;
+  doc["tipo"] = s->tipo ? s->tipo->nome : "???";
+  doc["num"] = s->num;
+  doc["pino"] = s->pino;
+  doc["nome"] = s->nome;
   doc["valorStr"] = s->valorStr;
+  doc["valor"] = s->valor;
 
   String out;
   serializeJson(doc, out);

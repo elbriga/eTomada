@@ -10,4 +10,4 @@ struct TipoSensor {
 
 int tipoSensorGetCount();
 TipoSensor *tipoSensorGet(const char *nome);
-TipoSensor *tipoSensorGetAux(int i);
+TipoSensor *tipoSensorGetPorId(int i);

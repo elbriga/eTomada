@@ -209,7 +209,7 @@ String eTomadaGetDataJSON() {
   int totTS = tipoSensorGetCount();
   JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
   for (int i=0; i < totTS; i++) {
-    ts = tipoSensorGetAux(i);
+    ts = tipoSensorGetPorId(i);
     if (!ts) continue;
 
     JsonObject t = tipoSensores.add<JsonObject>();

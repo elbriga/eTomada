@@ -27,7 +27,7 @@ TipoSensor *tipoSensorGet(const char *nome) {
   return NULL;
 }
 
-TipoSensor *tipoSensorGetAux(int i) {
+TipoSensor *tipoSensorGetPorId(int i) {
   if (i < 0 || i >= tipoSensorGetCount()) {
     return NULL;
   }

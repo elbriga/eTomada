@@ -14,11 +14,8 @@ struct Sensor {
 };
 
 void sensoresInit();
-
 int sensoresGetCount();
 Sensor *sensorGet(int numSensor);
 
 void sensoresAtualiza();
-
-String sensorAtualiza(int numSensor, int valor);
 String sensorAtualizaUnsafe(int numSensor, int valor);
