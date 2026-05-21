@@ -7,6 +7,7 @@
 #include "regras.h"
 #include "mutex.h"
 #include "display.h"
+#include "http.h"
 
 static Rele reles[MAX_RELES];
 
@@ -114,6 +115,21 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
   return "OK";
 }
 
+String releGetJSON(Rele *r) {
+  JsonDocument doc;
+  doc["num"] = r->num;
+  doc["pino"] = r->pino;
+  doc["nome"] = r->nome;
+  doc["regra"] = r->regra;
+  doc["ativo"] = r->ativo;
+  doc["estado"] = r->estado;
+  doc["override"] = r->override;
+
+  String out;
+  serializeJson(doc, out);
+  return out;
+}
+
 String releControla(int numRele, bool estado, int override)
 {
   MutexLock lock(releMutex);
@@ -149,6 +165,9 @@ String releControlaUnsafe(int numRele, bool estado, int override)
     snprintf(msg, sizeof(msg), "%s %s (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"),
       rele->nome, numRele, rele->pino);
     ret = msg;
+
+    String releJSON = releGetJSON(rele);
+    httpEnviaEvento(releJSON, "sse_rele");
   }
 
   return ret;

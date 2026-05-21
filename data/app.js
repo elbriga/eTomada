@@ -111,6 +111,37 @@ async function load() {
   }
 }
 
+function releGetCardHtml(rele) {
+  return `
+<div class="medio">Tomada ${rele.num}</div>
+<div class="title">${escapeHtml(rele.nome || "")}</div>
+<div class="medio">${getRegraTXT(rele.regra)}</div>
+<div class="small">pino: ${escapeHtml(rele.pino)}</div>
+<br>
+
+<div id="releVal-${rele.num}" class="status ${rele.estado ? "on" : "off"}">
+  ${rele.estado ? "● Ligado" : "● Desligado"}
+  ${rele.override > Date.now() / 1000 && rele.regra != "" ? ` (até ${getHoraFromTS(rele.override)})` : ""}
+</div>
+
+<div id="tomadaEdit-${rele.num}" style="display: none">
+  Nome: <input id="nome-${rele.num}" value="${escapeHtml(rele.nome || "")}"><br>
+  Regra: <input id="regra-${rele.num}" value="${escapeHtml(rele.regra || "")}" placeholder="ON=08:00-18:00" maxlength="31">
+  <button onclick="tomadaSalvar(${rele.num}, this)">💾 Salvar</button>
+  <br><br>
+  <button onclick="tomadaToggleEdit(${rele.num}, false)">❌ Cancelar</button>
+</div>
+
+<div id="tomadaView-${rele.num}">
+  <button onclick="tomadaOverride(${rele.num}, ${rele.estado ? "false" : "true"}, this)">
+    ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
+  </button>
+  <br><br>
+  <button onclick="tomadaToggleEdit(${rele.num}, true)">✏️ Editar</button>
+</div>
+`;
+}
+
 function renderReles(reles) {
   const container = document.getElementById("reles");
   container.innerHTML = "";
@@ -119,42 +150,11 @@ function renderReles(reles) {
     if (!rele.ativo) return;
     if (!rele.nome) rele.nome = "---";
 
-    let numRele = rele.num;
-
     const card = document.createElement("div");
-    card.id = "tomadaCard-" + numRele;
+    card.id = "tomadaCard-" + rele.num;
     card.className = "card cardRele";
+    card.innerHTML = releGetCardHtml(rele);
 
-    let html = `
-<div class="medio">Tomada ${numRele}</div>
-<div class="title">${escapeHtml(rele.nome || "")}</div>
-<div class="medio">${getRegraTXT(rele.regra)}</div>
-<div class="small">pino: ${escapeHtml(rele.pino)}</div>
-<br>
-
-<div class="status ${rele.estado ? "on" : "off"}">
-  ${rele.estado ? "● Ligado" : "● Desligado"}
-  ${rele.override > Date.now() / 1000 && rele.regra != "" ? ` (Manual até ${getHoraFromTS(rele.override)})` : ""}
-</div>
-
-<div id="tomadaEdit-${numRele}" style="display: none">
-  Nome: <input id="nome-${numRele}" value="${escapeHtml(rele.nome || "")}"><br>
-  Regra: <input id="regra-${numRele}" value="${escapeHtml(rele.regra || "")}" placeholder="ON=08:00-18:00" maxlength="31">
-  <button onclick="tomadaSalvar(${numRele}, this)">💾 Salvar</button>
-  <br><br>
-  <button onclick="tomadaToggleEdit(${numRele}, false)">❌ Cancelar</button>
-</div>
-
-<div id="tomadaView-${numRele}">
-  <button onclick="tomadaOverride(${numRele}, ${rele.estado ? "false" : "true"}, this)">
-    ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
-  </button>
-  <br><br>
-  <button onclick="tomadaToggleEdit(${numRele}, true)">✏️ Editar</button>
-</div>
-`;
-
-    card.innerHTML = html;
     container.appendChild(card);
   });
 }
@@ -179,7 +179,7 @@ function renderSensores(sensores) {
 <div class="small">pino: ${escapeHtml(sensor.pino)}</div>
 <br>
 
-<div class="status on">${sensor.valorStr}</div>
+<div id="sensorVal-${numSensor}" class="status on">${sensor.valorStr}</div>
 
 <div id="sensorEdit-${numSensor}" style="display: none">
   Nome: <input id="nomeSensor-${numSensor}" value="${escapeHtml(sensor.nome || "")}"><br>
@@ -240,7 +240,7 @@ async function tomadaOverride(numRele, novoEstado, btn) {
   }
 
   // load recria o HTML com o botão habilitado
-  load();
+  //load();
 }
 
 function tomadaToggleEdit(id, editing) {
@@ -432,18 +432,20 @@ function init() {
     console.log("Erro SSE", err);
   };
 
-  evt.addEventListener("teste", (e) => {
-    const data = JSON.parse(e.data);
-
-    console.log("TESTE!");
-    console.log(data);
+  evt.addEventListener("sse_rele", (e) => {
+    const rele = JSON.parse(e.data);
+    // console.log("RELE!");
+    // console.log(rele);
+    document.getElementById("tomadaCard-" + rele.num).innerHTML =
+      releGetCardHtml(rele);
   });
 
-  evt.addEventListener("sensor", (e) => {
-    const data = JSON.parse(e.data);
-
-    console.log("SENSOR!");
-    console.log(data);
+  evt.addEventListener("sse_sensor", (e) => {
+    const sensor = JSON.parse(e.data);
+    // console.log("SENSOR!");
+    // console.log(sensor);
+    document.getElementById("sensorVal-" + sensor.num).innerHTML =
+      sensor.valorStr;
   });
 
   load();
