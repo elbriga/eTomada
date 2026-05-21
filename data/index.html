@@ -40,5 +40,22 @@
       <br />
       <button onclick="salvarConfigGeral()">💾 Salvar Configuração</button>
     </div>
+
+    <div id="modalOverlay" class="overlay" onclick="closeModal()"></div>
+    <div id="editModal" class="modal">
+      <div class="modalHeader">
+        <div id="modalTitle">Editar</div>
+        <button onclick="closeModal()">✖</button>
+      </div>
+
+      <div class="modalContent">
+        <label>Nome</label>
+        <input id="modalNome" maxlength="31" />
+        <label>Regra</label>
+        <input id="modalRegra" maxlength="31" placeholder="ON|08:00|18:00" />
+        <br /><br />
+        <button id="modalSalvarBtn">💾 Salvar</button>
+      </div>
+    </div>
   </body>
 </html>

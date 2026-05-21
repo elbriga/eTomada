@@ -4,6 +4,7 @@ const API_BASE =
     : window.location.origin;
 
 let eTomadaData = null;
+let releEditando = null;
 
 function getRegraTXT(regra) {
   if (!regra || regra.trim() === "") {
@@ -35,7 +36,7 @@ function getRegraTXT(regra) {
   return "??" + regra;
 }
 
-async function tomadaAPI(
+async function eTomadaAPI(
   endpoint,
   body = undefined,
   method = "GET",
@@ -78,21 +79,14 @@ async function tomadaAPI(
 }
 
 let loading = false;
-let editingTomada = null;
-
 async function load() {
   statusMsg("");
-
-  if (editingTomada !== null) {
-    statusMsg("Reload desligado ao editar");
-    return;
-  }
 
   if (loading) return;
   loading = true;
 
   try {
-    eTomadaData = await tomadaAPI("data");
+    eTomadaData = await eTomadaAPI("data");
 
     if (!eTomadaData.reles || !eTomadaData.sensores) {
       // TODO msg de erro!
@@ -134,7 +128,9 @@ function releGetCard(rele) {
   ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
 </button>
 <br><br>
-<button onclick="tomadaToggleEdit(${rele.num}, true)">✏️ Editar</button>
+<button onclick="openReleModal(${rele.num})">
+  ✏️ Editar
+</button>
 `;
   return card;
 }
@@ -150,6 +146,31 @@ function renderReles(reles) {
     const card = releGetCard(rele);
     container.appendChild(card);
   });
+}
+
+function openReleModal(numRele) {
+  const rele = eTomadaData.reles.find((r) => r.num == numRele);
+
+  if (!rele) return;
+
+  releEditando = numRele;
+
+  document.getElementById("modalTitle").innerHTML = "Editar Tomada " + numRele;
+  document.getElementById("modalNome").value = rele.nome || "";
+  document.getElementById("modalRegra").value = rele.regra || "";
+  document.getElementById("modalSalvarBtn").onclick = function () {
+    tomadaSalvarModal();
+  };
+
+  document.getElementById("modalOverlay").classList.add("open");
+  document.getElementById("editModal").classList.add("open");
+}
+
+function closeModal() {
+  releEditando = null;
+
+  document.getElementById("modalOverlay").classList.remove("open");
+  document.getElementById("editModal").classList.remove("open");
 }
 
 function sensorGetCard(sensor) {
@@ -180,28 +201,34 @@ function renderSensores(sensores) {
   });
 }
 
-async function tomadaSalvar(numRele, btn) {
-  btn.innerText = "Salvando...";
-  btn.disabled = true;
+async function tomadaSalvarModal() {
+  if (releEditando == null) return;
 
-  document.getElementById(`tomadaCard-${numRele}`).classList.add("saving");
+  const btn = document.getElementById("modalSalvarBtn");
+
+  btn.disabled = true;
+  btn.innerText = "Salvando...";
 
   try {
-    await tomadaAPI(
+    await eTomadaAPI(
       "setReleConfig",
       {
-        rele: numRele,
-        nome: document.getElementById(`nome-${numRele}`).value,
-        regra: document.getElementById(`regra-${numRele}`).value,
+        rele: releEditando,
+        nome: document.getElementById("modalNome").value,
+        regra: document.getElementById("modalRegra").value,
       },
       "PUT",
     );
+
+    closeModal();
+
+    await load();
   } catch (e) {
     statusMsg("Erro ao salvar: " + e);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "💾 Salvar";
   }
-
-  // load recria o HTML com o botão habilitado
-  load();
 }
 
 async function tomadaOverride(numRele, novoEstado, btn) {
@@ -209,7 +236,7 @@ async function tomadaOverride(numRele, novoEstado, btn) {
   btn.disabled = true;
 
   try {
-    await tomadaAPI(
+    await eTomadaAPI(
       "setRele",
       {
         rele: numRele,
@@ -225,27 +252,17 @@ async function tomadaOverride(numRele, novoEstado, btn) {
   //load();
 }
 
-function tomadaToggleEdit(id, editing) {
-  editingTomada = editing ? id : null;
-  document.getElementById(`tomadaEdit-${id}`).style.display = editing
-    ? "block"
-    : "none";
-  document.getElementById(`tomadaView-${id}`).style.display = !editing
-    ? "block"
-    : "none";
-}
-
 async function openConfig() {
-  document.getElementById("configPanel").classList.add("open");
-  document.getElementById("configOverlay").classList.add("open");
-
   try {
-    eTomadaData = await tomadaAPI("data");
+    eTomadaData = await eTomadaAPI("data");
     renderConfig();
   } catch (e) {
     statusMsg("Erro openConfig: " + e);
     throw e;
   }
+
+  document.getElementById("configPanel").classList.add("open");
+  document.getElementById("configOverlay").classList.add("open");
 }
 
 function closeConfig() {
@@ -338,7 +355,7 @@ async function salvarConfigGeral() {
         const ativo = pino != -1;
 
         if (old.ativo != ativo || old.pino != pino) {
-          await tomadaAPI(
+          await eTomadaAPI(
             "setReleConfig",
             {
               rele,

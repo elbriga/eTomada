@@ -60,7 +60,7 @@ footer {
 }
 
 .title {
-  font-size: 28px;
+  font-size: 32px;
 }
 
 .status {
@@ -183,4 +183,66 @@ button:hover {
 
 .configCard span {
   display: flex;
+}
+
+.modal {
+  position: fixed;
+
+  top: 50%;
+  left: 50%;
+
+  transform: translate(-50%, -50%) scale(0.9);
+
+  width: 90%;
+  max-width: 400px;
+
+  background: #1e293b;
+
+  border-radius: 14px;
+
+  padding: 20px;
+
+  z-index: 1000;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.modal.open {
+  opacity: 1;
+  pointer-events: all;
+
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 20px;
+
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.modalHeader button {
+  width: 50px;
+}
+
+.modalContent label {
+  display: block;
+  margin-bottom: 5px;
+  margin-top: 10px;
+}
+
+.modalContent input {
+  box-sizing: border-box;
+  padding: 10px;
 }
