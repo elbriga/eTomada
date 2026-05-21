@@ -48,11 +48,11 @@ void sensoresAtualiza() {
     int novoValor = sensor->tipo->ler(sensor);
     String msg = sensorAtualizaUnsafe(s, novoValor);
     if (msg != "") {
-      logaMensagem("Sensor[%d] => [%d] [%s]", s, novoValor, msg.c_str());
-
       if (msg == "MUDOU") {
         String sensorJSON = sensorGetJSON(sensor);
         httpEnviaEvento(sensorJSON, "sse_sensor");
+      } else {
+        logaMensagem("Sensor[%d] => [%d] [%s]", s, novoValor, msg.c_str());
       }
     }
   }
