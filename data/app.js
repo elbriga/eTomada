@@ -3,7 +3,7 @@ const API_BASE =
     ? "http://192.168.18.105" // IP do ESP quando o frontend esta hospedado para DEV
     : window.location.origin;
 
-let configData = null;
+let eTomadaData = null;
 
 function getRegraTXT(regra) {
   if (!regra || regra.trim() === "") {
@@ -92,18 +92,21 @@ async function load() {
   loading = true;
 
   try {
-    const data = await tomadaAPI("data");
+    eTomadaData = await tomadaAPI("data");
 
-    if (!data.reles || !data.sensores) {
+    if (!eTomadaData.reles || !eTomadaData.sensores) {
       // TODO msg de erro!
       return;
     }
 
     document.getElementById("datahora").innerHTML =
-      "uptime: " + formataTempo(data.uptime) + " - " + data.datahorastr;
+      "uptime: " +
+      formataTempo(eTomadaData.uptime) +
+      " - " +
+      eTomadaData.datahorastr;
 
-    renderReles(data.reles);
-    renderSensores(data.sensores);
+    renderReles(eTomadaData.reles);
+    renderSensores(eTomadaData.sensores);
   } catch (e) {
     statusMsg("Erro ao carregar: " + e);
   } finally {
@@ -111,35 +114,29 @@ async function load() {
   }
 }
 
-function releGetCardHtml(rele) {
-  return `
+function releGetCard(rele) {
+  const card = document.createElement("div");
+  card.id = "tomadaCard-" + rele.num;
+  card.className = "card cardRele";
+  card.innerHTML = `
 <div class="medio">Tomada ${rele.num}</div>
 <div class="title">${escapeHtml(rele.nome || "")}</div>
 <div class="medio">${getRegraTXT(rele.regra)}</div>
 <div class="small">pino: ${escapeHtml(rele.pino)}</div>
 <br>
 
-<div id="releVal-${rele.num}" class="status ${rele.estado ? "on" : "off"}">
+<div class="status ${rele.estado ? "on" : "off"}">
   ${rele.estado ? "● Ligado" : "● Desligado"}
   ${rele.override > Date.now() / 1000 && rele.regra != "" ? ` (até ${getHoraFromTS(rele.override)})` : ""}
 </div>
 
-<div id="tomadaEdit-${rele.num}" style="display: none">
-  Nome: <input id="nome-${rele.num}" value="${escapeHtml(rele.nome || "")}"><br>
-  Regra: <input id="regra-${rele.num}" value="${escapeHtml(rele.regra || "")}" placeholder="ON=08:00-18:00" maxlength="31">
-  <button onclick="tomadaSalvar(${rele.num}, this)">💾 Salvar</button>
-  <br><br>
-  <button onclick="tomadaToggleEdit(${rele.num}, false)">❌ Cancelar</button>
-</div>
-
-<div id="tomadaView-${rele.num}">
-  <button onclick="tomadaOverride(${rele.num}, ${rele.estado ? "false" : "true"}, this)">
-    ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
-  </button>
-  <br><br>
-  <button onclick="tomadaToggleEdit(${rele.num}, true)">✏️ Editar</button>
-</div>
+<button onclick="tomadaOverride(${rele.num}, ${rele.estado ? "false" : "true"}, this)">
+  ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
+</button>
+<br><br>
+<button onclick="tomadaToggleEdit(${rele.num}, true)">✏️ Editar</button>
 `;
+  return card;
 }
 
 function renderReles(reles) {
@@ -150,13 +147,24 @@ function renderReles(reles) {
     if (!rele.ativo) return;
     if (!rele.nome) rele.nome = "---";
 
-    const card = document.createElement("div");
-    card.id = "tomadaCard-" + rele.num;
-    card.className = "card cardRele";
-    card.innerHTML = releGetCardHtml(rele);
-
+    const card = releGetCard(rele);
     container.appendChild(card);
   });
+}
+
+function sensorGetCard(sensor) {
+  const card = document.createElement("div");
+  card.id = "sensorCard-" + sensor.num;
+  card.className = "card cardSensor";
+  card.innerHTML = `
+<div class="medio">Sensor ${sensor.num}</div>
+<div class="title">${escapeHtml(sensor.nome || "")}</div>
+<div class="small">pino: ${escapeHtml(sensor.pino)}</div>
+<br>
+<div class="status on">${sensor.valorStr}</div>
+<button onclick="sensorToggleEdit(${sensor.num}, true)">✏️ Editar</button>
+`;
+  return card;
 }
 
 function renderSensores(sensores) {
@@ -167,33 +175,7 @@ function renderSensores(sensores) {
     if (!sensor.tipo) return;
     if (!sensor.nome) sensor.nome = "---";
 
-    let numSensor = sensor.num;
-
-    const card = document.createElement("div");
-    card.id = "sensorCard-" + numSensor;
-    card.className = "card cardSensor";
-
-    let html = `
-<div class="medio">Sensor ${numSensor}</div>
-<div class="title">${escapeHtml(sensor.nome || "")}</div>
-<div class="small">pino: ${escapeHtml(sensor.pino)}</div>
-<br>
-
-<div id="sensorVal-${numSensor}" class="status on">${sensor.valorStr}</div>
-
-<div id="sensorEdit-${numSensor}" style="display: none">
-  Nome: <input id="nomeSensor-${numSensor}" value="${escapeHtml(sensor.nome || "")}"><br>
-  <button onclick="sensorSalvar(${numSensor}, this)">💾 Salvar</button>
-  <br><br>
-  <button onclick="sensorToggleEdit(${numSensor}, false)">❌ Cancelar</button>
-</div>
-
-<div id="sensorView-${numSensor}">
-  <button onclick="sensorToggleEdit(${numSensor}, true)">✏️ Editar</button>
-</div>
-`;
-
-    card.innerHTML = html;
+    const card = sensorGetCard(sensor);
     container.appendChild(card);
   });
 }
@@ -258,7 +240,7 @@ async function openConfig() {
   document.getElementById("configOverlay").classList.add("open");
 
   try {
-    configData = await tomadaAPI("data");
+    eTomadaData = await tomadaAPI("data");
     renderConfig();
   } catch (e) {
     statusMsg("Erro openConfig: " + e);
@@ -276,7 +258,7 @@ function renderConfig() {
 
   let html = "";
 
-  configData.reles.forEach((rele, i) => {
+  eTomadaData.reles.forEach((rele, i) => {
     const num = i + 1;
 
     html += `
@@ -293,7 +275,7 @@ function renderConfig() {
 `;
   });
 
-  configData.sensores.forEach((sensor, i) => {
+  eTomadaData.sensores.forEach((sensor, i) => {
     const num = i + 1;
 
     html += `
@@ -333,7 +315,7 @@ function getPinosOptions(selected) {
 function getTipoSensorOptions(selected) {
   return (
     `<option value="0">Desativado!</option>\n` +
-    configData.tipoSensores
+    eTomadaData.tipoSensores
       .map((ts) => {
         return `
 <option value="${ts.num}" ${ts.num == selected ? "selected" : ""}>
@@ -348,7 +330,7 @@ function getTipoSensorOptions(selected) {
 async function salvarConfigGeral() {
   try {
     await Promise.all(
-      configData.reles.map(async (old, i) => {
+      eTomadaData.reles.map(async (old, i) => {
         const rele = i + 1;
         const pino = parseInt(
           document.getElementById(`cfg-pino-${rele}`).value,
@@ -434,18 +416,16 @@ function init() {
 
   evt.addEventListener("sse_rele", (e) => {
     const rele = JSON.parse(e.data);
-    // console.log("RELE!");
-    // console.log(rele);
-    document.getElementById("tomadaCard-" + rele.num).innerHTML =
-      releGetCardHtml(rele);
+    const newCard = releGetCard(rele);
+    const oldCard = document.getElementById(`tomadaCard-${rele.num}`);
+    oldCard.parentNode.replaceChild(newCard, oldCard);
   });
 
   evt.addEventListener("sse_sensor", (e) => {
     const sensor = JSON.parse(e.data);
-    // console.log("SENSOR!");
-    // console.log(sensor);
-    document.getElementById("sensorVal-" + sensor.num).innerHTML =
-      sensor.valorStr;
+    const newCard = sensorGetCard(sensor);
+    const oldCard = document.getElementById(`sensorCard-${sensor.num}`);
+    oldCard.parentNode.replaceChild(newCard, oldCard);
   });
 
   load();
