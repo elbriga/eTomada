@@ -10,6 +10,16 @@ done
 for ARQ in `ls src/`; do
     echo $ARQ
     echo "==="
-    cat "src/$ARQ"
+    if [ -d "src/$ARQ" ]; then
+        # 1 nivel de recursao manual
+        for ARQ2 in `ls src/$ARQ/`; do
+            echo "$ARQ/$ARQ2"
+            echo "==="
+            cat "src/$ARQ/$ARQ2"
+            echo
+        done
+    else
+        cat "src/$ARQ"
+    fi
     echo
 done
