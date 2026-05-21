@@ -4,8 +4,11 @@
 #include "tipoSensores.h"
 #include "loga.h"
 #include "http.h"
+#include "mutex.h"
 
 static Sensor sensores[MAX_SENSORES];
+
+String sensorGetJSON(Sensor *s);
 
 void sensoresInit() {
   for (int i = 0; i < MAX_SENSORES; i++) {
@@ -22,6 +25,12 @@ int sensoresGetCount() {
 void sensoresAtualiza() {
   // logaMensagem("Atualizar Sensores");
 
+  MutexLock lock(sensorMutex);
+  if (!lock) {
+    logaMensagem("sensorAtualiza: mutex timeout");
+    return;
+  }
+
   Sensor *sensor;
   for (int s=1; s <= MAX_SENSORES; s++) {
     sensor = &sensores[s-1];
@@ -37,21 +46,16 @@ void sensoresAtualiza() {
     }
 
     int novoValor = sensor->tipo->ler(sensor);
-    String msg = sensorAtualiza(s, novoValor);
+    String msg = sensorAtualizaUnsafe(s, novoValor);
     if (msg != "") {
       logaMensagem("Sensor[%d] => [%d] [%s]", s, novoValor, msg.c_str());
+
+      if (msg == "MUDOU") {
+        String sensorJSON = sensorGetJSON(sensor);
+        httpEnviaEvento(sensorJSON, "sse_sensor");
+      }
     }
   }
-}
-
-String sensorAtualiza(int numSensor, int valor)
-{
-  // MutexLock lock(sensorMutex);
-  // if (!lock) {
-  //   return "sensorAtualiza: mutex timeout";
-  // }
-
-  return sensorAtualizaUnsafe(numSensor, valor);
 }
 
 // REQUIRE sensorMutex locked
@@ -67,9 +71,7 @@ String sensorAtualizaUnsafe(int numSensor, int valor)
     sensor->valor = valor;
     snprintf(sensor->valorStr, sizeof(sensor->valorStr), sensor->tipo->format, valor);
 
-    httpEnviaEvento("{ \"valor\": "+String(valor)+" }", "sensor");
-
-    ret = "MUDOU!";
+    ret = "MUDOU";
   }
 
   return ret;
@@ -81,4 +83,17 @@ Sensor *sensorGet(int numSensor) {
   }
 
   return &sensores[numSensor - 1];
+}
+
+// REQUIRE sensorMutex locked
+String sensorGetJSON(Sensor *s) {
+  JsonDocument doc;
+  doc["num"] = s->num; 
+  doc["valor"] = s->valor;
+  doc["valorStr"] = s->valorStr;
+
+  String out;
+  serializeJson(doc, out);
+
+  return out;
 }

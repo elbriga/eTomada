@@ -163,7 +163,7 @@ String eTomadaGetDataJSON() {
     MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
 
     if (!lock) {
-      doc["erro"] = "mutex timeout";
+      doc["erro"] = "mutex rele timeout";
     } else {
       for (int i = 1; i <= totReles; i++) {
         rele = releGet(i);
@@ -185,11 +185,11 @@ String eTomadaGetDataJSON() {
   int totSensores = sensoresGetCount();
   JsonArray sensores = doc["sensores"].to<JsonArray>();
   {
-    //MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
+    MutexLock lock(sensorMutex, pdMS_TO_TICKS(2500));
 
-    // if (!lock) {
-    //   doc["erro"] = "mutex timeout";
-    // } else {
+    if (!lock) {
+      doc["erro"] = "mutex sensor timeout";
+    } else {
       for (int i = 1; i <= totSensores; i++) {
         sensor = sensorGet(i);
         if (!sensor) continue;
@@ -202,7 +202,7 @@ String eTomadaGetDataJSON() {
         s["valor"]    = sensor->valor;
         s["valorStr"] = sensor->valorStr;
       }
-    // }
+    }
   }
   
   TipoSensor *ts;

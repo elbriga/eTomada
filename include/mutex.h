@@ -4,6 +4,7 @@
 #include <freertos/semphr.h>
 
 extern SemaphoreHandle_t releMutex;
+extern SemaphoreHandle_t sensorMutex;
 extern SemaphoreHandle_t prefsMutex;
 
 void mutexInit();

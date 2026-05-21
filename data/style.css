@@ -64,6 +64,7 @@ footer {
 }
 
 .status {
+  font-size: 32px;
   text-align: center;
   margin-bottom: 10px;
   font-weight: bold;

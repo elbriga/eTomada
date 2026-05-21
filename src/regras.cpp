@@ -145,12 +145,22 @@ String checkRegra(int numRele) {
         return "Sensor ON invalido!";
       }
 
+      int valorSensor;
+      {
+        MutexLock lock(sensorMutex, pdMS_TO_TICKS(500));
+        if (!lock) {
+          return "sensor mutex timeout";
+        }
+
+        valorSensor = s->valor;
+      }
+
       bool ligaRele;
       int valorTeste = atoi(&condLiga[3]);
       if (condLiga[2] == '>') {
-        ligaRele = (s->valor > valorTeste);
+        ligaRele = (valorSensor > valorTeste);
       } else if (condLiga[2] == '<') {
-        ligaRele = (s->valor < valorTeste);
+        ligaRele = (valorSensor < valorTeste);
       } else {
         return "Condicao ON invalida!";
       }
@@ -171,12 +181,22 @@ String checkRegra(int numRele) {
         return "Sensor OF invalido!";
       }
 
+      int valorSensor;
+      {
+        MutexLock lock(sensorMutex, pdMS_TO_TICKS(500));
+        if (!lock) {
+          return "sensor mutex timeout";
+        }
+
+        valorSensor = s->valor;
+      }
+
       bool desligaRele;
       int valorTeste = atoi(&condDesliga[3]);
       if (condDesliga[2] == '>') {
-        desligaRele = (s->valor > valorTeste);
+        desligaRele = (valorSensor > valorTeste);
       } else if (condDesliga[2] == '<') {
-        desligaRele = (s->valor < valorTeste);
+        desligaRele = (valorSensor < valorTeste);
       } else {
         return "Condicao OF invalida!";
       }
