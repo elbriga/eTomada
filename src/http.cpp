@@ -40,11 +40,11 @@ void httpServerInit() {
 
     // Tratar o OPTIONS
     if (request->method() == HTTP_OPTIONS) {
-      logaRequest(request, "OPTIONS");
       request->send(200);
+      logaRequest(request, "OPTIONS");
     } else {
-      logaRequest(request, "404 Not Found");
       request->send(404);
+      logaRequest(request, "404 Not Found");
     }
   });
 
@@ -53,19 +53,19 @@ void httpServerInit() {
 
 void httpServerInitModoAPI() {
   httpServer.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String out = eTomadaGetSnapshotJSON();
+    String body = eTomadaGetSnapshotJSON();
+    request->send(200, "application/json", body);
     logaRequest(request, "200 OK");
-    request->send(200, "application/json", out);
   });
 
   httpServer.on("/api/setRele", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     String setOK = relesSetFromJSON(data);
     if (setOK == "OK") {
-      logaRequest(request, "200 OK");
       request->send(200, "application/json", "{\"msg\": \"OK\"}");
+      logaRequest(request, "200 OK");
     } else {
-      logaRequest(request, "400 " + setOK);
       request->send(400, "application/json", "{\"msg\": \""+setOK+"\"}"); 
+      logaRequest(request, "400 " + setOK);
     }
   });
 
@@ -74,11 +74,11 @@ void httpServerInitModoAPI() {
     if (atzCfgOK == "OK") {
       processaRegras();
       
-      logaRequest(request, "200 OK");
       request->send(200, "application/json", "{\"msg\": \"OK\"}");
+      logaRequest(request, "200 OK");
     } else {
-      logaRequest(request, "400 " + atzCfgOK);
       request->send(400, "application/json", "{\"msg\": \""+atzCfgOK+"\"}"); 
+      logaRequest(request, "400 " + atzCfgOK);
     }
   });
 
@@ -87,24 +87,24 @@ void httpServerInitModoAPI() {
     if (atzCfgOK == "OK") {
       processaRegras();
       
-      logaRequest(request, "200 OK");
       request->send(200, "application/json", "{\"msg\": \"OK\"}");
+      logaRequest(request, "200 OK");
     } else {
-      logaRequest(request, "400 " + atzCfgOK);
       request->send(400, "application/json", "{\"msg\": \""+atzCfgOK+"\"}"); 
+      logaRequest(request, "400 " + atzCfgOK);
     }
   });
 
   httpServer.on("/api/factoryReset", HTTP_POST, [](AsyncWebServerRequest *request) {
     eTomadaFactoryReset();
-    logaRequest(request, "200 OK");
     request->send(200, "application/json", "{\"msg\": \"OK\"}");
+    logaRequest(request, "200 OK");
   });
   
   httpServer.on("/api/resetWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request) {
     WiFiResetConfig();
-    logaRequest(request, "200 OK");
     request->send(200, "application/json", "{\"msg\":\"OK\"}");
+    logaRequest(request, "200 OK");
 
     delay(1000);
     ESP.restart();
@@ -127,23 +127,23 @@ void httpServerInitModoAPI() {
 void httpServerInitModoAP() {
   // Android
   httpServer.on("/generate_204", HTTP_GET, [](AsyncWebServerRequest *request) {
-    logaRequest(request, "Redir /");
     request->redirect("/");
+    logaRequest(request, "Redir /");
   });
   // iOS
   httpServer.on("/hotspot-detect.html", HTTP_GET, [](AsyncWebServerRequest *request) {
-    logaRequest(request, "Redir /");
     request->redirect("/");
+    logaRequest(request, "Redir /");
   });
   // Windows
   httpServer.on("/connecttest.txt", HTTP_GET, [](AsyncWebServerRequest *request) {
-    logaRequest(request, "Redir /");
     request->redirect("/");
+    logaRequest(request, "Redir /");
   });
 
   httpServer.on("/api/redes", HTTP_GET, [](AsyncWebServerRequest *request) {
-    logaRequest(request, "200 OK");
     request->send(200, "application/json", WiFiGetScanJSON());
+    logaRequest(request, "200 OK");
   });
 
   httpServer.on("/api/setWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
@@ -166,8 +166,8 @@ void httpServerInitModoAP() {
 
     WiFiSalvaConfig(ssid, pass);
 
-    logaRequest(request, "200 OK");
     request->send(200, "application/json", "{\"msg\":\"OK\"}");
+    logaRequest(request, "200 OK");
 
     delay(1000);
     ESP.restart();
