@@ -5,12 +5,16 @@ function releGetCard(rele) {
   card.id = "tomadaCard-" + rele.num;
   card.className = "card cardRele";
   card.innerHTML = `
-<div class="medio">Tomada ${rele.num}</div>
-<div class="title">${escapeHtml(rele.nome || "")}</div>
-<div class="medio">${releGetRegraTXT(rele.regra)}</div>
-<div class="small">pino: ${escapeHtml(rele.pino)}</div>
+<div class="headerTop">
+  <div class="minHeight">
+    <div class="medio">Tomada ${rele.num}</div>
+    <div class="title">${escapeHtml(rele.nome || "")}</div>
+    <div class="medio">${releGetRegraTXT(rele.regra)}</div>
+    <div class="small">pino: ${escapeHtml(rele.pino)}</div>
+  </div>
+  <button class="editBtn" onclick="releOpenEditModal(${rele.num})">✏️</button>
+</div>
 <br>
-
 <div class="status ${rele.estado ? "on" : "off"}">
   ${rele.estado ? "● Ligado" : "● Desligado"}
   ${rele.override > Date.now() / 1000 && rele.regra != "" ? ` (até ${getHoraFromTS(rele.override)})` : ""}
@@ -19,8 +23,6 @@ function releGetCard(rele) {
 <button onclick="releOverride(${rele.num}, ${rele.estado ? "false" : "true"}, this)">
   ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
 </button>
-<br><br>
-<button onclick="releOpenEditModal(${rele.num})">✏️ Editar</button>
 `;
   return card;
 }
@@ -46,6 +48,7 @@ function releOpenEditModal(numRele) {
 
   document.getElementById("modalTitle").innerHTML = "Editar Tomada " + numRele;
   document.getElementById("modalNome").value = rele.nome || "";
+  document.getElementById("modalDivRegra").style.display = "block";
   document.getElementById("modalRegra").value = rele.regra || "";
   document.getElementById("modalSalvarBtn").onclick = function () {
     releSalvarFromModal();
@@ -75,7 +78,7 @@ async function releSalvarFromModal() {
 
     editModalClose();
   } catch (e) {
-    statusMsg("Erro ao salvar: " + e);
+    statusMsg("Erro ao salvar rele: " + e);
   } finally {
     btn.disabled = false;
     btn.innerText = "💾 Salvar";
