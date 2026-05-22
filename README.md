@@ -151,7 +151,7 @@ Liga às 08:00 e desliga às 18:00.
 Formato:
 
 ```txt
-SE|temperatura>30|temperatura<25
+SE|S1>30|S1<25
 ```
 
 Exemplo:
