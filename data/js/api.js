@@ -9,11 +9,20 @@ function sseInit() {
     console.log("Erro SSE", err);
   };
 
+  // Refresh completo da tela
+  evt.addEventListener("sse_snapshot", (e) => {
+    const snapshot = JSON.parse(e.data);
+    console.log("SNAPSHOT");
+    eTomadaRender(snapshot);
+  });
+
+  // Refresh de um rele
   evt.addEventListener("sse_rele", (e) => {
     const rele = JSON.parse(e.data);
     releAtualiza(rele);
   });
 
+  // refresh de um sensor
   evt.addEventListener("sse_sensor", (e) => {
     const sensor = JSON.parse(e.data);
     sensorAtualiza(sensor);

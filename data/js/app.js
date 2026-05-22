@@ -7,7 +7,36 @@ let eTomadaData = null;
 
 function init() {
   sseInit();
-  load();
+  //load();
+}
+
+async function eTomadaRender(snapshot) {
+  if (!snapshot) {
+    snapshot = await eTomadaAPI("data");
+  }
+
+  if (!snapshot.reles || !snapshot.sensores) {
+    statusMsg("Erro nos dados!");
+    return;
+  }
+
+  if (!snapshot.api) {
+    // TODO!
+    statusMsg("Erro versao API!");
+    return;
+  }
+
+  eTomadaData = snapshot;
+
+  document.getElementById("datahora").innerHTML =
+    "uptime: " +
+    formataTempo(eTomadaData.uptime) +
+    " - " +
+    eTomadaData.datahorastr;
+
+  sensoresRender(eTomadaData.sensores);
+
+  relesRender(eTomadaData.reles);
 }
 
 let loading = false;
@@ -18,22 +47,7 @@ async function load() {
   loading = true;
 
   try {
-    eTomadaData = await eTomadaAPI("data");
-
-    if (!eTomadaData.reles || !eTomadaData.sensores) {
-      statusMsg("Erro nos dados!");
-      return;
-    }
-
-    document.getElementById("datahora").innerHTML =
-      "uptime: " +
-      formataTempo(eTomadaData.uptime) +
-      " - " +
-      eTomadaData.datahorastr;
-
-    sensoresRender(eTomadaData.sensores);
-
-    relesRender(eTomadaData.reles);
+    await eTomadaRender();
   } catch (e) {
     statusMsg("Erro ao carregar: " + e);
   } finally {
