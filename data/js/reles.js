@@ -113,7 +113,7 @@ function releGetRegraTXT(regra) {
 
   regra = regra.trim();
 
-  const [acao, param1, param2] = regra.split("|");
+  let [acao, param1, param2] = regra.split("|");
 
   if (acao === "ON" || acao === "OF") {
     return (
@@ -126,6 +126,24 @@ function releGetRegraTXT(regra) {
   }
 
   if (acao === "SE") {
+    if (param1 != "") {
+      let numSensor = parseInt(param1[1] + "") - 1;
+      let sensor = eTomadaData.sensores[numSensor];
+      if (sensor) {
+        let op = param1[2];
+        let val = param1.substring(3);
+        param1 = `${sensor.nome} ${op} ${val}`;
+      }
+    }
+    if (param2 != "") {
+      let numSensor = parseInt(param2[1] + "") - 1;
+      let sensor = eTomadaData.sensores[numSensor];
+      if (sensor) {
+        let op = param2[2];
+        let val = param2.substring(3);
+        param2 = `${sensor.nome} ${op} ${val}`;
+      }
+    }
     return (
       (param1 !== "" ? `Ligar SE ${param1}` : "") +
       (param1 !== "" && param2 != "" ? "<br>\n" : "") +
@@ -134,4 +152,12 @@ function releGetRegraTXT(regra) {
   }
 
   return "??" + regra;
+}
+
+function releAtualiza(rele) {
+  eTomadaData.reles[rele.num - 1] = rele;
+
+  const newCard = releGetCard(rele);
+  const oldCard = document.getElementById(`tomadaCard-${rele.num}`);
+  oldCard.parentNode.replaceChild(newCard, oldCard);
 }

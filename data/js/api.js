@@ -11,16 +11,12 @@ function sseInit() {
 
   evt.addEventListener("sse_rele", (e) => {
     const rele = JSON.parse(e.data);
-    const newCard = releGetCard(rele);
-    const oldCard = document.getElementById(`tomadaCard-${rele.num}`);
-    oldCard.parentNode.replaceChild(newCard, oldCard);
+    releAtualiza(rele);
   });
 
   evt.addEventListener("sse_sensor", (e) => {
     const sensor = JSON.parse(e.data);
-    const newCard = sensorGetCard(sensor);
-    const oldCard = document.getElementById(`sensorCard-${sensor.num}`);
-    oldCard.parentNode.replaceChild(newCard, oldCard);
+    sensorAtualiza(sensor);
   });
 }
 

@@ -75,3 +75,14 @@ async function sensorSalvarFromModal() {
     btn.innerText = "💾 Salvar";
   }
 }
+
+function sensorAtualiza(sensor) {
+  eTomadaData.sensores[sensor.num - 1] = sensor;
+
+  const newCard = sensorGetCard(sensor);
+  const oldCard = document.getElementById(`sensorCard-${sensor.num}`);
+  oldCard.parentNode.replaceChild(newCard, oldCard);
+
+  // Ao mudar o nome do sensor pode precisar atualizar regras SE dos reles
+  relesRender(eTomadaData.reles);
+}
