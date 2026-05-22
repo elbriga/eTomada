@@ -53,7 +53,7 @@ void httpServerInit() {
 
 void httpServerInitModoAPI() {
   httpServer.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String out = eTomadaGetDataJSON();
+    String out = eTomadaGetSnapshotJSON();
     logaRequest(request, "200 OK");
     request->send(200, "application/json", out);
   });
@@ -114,8 +114,9 @@ void httpServerInitModoAPI() {
   sse.onConnect([](AsyncEventSourceClient *client) {
     logaMensagem("Cliente SSE conectado de [%s]", client->client()->remoteIP().toString().c_str());
 
-    // mensagem inicial opcional
-    client->send("conectado", NULL, millis(), 1000);
+    // Snapshot ao conectar
+    String body = eTomadaGetSnapshotJSON();
+    client->send(body, "sse_snapshot", millis(), 2500);
   });
 
   httpServer.addHandler(&sse);

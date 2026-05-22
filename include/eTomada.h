@@ -4,7 +4,9 @@
 #include "sensores.h"
 
 void eTomadaLoadConfig();
-String eTomadaGetDataJSON();
+
+String eTomadaGetSnapshotJSON();
+
 void eTomadaSalvaRele(Rele *rele);
 void eTomadaSalvaSensor(Sensor *sensor);
 void eTomadaFactoryReset();

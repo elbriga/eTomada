@@ -85,7 +85,7 @@ void eTomadaLoadConfig() {
   Serial.println("");
 }
 
-String eTomadaGetDataJSON() {
+String eTomadaGetSnapshotJSON() {
   JsonDocument doc;
   doc["api"]    = 1; // versão da API
   doc["uptime"] = millis();
