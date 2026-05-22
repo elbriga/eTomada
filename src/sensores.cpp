@@ -104,6 +104,64 @@ String sensorGetJSON(Sensor *s) {
   return out;
 }
 
+String sensorAtualizaConfigFromJSON(uint8_t *json)
+{
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, json);
+  if (err) {
+    return "JSON Invalido";
+  }
+
+  int numSensor = doc["sensor"];
+  if (numSensor < 1 || numSensor > MAX_SENSORES) {
+    return "Sensor invalido";
+  }
+
+  Sensor sensorCopy;
+  {
+    MutexLock lock(sensorMutex, pdMS_TO_TICKS(2500));
+    if (!lock) {
+      return "mutex timeout";
+    }
+
+    Sensor *sensor = &sensores[numSensor - 1];
+
+    int novoPino = doc["pino"].isNull() ? sensor->pino : atoi(doc["pino"].as<String>().c_str());
+    if (novoPino != -1 && !eTomadaPinoInOK(novoPino)) {
+      return "Pino Invalido";
+    }
+
+    TipoSensor *ts = NULL;
+    if (!doc["tipo"].isNull()) {
+      ts = tipoSensorGet(doc["tipo"].as<String>().c_str());
+      if (!ts) {
+        return "Tipo Invalido";
+      }
+      sensor->tipo = ts;
+    }
+
+    sensor->pino = novoPino;
+
+    if (!doc["nome"].isNull()) {
+      strncpy(sensor->nome, doc["nome"].as<String>().c_str(), sizeof(sensor->nome) - 1);
+      sensor->nome[sizeof(sensor->nome) - 1] = '\0';
+    }
+
+    memcpy(&sensorCopy, sensor, sizeof(Sensor));
+  }
+  
+  logaMensagem(">> SENSOR [%d] nome[%s] pino[%d] tipo[%d]",
+    numSensor, sensorCopy.nome, sensorCopy.pino, sensorCopy.tipo);
+  
+  // Setar no prefs
+  eTomadaSalvaSensor(&sensorCopy);
+
+  String sensorJSON = sensorGetJSON(&sensorCopy);
+  httpEnviaEvento(sensorJSON, "sse_sensor");
+
+  return "OK";
+}
+
 Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
   Sensor *sensor = sensorGet(num);
   if (!sensor) {

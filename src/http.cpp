@@ -3,6 +3,7 @@
 #include "loga.h"
 #include "reles.h"
 #include "regras.h"
+#include "sensor.h"
 #include "wifi.h"
 
 #define DEV // TODO :: remover
@@ -48,7 +49,20 @@ void httpServerInit()
     });
 
     httpServer.on("/api/setReleConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-      String atzCfgOK = relesAtualizaConfigFromJSON(data);
+      String atzCfgOK = releAtualizaConfigFromJSON(data);
+      if (atzCfgOK == "OK") {
+        processaRegras();
+        
+        logaRequest(request, "200 OK");
+        request->send(200, "application/json", "{\"msg\": \"OK\"}");
+      } else {
+        logaRequest(request, "400 " + atzCfgOK);
+        request->send(400, "application/json", "{\"msg\": \""+atzCfgOK+"\"}"); 
+      }
+    });
+
+    httpServer.on("/api/setSensorConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+      String atzCfgOK = sensorAtualizaConfigFromJSON(data);
       if (atzCfgOK == "OK") {
         processaRegras();
         

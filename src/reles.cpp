@@ -108,7 +108,7 @@ String releGetJSON(Rele *r) {
   return out;
 }
 
-String relesAtualizaConfigFromJSON(uint8_t *json)
+String releAtualizaConfigFromJSON(uint8_t *json)
 {
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, json);

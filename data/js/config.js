@@ -114,6 +114,24 @@ async function salvarConfigGeral() {
       }),
     );
 
+    await Promise.all(
+      eTomadaData.sensores.map(async (old, i) => {
+        const sensor = i + 1;
+        const tipo = document.getElementById(`cfg-sensor-${sensor}`).value;
+
+        if (old.tipo != tipo) {
+          await eTomadaAPI(
+            "setSensorConfig",
+            {
+              sensor,
+              tipo,
+            },
+            "PUT",
+          );
+        }
+      }),
+    );
+
     statusMsg("Configuração salva");
 
     closeConfig();

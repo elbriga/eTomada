@@ -198,6 +198,23 @@ void eTomadaSalvaRele(Rele *rele) {
   prefs.end();
 }
 
+void eTomadaSalvaSensor(Sensor *sensor) {
+  Preferences prefs;
+
+  MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
+  if (!lock) {
+    // TODO msg
+    return;
+  }
+
+  prefs.begin("sensores", false);
+  
+  setPrefsAtr(prefs, sensor->num, "nome",  String(sensor->nome));
+  setPrefsAtr(prefs, sensor->num, "tipo",  String(sensor->tipo ? sensor->tipo->nome : ""));
+
+  prefs.end();
+}
+
 void eTomadaFactoryReset() {
   int totReles = relesGetCount();
   

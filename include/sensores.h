@@ -19,6 +19,7 @@ void sensoresInit();
 int sensoresGetCount();
 Sensor *sensorGet(int numSensor);
 Sensor *sensorLoadFromPrefs(int num, Preferences &prefs);
+String sensorAtualizaConfigFromJSON(uint8_t *json);
 
 void sensoresAtualiza();
 String sensorAtualizaUnsafe(int numSensor, int valor);
