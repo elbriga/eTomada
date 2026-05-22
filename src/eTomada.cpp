@@ -77,7 +77,7 @@ void eTomadaLoadConfig() {
       logaMensagem("Sensor %d:%d:%s (%s) > [%s]",
         s, sensor->pino, sensor->nome,
         (sensor->tipo ? "on" : "off"),
-        sensor->tipo ? sensor->tipo->nome : "???"
+        sensor->tipo ? sensor->tipo->nome : ""
       );
   }
   prefs.end();
@@ -210,6 +210,7 @@ void eTomadaSalvaSensor(Sensor *sensor) {
   prefs.begin("sensores", false);
   
   setPrefsAtr(prefs, sensor->num, "nome",  String(sensor->nome));
+  setPrefsAtr(prefs, sensor->num, "pino",  String(sensor->pino));
   setPrefsAtr(prefs, sensor->num, "tipo",  String(sensor->tipo ? sensor->tipo->nome : ""));
 
   prefs.end();

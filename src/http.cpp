@@ -91,7 +91,7 @@ void httpServerInit()
 
     // Eventos de conexão/desconexão
     sse.onConnect([](AsyncEventSourceClient *client) {
-      Serial.println("Cliente SSE conectado");
+      logaMensagem("Cliente SSE conectado de [%s]", client->client()->remoteIP().toString().c_str());
 
       // mensagem inicial opcional
       client->send("conectado", NULL, millis(), 1000);

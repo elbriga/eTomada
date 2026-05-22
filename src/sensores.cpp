@@ -131,11 +131,14 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
       return "Pino Invalido";
     }
 
-    TipoSensor *ts = NULL;
     if (!doc["tipo"].isNull()) {
-      ts = tipoSensorGet(doc["tipo"].as<String>().c_str());
-      if (!ts) {
-        return "Tipo Invalido";
+      TipoSensor *ts = NULL;
+      String novoTipo = doc["tipo"].as<String>();
+      if (novoTipo != "") {
+        ts = tipoSensorGet(novoTipo.c_str());
+        if (!ts) {
+          return "Tipo ["+novoTipo+"] Invalido";
+        }
       }
       sensor->tipo = ts;
     }
@@ -175,13 +178,15 @@ Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
 
   sensor->pino = atoi(getPrefsAtr(prefs, num, "pino").c_str());  
   bool pinoOK = eTomadaPinoInOK(sensor->pino);
-  if (!pinoOK && sensor->pino != -1) {
+  if (!pinoOK) {
     sensor->tipo = NULL;
-    logaMensagem("Pino [%d] INVALIDO! Desativando Sensor[%d]", sensor->pino, num);
+    if (sensor->pino != -1) {
+      logaMensagem("Pino [%d] INVALIDO! Desativando Sensor[%d]", sensor->pino, num);
+    }
   } else {
     String tipo = getPrefsAtr(prefs, num, "tipo");
     sensor->tipo = tipoSensorGet(tipo.c_str());
-    if (!sensor->tipo) {
+    if (!sensor->tipo && tipo != "") {
       logaMensagem("Tipo [%s] INVALIDO! Desativando Sensor[%d]", tipo.c_str(), num);
     }
   }

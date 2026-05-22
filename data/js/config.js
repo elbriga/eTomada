@@ -77,7 +77,7 @@ function getPinosOptions(selected) {
 
 function getTipoSensorOptions(selected) {
   return (
-    `<option value="0">Desativado!</option>\n` +
+    `<option value="">Desativado!</option>\n` +
     eTomadaData.tipoSensores
       .map((ts) => {
         return `
