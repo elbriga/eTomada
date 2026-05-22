@@ -13,7 +13,7 @@ function sensorGetCard(sensor) {
   return card;
 }
 
-function renderSensores(sensores) {
+function sensoresRender(sensores) {
   const container = document.getElementById("sensores");
   container.innerHTML = "";
 

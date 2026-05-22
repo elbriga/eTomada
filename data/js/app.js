@@ -31,8 +31,9 @@ async function load() {
       " - " +
       eTomadaData.datahorastr;
 
-    renderReles(eTomadaData.reles);
-    renderSensores(eTomadaData.sensores);
+    sensoresRender(eTomadaData.sensores);
+
+    relesRender(eTomadaData.reles);
   } catch (e) {
     statusMsg("Erro ao carregar: " + e);
   } finally {

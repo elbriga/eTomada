@@ -2,6 +2,18 @@ function statusMsg(msg) {
   document.getElementById("status").innerHTML = msg;
 }
 
+function editModalOpen() {
+  document.getElementById("modalOverlay").classList.add("open");
+  document.getElementById("editModal").classList.add("open");
+}
+
+function editModalClose() {
+  releEditando = null;
+
+  document.getElementById("modalOverlay").classList.remove("open");
+  document.getElementById("editModal").classList.remove("open");
+}
+
 function escapeHtml(str) {
   return String(str)
     .replaceAll("&", "&amp;")
