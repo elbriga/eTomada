@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
 
 #include "eTomada.h"
 #include "loga.h"
@@ -8,6 +9,7 @@
 #include "mutex.h"
 #include "display.h"
 #include "http.h"
+#include "prefs.h"
 
 static Rele reles[MAX_RELES];
 
@@ -31,6 +33,40 @@ Rele *releGet(int numRele)
   }
 
   return &reles[numRele - 1];
+}
+
+Rele *releLoadFromPrefs(int num, Preferences &prefs) {
+  Rele *rele = releGet(num);
+  if (!rele) {
+    logaMensagem("ERRO no rele [%d]", num);
+    return NULL;
+  }
+
+  rele->num = num;
+  strncpy(rele->nome,  getPrefsAtr(prefs, num, "nome").c_str(),  sizeof(rele->nome) - 1);
+  rele->nome[sizeof(rele->nome) - 1] = '\0';
+
+  rele->pino = atoi(getPrefsAtr(prefs, num, "pino").c_str());
+
+  strncpy(rele->regra, getPrefsAtr(prefs, num, "regra").c_str(), sizeof(rele->regra) - 1);
+  rele->regra[sizeof(rele->regra) - 1] = '\0';
+
+  String regraOK = validaRegra(rele->regra);
+  if (regraOK != "OK") {
+    logaMensagem("Regra [%s] INVALIDA! [%s] Desativando Rele[%d]", rele->regra, regraOK.c_str(), num);
+  }
+  bool pinoOK = eTomadaPinoOutOK(rele->pino);
+  if (!pinoOK && rele->pino != -1) {
+    logaMensagem("Pino [%d] INVALIDO! Desativando Rele[%d]", rele->pino, num);
+  }
+  rele->ativo = (regraOK == "OK" && pinoOK) ?
+    (getPrefsAtr(prefs, num, "ativo") == "1") : false;
+
+  // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
+  rele->estado = 0;
+  rele->override = 0;
+
+  return rele;
 }
 
 String relesSetFromJSON(uint8_t *json)
@@ -103,7 +139,7 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
     rele->regra[sizeof(rele->regra) - 1] = '\0';
 
     int novoPino = doc["pino"].isNull() ? rele->pino :atoi(doc["pino"].as<String>().c_str());
-    if (novoPino != -1 && !eTomadaPinoOK(novoPino)) {
+    if (novoPino != -1 && !eTomadaPinoOutOK(novoPino)) {
       return "Pino Invalido";
     }
     rele->pino = novoPino;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <Preferences.h>
 
 #define MAX_RELES 8
 
@@ -17,6 +18,7 @@ struct Rele {
 void relesInit();
 int relesGetCount();
 Rele *releGet(int numRele);
+Rele *releLoadFromPrefs(int num, Preferences &prefs);
 
 String releControlaUnsafe(int numRele, bool estado, int override = 0);
 String releControla(int numRele, bool estado, int override = 0);

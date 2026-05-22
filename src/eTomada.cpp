@@ -9,6 +9,7 @@
 #include "ntp.h"
 #include "mutex.h"
 #include "loga.h"
+#include "prefs.h"
 
 // Valores default
 static Rele relesConfigDefault[MAX_RELES] = {
@@ -23,25 +24,13 @@ static Rele relesConfigDefault[MAX_RELES] = {
 };
 
 // Whitelist de pinos
-int pinosOK[] = { 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
-
-// Salvar as regras na memoria FLASH
-String getPrefsAtr(Preferences &prefs, int num, String nomeAtr);
-String setPrefsAtr(Preferences &prefs, int num, String nomeAtr, String val);
-
-bool eTomadaPinoOK(int pino) {
-  int totPinosOK = sizeof(pinosOK) / sizeof(pinosOK[0]);
-  for (int i=0; i < totPinosOK; i++) {
-    if (pino == pinosOK[i]) return true;
-  }
-  return false;
-}
+int pinosOutOK[] = { 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
+int pinosInOK[] = { 1, 2, 3, 4, 5 };
 
 void eTomadaLoadConfig() {
   Preferences prefs;
 
   logaMensagem("Carregando Configuracao dos reles:");
-
   prefs.begin("reles", false);
 
   // Para testes
@@ -50,85 +39,40 @@ void eTomadaLoadConfig() {
   // prefs.putString("pino1", "16");
   // prefs.putString("ativo1", "1");
 
-  relesInit();
+  relesInit(); // Zerar tudo
 
   Rele *rele;
   int totReles = relesGetCount();
   for (int r=1; r <= totReles; r++) {
-    rele = releGet(r);
+    rele = releLoadFromPrefs(r, prefs);
     if (!rele) {
-      // TODO ERRO!
       continue;
     }
 
-    rele->num = r;
-    strncpy(rele->nome,  getPrefsAtr(prefs, r, "nome").c_str(),  sizeof(rele->nome) - 1);
-    rele->nome[sizeof(rele->nome) - 1] = '\0';
-
-    rele->pino = atoi(getPrefsAtr(prefs, r, "pino").c_str());
-
-    strncpy(rele->regra, getPrefsAtr(prefs, r, "regra").c_str(), sizeof(rele->regra) - 1);
-    rele->regra[sizeof(rele->regra) - 1] = '\0';
-
-    String regraOK = validaRegra(rele->regra);
-    if (regraOK != "OK") {
-      logaMensagem("Regra [%s] INVALIDA! [%s] Desativando Rele[%d]", rele->regra, regraOK.c_str(), r);
-    }
-    bool pinoOK = eTomadaPinoOK(rele->pino);
-    if (!pinoOK && rele->pino != -1) {
-      logaMensagem("Pino [%d] INVALIDO! Desativando Rele[%d]", rele->pino, r);
-    }
-    rele->ativo = (regraOK == "OK" && pinoOK) ?
-      (getPrefsAtr(prefs, r, "ativo") == "1") : false;
-
-    // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
-    rele->estado = 0;
-    rele->override = 0;
-
     logaMensagem("Rele %d:%d:%s (%s) > [%s]",
-      r, rele->pino, rele->nome, (rele->ativo ? "on" : "off"), rele->regra);
+      r, rele->pino, rele->nome,
+      (rele->ativo ? "on" : "off"), rele->regra);
   }
   prefs.end();
 
-  sensoresInit();
+
+  logaMensagem("Carregando Configuracao dos Sensores:");
+  prefs.begin("sensores", false);
+
+  // Para testes
+  // prefs.putString("nome1", "Temp");
+  // prefs.putString("tipo1", "Temperatura");
+  // prefs.putString("pino1", "2");
+  
+  sensoresInit(); // Zerar tudo
 
   Sensor *sensor;
-// MOCK
-sensor = sensorGet(1);
-sensor->num  = 1;
-sensor->tipo = tipoSensorGet("Temperatura");
-strcpy(sensor->nome, "Temp");
-sensor->valor = 12;
-strcpy(sensor->valorStr, "");
-sensor->pino = 1;
-
-sensor = sensorGet(2);
-sensor->num  = 2;
-sensor->tipo = tipoSensorGet("Umidade");
-strcpy(sensor->nome, "Umid");
-sensor->valor = 50;
-strcpy(sensor->valorStr, "");
-sensor->pino = 2;
-
-sensor = sensorGet(3);
-sensor->num  = 3;
-sensor->tipo = tipoSensorGet("LUX");
-strcpy(sensor->nome, "lux");
-sensor->valor = 220;
-strcpy(sensor->valorStr, "");
-sensor->pino = 3;
-
-sensor = sensorGet(4);
-sensor->num  = 4;
-sensor->tipo = NULL;
-strcpy(sensor->nome, "");
-sensor->valor = 0;
-strcpy(sensor->valorStr, "");
-sensor->pino = -1;
-
   int totSensores = sensoresGetCount();
   for (int s=1; s <= totSensores; s++) {
-      sensor = sensorGet(s);
+      sensor = sensorLoadFromPrefs(s, prefs);
+      if (!sensor) {
+        continue;
+      }
 
       logaMensagem("Sensor %d:%d:%s (%s) > [%s]",
         s, sensor->pino, sensor->nome,
@@ -136,7 +80,7 @@ sensor->pino = -1;
         sensor->tipo ? sensor->tipo->nome : "???"
       );
   }
-
+  prefs.end();
 
   Serial.println("");
 }
@@ -281,20 +225,18 @@ void eTomadaFactoryReset() {
   processaRegras();
 }
 
-String getPrefsAtr(Preferences &prefs, int num, String nomeAtr) {
-  char buff[32];
-  snprintf(buff, sizeof(buff), "%s%d", nomeAtr.c_str(), num);
-  return prefs.isKey(buff) ? prefs.getString(buff, "") : "";
+bool eTomadaPinoOutOK(int pino) {
+  int totPinosOK = sizeof(pinosOutOK) / sizeof(pinosOutOK[0]);
+  for (int i=0; i < totPinosOK; i++) {
+    if (pino == pinosOutOK[i]) return true;
+  }
+  return false;
 }
 
-String setPrefsAtr(Preferences &prefs, int num, String nomeAtr, String val) {
-  String old = getPrefsAtr(prefs, num, nomeAtr);
-
-  if (val != old) {
-    char buff[32];
-    snprintf(buff, sizeof(buff), "%s%d", nomeAtr.c_str(), num);
-    prefs.putString(buff, val);
+bool eTomadaPinoInOK(int pino) {
+  int totPinosOK = sizeof(pinosInOK) / sizeof(pinosInOK[0]);
+  for (int i=0; i < totPinosOK; i++) {
+    if (pino == pinosInOK[i]) return true;
   }
-
-  return old;
+  return false;
 }
