@@ -7,7 +7,7 @@
 
 static int sensorUmidadeLer(Sensor *s) {
   // Ler sensor de umidade
-  return s->valor + (esp_random() % 6) - 3; // MOCK
+  return s->valor + (esp_random() % 11) - 5; // MOCK
 }
 
 TipoSensor sensorUmidade = {

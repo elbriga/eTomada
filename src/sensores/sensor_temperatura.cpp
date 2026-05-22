@@ -7,7 +7,7 @@
 
 static int sensorTemperaturaLer(Sensor *s) {
   // Ler sensor de temperatura
-  return s->valor + (esp_random() % 6) - 3; // MOCK
+  return s->valor + (esp_random() % 7) - 3; // MOCK
 }
 
 TipoSensor sensorTemperatura = {
