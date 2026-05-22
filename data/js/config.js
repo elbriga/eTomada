@@ -81,7 +81,7 @@ function getTipoSensorOptions(selected) {
     eTomadaData.tipoSensores
       .map((ts) => {
         return `
-<option value="${ts.num}" ${ts.num == selected ? "selected" : ""}>
+<option value="${ts.nome}" ${ts.nome == selected ? "selected" : ""}>
   ${ts.nome}
 </option>
 `;
