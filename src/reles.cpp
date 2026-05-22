@@ -57,7 +57,21 @@ String relesSetFromJSON(uint8_t *json)
   return "OK";
 }
 
-// TODO :: reescrever para receber um array de reles ao iinves de um só
+String releGetJSON(Rele *r) {
+  JsonDocument doc;
+  doc["num"] = r->num;
+  doc["pino"] = r->pino;
+  doc["nome"] = r->nome;
+  doc["regra"] = r->regra;
+  doc["ativo"] = r->ativo;
+  doc["estado"] = r->estado;
+  doc["override"] = r->override;
+
+  String out;
+  serializeJson(doc, out);
+  return out;
+}
+
 String relesAtualizaConfigFromJSON(uint8_t *json)
 {
   JsonDocument doc;
@@ -112,22 +126,10 @@ String relesAtualizaConfigFromJSON(uint8_t *json)
   // Setar no prefs
   eTomadaSalvaRele(&releCopy);
 
+  String releJSON = releGetJSON(&releCopy);
+  httpEnviaEvento(releJSON, "sse_rele");
+
   return "OK";
-}
-
-String releGetJSON(Rele *r) {
-  JsonDocument doc;
-  doc["num"] = r->num;
-  doc["pino"] = r->pino;
-  doc["nome"] = r->nome;
-  doc["regra"] = r->regra;
-  doc["ativo"] = r->ativo;
-  doc["estado"] = r->estado;
-  doc["override"] = r->override;
-
-  String out;
-  serializeJson(doc, out);
-  return out;
 }
 
 String releControla(int numRele, bool estado, int override)
