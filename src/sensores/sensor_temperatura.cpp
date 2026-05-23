@@ -11,6 +11,7 @@ static int sensorTemperaturaLer(Sensor *s) {
 }
 
 TipoSensor sensorTemperatura = {
+    "TempXPTO",
     "Temperatura",
     "%d° C",
     sensorTemperaturaLer

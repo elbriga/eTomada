@@ -7,10 +7,10 @@
 #define MAX_SENSORES 4
 
 struct Sensor {
-    TipoSensor *tipo;
     int num;
     int pino;
     char nome[32];
+    char tipo[32];
     char valorStr[32];
     int valor;
 };

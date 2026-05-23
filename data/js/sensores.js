@@ -7,7 +7,7 @@ function sensorGetCard(sensor) {
   card.innerHTML = `
 <div class="headerTop">
   <div>
-    <div class="medio">Sensor ${sensor.num} - ${sensor.tipo}</div>
+    <div class="medio">Sensor ${sensor.num} - ${sensor.unidade}</div>
     <div class="title">${escapeHtml(sensor.nome || "")}</div>
     <div class="small">pino: ${escapeHtml(sensor.pino)}</div>
   </div>

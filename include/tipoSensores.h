@@ -4,6 +4,7 @@ struct Sensor;
 
 struct TipoSensor {
     const char *nome;
+    const char *tipo;
     const char *format;
     int (*ler)(Sensor *s);
 };

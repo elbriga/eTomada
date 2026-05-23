@@ -14,11 +14,28 @@
 static Rele reles[MAX_RELES];
 
 void relesInit() {
-  for (int i = 0; i < MAX_RELES; i++) {
-    reles[i].num   = i + 1;
-    reles[i].ativo = false;
-    reles[i].pino  = -1;
+  // Zerar tudo
+  memset(reles, 0, sizeof(reles));
+  
+  Preferences prefs;
+  prefs.begin("reles", false);
+
+  // Para testes
+  // prefs.putString("nome1", "Luz");
+  // prefs.putString("regra1", "OF|02:00|07:59");
+  // prefs.putString("pino1", "16");
+  // prefs.putString("ativo1", "1");
+  
+  int totReles = relesGetCount();
+  for (int r=1; r <= totReles; r++) {
+    Rele *rele = releLoadFromPrefs(r, prefs);
+
+    logaMensagem("Rele %d:%d:%s (%s) > [%s]",
+      r, rele->pino, rele->nome,
+      (rele->ativo ? "on" : "off"), rele->regra);
   }
+
+  prefs.end();
 }
 
 int relesGetCount()
