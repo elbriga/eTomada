@@ -176,52 +176,34 @@ void eTomadaSalvaSensor(Sensor *sensor) {
 }
 
 void eTomadaFactoryReset() { 
-  {
-    MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
-    if (!lock) {
-      // TODO msg
-      return;
-    }
-
-    Preferences prefs;
-    prefs.begin("reles", false);
-    prefs.clear();
-    prefs.end();
-
-    prefs.begin("sensores", false);
-    prefs.clear();
-    prefs.end();
+  MutexLock lockPrefs(prefsMutex, pdMS_TO_TICKS(2500));
+  MutexLock lockReles(releMutex, pdMS_TO_TICKS(2500));
+  MutexLock lockSensores(sensorMutex, pdMS_TO_TICKS(2500));
+  if (!lockPrefs || !lockReles || !lockSensores) {
+    logaMensagem("Erro de mutex no factory reset!");
+    return;
   }
 
-  {
-    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
-    if (!lock) {
-      // TODO msg
-      return;
-    }
+  Preferences prefs;
+  prefs.begin("reles", false);
+  prefs.clear();
+  prefs.end();
+  prefs.begin("sensores", false);
+  prefs.clear();
+  prefs.end();
 
-    Rele *rele;
-    int totReles = relesGetCount();
-    for (int r=1; r <= totReles; r++) {
-      rele = releGet(r);
-      memcpy(rele, &relesConfigDefault[r - 1], sizeof(Rele));
-      eTomadaSalvaRele(rele);
-    }
+  int totReles = relesGetCount();
+  for (int r=1; r <= totReles; r++) {
+    Rele *rele = releGet(r);
+    memcpy(rele, &relesConfigDefault[r - 1], sizeof(Rele));
+    eTomadaSalvaRele(rele);
   }
 
-  {
-    MutexLock lock(sensorMutex, pdMS_TO_TICKS(2500));
-    if (!lock) {
-      // TODO msg
-      return;
-    }
-
-    int totSensores = sensoresGetCount();
-    for (int s=1; s <= totSensores; s++) {
-      Sensor *sensor = sensorGet(s);
-      memcpy(sensor, &sensoresConfigDefault[s - 1], sizeof(Sensor));
-      eTomadaSalvaSensor(sensor);
-    }
+  int totSensores = sensoresGetCount();
+  for (int s=1; s <= totSensores; s++) {
+    Sensor *sensor = sensorGet(s);
+    memcpy(sensor, &sensoresConfigDefault[s - 1], sizeof(Sensor));
+    eTomadaSalvaSensor(sensor);
   }
 
   processaRegras();
