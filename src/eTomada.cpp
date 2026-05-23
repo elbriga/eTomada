@@ -23,71 +23,30 @@ static Rele relesConfigDefault[MAX_RELES] = {
   { 8, -1, "", "", 0, 0 }
 };
 
+static Sensor sensoresConfigDefault[MAX_SENSORES] = {
+  { 1,  1, "Temp", "TempXPTO", "", 0 },
+  { 2,  2, "Umid", "UmidXPTO", "", 0 },
+  { 3,  3, "lux",  "LUXXPTO",  "", 0 },
+  { 4, -1, "",     "",         "", 0 }
+};
+
 // Whitelist de pinos
 int pinosOutOK[] = { 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
 int pinosInOK[] = { 1, 2, 3, 4, 5 };
 
 void eTomadaLoadConfig() {
-  Preferences prefs;
-
   logaMensagem("Carregando Configuracao dos reles:");
-  prefs.begin("reles", false);
-
-  // Para testes
-  // prefs.putString("nome1", "Luz");
-  // prefs.putString("regra1", "OF|02:00|07:59");
-  // prefs.putString("pino1", "16");
-  // prefs.putString("ativo1", "1");
-
-  relesInit(); // Zerar tudo
-
-  Rele *rele;
-  int totReles = relesGetCount();
-  for (int r=1; r <= totReles; r++) {
-    rele = releLoadFromPrefs(r, prefs);
-    if (!rele) {
-      continue;
-    }
-
-    logaMensagem("Rele %d:%d:%s (%s) > [%s]",
-      r, rele->pino, rele->nome,
-      (rele->ativo ? "on" : "off"), rele->regra);
-  }
-  prefs.end();
-
+  relesInit(); // Carrega os reles do prefs
 
   logaMensagem("Carregando Configuracao dos Sensores:");
-  prefs.begin("sensores", false);
-
-  // Para testes
-  // prefs.putString("nome1", "Temp");
-  // prefs.putString("tipo1", "Temperatura");
-  // prefs.putString("pino1", "2");
-  
-  sensoresInit(); // Zerar tudo
-
-  Sensor *sensor;
-  int totSensores = sensoresGetCount();
-  for (int s=1; s <= totSensores; s++) {
-      sensor = sensorLoadFromPrefs(s, prefs);
-      if (!sensor) {
-        continue;
-      }
-
-      logaMensagem("Sensor %d:%d:%s (%s) > [%s]",
-        s, sensor->pino, sensor->nome,
-        (sensor->tipo ? "on" : "off"),
-        sensor->tipo ? sensor->tipo->nome : ""
-      );
-  }
-  prefs.end();
+  sensoresInit(); // Carrega os sensores do prefs
 
   Serial.println("");
 }
 
 String eTomadaGetSnapshotJSON() {
   JsonDocument doc;
-  doc["api"]    = 1; // versão da API
+  doc["api"]    = 3; // versão da API
   doc["uptime"] = millis();
 
   time_t agora;
@@ -140,7 +99,7 @@ String eTomadaGetSnapshotJSON() {
 
         JsonObject s = sensores.add<JsonObject>();
         s["num"]      = sensor->num;
-        s["tipo"]     = sensor->tipo ? sensor->tipo->nome : "";
+        s["tipo"]     = sensor->tipo;
         s["nome"]     = sensor->nome;
         s["pino"]     = sensor->pino;
         s["valor"]    = sensor->valor;
@@ -211,14 +170,12 @@ void eTomadaSalvaSensor(Sensor *sensor) {
   
   setPrefsAtr(prefs, sensor->num, "nome",  String(sensor->nome));
   setPrefsAtr(prefs, sensor->num, "pino",  String(sensor->pino));
-  setPrefsAtr(prefs, sensor->num, "tipo",  String(sensor->tipo ? sensor->tipo->nome : ""));
+  setPrefsAtr(prefs, sensor->num, "tipo",  String(sensor->tipo));
 
   prefs.end();
 }
 
-void eTomadaFactoryReset() {
-  int totReles = relesGetCount();
-  
+void eTomadaFactoryReset() { 
   {
     MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
     if (!lock) {
@@ -229,15 +186,42 @@ void eTomadaFactoryReset() {
     Preferences prefs;
     prefs.begin("reles", false);
     prefs.clear();
-    // TODO :: prefs.putString("totReles", String(totReles));
+    prefs.end();
+
+    prefs.begin("sensores", false);
+    prefs.clear();
     prefs.end();
   }
 
-  Rele *rele;
-  for (int r=1; r <= totReles; r++) {
-    rele = releGet(r);
-    memcpy(rele, &relesConfigDefault[r - 1], sizeof(Rele));
-    eTomadaSalvaRele(rele);
+  {
+    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
+    if (!lock) {
+      // TODO msg
+      return;
+    }
+
+    Rele *rele;
+    int totReles = relesGetCount();
+    for (int r=1; r <= totReles; r++) {
+      rele = releGet(r);
+      memcpy(rele, &relesConfigDefault[r - 1], sizeof(Rele));
+      eTomadaSalvaRele(rele);
+    }
+  }
+
+  {
+    MutexLock lock(sensorMutex, pdMS_TO_TICKS(2500));
+    if (!lock) {
+      // TODO msg
+      return;
+    }
+
+    int totSensores = sensoresGetCount();
+    for (int s=1; s <= totSensores; s++) {
+      Sensor *sensor = sensorGet(s);
+      memcpy(sensor, &sensoresConfigDefault[s - 1], sizeof(Sensor));
+      eTomadaSalvaSensor(sensor);
+    }
   }
 
   processaRegras();
