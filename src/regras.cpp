@@ -11,25 +11,24 @@
 void processaRegras() {
   String msg, msgDisplay = "";
   {
-    MutexLock lock(releMutex);
+    MutexLock lockReles(releMutex);
+    MutexLock lockSensores(sensorMutex);
 
-    if (!lock) {
+    if (!lockReles || !lockSensores) {
       logaMensagem("processaRegras: erro mutex");
-    } else {
-      Rele *rele;
-      int totReles = relesGetCount();
-      for (int r=1; r <= totReles; r++) {
-        rele = releGet(r);
-        if (!rele->ativo) continue;
+      return;
+    }
 
-        // Verificar se esta em modo manual
-        if (rele->override > time(nullptr)) continue;
+    Rele *rele;
+    int totReles = relesGetCount();
+    for (int r=1; r <= totReles; r++) {
+      rele = releGet(r);
+      if (!rele->ativo) continue;
 
-        msg = checkRegra(r);
-        if (msg != "") {
-          logaMensagem(msg.c_str());
-          msgDisplay = msg; // Mostra no display a ultima msg
-        }
+      msg = checkRegra(r);
+      if (msg != "") {
+        logaMensagem(msg.c_str());
+        msgDisplay = msg; // Mostra no display a ultima msg
       }
     }
   }
@@ -90,6 +89,7 @@ String validaRegra(String regra) {
   return "OK";
 }
 
+// REQUIRE releMutex, sensorMutex locked
 String checkRegra(int numRele) {
   Rele *rele = releGet(numRele);
   if (!rele) {
@@ -100,6 +100,12 @@ String checkRegra(int numRele) {
     return "";
   }
 
+  // Verificar se esta em modo manual
+  if (rele->override > time(nullptr)) {
+    return "";
+  }
+
+  // TODO :: validar as regras somente ao alterar, nao TODA HORA!
   String regraOK = validaRegra(rele->regra);
   if (regraOK != "OK") {
     return "Regra[" + String(numRele) + "] Invalida:" + regraOK;
@@ -145,22 +151,12 @@ String checkRegra(int numRele) {
         return "Sensor ON invalido!";
       }
 
-      int valorSensor;
-      {
-        MutexLock lock(sensorMutex, pdMS_TO_TICKS(500));
-        if (!lock) {
-          return "sensor mutex timeout";
-        }
-
-        valorSensor = s->valor;
-      }
-
       bool ligaRele;
       int valorTeste = atoi(&condLiga[3]);
       if (condLiga[2] == '>') {
-        ligaRele = (valorSensor > valorTeste);
+        ligaRele = (s->valor > valorTeste);
       } else if (condLiga[2] == '<') {
-        ligaRele = (valorSensor < valorTeste);
+        ligaRele = (s->valor < valorTeste);
       } else {
         return "Condicao ON invalida!";
       }
@@ -181,22 +177,12 @@ String checkRegra(int numRele) {
         return "Sensor OF invalido!";
       }
 
-      int valorSensor;
-      {
-        MutexLock lock(sensorMutex, pdMS_TO_TICKS(500));
-        if (!lock) {
-          return "sensor mutex timeout";
-        }
-
-        valorSensor = s->valor;
-      }
-
       bool desligaRele;
       int valorTeste = atoi(&condDesliga[3]);
       if (condDesliga[2] == '>') {
-        desligaRele = (valorSensor > valorTeste);
+        desligaRele = (s->valor > valorTeste);
       } else if (condDesliga[2] == '<') {
-        desligaRele = (valorSensor < valorTeste);
+        desligaRele = (s->valor < valorTeste);
       } else {
         return "Condicao OF invalida!";
       }
