@@ -179,7 +179,6 @@ void sensoresAtualiza() {
       return;
     }
 
-
     for (int s=1; s <= MAX_SENSORES; s++) {
       Sensor *sensor = &sensores[s-1];
 
@@ -195,13 +194,14 @@ void sensoresAtualiza() {
       }
 
       int novoValor = tipoSensor->ler(sensor);
-      String msg = sensorAtualizaUnsafe(s, novoValor);
-      if (msg != "") {
-        if (msg == "MUDOU") {
-          jsonAtualiza[s-1] = sensorGetJSON(sensor);
-        } else {
-          logaMensagem("Sensor[%d] => [%d] [%s]", s, novoValor, msg.c_str());
-        }
+
+      if (sensor->valor != novoValor) {
+        // MUDOU valor do sensor
+        sensor->valor = novoValor;
+        snprintf(sensor->valorStr, sizeof(sensor->valorStr),
+          tipoSensor->format, novoValor);
+
+        jsonAtualiza[s-1] = sensorGetJSON(sensor);
       }
     }
   }
@@ -212,29 +212,4 @@ void sensoresAtualiza() {
       httpEnviaEvento(jsonAtualiza[s], "sse_sensor");
     }
   }
-}
-
-// REQUIRE sensorMutex locked
-String sensorAtualizaUnsafe(int numSensor, int valor)
-{
-  Sensor *sensor = sensorGet(numSensor);
-  if (!sensor) {
-    return "Sensor Invalido";
-  }
-
-  TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
-  if (!tipoSensor) {
-    return "Tipo Sensor Invalido";
-  }
-
-  String ret = "";
-  if (sensor->valor != valor) {
-    sensor->valor = valor;
-    snprintf(sensor->valorStr, sizeof(sensor->valorStr),
-      tipoSensor->format, valor);
-
-    ret = "MUDOU";
-  }
-
-  return ret;
 }
