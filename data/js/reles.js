@@ -46,14 +46,27 @@ function releOpenEditModal(numRele) {
 
   releEditando = numRele;
 
+  let [acao, param1, param2] = rele.regra.split("|");
+
+  if (!param1) param1 = "";
+  if (!param2) param2 = "";
+
   document.getElementById("modalTitle").innerHTML = "Editar Tomada " + numRele;
   document.getElementById("modalNome").value = rele.nome || "";
+
   document.getElementById("modalDivRegra").style.display = "block";
   document.getElementById("modalRegra").value = rele.regra || "";
+  document.getElementById("modalRegraAcao").value = acao;
+  document.getElementById("modalHorario").value =
+    param1 != "" && param2 != "" ? `${param1}-${param2}` : "";
+  document.getElementById("modalCondTrue").value = param1;
+  document.getElementById("modalCondFalse").value = param2;
+
   document.getElementById("modalSalvarBtn").onclick = function () {
     releSalvarFromModal();
   };
 
+  releOCModalAcao();
   editModalOpen();
 }
 
@@ -66,12 +79,27 @@ async function releSalvarFromModal() {
   btn.innerText = "Salvando...";
 
   try {
+    let regra = "";
+    const acao = document.getElementById("modalRegraAcao").value;
+    if (acao == "") {
+      regra = "";
+    } else if (acao == "SE") {
+      const p1 = document.getElementById("modalCondTrue").value;
+      const p2 = document.getElementById("modalCondFalse").value;
+      regra = `SE|${p1}|${p2}`;
+    } else if (acao == "ON" || acao == "OF") {
+      let horario = document.getElementById("modalHorario").value + "";
+      regra = `${acao}|${horario.replace("-", "|")}`;
+    } else {
+      throw Error("Acao invalida!");
+    }
+
     await eTomadaAPI(
       "setReleConfig",
       {
         rele: releEditando,
         nome: document.getElementById("modalNome").value,
-        regra: document.getElementById("modalRegra").value,
+        regra: regra,
       },
       "PUT",
     );
@@ -101,9 +129,14 @@ async function releOverride(numRele, novoEstado, btn) {
   } catch (e) {
     statusMsg("Erro ao setar: " + e);
   }
+}
 
-  // load recria o HTML com o botão habilitado
-  //load();
+function releOCModalAcao() {
+  const acao = document.getElementById("modalRegraAcao").value;
+  document.getElementById("divRegraHorario").style.display =
+    acao == "" || acao == "SE" ? "none" : "block";
+  document.getElementById("divRegraCondicional").style.display =
+    acao == "" || acao != "SE" ? "none" : "block";
 }
 
 function releGetRegraTXT(regra) {
