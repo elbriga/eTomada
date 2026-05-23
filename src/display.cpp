@@ -24,7 +24,7 @@ void displayInit()
 
 bool displayPodeMostrar()
 {
-    return displayTimeoutMsg < millis();
+    return (long)(millis() - displayTimeoutMsg) >= 0;
 }
 
 void displayMostraString(int x, int y, const char *msg)
