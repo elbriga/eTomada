@@ -10,8 +10,6 @@
 
 static Sensor sensores[MAX_SENSORES];
 
-String sensorGetJSON(Sensor *s);
-
 void sensoresInit() {
   // Zerar tudo
   memset(sensores, 0, sizeof(sensores));
@@ -20,8 +18,8 @@ void sensoresInit() {
   prefs.begin("sensores", false);
 
   // Para testes
-  // prefs.putString("nome1", "Temp");
-  // prefs.putString("tipo1", "Temperatura");
+  // prefs.putString("nome1", "Temp de Fora");
+  // prefs.putString("tipo1", "TempXPTO");
   // prefs.putString("pino1", "2");
   
   int totSensores = sensoresGetCount();
