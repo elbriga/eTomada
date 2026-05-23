@@ -45,73 +45,47 @@ int sensoresGetCount() {
   return MAX_SENSORES;
 }
 
-void sensoresAtualiza() {
-  // logaMensagem("Atualizar Sensores");
-
-  MutexLock lock(sensorMutex);
-  if (!lock) {
-    logaMensagem("sensorAtualiza: mutex timeout");
-    return;
-  }
-
-  for (int s=1; s <= MAX_SENSORES; s++) {
-    Sensor *sensor = &sensores[s-1];
-
-    if (sensor->pino == -1) {
-      // Desativado
-      continue;
-    }
-
-    TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
-    if (!tipoSensor) {
-      logaMensagem("Sensor[%d] tipo invalido [%p]", s, sensor->tipo);
-      continue;
-    }
-
-    int novoValor = tipoSensor->ler(sensor);
-    String msg = sensorAtualizaUnsafe(s, novoValor);
-    if (msg != "") {
-      if (msg == "MUDOU") {
-        String sensorJSON = sensorGetJSON(sensor);
-        httpEnviaEvento(sensorJSON, "sse_sensor");
-      } else {
-        logaMensagem("Sensor[%d] => [%d] [%s]", s, novoValor, msg.c_str());
-      }
-    }
-  }
-}
-
-// REQUIRE sensorMutex locked
-String sensorAtualizaUnsafe(int numSensor, int valor)
-{
-  Sensor *sensor = sensorGet(numSensor);
-  if (!sensor) {
-    return "Sensor Invalido";
-  }
-
-  TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
-  if (!tipoSensor) {
-    return "Tipo Sensor Invalido";
-  }
-
-  String ret = "";
-  if (sensor->valor != valor) {
-    sensor->valor = valor;
-    snprintf(sensor->valorStr, sizeof(sensor->valorStr),
-      tipoSensor->format, valor);
-
-    ret = "MUDOU";
-  }
-
-  return ret;
-}
-
 Sensor *sensorGet(int numSensor) {
   if (numSensor < 1 || numSensor > MAX_SENSORES) {
     return NULL;
   }
 
   return &sensores[numSensor - 1];
+}
+
+Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
+  Sensor *sensor = sensorGet(num);
+  if (!sensor) {
+    logaMensagem("ERRO no sensor [%d]", num);
+    return NULL;
+  }
+
+  sensor->num = num;
+  strncpy(sensor->nome,  getPrefsAtr(prefs, num, "nome").c_str(),  sizeof(sensor->nome) - 1);
+  sensor->nome[sizeof(sensor->nome) - 1] = '\0';
+
+  sensor->pino = atoi(getPrefsAtr(prefs, num, "pino").c_str());  
+  bool pinoOK = eTomadaPinoInOK(sensor->pino);
+  if (!pinoOK) {
+    sensor->tipo[0] = '\0';
+    if (sensor->pino != -1) {
+      logaMensagem("Pino [%d] INVALIDO! Desativando Sensor[%d]", sensor->pino, num);
+    }
+  } else {
+    String tipo = getPrefsAtr(prefs, num, "tipo");
+    TipoSensor *ts = tipoSensorGet(tipo.c_str());
+    if (!ts && tipo != "") {
+      logaMensagem("Tipo [%s] INVALIDO! Desativando Sensor[%d]", tipo.c_str(), num);
+      tipo = "";
+    }
+    strncpy(sensor->tipo, tipo.c_str(), sizeof(sensor->tipo) - 1);
+    sensor->tipo[sizeof(sensor->tipo) - 1] = '\0';
+  }
+
+  sensor->valor = 0;
+  sensor->valorStr[0] = '\0';
+
+  return sensor;
 }
 
 // REQUIRE sensorMutex locked
@@ -196,37 +170,63 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
   return "OK";
 }
 
-Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
-  Sensor *sensor = sensorGet(num);
+void sensoresAtualiza() {
+  // logaMensagem("Atualizar Sensores");
+
+  MutexLock lock(sensorMutex);
+  if (!lock) {
+    logaMensagem("sensorAtualiza: mutex timeout");
+    return;
+  }
+
+  for (int s=1; s <= MAX_SENSORES; s++) {
+    Sensor *sensor = &sensores[s-1];
+
+    if (sensor->pino == -1) {
+      // Desativado
+      continue;
+    }
+
+    TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
+    if (!tipoSensor) {
+      logaMensagem("Sensor[%d] tipo invalido [%p]", s, sensor->tipo);
+      continue;
+    }
+
+    int novoValor = tipoSensor->ler(sensor);
+    String msg = sensorAtualizaUnsafe(s, novoValor);
+    if (msg != "") {
+      if (msg == "MUDOU") {
+        String sensorJSON = sensorGetJSON(sensor);
+        httpEnviaEvento(sensorJSON, "sse_sensor");
+      } else {
+        logaMensagem("Sensor[%d] => [%d] [%s]", s, novoValor, msg.c_str());
+      }
+    }
+  }
+}
+
+// REQUIRE sensorMutex locked
+String sensorAtualizaUnsafe(int numSensor, int valor)
+{
+  Sensor *sensor = sensorGet(numSensor);
   if (!sensor) {
-    logaMensagem("ERRO no sensor [%d]", num);
-    return NULL;
+    return "Sensor Invalido";
   }
 
-  sensor->num = num;
-  strncpy(sensor->nome,  getPrefsAtr(prefs, num, "nome").c_str(),  sizeof(sensor->nome) - 1);
-  sensor->nome[sizeof(sensor->nome) - 1] = '\0';
-
-  sensor->pino = atoi(getPrefsAtr(prefs, num, "pino").c_str());  
-  bool pinoOK = eTomadaPinoInOK(sensor->pino);
-  if (!pinoOK) {
-    sensor->tipo[0] = '\0';
-    if (sensor->pino != -1) {
-      logaMensagem("Pino [%d] INVALIDO! Desativando Sensor[%d]", sensor->pino, num);
-    }
-  } else {
-    String tipo = getPrefsAtr(prefs, num, "tipo");
-    TipoSensor *ts = tipoSensorGet(tipo.c_str());
-    if (!ts && tipo != "") {
-      logaMensagem("Tipo [%s] INVALIDO! Desativando Sensor[%d]", tipo.c_str(), num);
-      tipo = "";
-    }
-    strncpy(sensor->tipo, tipo.c_str(), sizeof(sensor->tipo) - 1);
-    sensor->tipo[sizeof(sensor->tipo) - 1] = '\0';
+  TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
+  if (!tipoSensor) {
+    return "Tipo Sensor Invalido";
   }
 
-  sensor->valor = 0;
-  sensor->valorStr[0] = '\0';
+  String ret = "";
+  if (sensor->valor != valor) {
+    sensor->valor = valor;
+    snprintf(sensor->valorStr, sizeof(sensor->valorStr),
+      tipoSensor->format, valor);
 
-  return sensor;
+    ret = "MUDOU";
+  }
+
+  return ret;
 }

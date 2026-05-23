@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Arduino.h>
 #include <Preferences.h>
 
 #define MAX_RELES 8

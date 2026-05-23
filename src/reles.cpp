@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <ArduinoJson.h>
-#include <Preferences.h>
 
 #include "eTomada.h"
 #include "loga.h"
