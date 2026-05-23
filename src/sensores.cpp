@@ -170,36 +170,46 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
 
 void sensoresAtualiza() {
   // logaMensagem("Atualizar Sensores");
+  String jsonAtualiza[MAX_SENSORES];
 
-  MutexLock lock(sensorMutex);
-  if (!lock) {
-    logaMensagem("sensorAtualiza: mutex timeout");
-    return;
+  {
+    MutexLock lock(sensorMutex);
+    if (!lock) {
+      logaMensagem("sensorAtualiza: mutex timeout");
+      return;
+    }
+
+
+    for (int s=1; s <= MAX_SENSORES; s++) {
+      Sensor *sensor = &sensores[s-1];
+
+      if (sensor->pino == -1) {
+        // Desativado
+        continue;
+      }
+
+      TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
+      if (!tipoSensor) {
+        logaMensagem("Sensor[%d] tipo invalido [%p]", s, sensor->tipo);
+        continue;
+      }
+
+      int novoValor = tipoSensor->ler(sensor);
+      String msg = sensorAtualizaUnsafe(s, novoValor);
+      if (msg != "") {
+        if (msg == "MUDOU") {
+          jsonAtualiza[s-1] = sensorGetJSON(sensor);
+        } else {
+          logaMensagem("Sensor[%d] => [%d] [%s]", s, novoValor, msg.c_str());
+        }
+      }
+    }
   }
 
-  for (int s=1; s <= MAX_SENSORES; s++) {
-    Sensor *sensor = &sensores[s-1];
-
-    if (sensor->pino == -1) {
-      // Desativado
-      continue;
-    }
-
-    TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
-    if (!tipoSensor) {
-      logaMensagem("Sensor[%d] tipo invalido [%p]", s, sensor->tipo);
-      continue;
-    }
-
-    int novoValor = tipoSensor->ler(sensor);
-    String msg = sensorAtualizaUnsafe(s, novoValor);
-    if (msg != "") {
-      if (msg == "MUDOU") {
-        String sensorJSON = sensorGetJSON(sensor);
-        httpEnviaEvento(sensorJSON, "sse_sensor");
-      } else {
-        logaMensagem("Sensor[%d] => [%d] [%s]", s, novoValor, msg.c_str());
-      }
+  // Enviar os eventos sem o mutex
+  for (int s=0; s < MAX_SENSORES; s++) {
+    if (jsonAtualiza[s] != "") {
+      httpEnviaEvento(jsonAtualiza[s], "sse_sensor");
     }
   }
 }
