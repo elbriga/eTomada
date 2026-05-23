@@ -105,12 +105,6 @@ String checkRegra(int numRele) {
     return "";
   }
 
-  // TODO :: validar as regras somente ao alterar, nao TODA HORA!
-  String regraOK = validaRegra(rele->regra);
-  if (regraOK != "OK") {
-    return "Regra[" + String(numRele) + "] Invalida:" + regraOK;
-  }
-
   char acao[3] = { rele->regra[0], rele->regra[1], 0 };
 
   if (!strcmp(acao, "ON") || !strcmp(acao, "OF")) {
