@@ -1,6 +1,6 @@
 async function openConfig() {
   try {
-    eTomadaData = await eTomadaAPI("data");
+    await eTomadaRefresh();
     renderConfig();
   } catch (e) {
     statusMsg("Erro openConfig: " + e);
@@ -136,7 +136,7 @@ async function salvarConfigGeral() {
 
     closeConfig();
 
-    load();
+    eTomadaRender();
   } catch (e) {
     statusMsg("Erro salvarConfigGeral: " + e);
   }
