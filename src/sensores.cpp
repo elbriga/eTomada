@@ -28,12 +28,13 @@ void sensoresInit() {
   for (int s=1; s <= totSensores; s++) {
       Sensor *sensor = sensorLoadFromPrefs(s, prefs);
       TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
+      bool ativo = !!tipoSensor;
 
-      logaMensagem("Sensor de %s %d:%d:%s (%s) > [%s]",
-        tipoSensor ? tipoSensor->tipo : "??",
+      logaMensagem("Sensor %d:%d:%s (%s) > [%s - %s]",
         s, sensor->pino, sensor->nome,
-        (sensor->tipo ? "on" : "off"),
-        tipoSensor ? tipoSensor->nome : ""
+        (ativo ? "on" : "off"),
+        ativo ? tipoSensor->tipo : "",
+        ativo ? tipoSensor->nome : ""
       );
   }
 
