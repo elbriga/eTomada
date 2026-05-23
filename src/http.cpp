@@ -52,7 +52,7 @@ void httpServerInit() {
 }
 
 void httpServerInitModoAPI() {
-  httpServer.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request) {
+  httpServer.on("/api/getSnapshot", HTTP_GET, [](AsyncWebServerRequest *request) {
     String body = eTomadaGetSnapshotJSON();
     request->send(200, "application/json", body);
     logaRequest(request, "200 OK");
