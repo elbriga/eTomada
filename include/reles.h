@@ -1,5 +1,6 @@
 #pragma once
-
+#include <Arduino.h>
+#include <ArduinoJson.h>
 #include <Preferences.h>
 
 #define MAX_RELES 8
@@ -18,6 +19,7 @@ void relesInit();
 int relesGetCount();
 Rele *releGet(int numRele);
 Rele *releLoadFromPrefs(int num, Preferences &prefs);
+JsonDocument releGetJSONDoc(Rele *r);
 
 String releControlaUnsafe(int numRele, bool estado, int override = 0);
 String releControla(int numRele, bool estado, int override = 0);

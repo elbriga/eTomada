@@ -70,16 +70,12 @@ String eTomadaGetSnapshotJSON() {
     } else {
       for (int i = 1; i <= totReles; i++) {
         rele = releGet(i);
-        if (!rele) continue;
+        if (!rele) {
+          // TODO :: o que fazer aqui??
+          continue;
+        }
 
-        JsonObject r = reles.add<JsonObject>();
-        r["num"]      = rele->num;
-        r["pino"]     = rele->pino;
-        r["nome"]     = rele->nome;
-        r["regra"]    = rele->regra;
-        r["ativo"]    = rele->ativo;
-        r["estado"]   = rele->estado;
-        r["override"] = rele->override;
+        reles.add(releGetJSONDoc(rele));
       }
     }
   }
@@ -95,15 +91,12 @@ String eTomadaGetSnapshotJSON() {
     } else {
       for (int i = 1; i <= totSensores; i++) {
         sensor = sensorGet(i);
-        if (!sensor) continue;
+        if (!sensor) {
+          // TODO :: o que fazer aqui??
+          continue;
+        }
 
-        JsonObject s = sensores.add<JsonObject>();
-        s["num"]      = sensor->num;
-        s["pino"]     = sensor->pino;
-        s["nome"]     = sensor->nome;
-        s["tipo"]     = sensor->tipo;
-        s["valorStr"] = sensor->valorStr;
-        s["valor"]    = sensor->valor;
+        sensores.add(sensorGetJSONDoc(sensor));
       }
     }
   }
@@ -115,11 +108,7 @@ String eTomadaGetSnapshotJSON() {
     ts = tipoSensorGetPorId(i);
     if (!ts) continue;
 
-    JsonObject t = tipoSensores.add<JsonObject>();
-    t["num"]  = i;
-    t["nome"] = ts->nome;
-    t["tipo"] = ts->tipo;
-    t["status"] = ts->status;
+    tipoSensores.add(tipoSensorGetJSONDoc(ts));
   }
 
   String out;

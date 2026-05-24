@@ -99,7 +99,7 @@ Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
 }
 
 // REQUIRE sensorMutex locked
-String sensorGetJSON(Sensor *s) {
+JsonDocument sensorGetJSONDoc(Sensor *s) {
   JsonDocument doc;
   
   doc["num"] = s->num;
@@ -110,9 +110,15 @@ String sensorGetJSON(Sensor *s) {
   doc["valor"] = s->valor;
   doc["ativo"] = s->ativo;
 
-  String out;
-  serializeJson(doc, out);
+  return doc;
+}
 
+// REQUIRE sensorMutex locked
+String sensorGetJSONString(Sensor *s) {
+  String out;
+  JsonDocument doc = sensorGetJSONDoc(s);
+
+  serializeJson(doc, out);
   return out;
 }
 
@@ -179,7 +185,7 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
   // Setar no prefs
   eTomadaSalvaSensor(&sensorCopy);
 
-  String sensorJSON = sensorGetJSON(&sensorCopy);
+  String sensorJSON = sensorGetJSONString(&sensorCopy);
   httpEnviaEvento(sensorJSON, "sse_sensor");
 
   return "OK";
@@ -228,7 +234,7 @@ void sensoresAtualiza() {
             tipoSensor->format, novoValor);
         }
 
-        jsonAtualiza[s-1] = sensorGetJSON(sensor);
+        jsonAtualiza[s-1] = sensorGetJSONString(sensor);
       }
     }
   }

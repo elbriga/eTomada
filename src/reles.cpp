@@ -108,8 +108,10 @@ String relesSetFromJSON(uint8_t *json)
   return "OK";
 }
 
-String releGetJSON(Rele *r) {
+// REQUIRE releMutex locked
+JsonDocument releGetJSONDoc(Rele *r) {
   JsonDocument doc;
+
   doc["num"]      = r->num;
   doc["pino"]     = r->pino;
   doc["nome"]     = r->nome;
@@ -118,7 +120,14 @@ String releGetJSON(Rele *r) {
   doc["estado"]   = r->estado;
   doc["override"] = r->override;
 
+  return doc;
+}
+
+// REQUIRE releMutex locked
+String releGetJSONString(Rele *r) {
   String out;
+  JsonDocument doc = releGetJSONDoc(r);
+
   serializeJson(doc, out);
   return out;
 }
@@ -177,7 +186,7 @@ String releAtualizaConfigFromJSON(uint8_t *json)
   // Setar no prefs
   eTomadaSalvaRele(&releCopy);
 
-  String releJSON = releGetJSON(&releCopy);
+  String releJSON = releGetJSONString(&releCopy);
   httpEnviaEvento(releJSON, "sse_rele");
 
   return "OK";
@@ -219,7 +228,7 @@ String releControlaUnsafe(int numRele, bool estado, int override)
       rele->nome, numRele, rele->pino);
     ret = msg;
 
-    String releJSON = releGetJSON(rele);
+    String releJSON = releGetJSONString(rele);
     httpEnviaEvento(releJSON, "sse_rele");
   }
 

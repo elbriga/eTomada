@@ -1,8 +1,7 @@
 #pragma once
-
+#include <Arduino.h>
+#include <ArduinoJson.h>
 #include <Preferences.h>
-
-#include "tipoSensores.h"
 
 #define MAX_SENSORES 4
 
@@ -20,6 +19,7 @@ void sensoresInit();
 int sensoresGetCount();
 Sensor *sensorGet(int numSensor);
 Sensor *sensorLoadFromPrefs(int num, Preferences &prefs);
+JsonDocument sensorGetJSONDoc(Sensor *s);
 
 void sensoresAtualiza();
 
