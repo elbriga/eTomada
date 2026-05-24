@@ -110,12 +110,12 @@ String relesSetFromJSON(uint8_t *json)
 
 String releGetJSON(Rele *r) {
   JsonDocument doc;
-  doc["num"] = r->num;
-  doc["pino"] = r->pino;
-  doc["nome"] = r->nome;
-  doc["regra"] = r->regra;
-  doc["ativo"] = r->ativo;
-  doc["estado"] = r->estado;
+  doc["num"]      = r->num;
+  doc["pino"]     = r->pino;
+  doc["nome"]     = r->nome;
+  doc["regra"]    = r->regra;
+  doc["ativo"]    = r->ativo;
+  doc["estado"]   = r->estado;
   doc["override"] = r->override;
 
   String out;

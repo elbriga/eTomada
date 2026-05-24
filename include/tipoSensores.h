@@ -6,7 +6,10 @@ struct TipoSensor {
     const char *nome;
     const char *tipo;
     const char *format;
-    int (*ler)(Sensor *s);
+    bool ehFloat;
+    String (*inicializaSensor)();
+    int (*lerSensor)(Sensor *s);
+    bool ativo;
 };
 
 int tipoSensorGetCount();

@@ -3,12 +3,12 @@
 #include "sensores.h"
 #include "tipoSensores.h"
 
-extern TipoSensor sensorTemperatura;
+extern TipoSensor sensorTemperaturaAHT10;
 extern TipoSensor sensorUmidade;
 extern TipoSensor sensorLux;
 
 static TipoSensor sensoresDisponiveis[] = {
-  sensorTemperatura,
+  sensorTemperaturaAHT10,
   sensorUmidade,
   sensorLux,
 };

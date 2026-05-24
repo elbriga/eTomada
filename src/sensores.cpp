@@ -26,13 +26,33 @@ void sensoresInit() {
   for (int s=1; s <= totSensores; s++) {
       Sensor *sensor = sensorLoadFromPrefs(s, prefs);
       TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
-      bool ativo = !!tipoSensor;
+
+      sensor->ativo = eTomadaPinoInOK(sensor->pino);
+      if (sensor->ativo) {
+        sensor->ativo = !!tipoSensor;
+        if (sensor->ativo) {
+          String initOK = tipoSensor->inicializaSensor();
+          tipoSensor->ativo = (initOK == "OK");
+          if (!tipoSensor->ativo) {
+            logaMensagem("Erro ao inicializar sensor: %s", initOK.c_str());
+            sensor->ativo = false;
+          }
+        } else {
+          if (strlen(sensor->tipo) > 0) {
+            logaMensagem("TipoSensor [%s] INVALIDO! Desativando Sensor[%d]", sensor->tipo, s);
+          }
+        }
+      } else {
+        if (sensor->pino != -1) {
+          logaMensagem("Pino [%d] INVALIDO! Desativando Sensor[%d]", sensor->pino, s);
+        }
+      }
 
       logaMensagem("Sensor %d:%d:%s (%s) > [%s - %s]",
         s, sensor->pino, sensor->nome,
-        (ativo ? "on" : "off"),
-        ativo ? tipoSensor->tipo : "",
-        ativo ? tipoSensor->nome : ""
+        (sensor->ativo ? "on" : "off"),
+        tipoSensor ? tipoSensor->tipo : "",
+        tipoSensor ? tipoSensor->nome : ""
       );
   }
 
@@ -59,29 +79,20 @@ Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
   }
 
   sensor->num = num;
-  strncpy(sensor->nome,  getPrefsAtr(prefs, num, "nome").c_str(),  sizeof(sensor->nome) - 1);
+
+  strncpy(sensor->nome, getPrefsAtr(prefs, num, "nome").c_str(),  sizeof(sensor->nome) - 1);
   sensor->nome[sizeof(sensor->nome) - 1] = '\0';
 
   sensor->pino = atoi(getPrefsAtr(prefs, num, "pino").c_str());  
-  bool pinoOK = eTomadaPinoInOK(sensor->pino);
-  if (!pinoOK) {
-    sensor->tipo[0] = '\0';
-    if (sensor->pino != -1) {
-      logaMensagem("Pino [%d] INVALIDO! Desativando Sensor[%d]", sensor->pino, num);
-    }
-  } else {
-    String tipo = getPrefsAtr(prefs, num, "tipo");
-    TipoSensor *ts = tipoSensorGet(tipo.c_str());
-    if (!ts && tipo != "") {
-      logaMensagem("Tipo [%s] INVALIDO! Desativando Sensor[%d]", tipo.c_str(), num);
-      tipo = "";
-    }
-    strncpy(sensor->tipo, tipo.c_str(), sizeof(sensor->tipo) - 1);
-    sensor->tipo[sizeof(sensor->tipo) - 1] = '\0';
-  }
+  
+  strncpy(sensor->tipo, getPrefsAtr(prefs, num, "tipo").c_str(), sizeof(sensor->tipo) - 1);
+  sensor->tipo[sizeof(sensor->tipo) - 1] = '\0';
 
   sensor->valor = 0;
   sensor->valorStr[0] = '\0';
+
+  // Falta verificar se o TipoSensor inicializou OK
+  sensor->ativo = false;
 
   return sensor;
 }
@@ -96,9 +107,7 @@ String sensorGetJSON(Sensor *s) {
   doc["tipo"] = s->tipo;
   doc["valorStr"] = s->valorStr;
   doc["valor"] = s->valor;
-
-  TipoSensor *ts = tipoSensorGet(s->tipo);
-  doc["unidade"] = ts->tipo;
+  doc["ativo"] = s->ativo;
 
   String out;
   serializeJson(doc, out);
@@ -139,7 +148,10 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
       if (novoTipo != "") {
         ts = tipoSensorGet(novoTipo.c_str());
         if (!ts) {
-          return "Tipo ["+novoTipo+"] Invalido";
+          return "TipoSensor ["+novoTipo+"] Invalido";
+        }
+        if (!ts->ativo) {
+          return "TipoSensor ["+novoTipo+"] Inativo";
         }
       }
       strncpy(sensor->tipo, novoTipo.c_str(), sizeof(sensor->tipo) - 1);
@@ -149,7 +161,11 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
     sensor->pino = novoPino;
 
     if (!doc["nome"].isNull()) {
-      strncpy(sensor->nome, doc["nome"].as<String>().c_str(), sizeof(sensor->nome) - 1);
+      String nome = doc["nome"].as<String>();
+      if (nome == "") {
+        nome = "??";
+      }
+      strncpy(sensor->nome, nome.c_str(), sizeof(sensor->nome) - 1);
       sensor->nome[sizeof(sensor->nome) - 1] = '\0';
     }
 
@@ -182,7 +198,7 @@ void sensoresAtualiza() {
     for (int s=1; s <= MAX_SENSORES; s++) {
       Sensor *sensor = &sensores[s-1];
 
-      if (sensor->pino == -1) {
+      if (!sensor->ativo || sensor->pino == -1) {
         // Desativado
         continue;
       }
@@ -192,14 +208,24 @@ void sensoresAtualiza() {
         logaMensagem("Sensor[%d] tipo invalido [%p]", s, sensor->tipo);
         continue;
       }
+      if (!tipoSensor->ativo) {
+        logaMensagem("Sensor[%d] tipo inativo [%s]", s, tipoSensor->nome);
+        continue;
+      }
 
-      int novoValor = tipoSensor->ler(sensor);
+      int novoValor = tipoSensor->lerSensor(sensor);
 
       if (sensor->valor != novoValor) {
         // MUDOU valor do sensor
         sensor->valor = novoValor;
-        snprintf(sensor->valorStr, sizeof(sensor->valorStr),
-          tipoSensor->format, novoValor);
+
+        if (tipoSensor->ehFloat) {
+          snprintf(sensor->valorStr, sizeof(sensor->valorStr),
+            tipoSensor->format, (float)(novoValor / 100));
+        } else {
+          snprintf(sensor->valorStr, sizeof(sensor->valorStr),
+            tipoSensor->format, novoValor);
+        }
 
         jsonAtualiza[s-1] = sensorGetJSON(sensor);
       }

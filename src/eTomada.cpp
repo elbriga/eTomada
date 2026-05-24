@@ -74,11 +74,11 @@ String eTomadaGetSnapshotJSON() {
 
         JsonObject r = reles.add<JsonObject>();
         r["num"]      = rele->num;
+        r["pino"]     = rele->pino;
         r["nome"]     = rele->nome;
         r["regra"]    = rele->regra;
-        r["pino"]     = rele->pino;
-        r["estado"]   = rele->estado;
         r["ativo"]    = rele->ativo;
+        r["estado"]   = rele->estado;
         r["override"] = rele->override;
       }
     }
@@ -99,11 +99,11 @@ String eTomadaGetSnapshotJSON() {
 
         JsonObject s = sensores.add<JsonObject>();
         s["num"]      = sensor->num;
-        s["tipo"]     = sensor->tipo;
-        s["nome"]     = sensor->nome;
         s["pino"]     = sensor->pino;
-        s["valor"]    = sensor->valor;
+        s["nome"]     = sensor->nome;
+        s["tipo"]     = sensor->tipo;
         s["valorStr"] = sensor->valorStr;
+        s["valor"]    = sensor->valor;
       }
     }
   }
@@ -118,6 +118,7 @@ String eTomadaGetSnapshotJSON() {
     JsonObject t = tipoSensores.add<JsonObject>();
     t["num"]  = i;
     t["nome"] = ts->nome;
+    t["tipo"] = ts->tipo;
   }
 
   String out;

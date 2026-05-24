@@ -5,6 +5,10 @@
 #include "sensores.h"
 #include "tipoSensores.h"
 
+static String sensorUmidadeInit() {
+  return "OK";
+}
+
 static int sensorUmidadeLer(Sensor *s) {
   // Ler sensor de umidade
   return s->valor + (esp_random() % 11) - 5; // MOCK
@@ -14,5 +18,7 @@ TipoSensor sensorUmidade = {
     "UmidXPTO",
     "Umidade",
     "%d %%",
+    false,
+    sensorUmidadeInit,
     sensorUmidadeLer
 };

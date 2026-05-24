@@ -13,6 +13,7 @@ struct Sensor {
     char tipo[32];
     char valorStr[32];
     int valor;
+    bool ativo;
 };
 
 void sensoresInit();
