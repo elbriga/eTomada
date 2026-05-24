@@ -151,9 +151,9 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
         if (!ts) {
           return "TipoSensor ["+novoTipo+"] Invalido";
         }
-        if (ts->status != "OK") {
-          return "TipoSensor ["+novoTipo+"] Inativo ["+ts->status+"]";
-        }
+        // if (ts->status != "OK") {
+        //   return "TipoSensor ["+novoTipo+"] Inativo ["+ts->status+"]";
+        // }
       }
       strncpy(sensor->tipo, novoTipo.c_str(), sizeof(sensor->tipo) - 1);
       sensor->tipo[sizeof(sensor->tipo) - 1] = '\0';
