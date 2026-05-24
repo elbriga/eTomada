@@ -1,20 +1,25 @@
 let sensorEditando = null;
 
 function sensorGetCard(sensor) {
+  const tipoSensor = eTomadaData.tipoSensores.find(
+    (ts) => ts.nome == sensor.tipo,
+  );
+  const tsOK = tipoSensor.status == "OK";
+  const valor = !tsOK ? tipoSensor.status : sensor.valorStr;
   const card = document.createElement("div");
   card.id = "sensorCard-" + sensor.num;
-  card.className = "card cardSensor";
+  card.className = `card cardSensor${!tsOK ? " cardSensorInativo" : ""}`;
   card.innerHTML = `
 <div class="headerTop">
   <div>
-    <div class="medio">Sensor ${sensor.num} - ${sensor.unidade}</div>
+    <div class="medio">Sensor ${sensor.num} - ${tipoSensor.nome} - ${tipoSensor.tipo}</div>
     <div class="title">${escapeHtml(sensor.nome || "")}</div>
     <div class="small">pino: ${escapeHtml(sensor.pino)}</div>
   </div>
   <button class="editBtn" onclick="sensorOpenEditModal(${sensor.num})">✏️</button>
 </div>
 <br>
-<div class="status on">${sensor.valorStr}</div>
+<div class="status on">${valor}</div>
 `;
   return card;
 }

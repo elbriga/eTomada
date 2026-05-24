@@ -13,6 +13,9 @@ static Sensor sensores[MAX_SENSORES];
 void sensoresInit() {
   // Zerar tudo
   memset(sensores, 0, sizeof(sensores));
+
+  // Inicializar os TipoSensor
+  tipoSensorInit();
   
   Preferences prefs;
   prefs.begin("sensores", false);
@@ -31,10 +34,8 @@ void sensoresInit() {
       if (sensor->ativo) {
         sensor->ativo = !!tipoSensor;
         if (sensor->ativo) {
-          String initOK = tipoSensor->inicializaSensor();
-          tipoSensor->ativo = (initOK == "OK");
-          if (!tipoSensor->ativo) {
-            logaMensagem("Erro ao inicializar sensor: %s", initOK.c_str());
+          if (tipoSensor->status != "OK") {
+            logaMensagem("Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
             sensor->ativo = false;
           }
         } else {
@@ -150,8 +151,8 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
         if (!ts) {
           return "TipoSensor ["+novoTipo+"] Invalido";
         }
-        if (!ts->ativo) {
-          return "TipoSensor ["+novoTipo+"] Inativo";
+        if (ts->status != "OK") {
+          return "TipoSensor ["+novoTipo+"] Inativo ["+ts->status+"]";
         }
       }
       strncpy(sensor->tipo, novoTipo.c_str(), sizeof(sensor->tipo) - 1);
@@ -208,7 +209,7 @@ void sensoresAtualiza() {
         logaMensagem("Sensor[%d] tipo invalido [%p]", s, sensor->tipo);
         continue;
       }
-      if (!tipoSensor->ativo) {
+      if (tipoSensor->status != "OK") {
         logaMensagem("Sensor[%d] tipo inativo [%s]", s, tipoSensor->nome);
         continue;
       }

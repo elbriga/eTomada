@@ -59,6 +59,10 @@ footer {
   background: #1e493b;
 }
 
+.cardSensorInativo {
+  opacity: 0.3;
+}
+
 .minHeight {
   height: 100px;
 }

@@ -9,8 +9,10 @@ struct TipoSensor {
     bool ehFloat;
     String (*inicializaSensor)();
     int (*lerSensor)(Sensor *s);
-    bool ativo;
+    String status;
 };
+
+void tipoSensorInit();
 
 int tipoSensorGetCount();
 TipoSensor *tipoSensorGet(const char *nome);

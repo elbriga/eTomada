@@ -4,14 +4,23 @@
 #include "tipoSensores.h"
 
 extern TipoSensor sensorTemperaturaAHT10;
+extern TipoSensor sensorUmidadeAHT10;
 extern TipoSensor sensorUmidade;
 extern TipoSensor sensorLux;
 
 static TipoSensor sensoresDisponiveis[] = {
   sensorTemperaturaAHT10,
+  sensorUmidadeAHT10,
   sensorUmidade,
   sensorLux,
 };
+
+void tipoSensorInit() {
+  for (int t=0; t < tipoSensorGetCount(); t++) {
+    TipoSensor *ts = tipoSensorGetPorId(t);
+    ts->status = ts->inicializaSensor();
+  }
+}
 
 int tipoSensorGetCount() {
   return sizeof(sensoresDisponiveis) / sizeof(sensoresDisponiveis[0]);

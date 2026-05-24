@@ -6,14 +6,14 @@
 
 static Adafruit_AHTX0 aht;
 
-static String sensorTemperaturaAHT10Init() {
+static String sensorUmidadeAHT10Init() {
   if (!aht.begin()) {
     return "Falha init AHT10!";
   }
   return "OK";
 }
 
-static int sensorTemperaturaAHT10Ler(Sensor *s) {
+static int sensorUmidadeAHT10Ler(Sensor *s) {
   // Ler sensor de temperatura
   sensors_event_t humidity, temp;
   aht.getEvent(&humidity, &temp);
@@ -21,11 +21,11 @@ static int sensorTemperaturaAHT10Ler(Sensor *s) {
   return (int)(temp.temperature * 100);
 }
 
-TipoSensor sensorTemperaturaAHT10 = {
+TipoSensor sensorUmidadeAHT10 = {
     "AHT10",
-    "Temperatura",
-    "%.2f° C",
-    true,
-    sensorTemperaturaAHT10Init,
-    sensorTemperaturaAHT10Ler
+    "Umidade",
+    "%d %%",
+    false,
+    sensorUmidadeAHT10Init,
+    sensorUmidadeAHT10Ler
 };

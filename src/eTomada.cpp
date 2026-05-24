@@ -119,6 +119,7 @@ String eTomadaGetSnapshotJSON() {
     t["num"]  = i;
     t["nome"] = ts->nome;
     t["tipo"] = ts->tipo;
+    t["status"] = ts->status;
   }
 
   String out;

@@ -82,7 +82,7 @@ function getTipoSensorOptions(selected) {
       .map((ts) => {
         return `
 <option value="${ts.nome}" ${ts.nome == selected ? "selected" : ""}>
-  ${ts.nome}
+  ${ts.tipo} - ${ts.nome}
 </option>
 `;
       })
