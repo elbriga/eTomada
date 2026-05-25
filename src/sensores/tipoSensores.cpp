@@ -4,12 +4,14 @@
 extern TipoSensor sensorTemperaturaAHT10;
 extern TipoSensor sensorUmidadeAHT10;
 extern TipoSensor sensorUmidade;
+extern TipoSensor sensorLuxBH1750;
 extern TipoSensor sensorLux;
 
 static TipoSensor sensoresDisponiveis[] = {
   sensorTemperaturaAHT10,
   sensorUmidadeAHT10,
   sensorUmidade,
+  sensorLuxBH1750,
   sensorLux,
 };
 
