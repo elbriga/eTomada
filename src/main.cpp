@@ -69,10 +69,10 @@ void loop() {
   esp_task_wdt_reset(); // alimenta o watchdog
 
   if (WiFiGetModoAP()) {
-    WiFiLoop();
+    WiFiModoAPLoop();
 
     // No modo AP não processa as regras
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(100));
     return;
   }
 

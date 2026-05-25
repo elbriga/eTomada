@@ -148,7 +148,7 @@ void WiFiScanLoop()
   wifiScanning = false;
 }
 
-void WiFiLoop()
+void WiFiModoAPLoop()
 {
   dnsServer.processNextRequest();
 

@@ -6,7 +6,7 @@ void WiFiConnect();
 void WiFiModoAP();
 bool WiFiGetModoAP();
 
-void WiFiLoop();
+void WiFiModoAPLoop();
 
 String WiFiGetSSID();
 bool WiFiTemConfig();
