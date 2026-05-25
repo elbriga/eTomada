@@ -68,13 +68,16 @@ Rele *releLoadFromPrefs(int num, Preferences &prefs) {
 
   String regraOK = validaRegra(rele->regra);
   if (regraOK != "OK") {
-    logaMensagem("Regra [%s] INVALIDA! [%s] Desativando Rele[%d]", rele->regra, regraOK.c_str(), num);
+    logaMensagem("Regra [%s] INVALIDA! [%s] Convertendo Rele[%d] para manual", rele->regra, regraOK.c_str(), num);
+    rele->regra[0] = '\0';
   }
+
   bool pinoOK = eTomadaPinoOutOK(rele->pino);
   if (!pinoOK && rele->pino != -1) {
     logaMensagem("Pino [%d] INVALIDO! Desativando Rele[%d]", rele->pino, num);
   }
-  rele->ativo = (regraOK == "OK" && pinoOK) ?
+
+  rele->ativo = pinoOK ?
     (getPrefsAtr(prefs, num, "ativo") == "1") : false;
 
   // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
@@ -199,20 +202,24 @@ String releControla(int numRele, bool estado, int override)
     return "releControla: mutex timeout";
   }
 
-  return releControlaUnsafe(numRele, estado, override);
+  Rele *rele = releGet(numRele);
+  if (!rele) {
+    return "releControla: numRele invalido";
+  }
+
+  return releControlaUnsafe(rele, estado, override);
 }
 
 // REQUIRE releMutex locked
-String releControlaUnsafe(int numRele, bool estado, int override)
+String releControlaUnsafe(Rele *rele, bool estado, int override)
 {
-  Rele *rele = releGet(numRele);
   if (!rele) {
-    logaMensagem("controlaRele: numRele [%d] invalido!\n", numRele);
+    logaMensagem("controlaRele: Rele invalido!!!\n");
     return "";
   }
   
   if (rele->pino == -1) {
-    logaMensagem("controlaRele[%d]: pino invalido!\n", numRele);
+    logaMensagem("controlaRele[%d]: pino invalido!\n", rele->num);
     return "";
   }
 
@@ -224,8 +231,8 @@ String releControlaUnsafe(int numRele, bool estado, int override)
     rele->override = (override > 0) ? time(nullptr) + override : 0;
 
     char msg[128];
-    snprintf(msg, sizeof(msg), "%s %s (rele %d, pino %d)", (estado ? "Ligando" : "Desligando"),
-      rele->nome, numRele, rele->pino);
+    snprintf(msg, sizeof(msg), "%s %s (rele %d, pino %d)",
+      (estado ? "Ligando" : "Desligando"), rele->nome, rele->num, rele->pino);
     ret = msg;
 
     String releJSON = releGetJSONString(rele);

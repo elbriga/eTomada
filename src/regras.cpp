@@ -8,8 +8,119 @@
 #include "ntp.h"
 #include "mutex.h"
 
+// REQUIRE releMutex, sensorMutex locked
+String checkRegra(Rele *rele) {
+  if (!rele) {
+    return "Rele invalido!!!";
+  }
+
+  if (!strlen(rele->regra)) {
+    return "";
+  }
+
+  // Verificar se esta em modo manual
+  if (rele->override > time(nullptr)) {
+    // TODO Bug 2038! kkk
+    return "";
+  }
+
+  char acao[3] = { rele->regra[0], rele->regra[1], 0 };
+
+  if (!strcmp(acao, "ON") || !strcmp(acao, "OF")) {
+    int hI=-1, mI=-1, hF=-1, mF=-1;
+    char ligar[3] = {0};
+    sscanf(rele->regra, "%2[^|]|%d:%d|%d:%d", ligar, &hI, &mI, &hF, &mF);
+
+    int tsI = hI * 60 + mI;
+    int tsF = hF * 60 + mF;
+
+    struct tm timeinfo;
+    ntpGetTime(&timeinfo);
+    int tsAgora = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+
+    bool virouDia = tsF < tsI;
+    bool estaNoIntervalo = !virouDia ?
+      (tsAgora >= tsI && tsAgora <= tsF) :
+      (tsAgora >= tsI || tsAgora <= tsF);
+
+    bool acaoEhLigar = !strncmp(ligar, "ON", 2);
+    if (!acaoEhLigar) estaNoIntervalo = !estaNoIntervalo;
+
+    return releControlaUnsafe(rele, estaNoIntervalo);
+  }
+  
+  if (!strcmp(acao, "SE")) {
+    char se[3] = {0}, condLiga[32] = {0}, condDesliga[32] = {0};
+    sscanf(rele->regra, "%2[^|]|%31[^|]|%31s", se, condLiga, condDesliga);
+
+    // Verificar a condicao LIGA:
+    if (condLiga[0] == 'S') {
+      int numSensor = condLiga[1] - '0';
+      if (numSensor < 1 || numSensor > MAX_SENSORES) {
+        return "Sensor ON invalido";
+      }
+      Sensor *s = sensorGet(numSensor);
+      if (!s) {
+        return "Sensor ON invalido!";
+      }
+      if (!s->ativo) {
+        // return "Sensor ON Inativo";
+        return "";
+      }
+
+      bool ligaRele;
+      int valorTeste = atoi(&condLiga[3]);
+      if (condLiga[2] == '>') {
+        ligaRele = (s->valor > valorTeste);
+      } else if (condLiga[2] == '<') {
+        ligaRele = (s->valor < valorTeste);
+      } else {
+        return "Condicao ON invalida!";
+      }
+
+      if (ligaRele) {
+        return releControlaUnsafe(rele, true);
+      }
+    }
+
+    // Verificar a condicao DESLIGA:
+    if (condDesliga[0] == 'S') {
+      int numSensor = condDesliga[1] - '0';
+      if (numSensor < 1 || numSensor > MAX_SENSORES) {
+        return "Sensor OF invalido";
+      }
+      Sensor *s = sensorGet(numSensor);
+      if (!s) {
+        return "Sensor OF invalido!";
+      }
+      if (!s->ativo) {
+        // return "Sensor OF Inativo";
+        return "";
+      }
+
+      bool desligaRele;
+      int valorTeste = atoi(&condDesliga[3]);
+      if (condDesliga[2] == '>') {
+        desligaRele = (s->valor > valorTeste);
+      } else if (condDesliga[2] == '<') {
+        desligaRele = (s->valor < valorTeste);
+      } else {
+        return "Condicao OF invalida!";
+      }
+
+      if (desligaRele) {
+        return releControlaUnsafe(rele, false);
+      }
+    }
+
+    return "";
+  }
+
+  return "Acao invalida";
+}
+
 void processaRegras() {
-  String msg, msgDisplay = "";
+  String msgDisplay = "";
   {
     MutexLock lockReles(releMutex);
     MutexLock lockSensores(sensorMutex);
@@ -19,13 +130,12 @@ void processaRegras() {
       return;
     }
 
-    Rele *rele;
     int totReles = relesGetCount();
     for (int r=1; r <= totReles; r++) {
-      rele = releGet(r);
+      Rele *rele = releGet(r);
       if (!rele->ativo) continue;
 
-      msg = checkRegra(r);
+      String msg = checkRegra(rele);
       if (msg != "") {
         logaMensagem(msg.c_str());
         msgDisplay = msg; // Mostra no display a ultima msg
@@ -53,6 +163,28 @@ String validaHora(String hora) {
   return "";
 }
 
+String validaCondicao(const char *condicao) {
+  if (condicao[0] != 'S') {
+    return "Sensor Invalido";
+  }
+  int numSensor = condicao[1] - '0';
+  if (numSensor < 1 || numSensor > sensoresGetCount()) {
+    return "Sensor Invalido!";
+  }
+
+  if (condicao[2] != '<' && condicao[2] != '>') {
+    return "Op Invalida";
+  }
+
+  if (!strlen(&condicao[3])) {
+    return "valTeste vazio";
+  }
+  // TODO validar valTeste
+  //int valTeste = atoi(&condicao[3]);
+
+  return "OK";
+}
+
 String validaRegra(String regra) {
   if (regra == "") {
     return "OK";
@@ -63,9 +195,9 @@ String validaRegra(String regra) {
   }
 
   char acao[3] = {0};
-  char param1[17] = {0};
-  char param2[17] = {0};
-  int lidos = sscanf(regra.c_str(), "%2[^|]|%16[^|]|%16[^|]", acao, param1, param2);
+  char param1[33] = {0};
+  char param2[33] = {0};
+  int lidos = sscanf(regra.c_str(), "%2[^|]|%32[^|]|%32[^|]", acao, param1, param2);
   if (lidos < 3) {
     return "campos:" + String(lidos) + ":" + String(acao) + ":" + String(param1) + ":" + String(param2);
   }
@@ -81,113 +213,17 @@ String validaRegra(String regra) {
       return "hF:" + hOK;
     }
   } else if (!strncmp(acao, "SE", 2)) {
-    // TODO validar param1 e 2 - ex: "S1>20" = sensor 1 > 20
+    String condOK = validaCondicao(param1);
+    if (condOK != "OK") {
+      return "condON:" + condOK;
+    }
+    condOK = validaCondicao(param2);
+    if (condOK != "OK") {
+      return "condOF:" + condOK;
+    }
   } else {
     return "acao";
   }
 
   return "OK";
-}
-
-// REQUIRE releMutex, sensorMutex locked
-String checkRegra(int numRele) {
-  Rele *rele = releGet(numRele);
-  if (!rele) {
-    return "Rele invalido";
-  }
-
-  if (!strlen(rele->regra)) {
-    return "";
-  }
-
-  // Verificar se esta em modo manual
-  if (rele->override > time(nullptr)) {
-    return "";
-  }
-
-  char acao[3] = { rele->regra[0], rele->regra[1], 0 };
-
-  if (!strcmp(acao, "ON") || !strcmp(acao, "OF")) {
-    int hI=-1, mI=-1, hF=-1, mF=-1;
-    char ligar[3] = {0};
-    sscanf(rele->regra, "%2[^|]|%d:%d|%d:%d", ligar, &hI, &mI, &hF, &mF);
-
-    int tsI = hI * 60 + mI;
-    int tsF = hF * 60 + mF;
-
-    struct tm timeinfo;
-    ntpGetTime(&timeinfo);
-    int tsAgora = timeinfo.tm_hour * 60 + timeinfo.tm_min;
-
-    bool virouDia = tsF < tsI;
-    bool estaNoIntervalo = !virouDia ?
-      (tsAgora >= tsI && tsAgora <= tsF) :
-      (tsAgora >= tsI || tsAgora <= tsF);
-
-    bool acaoEhLigar = !strncmp(ligar, "ON", 2);
-    if (!acaoEhLigar) estaNoIntervalo = !estaNoIntervalo;
-
-    return releControlaUnsafe(numRele, estaNoIntervalo);
-  }
-  
-  if (!strcmp(acao, "SE")) {
-    char se[3] = {0}, condLiga[32] = {0}, condDesliga[32] = {0};
-    sscanf(rele->regra, "%2[^|]|%31[^|]|%31s", se, condLiga, condDesliga);
-
-    // Verificar a condicao LIGA:
-    if (condLiga[0] == 'S') {
-      int numSensor = condLiga[1] - '0';
-      if (numSensor < 1 || numSensor > MAX_SENSORES) {
-        return "Sensor ON invalido";
-      }
-      Sensor *s = sensorGet(numSensor);
-      if (!s) {
-        return "Sensor ON invalido!";
-      }
-
-      bool ligaRele;
-      int valorTeste = atoi(&condLiga[3]);
-      if (condLiga[2] == '>') {
-        ligaRele = (s->valor > valorTeste);
-      } else if (condLiga[2] == '<') {
-        ligaRele = (s->valor < valorTeste);
-      } else {
-        return "Condicao ON invalida!";
-      }
-
-      if (ligaRele) {
-        return releControlaUnsafe(numRele, true);
-      }
-    }
-
-    // Verificar a condicao DESLIGA:
-    if (condDesliga[0] == 'S') {
-      int numSensor = condDesliga[1] - '0';
-      if (numSensor < 1 || numSensor > MAX_SENSORES) {
-        return "Sensor OF invalido";
-      }
-      Sensor *s = sensorGet(numSensor);
-      if (!s) {
-        return "Sensor OF invalido!";
-      }
-
-      bool desligaRele;
-      int valorTeste = atoi(&condDesliga[3]);
-      if (condDesliga[2] == '>') {
-        desligaRele = (s->valor > valorTeste);
-      } else if (condDesliga[2] == '<') {
-        desligaRele = (s->valor < valorTeste);
-      } else {
-        return "Condicao OF invalida!";
-      }
-
-      if (desligaRele) {
-        return releControlaUnsafe(numRele, false);
-      }
-    }
-
-    return "";
-  }
-
-  return "Acao invalida";
 }
