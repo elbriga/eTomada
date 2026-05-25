@@ -40,6 +40,17 @@ function relesRender(reles) {
   });
 }
 
+function releGetOptionsSensores() {
+  return (
+    "<option value=''>Escolha um Sensor</option>" +
+    eTomadaData.sensores
+      .map((s) => {
+        return `<option value="S${s.num}">${s.nome}</option>`;
+      })
+      .join("")
+  );
+}
+
 function releOpenEditModal(numRele) {
   const rele = eTomadaData.reles.find((r) => r.num == numRele);
   if (!rele) return;
@@ -57,10 +68,27 @@ function releOpenEditModal(numRele) {
   document.getElementById("modalDivRegra").style.display = "block";
   document.getElementById("modalRegra").value = rele.regra || "";
   document.getElementById("modalRegraAcao").value = acao;
+
   document.getElementById("modalHorario").value =
     param1 != "" && param2 != "" ? `${param1}-${param2}` : "";
-  document.getElementById("modalCondTrue").value = param1;
-  document.getElementById("modalCondFalse").value = param2;
+
+  let optionsSensores = releGetOptionsSensores();
+
+  let sensorON = param1.substring(0, 2);
+  let opON = param1.substring(2, 3);
+  let valTesteON = param1.substring(3);
+  document.getElementById("modalCondSensorLiga").innerHTML = optionsSensores;
+  document.getElementById("modalCondSensorLiga").value = sensorON;
+  document.getElementById("modalCondOpLiga").value = opON == ">" ? "+" : "-";
+  document.getElementById("modalCondValTesteLiga").value = valTesteON;
+
+  let sensorOF = param2.substring(0, 2);
+  let opOF = param2.substring(2, 3);
+  let valTesteOF = param2.substring(3);
+  document.getElementById("modalCondSensorDesliga").innerHTML = optionsSensores;
+  document.getElementById("modalCondSensorDesliga").value = sensorOF;
+  document.getElementById("modalCondOpDesliga").value = opOF == ">" ? "+" : "-";
+  document.getElementById("modalCondValTesteDesliga").value = valTesteOF;
 
   document.getElementById("modalSalvarBtn").onclick = function () {
     releSalvarFromModal();
@@ -84,9 +112,17 @@ async function releSalvarFromModal() {
     if (acao == "") {
       regra = "";
     } else if (acao == "SE") {
-      const p1 = document.getElementById("modalCondTrue").value;
-      const p2 = document.getElementById("modalCondFalse").value;
-      regra = `SE|${p1}|${p2}`;
+      const condON =
+        document.getElementById("modalCondSensorLiga").value +
+        (document.getElementById("modalCondOpLiga").value == "+" ? ">" : "<") +
+        document.getElementById("modalCondValTesteLiga").value;
+      const condOF =
+        document.getElementById("modalCondSensorDesliga").value +
+        (document.getElementById("modalCondOpDesliga").value == "+"
+          ? ">"
+          : "<") +
+        document.getElementById("modalCondValTesteDesliga").value;
+      regra = `SE|${condON}|${condOF}`;
     } else if (acao == "ON" || acao == "OF") {
       let horario = document.getElementById("modalHorario").value + "";
       regra = `${acao}|${horario.replace("-", "|")}`;

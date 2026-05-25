@@ -29,7 +29,7 @@ function sensoresRender(sensores) {
   container.innerHTML = "";
 
   sensores.forEach((sensor, i) => {
-    if (!sensor.tipo) return;
+    if (sensor.pino == -1) return;
     if (!sensor.nome) sensor.nome = "---";
 
     const card = sensorGetCard(sensor);

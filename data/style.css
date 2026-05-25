@@ -260,3 +260,17 @@ button:hover {
   box-sizing: border-box;
   padding: 10px;
 }
+
+.formCondicional {
+  display: grid;
+  grid-template-columns: 220px 40px 100px;
+  gap: 10px;
+}
+
+.formCondicional input {
+  width: 80px;
+}
+
+.formCondicional select {
+  margin: 5px;
+}

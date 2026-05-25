@@ -20,11 +20,11 @@
       <div class="headerTop">
         <div>
           ⚡ eTomada <br />
-          <div id="status"></div>
           <button onclick="eTomadaRender()" style="width: 120px">
             🔄 Reload
           </button>
         </div>
+        <div id="status"></div>
         <button class="configBtn" onclick="openConfig()">⚙️</button>
       </div>
     </header>
@@ -64,9 +64,9 @@
             Ação:
             <select id="modalRegraAcao" onchange="releOCModalAcao()">
               <option value="">Manual</option>
-              <option value="ON">Ligado</option>
-              <option value="OF">Desligado</option>
-              <option value="SE">Condicional</option>
+              <option value="ON">Horário Ligado</option>
+              <option value="OF">Horário Desligado</option>
+              <option value="SE">Condicional por Sensores</option>
             </select>
           </span>
           <br /><br />
@@ -76,9 +76,23 @@
           </div>
           <div id="divRegraCondicional">
             Ligar SE:
-            <input id="modalCondTrue" maxlength="5" placeholder="S1>10" />
+            <div class="formCondicional">
+              <select id="modalCondSensorLiga"></select>
+              <select id="modalCondOpLiga">
+                <option value="+">&gt;</option>
+                <option value="-">&lt;</option>
+              </select>
+              <input id="modalCondValTesteLiga" maxlength="5" />
+            </div>
             Desligar SE:
-            <input id="modalCondFalse" maxlength="5" placeholder="S1<5" />
+            <div class="formCondicional">
+              <select id="modalCondSensorDesliga"></select>
+              <select id="modalCondOpDesliga">
+                <option value="+">&gt;</option>
+                <option value="-">&lt;</option>
+              </select>
+              <input id="modalCondValTesteDesliga" maxlength="5" />
+            </div>
           </div>
           <input id="modalRegra" type="hidden" />
         </div>
