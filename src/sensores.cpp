@@ -166,6 +166,7 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
     }
 
     sensor->pino = novoPino;
+    sensor->ativo = !!strlen(sensor->tipo);
 
     if (!doc["nome"].isNull()) {
       String nome = doc["nome"].as<String>();
@@ -216,7 +217,8 @@ void sensoresAtualiza() {
         continue;
       }
       if (tipoSensor->status != "OK") {
-        logaMensagem("Sensor[%d] tipo inativo [%s]", s, tipoSensor->nome);
+        logaMensagem("Sensor[%d] tipo inativo [%s]. Inativando sensor", s, tipoSensor->nome);
+        sensor->ativo = false;
         continue;
       }
 
