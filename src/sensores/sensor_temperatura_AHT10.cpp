@@ -1,24 +1,14 @@
+#include "loga.h"
 #include "sensores.h"
 #include "tipoSensores.h"
-#include "loga.h"
-
-#include <Adafruit_AHTX0.h>
-
-static Adafruit_AHTX0 aht;
+#include "tipoSensor_AHT10.h"
 
 static String sensorTemperaturaAHT10Init() {
-  if (!aht.begin()) {
-    return "Falha init AHT10!";
-  }
-  return "OK";
+  return sensorAHT10Init();
 }
 
 static int sensorTemperaturaAHT10Ler(Sensor *s) {
-  // Ler sensor de temperatura
-  sensors_event_t humidity, temp;
-  aht.getEvent(&humidity, &temp);
-
-  return (int)(temp.temperature * 100);
+  return sensorAHT10LerTemperatura();
 }
 
 TipoSensor sensorTemperaturaAHT10 = {
