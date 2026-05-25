@@ -59,11 +59,11 @@ String checkRegra(Rele *rele) {
       if (numSensor < 1 || numSensor > MAX_SENSORES) {
         return "Sensor ON invalido";
       }
-      Sensor *s = sensorGet(numSensor);
-      if (!s) {
+      Sensor *sensor = sensorGet(numSensor);
+      if (!sensor) {
         return "Sensor ON invalido!";
       }
-      if (!s->ativo) {
+      if (!sensor->ativo) {
         // return "Sensor ON Inativo";
         return "";
       }
@@ -71,9 +71,9 @@ String checkRegra(Rele *rele) {
       bool ligaRele;
       int valorTeste = atoi(&condLiga[3]);
       if (condLiga[2] == '>') {
-        ligaRele = (s->valor > valorTeste);
+        ligaRele = (sensor->valor > valorTeste);
       } else if (condLiga[2] == '<') {
-        ligaRele = (s->valor < valorTeste);
+        ligaRele = (sensor->valor < valorTeste);
       } else {
         return "Condicao ON invalida!";
       }
@@ -89,11 +89,11 @@ String checkRegra(Rele *rele) {
       if (numSensor < 1 || numSensor > MAX_SENSORES) {
         return "Sensor OF invalido";
       }
-      Sensor *s = sensorGet(numSensor);
-      if (!s) {
+      Sensor *sensor = sensorGet(numSensor);
+      if (!sensor) {
         return "Sensor OF invalido!";
       }
-      if (!s->ativo) {
+      if (!sensor->ativo) {
         // return "Sensor OF Inativo";
         return "";
       }
@@ -101,9 +101,9 @@ String checkRegra(Rele *rele) {
       bool desligaRele;
       int valorTeste = atoi(&condDesliga[3]);
       if (condDesliga[2] == '>') {
-        desligaRele = (s->valor > valorTeste);
+        desligaRele = (sensor->valor > valorTeste);
       } else if (condDesliga[2] == '<') {
-        desligaRele = (s->valor < valorTeste);
+        desligaRele = (sensor->valor < valorTeste);
       } else {
         return "Condicao OF invalida!";
       }
