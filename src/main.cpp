@@ -11,6 +11,8 @@
 #include "mutex.h"
 #include "sensores.h"
 
+static long ntpSyncTimeTS = 0;
+
 void setup() {
   Serial.begin(115200);
 
@@ -49,9 +51,8 @@ void setup() {
 
   // NTP somente no modo STA
   if (!WiFiGetModoAP()) {
-    logaMensagem("Buscando Data/Hora");
     displayMostraString(0, 40, "Buscando Hora...");
-    ntpSyncTime();
+    ntpSyncTimeTS = ntpSyncTime();
   }
   
   if (FSOK) {
@@ -75,7 +76,6 @@ String getDiaSemana(struct tm timeinfo) {
   }
 }
 
-int lastMinute = -1;
 int lastSecond = -1;
 int last10Second = -1;
 void loop() {
@@ -118,18 +118,12 @@ void loop() {
     // Verificar o WiFi
     if (WiFi.status() != WL_CONNECTED) {
       logaTitulo("WiFi caiu!! Reconectar...");
-      displayMostraMsg("Reconectando...", 10000);
+      displayMostraMsg("Reconectando...", 6000);
       WiFiConnect();
     }
-  }
 
-  // 1m/1m
-  if (timeinfo.tm_min != lastMinute) {
-    lastMinute = timeinfo.tm_min;
-
-    if (timeinfo.tm_hour == 0 && timeinfo.tm_min == 0) {
-      // Ao mudar de dia - sync NTP de novo
-      ntpSyncTime();
+    if (ntpSyncTimeTS > 0 && (long)(millis() - ntpSyncTimeTS) >= 0) {
+      ntpSyncTimeTS = ntpSyncTime();
     }
   }
 
