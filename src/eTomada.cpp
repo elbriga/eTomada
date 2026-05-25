@@ -97,10 +97,6 @@ String eTomadaGetSnapshotJSON() {
           // TODO :: o que fazer aqui??
           continue;
         }
-        if (sensor->pino == -1) {
-          // Nao enviar sensores desligados
-          continue;
-        }
 
         sensores.add(sensorGetJSONDoc(sensor));
       }

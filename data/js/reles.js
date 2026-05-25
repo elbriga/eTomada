@@ -45,7 +45,9 @@ function releGetOptionsSensores() {
     "<option value=''>Escolha um Sensor</option>" +
     eTomadaData.sensores
       .map((s) => {
-        return `<option value="S${s.num}">${s.nome}</option>`;
+        return s.pino == -1
+          ? ""
+          : `<option value="S${s.num}">${s.nome}</option>`;
       })
       .join("")
   );
