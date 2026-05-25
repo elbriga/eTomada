@@ -24,7 +24,7 @@ static Rele relesConfigDefault[MAX_RELES] = {
 };
 
 static Sensor sensoresConfigDefault[MAX_SENSORES] = {
-  { 1,  1, "Temp", "TempXPTO", "", 0 },
+  { 1,  1, "Temp", "AHT10t",   "", 0 },
   { 2,  2, "Umid", "UmidXPTO", "", 0 },
   { 3,  3, "lux",  "LUXXPTO",  "", 0 },
   { 4, -1, "",     "",         "", 0 }
