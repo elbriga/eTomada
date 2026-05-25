@@ -3,7 +3,7 @@
 #include "reles.h"
 #include "sensores.h"
 
-void eTomadaLoadConfig();
+void eTomadaInit();
 
 String eTomadaGetSnapshotJSON();
 

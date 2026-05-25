@@ -34,7 +34,9 @@ static Sensor sensoresConfigDefault[MAX_SENSORES] = {
 int pinosOutOK[] = { 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
 int pinosInOK[] = { 1, 2, 3, 4, 5 };
 
-void eTomadaLoadConfig() {
+void eTomadaInit() {
+  mutexInit();
+  
   logaMensagem("Carregando Configuracao dos reles:");
   relesInit(); // Carrega os reles do prefs
 

@@ -8,22 +8,21 @@
 #include "ntp.h"
 #include "http.h"
 #include "regras.h"
-#include "mutex.h"
 #include "sensores.h"
 
+// Timestamp da proxima sincronizacao do NTP
 static long ntpSyncTimeTS = 0;
 
 void setup() {
   Serial.begin(115200);
 
-  delay(1000);
+  delay(500);
+
   logaTitulo("eTomada");
 
   // WDT : 15 segundos de timeout
   esp_task_wdt_init(15, true); // true = resetar automaticamente
   esp_task_wdt_add(NULL);      // adiciona a task atual (loop)
-
-  mutexInit();
 
   displayInit();
 
@@ -32,19 +31,7 @@ void setup() {
     logaTitulo("Erro LittleFS - Desativando Servidor Web");
   }
 
-  eTomadaLoadConfig();
-
-  Rele *rele;
-  int totReles = relesGetCount();
-  for(int r=1; r <= totReles; r++) {
-    rele = releGet(r);
-    if (rele->pino == -1) {
-      // Rele Desativado
-      continue;
-    }
-    pinMode(rele->pino, OUTPUT);
-    digitalWrite(rele->pino, rele->estado);
-  }
+  eTomadaInit();
 
   displayMostraString(0, 20, "Conectando...");
   WiFiConnect();

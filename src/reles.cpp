@@ -28,6 +28,9 @@ void relesInit() {
   for (int r=1; r <= totReles; r++) {
     Rele *rele = releLoadFromPrefs(r, prefs);
 
+    pinMode(rele->pino, OUTPUT);
+    digitalWrite(rele->pino, rele->estado);
+
     logaMensagem("Rele %d:%d:%s (%s) > [%s]",
       r, rele->pino, rele->nome,
       (rele->ativo ? "on" : "off"), rele->regra);
