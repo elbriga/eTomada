@@ -141,3 +141,9 @@ async function salvarConfigGeral() {
     statusMsg("Erro salvarConfigGeral: " + e);
   }
 }
+
+function factoryReset() {
+  // TODO Modal confirm
+  statusMsg("Reiniciando");
+  closeConfig();
+}
