@@ -27,34 +27,29 @@ void sensoresInit() {
   
   int totSensores = sensoresGetCount();
   for (int s=1; s <= totSensores; s++) {
-      Sensor *sensor = sensorLoadFromPrefs(s, prefs);
-      TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
+    Sensor *sensor = sensorLoadFromPrefs(s, prefs);
+    TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
 
-      sensor->ativo = eTomadaPinoInOK(sensor->pino);
+    sensor->ativo = eTomadaPinoInOK(sensor->pino);
+    if (sensor->ativo) {
+      sensor->ativo = !!tipoSensor;
       if (sensor->ativo) {
-        sensor->ativo = !!tipoSensor;
-        if (sensor->ativo) {
-          if (tipoSensor->status != "OK") {
-            logaMensagem("Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
-            sensor->ativo = false;
-          }
-        } else {
-          if (strlen(sensor->tipo) > 0) {
-            logaMensagem("TipoSensor [%s] INVALIDO! Desativando Sensor[%d]", sensor->tipo, s);
-          }
+        if (tipoSensor->status != "OK") {
+          logaMensagem("Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
+          sensor->ativo = false;
         }
       } else {
-        if (sensor->pino != -1) {
-          logaMensagem("Pino [%d] INVALIDO! Desativando Sensor[%d]", sensor->pino, s);
+        if (strlen(sensor->tipo) > 0) {
+          logaMensagem("TipoSensor [%s] INVALIDO! Desativando Sensor[%d]", sensor->tipo, s);
         }
       }
+    } else {
+      if (sensor->pino != -1) {
+        logaMensagem("Pino [%d] INVALIDO! Desativando Sensor[%d]", sensor->pino, s);
+      }
+    }
 
-      logaMensagem("Sensor %d:%d:%s (%s) > [%s - %s]",
-        s, sensor->pino, sensor->nome,
-        (sensor->ativo ? "on" : "off"),
-        tipoSensor ? tipoSensor->tipo : "",
-        tipoSensor ? tipoSensor->nome : ""
-      );
+    sensorPrint(sensor);
   }
 
   prefs.end();
@@ -70,6 +65,17 @@ Sensor *sensorGet(int numSensor) {
   }
 
   return &sensores[numSensor - 1];
+}
+
+void sensorPrint(Sensor *sensor) {
+  TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
+
+  logaMensagem("Sensor %d:%d:%s (%s) > [%s - %s]",
+      sensor->num, sensor->pino, sensor->nome,
+      (sensor->ativo ? "on" : "off"),
+      tipoSensor ? tipoSensor->tipo : "",
+      tipoSensor ? tipoSensor->nome : ""
+    );
 }
 
 Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {

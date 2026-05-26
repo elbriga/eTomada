@@ -31,9 +31,7 @@ void relesInit() {
     pinMode(rele->pino, OUTPUT);
     digitalWrite(rele->pino, rele->estado);
 
-    logaMensagem("Rele %d:%d:%s (%s) > [%s]",
-      r, rele->pino, rele->nome,
-      (rele->ativo ? "on" : "off"), rele->regra);
+    relePrint(rele);
   }
 
   prefs.end();
@@ -51,6 +49,12 @@ Rele *releGet(int numRele)
   }
 
   return &reles[numRele - 1];
+}
+
+void relePrint(Rele *rele) {
+  logaMensagem("Rele %d:%d:%s (%s) > [%s]",
+      rele->num, rele->pino, rele->nome,
+      (rele->ativo ? "on" : "off"), rele->regra);
 }
 
 Rele *releLoadFromPrefs(int num, Preferences &prefs) {
@@ -186,8 +190,7 @@ String releAtualizaConfigFromJSON(uint8_t *json)
     memcpy(&releCopy, rele, sizeof(Rele));
   }
   
-  logaMensagem(">> RELE [%d] nome[%s] regra[%s] pino[%d] ativo[%d]",
-    numRele, releCopy.nome, releCopy.regra, releCopy.pino, releCopy.ativo);
+  relePrint(&releCopy);
   
   // Setar no prefs
   eTomadaSalvaRele(&releCopy);

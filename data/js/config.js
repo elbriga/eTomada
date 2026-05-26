@@ -142,8 +142,11 @@ async function salvarConfigGeral() {
   }
 }
 
-function factoryReset() {
+async function factoryReset() {
   // TODO Modal confirm
-  statusMsg("Reiniciando");
+  await eTomadaAPI("factoryReset", { senha: 1333 }, "POST");
+
   closeConfig();
+
+  statusMsg("Recarregado com configuração de fábrica");
 }

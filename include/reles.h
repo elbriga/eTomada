@@ -18,6 +18,8 @@ struct Rele {
 void relesInit();
 int relesGetCount();
 Rele *releGet(int numRele);
+void relePrint(Rele *rele);
+
 Rele *releLoadFromPrefs(int num, Preferences &prefs);
 JsonDocument releGetJSONDoc(Rele *r);
 

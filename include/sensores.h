@@ -18,6 +18,8 @@ struct Sensor {
 void sensoresInit();
 int sensoresGetCount();
 Sensor *sensorGet(int numSensor);
+void sensorPrint(Sensor *sensor);
+
 Sensor *sensorLoadFromPrefs(int num, Preferences &prefs);
 JsonDocument sensorGetJSONDoc(Sensor *s);
 
