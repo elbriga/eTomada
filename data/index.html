@@ -102,5 +102,21 @@
         <button id="modalSalvarBtn">💾 Salvar</button>
       </div>
     </div>
+
+    <div id="offlineOverlay" class="overlay"></div>
+
+    <div id="offlineModal" class="modal">
+      <div class="modalHeader">
+        <div>⚠️ eTomada Offline</div>
+      </div>
+
+      <div class="modalContent">
+        <p>Sem comunicação com o dispositivo.</p>
+
+        <p class="small">Verificando reconexão automaticamente...</p>
+
+        <button onclick="window.location.reload()">🔄 Recarregar Página</button>
+      </div>
+    </div>
   </body>
 </html>

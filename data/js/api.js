@@ -1,32 +1,59 @@
-function sseInit() {
-  const evt = new EventSource(API_BASE + "/events");
+let SSE = null;
 
-  evt.onopen = () => {
+let ultimoEventoSSE = 0;
+let offline = false;
+
+const SSE_TIMEOUT = 50000;
+
+function sseInit() {
+  if (SSE) {
+    SSE.close();
+  }
+
+  SSE = new EventSource(API_BASE + "/events");
+
+  ultimoEventoSSE = Date.now();
+
+  SSE.onopen = () => {
     console.log("SSE conectado");
+    sseMarkOnline();
   };
 
-  evt.onerror = (err) => {
+  SSE.onerror = (err) => {
     console.log("Erro SSE", err);
   };
 
   // Refresh completo da tela
-  evt.addEventListener("sse_snapshot", (e) => {
+  SSE.addEventListener("sse_snapshot", (e) => {
     const snapshot = JSON.parse(e.data);
     console.log("SNAPSHOT");
     eTomadaRender(snapshot);
   });
 
   // Refresh de um rele
-  evt.addEventListener("sse_rele", (e) => {
+  SSE.addEventListener("sse_rele", (e) => {
     const rele = JSON.parse(e.data);
     releAtualiza(rele);
   });
 
   // refresh de um sensor
-  evt.addEventListener("sse_sensor", (e) => {
+  SSE.addEventListener("sse_sensor", (e) => {
     const sensor = JSON.parse(e.data);
     sensorAtualiza(sensor);
   });
+
+  SSE.addEventListener("sse_ping", () => {
+    console.log("PONG!");
+    sseMarkOnline();
+  });
+
+  setInterval(() => {
+    const tempoSemEvento = Date.now() - ultimoEventoSSE;
+
+    if (tempoSemEvento > SSE_TIMEOUT) {
+      sseMarkOffline();
+    }
+  }, 2000);
 }
 
 async function eTomadaAPI(
@@ -69,4 +96,28 @@ async function eTomadaAPI(
   } finally {
     clearTimeout(timer);
   }
+}
+
+function sseMarkOnline() {
+  ultimoEventoSSE = Date.now();
+
+  if (offline) {
+    offline = false;
+
+    document.getElementById("offlineOverlay").classList.remove("open");
+    document.getElementById("offlineModal").classList.remove("open");
+
+    statusMsg("");
+  }
+}
+
+function sseMarkOffline() {
+  if (offline) return;
+
+  offline = true;
+
+  document.getElementById("offlineOverlay").classList.add("open");
+  document.getElementById("offlineModal").classList.add("open");
+
+  statusMsg("eTomada offline");
 }

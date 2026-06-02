@@ -90,6 +90,9 @@ void loop() {
       sensoresAtualiza();
 
       processaRegras();
+
+      // Keepalive para a interface web
+      httpEnviaEvento("{}", "sse_ping");
     }
 
     if (displayPodeMostrar()) {

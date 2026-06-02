@@ -1,6 +1,6 @@
 const API_BASE =
   window.location.host === "localhost"
-    ? "http://192.168.0.104" // IP do ESP quando o frontend esta hospedado para DEV
+    ? "http://192.168.1.141" // IP do ESP quando o frontend esta hospedado para DEV
     : window.location.origin;
 
 let eTomadaData = null;
