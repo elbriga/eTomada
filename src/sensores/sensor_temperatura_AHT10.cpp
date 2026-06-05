@@ -14,8 +14,8 @@ static int sensorTemperaturaAHT10Ler(Sensor *s) {
 TipoSensor sensorTemperaturaAHT10 = {
     "AHT10t",
     "Temperatura",
-    "%.2f° C",
-    true,
+    "%d° C",
+    false,
     sensorTemperaturaAHT10Init,
     sensorTemperaturaAHT10Ler
 };
