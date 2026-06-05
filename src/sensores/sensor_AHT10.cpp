@@ -18,7 +18,7 @@ String sensorAHT10Init() {
 }
 
 void sensorAHT10Ler() {
-  if (millis() - ultimaLeitura < 10) {
+  if (millis() - ultimaLeitura < 8) {
     return;
   }
   ultimaLeitura = millis();
