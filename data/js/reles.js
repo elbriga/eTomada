@@ -1,6 +1,8 @@
 let releEditando = null;
 
 function releGetCard(rele) {
+  if (!rele.nome) rele.nome = "---";
+
   const card = document.createElement("div");
   card.id = "tomadaCard-" + rele.num;
   card.className = "card cardRele";
@@ -33,7 +35,6 @@ function relesRender(reles) {
 
   reles.forEach((rele, i) => {
     if (!rele.ativo) return;
-    if (!rele.nome) rele.nome = "---";
 
     const card = releGetCard(rele);
     container.appendChild(card);
