@@ -59,7 +59,10 @@ function renderConfig() {
 }
 
 function getPinosOptions(selected) {
-  const pinos = [13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33];
+  // TODO :: buscar da API
+  const pinos = [
+    0, 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33,
+  ];
 
   return (
     `<option value="-1">Desativada!</option>\n` +
