@@ -3,6 +3,8 @@
 static Adafruit_AHTX0 aht;
 
 static bool sensorAHT10Inicializado = false;
+static sensors_event_t humidity, temp;
+static long ultimaLeitura = 0;
 
 String sensorAHT10Init() {
   if (!sensorAHT10Inicializado) {
@@ -15,18 +17,20 @@ String sensorAHT10Init() {
   return "OK";
 }
 
-int sensorAHT10LerTemperatura() {
-  // Ler sensor de temperatura
-  sensors_event_t humidity, temp;
+void sensorAHT10Ler() {
+  if (millis() - ultimaLeitura < 10) {
+    return;
+  }
+  ultimaLeitura = millis();
   aht.getEvent(&humidity, &temp);
+}
 
-  return (int)(temp.temperature * 100);
+int sensorAHT10LerTemperatura() {
+  sensorAHT10Ler();
+  return (int)(temp.temperature);
 }
 
 int sensorAHT10LerUmidade() {
-  // Ler sensor de temperatura
-  sensors_event_t humidity, temp;
-  aht.getEvent(&humidity, &temp);
-
-  return (int)(temp.relative_humidity * 100);
+  sensorAHT10Ler();
+  return (int)(humidity.relative_humidity);
 }
