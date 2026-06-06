@@ -17,8 +17,7 @@ static int sensorLuxLer(Sensor *s) {
 TipoSensor sensorLux = {
     "LUXXPTO",
     "LUX",
-    "%d L",
-    false,
+    "L",
     sensorLuxInit,
     sensorLuxLer
 };

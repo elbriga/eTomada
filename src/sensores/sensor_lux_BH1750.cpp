@@ -24,8 +24,7 @@ static int sensorLuxBH1750Ler(Sensor *s) {
 TipoSensor sensorLuxBH1750 = {
     "BH1750",
     "LUX",
-    "%.2f L",
-    true,
+    "L",
     sensorLuxBH1750Init,
     sensorLuxBH1750Ler
 };

@@ -96,7 +96,6 @@ Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
   sensor->tipo[sizeof(sensor->tipo) - 1] = '\0';
 
   sensor->valor = 0;
-  sensor->valorStr[0] = '\0';
 
   // Falta verificar se o TipoSensor inicializou OK
   sensor->ativo = false;
@@ -107,12 +106,14 @@ Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
 // REQUIRE sensorMutex locked
 JsonDocument sensorGetJSONDoc(Sensor *s) {
   JsonDocument doc;
+  TipoSensor *ts = tipoSensorGet(s->tipo);
   
   doc["num"] = s->num;
   doc["pino"] = s->pino;
   doc["nome"] = s->nome;
   doc["tipo"] = s->tipo;
-  doc["valorStr"] = s->valorStr;
+  doc["categoria"] = ts ? ts->tipo : "???";
+  doc["unidade"] = ts ? ts->unidade : "?-?";
   doc["valor"] = s->valor;
   doc["ativo"] = s->ativo;
 
@@ -156,10 +157,9 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
     }
 
     if (!doc["tipo"].isNull()) {
-      TipoSensor *ts = NULL;
       String novoTipo = doc["tipo"].as<String>();
       if (novoTipo != "") {
-        ts = tipoSensorGet(novoTipo.c_str());
+        TipoSensor *ts = tipoSensorGet(novoTipo.c_str());
         if (!ts) {
           return "TipoSensor ["+novoTipo+"] Invalido";
         }
@@ -233,14 +233,6 @@ void sensoresAtualiza() {
       if (sensor->valor != novoValor) {
         // MUDOU valor do sensor
         sensor->valor = novoValor;
-
-        if (tipoSensor->ehFloat) {
-          snprintf(sensor->valorStr, sizeof(sensor->valorStr),
-            tipoSensor->format, (float)(novoValor / 100));
-        } else {
-          snprintf(sensor->valorStr, sizeof(sensor->valorStr),
-            tipoSensor->format, novoValor);
-        }
 
         jsonAtualiza[s-1] = sensorGetJSONString(sensor);
       }

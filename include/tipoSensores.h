@@ -6,8 +6,7 @@ struct Sensor;
 struct TipoSensor {
     const char *nome;
     const char *tipo;
-    const char *format;
-    bool ehFloat;
+    const char *unidade;
     String (*inicializaSensor)();
     int (*lerSensor)(Sensor *s);
     String status;

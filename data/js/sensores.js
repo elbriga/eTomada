@@ -5,7 +5,7 @@ function sensorGetCard(sensor) {
     (ts) => ts.nome == sensor.tipo,
   );
   const tsOK = tipoSensor.status == "OK";
-  const valor = !tsOK ? tipoSensor.status : sensor.valorStr;
+  const valor = !tsOK ? tipoSensor.status : `${sensor.valor} ${sensor.unidade}`;
   const card = document.createElement("div");
   card.id = "sensorCard-" + sensor.num;
   card.className = `card cardSensor${!tsOK ? " cardSensorInativo" : ""}`;
