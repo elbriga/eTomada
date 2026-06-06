@@ -24,15 +24,15 @@ static Rele relesConfigDefault[MAX_RELES] = {
 };
 
 static Sensor sensoresConfigDefault[MAX_SENSORES] = {
-  { 1,  1, "Temp", "AHT10t",   "", 0 },
-  { 2,  2, "Umid", "UmidXPTO", "", 0 },
-  { 3,  3, "lux",  "LUXXPTO",  "", 0 },
-  { 4, -1, "",     "",         "", 0 }
+  { 1,  1, "Temp", "AHT10t",   0, 0 },
+  { 2,  2, "Umid", "UmidXPTO", 0, 0 },
+  { 3,  3, "lux",  "LUXXPTO",  0, 0 },
+  { 4, -1, "",     "",         0, 0 }
 };
 
 // Whitelist de pinos
-int pinosOutOK[] = { 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
-int pinosInOK[] = { 1, 2, 3, 4, 5 };
+int pinosOutOK[] = { 0, 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
+int pinosInOK[] = { 0, 1, 2, 3 };
 
 void eTomadaInit() {
   mutexInit();
@@ -48,9 +48,31 @@ void eTomadaInit() {
 
 String eTomadaGetSnapshotJSON() {
   JsonDocument doc;
+  
+  uint64_t MAC = ESP.getEfuseMac();
+  char deviceID[32];
+  
+  sprintf(deviceID, "etomada_%04X", (uint16_t)(MAC & 0xFFFF));
+  doc["device_id"]   = deviceID;
+  doc["device_name"] = "eTomada Sala"; // TODO
+  doc["fw_version"]  = "1.3.0";
+  
+  char macStr[18];
+  sprintf(
+    macStr,
+    "%02X:%02X:%02X:%02X:%02X:%02X",
+    (uint8_t)(MAC >> 40),
+    (uint8_t)(MAC >> 32),
+    (uint8_t)(MAC >> 24),
+    (uint8_t)(MAC >> 16),
+    (uint8_t)(MAC >> 8),
+    (uint8_t)(MAC)
+  );
+  doc["mac"] = macStr;
+  
   doc["api"]    = 3; // versão da API
   doc["uptime"] = millis();
-
+    
   time_t agora;
   struct tm timeinfo;
   ntpGetTime(&timeinfo, &agora);
@@ -111,6 +133,57 @@ String eTomadaGetSnapshotJSON() {
     if (!ts) continue;
 
     tipoSensores.add(tipoSensorGetJSONDoc(ts));
+  }
+
+  String out;
+  serializeJson(doc, out);
+
+  return out;
+}
+
+String eTomadaGetReleString(int numRele) {
+  JsonDocument doc;
+  {
+    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
+    if (!lock) {
+      doc["erro"] = "mutex rele timeout";
+    } else {
+      Rele *rele = releGet(numRele);
+      if (!rele) {
+        doc["erro"] = "rele invalido";
+      } else {
+        doc = releGetJSONDoc(rele);
+      }
+    }
+  }
+
+  String out;
+  serializeJson(doc, out);
+  return out;
+}
+
+String eTomadaGetRelesString() {
+  JsonDocument doc;
+  Rele *rele;
+  int totReles = relesGetCount();
+  JsonArray reles = doc["reles"].to<JsonArray>();
+
+  {
+    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
+
+    if (!lock) {
+      doc["erro"] = "mutex rele timeout";
+    } else {
+      for (int i = 1; i <= totReles; i++) {
+        rele = releGet(i);
+        if (!rele) {
+          // TODO :: o que fazer aqui??
+          continue;
+        }
+
+        reles.add(releGetJSONDoc(rele));
+      }
+    }
   }
 
   String out;

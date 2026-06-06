@@ -58,6 +58,20 @@ void httpServerInitModoAPI() {
     logaRequest(request, "200 OK");
   });
 
+  httpServer.on("/api/reles", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String body = eTomadaGetRelesString();
+    request->send(200, "application/json", body);
+    logaRequest(request, "200 OK");
+  });
+
+  httpServer.on("^\\/api\\/rele\\/([0-9]+)$", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String releStr = request->pathArg(0);
+    String body = eTomadaGetReleString(releStr.toInt());
+    // TODO :: nao enviar sempre o 200!
+    request->send(200, "application/json", body);
+    logaRequest(request, "200 OK");
+  });
+
   httpServer.on("/api/setRele", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     String setOK = relesSetFromJSON(data);
     if (setOK == "OK") {

@@ -6,6 +6,8 @@
 void eTomadaInit();
 
 String eTomadaGetSnapshotJSON();
+String eTomadaGetReleString(int numRele);
+String eTomadaGetRelesString();
 
 void eTomadaSalvaRele(Rele *rele);
 void eTomadaSalvaSensor(Sensor *sensor);
