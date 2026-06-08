@@ -37,6 +37,11 @@ void sensoresInit() {
         if (tipoSensor->status != "OK") {
           logaMensagem("Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
           sensor->ativo = false;
+        } else {
+          // Sensores que usam os ADCs
+          if (!strcmp(sensor->tipo, "ACS712")) {
+            pinMode(sensor->pino, INPUT);
+          }
         }
       } else {
         if (strlen(sensor->tipo) > 0) {

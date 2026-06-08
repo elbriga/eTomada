@@ -6,6 +6,7 @@ extern TipoSensor sensorUmidadeAHT10;
 extern TipoSensor sensorUmidade;
 extern TipoSensor sensorLuxBH1750;
 extern TipoSensor sensorLux;
+extern TipoSensor sensorCorrenteACS712;
 
 static TipoSensor sensoresDisponiveis[] = {
   sensorTemperaturaAHT10,
@@ -13,6 +14,7 @@ static TipoSensor sensoresDisponiveis[] = {
   sensorUmidade,
   sensorLuxBH1750,
   sensorLux,
+  sensorCorrenteACS712,
 };
 
 void tipoSensorInit() {
