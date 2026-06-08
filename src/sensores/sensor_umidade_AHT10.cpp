@@ -13,7 +13,7 @@ static int sensorUmidadeAHT10Ler(Sensor *s) {
 TipoSensor sensorUmidadeAHT10 = {
     "AHT10u",
     "Umidade",
-    "%%",
+    "%",
     sensorUmidadeAHT10Init,
     sensorUmidadeAHT10Ler
 };
