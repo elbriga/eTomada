@@ -83,6 +83,16 @@ void loop() {
   if (timeinfo.tm_sec != lastSecond) {
     lastSecond = timeinfo.tm_sec;
 
+    if (displayPodeMostrar()) {
+      // Atualizar o relogio
+      char formattedTime[10];
+      char msgDataHora[32];
+      //strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+      strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
+      snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", getDiaSemana(timeinfo).c_str(), formattedTime);
+      displayMostraMsg(msgDataHora, 0, false);
+    }
+
     // 10s/10s
     if ((int)(timeinfo.tm_sec / 10) != last10Second) {
       last10Second = timeinfo.tm_sec / 10;
@@ -93,16 +103,6 @@ void loop() {
 
       // Keepalive para a interface web
       httpEnviaEvento("{}", "sse_ping");
-    }
-
-    if (displayPodeMostrar()) {
-      // Atualizar o relogio
-      char formattedTime[10];
-      char msgDataHora[32];
-      //strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-      strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
-      snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", getDiaSemana(timeinfo).c_str(), formattedTime);
-      displayMostraMsg(msgDataHora, 0, false);
     }
 
     // Verificar o WiFi
