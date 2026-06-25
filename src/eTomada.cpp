@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
@@ -44,6 +45,44 @@ void eTomadaInit() {
   sensoresInit(); // Carrega os sensores do prefs
 
   Serial.println("");
+}
+
+void eTomadaRoleta() {
+  Rele *rele;
+  int totReles = relesGetCount();
+  
+  for (int r=1; r <= totReles; r++) {
+    releControla(r, 0);
+  }
+
+  int delay = 25, delta = 2;
+  int num = (esp_random() % totReles) + 1;
+  int oldNum = num;
+  int loop = 0;
+
+  while (delay < 350) {
+    logaMensagem("loop:%d num:%d delta:%d delay:%d", loop, num, delta, delay);
+
+    esp_task_wdt_reset(); // alimenta o watchdog
+
+    releControla(oldNum, 0, 10);
+    releControla(num, 1, 10);
+    
+    oldNum = num;
+    num++;
+    if (num > totReles) {
+      num = 1;
+    }
+    
+    vTaskDelay(pdMS_TO_TICKS(delay));
+
+    loop++;
+    if(loop > 40) {
+      delay += delta;
+      if (loop > 90)
+        delta += 1;
+    }
+  }
 }
 
 String eTomadaGetSnapshotJSON() {

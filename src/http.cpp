@@ -51,7 +51,28 @@ void httpServerInit() {
   httpServer.begin();
 }
 
+void roletaTask(void *arg) {
+  eTomadaRoleta();
+  vTaskDelete(NULL);
+}
+
 void httpServerInitModoAPI() {
+  httpServer.on("/api/roleta", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String body = "Sorteando!";
+    request->send(200, "application/json", body);
+    logaRequest(request, "200 OK");
+    
+    xTaskCreatePinnedToCore(
+      roletaTask,
+      "roleta",
+      4096,
+      NULL,
+      1,
+      NULL,
+      1
+    );
+  });
+
   httpServer.on("/api/getSnapshot", HTTP_GET, [](AsyncWebServerRequest *request) {
     String body = eTomadaGetSnapshotJSON();
     request->send(200, "application/json", body);

@@ -4,6 +4,7 @@
 #include "sensores.h"
 
 void eTomadaInit();
+void eTomadaRoleta();
 
 String eTomadaGetSnapshotJSON();
 String eTomadaGetReleString(int numRele);
