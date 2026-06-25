@@ -12,6 +12,10 @@
 static Preferences wifiPrefs;
 static DNSServer dnsServer;
 
+// Timeout
+#define MODO_AP_MAX_TEMPO_IDLE 60000
+static long tempoIdleModoAP = 0;
+
 // Scanning
 static bool wifiScanning = false;
 static unsigned long lastWiFiScan = 0;
@@ -85,6 +89,8 @@ String WiFiGetSSID()
 
 void WiFiSalvaConfig(String ssid, String senha)
 {
+  tempoIdleModoAP = millis();
+
   wifiPrefs.begin("wifi", false);
 
   wifiPrefs.putString("ssid", ssid);
@@ -152,6 +158,11 @@ void WiFiModoAPLoop()
 {
   dnsServer.processNextRequest();
 
+  if (millis() - tempoIdleModoAP > MODO_AP_MAX_TEMPO_IDLE) {
+    logaTitulo("RESET!");
+    ESP.restart();
+  }
+
   WiFiScanLoop();
 }
 
@@ -177,6 +188,8 @@ void WiFiModoAP()
   WiFiStartScan();
 
   displayMostraMsg("Configure o WiFi!");
+
+  tempoIdleModoAP = millis();
 }
 
 void WiFiStartScan()
@@ -199,6 +212,7 @@ void WiFiStartScan()
 }
 
 String WiFiGetScanJSON() {
+  tempoIdleModoAP = millis();
   String out;
   serializeJson(wifiScanDoc, out);
   return out;
