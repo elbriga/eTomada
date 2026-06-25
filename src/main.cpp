@@ -20,8 +20,8 @@ void setup() {
 
   logaTitulo("eTomada");
 
-  // WDT : 15 segundos de timeout
-  esp_task_wdt_init(15, true); // true = resetar automaticamente
+  // WDT : 5 segundos de timeout
+  esp_task_wdt_init(5, true);  // true = resetar automaticamente
   esp_task_wdt_add(NULL);      // adiciona a task atual (loop)
 
   displayInit();
@@ -50,7 +50,7 @@ void setup() {
   logaTitulo("Setup OK!");
 }
 
-String getDiaSemana(struct tm timeinfo) {
+const char *getDiaSemana(struct tm timeinfo) {
   switch (timeinfo.tm_wday) {
     case 0: return "Dom";
     case 1: return "Seg";
@@ -63,6 +63,7 @@ String getDiaSemana(struct tm timeinfo) {
   }
 }
 
+int wifiFora = 0;
 int lastSecond = -1;
 int last10Second = -1;
 void loop() {
@@ -89,7 +90,7 @@ void loop() {
       char msgDataHora[32];
       //strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
       strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
-      snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", getDiaSemana(timeinfo).c_str(), formattedTime);
+      snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", getDiaSemana(timeinfo), formattedTime);
       displayMostraMsg(msgDataHora, 0, false);
     }
 
@@ -107,9 +108,14 @@ void loop() {
 
     // Verificar o WiFi
     if (WiFi.status() != WL_CONNECTED) {
-      logaTitulo("WiFi caiu!! Reconectar...");
-      displayMostraMsg("Reconectando...", 6000);
-      WiFiConnect();
+      wifiFora++;
+      if (wifiFora > 5) {
+        logaTitulo("WiFi caiu!! Reconectar...");
+        displayMostraMsg("Reconectando...", 6000);
+        WiFiConnect();
+      }
+    } else {
+      wifiFora = 0;
     }
 
     if (ntpSyncTimeTS > 0 && (long)(millis() - ntpSyncTimeTS) >= 0) {
