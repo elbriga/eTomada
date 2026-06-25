@@ -144,7 +144,7 @@ void processaRegras() {
   }
 
   if (msgDisplay != "") {
-    displayMostraMsg(msgDisplay.c_str(), 5000);
+    displayMostraMsg(msgDisplay.c_str(), 5000, false);
   }
 }
 
