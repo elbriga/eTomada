@@ -60,9 +60,7 @@ void eTomadaRoleta() {
   int oldNum = num;
   int loop = 0;
 
-  while (delay < 350) {
-    logaMensagem("loop:%d num:%d delta:%d delay:%d", loop, num, delta, delay);
-
+  while (delay < 440) {
     esp_task_wdt_reset(); // alimenta o watchdog
 
     releControla(oldNum, 0, 10);
