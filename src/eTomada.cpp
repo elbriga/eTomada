@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
+#include "eTomada.h"
 #include "reles.h"
 #include "regras.h"
 #include "tipoSensores.h"
@@ -11,6 +12,9 @@
 #include "mutex.h"
 #include "loga.h"
 #include "prefs.h"
+
+// Modo de Operação
+ModoOperacao modoOperacao = MODO_NO;
 
 // Valores default
 static Rele relesConfigDefault[MAX_RELES] = {
@@ -37,6 +41,18 @@ int pinosInOK[] = { 0, 1, 2, 3, 39 };
 
 void eTomadaInit() {
   mutexInit();
+
+  Preferences prefs;
+  prefs.begin("eTomada", false);
+
+  if (!prefs.isKey("modo"))
+    prefs.putUChar("modo", MODO_NO);
+
+  modoOperacao =
+    (prefs.getUChar("modo") == MODO_CONTROLADOR) ?
+    MODO_CONTROLADOR : MODO_NO;
+
+  prefs.end();
   
   logaMensagem("Carregando Configuracao dos reles:");
   relesInit(); // Carrega os reles do prefs
@@ -47,7 +63,13 @@ void eTomadaInit() {
   Serial.println("");
 }
 
+ModoOperacao eTomadaGetModoOperacao() {
+  return modoOperacao;
+}
+
 void eTomadaRoleta() {
+  logaTitulo("ROLETA!");
+
   Rele *rele;
   int totReles = relesGetCount();
   
@@ -63,24 +85,25 @@ void eTomadaRoleta() {
   while (delay < 440) {
     esp_task_wdt_reset(); // alimenta o watchdog
 
-    releControla(oldNum, 0, 10);
-    releControla(num, 1, 10);
-    
     oldNum = num;
     num++;
     if (num > totReles) {
       num = 1;
     }
+    releControla(oldNum, 0, 10);
+    releControla(num, 1, 10);
     
-    vTaskDelay(pdMS_TO_TICKS(delay));
-
     loop++;
     if(loop > 40) {
       delay += delta;
-      if (loop > 90)
+      if (loop > 90) {
         delta += 1;
+      }
     }
+    vTaskDelay(pdMS_TO_TICKS(delay));
   }
+
+  logaMensagem("** Numero Sorteado: %d **", num);
 }
 
 String eTomadaGetSnapshotJSON() {

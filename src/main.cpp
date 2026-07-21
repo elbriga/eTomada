@@ -10,6 +10,9 @@
 #include "regras.h"
 #include "sensores.h"
 
+// Hardware Profile - um para cada placa
+extern const HardwareProfile hardwareProfile;
+
 // Timestamp da proxima sincronizacao do NTP
 static long ntpSyncTimeTS = 0;
 
@@ -69,16 +72,18 @@ int last10Second = -1;
 void loop() {
   esp_task_wdt_reset(); // alimenta o watchdog
 
+  struct tm timeinfo;
+  ntpGetTime(&timeinfo);
+
   if (WiFiGetModoAP()) {
     WiFiModoAPLoop();
 
-    // No modo AP não processa as regras
-    vTaskDelay(pdMS_TO_TICKS(100));
-    return;
+    if (timeinfo.tm_year < 2026) {
+      // Sem data/hora não processa as regras
+      vTaskDelay(pdMS_TO_TICKS(100));
+      return;
+    }
   }
-
-  struct tm timeinfo;
-  ntpGetTime(&timeinfo);
 
   // 1s/1s
   if (timeinfo.tm_sec != lastSecond) {
@@ -100,26 +105,31 @@ void loop() {
 
       sensoresAtualiza();
 
-      processaRegras();
+      if (eTomadaGetModoOperacao() == MODO_CONTROLADOR) {
+        processaRegras();
+      }
 
       // Keepalive para a interface web
       httpEnviaEvento("{}", "sse_ping");
     }
 
     // Verificar o WiFi
-    if (WiFi.status() != WL_CONNECTED) {
-      wifiFora++;
-      if (wifiFora > 5) {
-        logaTitulo("WiFi caiu!! Reconectar...");
-        displayMostraMsg("Reconectando...", 6000);
-        WiFiConnect();
+    if (!WiFiGetModoAP()) {
+      if (WiFi.status() != WL_CONNECTED) {
+        wifiFora++;
+        if (wifiFora > 5) {
+          logaTitulo("WiFi caiu!! Reconectar...");
+          displayMostraMsg("Reconectando...", 6000);
+          WiFiConnect();
+        }
+      } else {
+        wifiFora = 0;
       }
-    } else {
-      wifiFora = 0;
-    }
-
-    if (ntpSyncTimeTS > 0 && (long)(millis() - ntpSyncTimeTS) >= 0) {
-      ntpSyncTimeTS = ntpSyncTime();
+     
+      // Sync NTP
+      if (ntpSyncTimeTS > 0 && (long)(millis() - ntpSyncTimeTS) >= 0) {
+        ntpSyncTimeTS = ntpSyncTime();
+      }
     }
   }
 
