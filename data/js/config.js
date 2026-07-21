@@ -21,23 +21,6 @@ function renderConfig() {
 
   let html = "";
 
-  eTomadaData.reles.forEach((rele, i) => {
-    const num = i + 1;
-
-    html += `
-<div class="configCard cardRele">
-  <div class="headerTop">
-    <div><b>Tomada ${num}</b></div>
-    <span>
-      <select id="cfg-pino-${num}">
-        ${getPinosOptions(rele.pino)}
-      </select>
-    </span>
-  </div>
-</div>
-`;
-  });
-
   eTomadaData.sensores.forEach((sensor, i) => {
     const num = i + 1;
 
@@ -58,26 +41,6 @@ function renderConfig() {
   container.innerHTML = html;
 }
 
-function getPinosOptions(selected) {
-  // TODO :: buscar da API
-  const pinos = [
-    0, 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33,
-  ];
-
-  return (
-    `<option value="-1">Desativada!</option>\n` +
-    pinos
-      .map((p) => {
-        return `
-<option value="${p}" ${p == selected ? "selected" : ""}>
-  GPIO ${p}
-</option>
-`;
-      })
-      .join("")
-  );
-}
-
 function getTipoSensorOptions(selected) {
   return (
     `<option value="">Desativado!</option>\n` +
@@ -95,28 +58,6 @@ function getTipoSensorOptions(selected) {
 
 async function salvarConfigGeral() {
   try {
-    await Promise.all(
-      eTomadaData.reles.map(async (old, i) => {
-        const rele = i + 1;
-        const pino = parseInt(
-          document.getElementById(`cfg-pino-${rele}`).value,
-        );
-        const ativo = pino != -1;
-
-        if (old.ativo != ativo || old.pino != pino) {
-          await eTomadaAPI(
-            "setReleConfig",
-            {
-              rele,
-              ativo,
-              pino,
-            },
-            "PUT",
-          );
-        }
-      }),
-    );
-
     await Promise.all(
       eTomadaData.sensores.map(async (old, i) => {
         const sensor = i + 1;
