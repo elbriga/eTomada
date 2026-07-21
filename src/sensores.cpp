@@ -30,27 +30,20 @@ void sensoresInit() {
     Sensor *sensor = sensorLoadFromPrefs(s, prefs);
     TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
 
-    sensor->ativo = eTomadaPinoInOK(sensor->pino);
+    sensor->ativo = !!tipoSensor;
     if (sensor->ativo) {
-      sensor->ativo = !!tipoSensor;
-      if (sensor->ativo) {
-        if (tipoSensor->status != "OK") {
-          logaMensagem("Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
-          sensor->ativo = false;
-        } else {
-          // Sensores que usam os ADCs
-          if (!strcmp(sensor->tipo, "ACS712")) {
-            pinMode(sensor->pino, INPUT);
-          }
-        }
+      if (tipoSensor->status != "OK") {
+        logaMensagem("Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
+        sensor->ativo = false;
       } else {
-        if (strlen(sensor->tipo) > 0) {
-          logaMensagem("TipoSensor [%s] INVALIDO! Desativando Sensor[%d]", sensor->tipo, s);
+        // Sensores que usam os ADCs
+        if (!strcmp(sensor->tipo, "ACS712")) {
+          pinMode(sensor->pino, INPUT);
         }
       }
     } else {
-      if (sensor->pino != -1) {
-        logaMensagem("Pino [%d] INVALIDO! Desativando Sensor[%d]", sensor->pino, s);
+      if (strlen(sensor->tipo) > 0) {
+        logaMensagem("TipoSensor [%s] INVALIDO! Desativando Sensor[%d]", sensor->tipo, s);
       }
     }
 
@@ -156,11 +149,6 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
 
     Sensor *sensor = &sensores[numSensor - 1];
 
-    int novoPino = doc["pino"].isNull() ? sensor->pino : atoi(doc["pino"].as<String>().c_str());
-    if (novoPino != -1 && !eTomadaPinoInOK(novoPino)) {
-      return "Pino Invalido";
-    }
-
     if (!doc["tipo"].isNull()) {
       String novoTipo = doc["tipo"].as<String>();
       if (novoTipo != "") {
@@ -176,7 +164,6 @@ String sensorAtualizaConfigFromJSON(uint8_t *json)
       sensor->tipo[sizeof(sensor->tipo) - 1] = '\0';
     }
 
-    sensor->pino = novoPino;
     sensor->ativo = !!strlen(sensor->tipo);
 
     if (!doc["nome"].isNull()) {

@@ -10,9 +10,6 @@
 #include "regras.h"
 #include "sensores.h"
 
-// Hardware Profile - um para cada placa
-extern const HardwareProfile hardwareProfile;
-
 // Timestamp da proxima sincronizacao do NTP
 static long ntpSyncTimeTS = 0;
 

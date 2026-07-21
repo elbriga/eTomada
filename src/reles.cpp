@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "eTomada.h"
+#include "hardwareProfile.h"
 #include "loga.h"
 #include "reles.h"
 #include "regras.h"
@@ -9,11 +10,23 @@
 #include "http.h"
 #include "prefs.h"
 
+// Hardware Profile - um para cada placa
+extern const HardwareProfile hardwareProfile;
+
 static Rele reles[MAX_RELES];
+
+static int boardReleCount = 0;
 
 void relesInit() {
   // Zerar tudo
   memset(reles, 0, sizeof(reles));
+
+  // Verificar quantos reles temos
+  boardReleCount = 0;
+  for (int r=0; r < MAX_RELES; r++) {
+    if (hardwareProfile.gpioReles[r] == 255) break;
+    boardReleCount++;
+  }
   
   Preferences prefs;
   prefs.begin("reles", false);
@@ -39,12 +52,12 @@ void relesInit() {
 
 int relesGetCount()
 {
-  return MAX_RELES;
+  return boardReleCount;
 }
 
 Rele *releGet(int numRele)
 {
-  if (numRele < 1 || numRele > MAX_RELES) {
+  if (numRele < 1 || numRele > relesGetCount()) {
     return NULL;
   }
 
@@ -68,7 +81,7 @@ Rele *releLoadFromPrefs(int num, Preferences &prefs) {
   strncpy(rele->nome,  getPrefsAtr(prefs, num, "nome").c_str(),  sizeof(rele->nome) - 1);
   rele->nome[sizeof(rele->nome) - 1] = '\0';
 
-  rele->pino = atoi(getPrefsAtr(prefs, num, "pino").c_str());
+  rele->pino = hardwareProfile.gpioReles[num - 1];
 
   strncpy(rele->regra, getPrefsAtr(prefs, num, "regra").c_str(), sizeof(rele->regra) - 1);
   rele->regra[sizeof(rele->regra) - 1] = '\0';
@@ -79,13 +92,7 @@ Rele *releLoadFromPrefs(int num, Preferences &prefs) {
     rele->regra[0] = '\0';
   }
 
-  bool pinoOK = eTomadaPinoOutOK(rele->pino);
-  if (!pinoOK && rele->pino != -1) {
-    logaMensagem("Pino [%d] INVALIDO! Desativando Rele[%d]", rele->pino, num);
-  }
-
-  rele->ativo = pinoOK ?
-    (getPrefsAtr(prefs, num, "ativo") == "1") : false;
+  rele->ativo = (getPrefsAtr(prefs, num, "ativo") == "1");
 
   // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
   rele->estado = 0;
@@ -171,12 +178,6 @@ String releAtualizaConfigFromJSON(uint8_t *json)
     }
     strncpy(rele->regra, novaRegra.c_str(), sizeof(rele->regra) - 1);
     rele->regra[sizeof(rele->regra) - 1] = '\0';
-
-    int novoPino = doc["pino"].isNull() ? rele->pino :atoi(doc["pino"].as<String>().c_str());
-    if (novoPino != -1 && !eTomadaPinoOutOK(novoPino)) {
-      return "Pino Invalido";
-    }
-    rele->pino = novoPino;
 
     if (!doc["nome"].isNull()) {
       strncpy(rele->nome, doc["nome"].as<String>().c_str(), sizeof(rele->nome) - 1);

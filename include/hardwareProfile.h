@@ -9,5 +9,3 @@
 #else
     #error "Nenhum Hardware Profile definido."
 #endif
-
-extern const HardwareProfile hardwareProfile;

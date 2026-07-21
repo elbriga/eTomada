@@ -35,10 +35,6 @@ static Sensor sensoresConfigDefault[MAX_SENSORES] = {
   { 4, -1, "",     "",         0, 0 }
 };
 
-// Whitelist de pinos
-int pinosOutOK[] = { 0, 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 };
-int pinosInOK[] = { 0, 1, 2, 3, 39 };
-
 void eTomadaInit() {
   mutexInit();
 
@@ -348,20 +344,4 @@ void eTomadaFactoryReset() {
   }
 
   processaRegras();
-}
-
-bool eTomadaPinoOutOK(int pino) {
-  int totPinosOK = sizeof(pinosOutOK) / sizeof(pinosOutOK[0]);
-  for (int i=0; i < totPinosOK; i++) {
-    if (pino == pinosOutOK[i]) return true;
-  }
-  return false;
-}
-
-bool eTomadaPinoInOK(int pino) {
-  int totPinosOK = sizeof(pinosInOK) / sizeof(pinosInOK[0]);
-  for (int i=0; i < totPinosOK; i++) {
-    if (pino == pinosInOK[i]) return true;
-  }
-  return false;
 }
