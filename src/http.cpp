@@ -5,6 +5,7 @@
 #include "regras.h"
 #include "sensor.h"
 #include "wifi.h"
+#include "discover.h"
 
 #define DEV // TODO :: remover
 
@@ -57,26 +58,18 @@ void roletaTask(void *arg) {
 }
 
 void httpServerInitModoAPI() {
-  httpServer.on("/api/roleta", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String body = "Sorteando!";
-    request->send(200, "application/json", body);
-    logaRequest(request, "200 OK");
-    
-    xTaskCreatePinnedToCore(
-      roletaTask,
-      "roleta",
-      4096,
-      NULL,
-      1,
-      NULL,
-      1
-    );
-  });
-
   httpServer.on("/api/getSnapshot", HTTP_GET, [](AsyncWebServerRequest *request) {
     String body = eTomadaGetSnapshotJSON();
     request->send(200, "application/json", body);
     logaRequest(request, "200 OK");
+  });
+
+  httpServer.on("/api/discover", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String body = "Escaneando... Te respondo em 2 segundos!";
+    request->send(200, "application/json", body);
+    logaRequest(request, "200 OK");
+
+    discoverStart();
   });
 
   httpServer.on("/api/reles", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -143,6 +136,22 @@ void httpServerInitModoAPI() {
 
     delay(1000);
     ESP.restart();
+  });
+
+  httpServer.on("/api/roleta", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String body = "Sorteando!";
+    request->send(200, "application/json", body);
+    logaRequest(request, "200 OK");
+    
+    xTaskCreatePinnedToCore(
+      roletaTask,
+      "roleta",
+      4096,
+      NULL,
+      1,
+      NULL,
+      1
+    );
   });
 
   // Eventos de conexão/desconexão

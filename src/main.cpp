@@ -9,6 +9,7 @@
 #include "http.h"
 #include "regras.h"
 #include "sensores.h"
+#include "discover.h"
 
 // Timestamp da proxima sincronizacao do NTP
 static long ntpSyncTimeTS = 0;
@@ -47,6 +48,8 @@ void setup() {
     httpServerInit();
   }
 
+  discoverInit();
+
   logaTitulo("Setup OK!");
 }
 
@@ -80,12 +83,15 @@ void loop() {
       vTaskDelay(pdMS_TO_TICKS(100));
       return;
     }
+  } else {
+    discoverLoop();
   }
 
   // 1s/1s
   if (timeinfo.tm_sec != lastSecond) {
     lastSecond = timeinfo.tm_sec;
 
+    // TODO : #ifdef TEM_OLED
     if (displayPodeMostrar()) {
       // Atualizar o relogio
       char formattedTime[10];
@@ -102,9 +108,8 @@ void loop() {
 
       sensoresAtualiza();
 
-      if (eTomadaGetModoOperacao() == MODO_CONTROLADOR) {
-        processaRegras();
-      }
+      // Se estivermos no modo MODO_NO essa funcao retorna sem fazer nada
+      processaRegras();
 
       // Keepalive para a interface web
       httpEnviaEvento("{}", "sse_ping");

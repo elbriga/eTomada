@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include "eTomada.h"
 #include "regras.h"
 #include "loga.h"
 #include "display.h"
@@ -120,6 +121,10 @@ String checkRegra(Rele *rele) {
 }
 
 void processaRegras() {
+  if (eTomadaGetModoOperacao() != MODO_CONTROLADOR) {
+    return;
+  }
+
   String msgDisplay = "";
   {
     MutexLock lockReles(releMutex);

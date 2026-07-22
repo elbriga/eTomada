@@ -55,6 +55,10 @@ async function eTomadaRender(snapshot) {
   }
 }
 
+function eTomadaDiscover() {
+  eTomadaAPI("discover");
+}
+
 function eTomadaRoleta() {
   eTomadaAPI("roleta");
 }
