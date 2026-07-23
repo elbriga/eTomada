@@ -59,13 +59,13 @@ void roletaTask(void *arg) {
 
 void httpServerInitModoAPI() {
   httpServer.on("/api/getSnapshot", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String body = eTomadaGetSnapshotJSON();
+    String body = eTomadaGetSnapshotJSON(true);
     request->send(200, "application/json", body);
     logaRequest(request, "200 OK");
   });
 
   httpServer.on("/api/discover", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String body = "Escaneando... Te respondo em 2 segundos!";
+    String body = "{\"scantime\":3,\"msg\":\"Escaneando...\"}";
     request->send(200, "application/json", body);
     logaRequest(request, "200 OK");
 
@@ -159,7 +159,7 @@ void httpServerInitModoAPI() {
     logaMensagem("Cliente SSE conectado de [%s]", client->client()->remoteIP().toString().c_str());
 
     // Snapshot ao conectar
-    String body = eTomadaGetSnapshotJSON();
+    String body = eTomadaGetSnapshotJSON(true);
     client->send(body, "sse_snapshot", millis(), 2500);
   });
 

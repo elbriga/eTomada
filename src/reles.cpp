@@ -126,16 +126,19 @@ String relesSetFromJSON(uint8_t *json)
 }
 
 // REQUIRE releMutex locked
-JsonDocument releGetJSONDoc(Rele *r) {
+JsonDocument releGetJSONDoc(Rele *r, bool full) {
   JsonDocument doc;
 
-  doc["num"]      = r->num;
-  doc["pino"]     = r->pino;
-  doc["nome"]     = r->nome;
-  doc["regra"]    = r->regra;
-  doc["ativo"]    = r->ativo;
-  doc["estado"]   = r->estado;
-  doc["override"] = r->override;
+  doc["num"]  = r->num;
+  doc["nome"] = r->nome;
+
+  if (full) {
+    doc["pino"]     = r->pino;
+    doc["regra"]    = r->regra;
+    doc["ativo"]    = r->ativo;
+    doc["estado"]   = r->estado;
+    doc["override"] = r->override;
+  }
 
   return doc;
 }
@@ -143,7 +146,7 @@ JsonDocument releGetJSONDoc(Rele *r) {
 // REQUIRE releMutex locked
 String releGetJSONString(Rele *r) {
   String out;
-  JsonDocument doc = releGetJSONDoc(r);
+  JsonDocument doc = releGetJSONDoc(r, true);
 
   serializeJson(doc, out);
   return out;

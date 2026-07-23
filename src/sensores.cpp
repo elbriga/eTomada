@@ -102,18 +102,22 @@ Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
 }
 
 // REQUIRE sensorMutex locked
-JsonDocument sensorGetJSONDoc(Sensor *s) {
+JsonDocument sensorGetJSONDoc(Sensor *s, bool full) {
   JsonDocument doc;
-  TipoSensor *ts = tipoSensorGet(s->tipo);
   
-  doc["num"] = s->num;
-  doc["pino"] = s->pino;
+  doc["num"]  = s->num;
   doc["nome"] = s->nome;
   doc["tipo"] = s->tipo;
-  doc["categoria"] = ts ? ts->tipo : "???";
-  doc["unidade"] = ts ? ts->unidade : "?-?";
-  doc["valor"] = s->valor;
-  doc["ativo"] = s->ativo;
+  
+  if (full) {
+    doc["pino"]  = s->pino;
+    doc["valor"] = s->valor;
+    doc["ativo"] = s->ativo;
+
+    TipoSensor *ts = tipoSensorGet(s->tipo);
+    doc["categoria"] = ts ? ts->tipo    : "???";
+    doc["unidade"]   = ts ? ts->unidade : "?-?";
+  }
 
   return doc;
 }
@@ -121,7 +125,7 @@ JsonDocument sensorGetJSONDoc(Sensor *s) {
 // REQUIRE sensorMutex locked
 String sensorGetJSONString(Sensor *s) {
   String out;
-  JsonDocument doc = sensorGetJSONDoc(s);
+  JsonDocument doc = sensorGetJSONDoc(s, true);
 
   serializeJson(doc, out);
   return out;

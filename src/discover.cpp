@@ -9,13 +9,19 @@
 #define DISCOVER_PORT 8266
 
 static WiFiUDP discoverUdp;
+
 void discoverTask(void *arg);
+static bool discoverTaskRunning = false;
 
 void discoverInit() {
     discoverUdp.begin(DISCOVER_PORT);
 }
 
 void discoverLoop() {
+    if (discoverTaskRunning) {
+        return;
+    }
+
     int len = discoverUdp.parsePacket();
 
     if (len <= 0)
@@ -38,11 +44,15 @@ void discoverLoop() {
         discoverUdp.remoteIP(),
         discoverUdp.remotePort() + 1
     );
-    discoverUdp.print(eTomadaGetSnapshotJSON());
+    discoverUdp.print(eTomadaGetSnapshotJSON(false));
     discoverUdp.endPacket();
 }
 
 void discoverStart() {
+    if (discoverTaskRunning) {
+        return;
+    }
+
     xTaskCreate(
         discoverTask,
         "discover",
@@ -53,43 +63,44 @@ void discoverStart() {
     );
 }
 
-// TODO :: O GLOBAL discoverUdp NAO É THREAD SAFE!!
-// TODO :: O GLOBAL discoverUdp NAO É THREAD SAFE!!
-// TODO :: O GLOBAL discoverUdp NAO É THREAD SAFE!!
 void discoverTask(void *arg) {
     WiFiUDP replyUdp;
     IPAddress broadcast = ~WiFi.subnetMask() | WiFi.localIP();
 
     replyUdp.begin(DISCOVER_PORT + 1);
 
-    Serial.printf("Enviando cmd discover para o broadcast: %s\n", broadcast.toString().c_str());
+    logaMensagem("Enviando cmd discover para o broadcast: %s", broadcast.toString().c_str());
     discoverUdp.beginPacket(broadcast, DISCOVER_PORT);
     discoverUdp.print("{\"cmd\":\"discover\"}");
     discoverUdp.endPacket();
     
     uint32_t inicio = millis();
-    Serial.println("Loop 3s");
+    logaMensagem("Loop 3s");
     while (millis() - inicio < 3000) {
         int len = replyUdp.parsePacket();
         if (len > 0) {
-            Serial.println("Achei!");
+            logaMensagem("Achei!");
 
-            char buf[2048];
-            len = replyUdp.read(buf, sizeof(buf) - 1);
-            buf[len] = 0;
-            
-            Serial.printf(
-                "Resposta %s : %s\n",
-                replyUdp.remoteIP().toString().c_str(),
-                buf
-            );
+            JsonDocument doc;
+            DeserializationError err = deserializeJson(doc, replyUdp);
+            if (err) {
+                Serial.printf("Erro JSON: %s\n", err.c_str());
+                continue;
+            }
+
+            Serial.printf("Resposta de %s:\n", replyUdp.remoteIP().toString().c_str());
+            String s;
+            serializeJson(doc, s);
+            Serial.write(s.c_str(), s.length());
+            Serial.println();
         }
 
         vTaskDelay(pdMS_TO_TICKS(20));
     }
 
     replyUdp.stop();
-    Serial.println("Done!");
+    logaMensagem("Scanner completo");
 
+    discoverTaskRunning = false;
     vTaskDelete(NULL);
 }

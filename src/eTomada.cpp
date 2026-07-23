@@ -102,7 +102,7 @@ void eTomadaRoleta() {
   logaMensagem("** Numero Sorteado: %d **", num);
 }
 
-String eTomadaGetSnapshotJSON() {
+String eTomadaGetSnapshotJSON(bool full) {
   JsonDocument doc;
   
   uint64_t MAC = ESP.getEfuseMac();
@@ -155,7 +155,7 @@ String eTomadaGetSnapshotJSON() {
           continue;
         }
 
-        reles.add(releGetJSONDoc(rele));
+        reles.add(releGetJSONDoc(rele, full));
       }
     }
   }
@@ -176,19 +176,21 @@ String eTomadaGetSnapshotJSON() {
           continue;
         }
 
-        sensores.add(sensorGetJSONDoc(sensor));
+        sensores.add(sensorGetJSONDoc(sensor, full));
       }
     }
   }
   
-  TipoSensor *ts;
-  int totTS = tipoSensorGetCount();
-  JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
-  for (int i=0; i < totTS; i++) {
-    ts = tipoSensorGetPorId(i);
-    if (!ts) continue;
+  if (full) {
+    TipoSensor *ts;
+    int totTS = tipoSensorGetCount();
+    JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
+    for (int i=0; i < totTS; i++) {
+      ts = tipoSensorGetPorId(i);
+      if (!ts) continue;
 
-    tipoSensores.add(tipoSensorGetJSONDoc(ts));
+      tipoSensores.add(tipoSensorGetJSONDoc(ts));
+    }
   }
 
   String out;
@@ -208,7 +210,7 @@ String eTomadaGetReleString(int numRele) {
       if (!rele) {
         doc["erro"] = "rele invalido";
       } else {
-        doc = releGetJSONDoc(rele);
+        doc = releGetJSONDoc(rele, true);
       }
     }
   }
@@ -237,7 +239,7 @@ String eTomadaGetRelesString() {
           continue;
         }
 
-        reles.add(releGetJSONDoc(rele));
+        reles.add(releGetJSONDoc(rele, true));
       }
     }
   }

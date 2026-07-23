@@ -21,7 +21,7 @@ Rele *releGet(int numRele);
 void relePrint(Rele *rele);
 
 Rele *releLoadFromPrefs(int num, Preferences &prefs);
-JsonDocument releGetJSONDoc(Rele *r);
+JsonDocument releGetJSONDoc(Rele *r, bool full);
 
 String releControlaUnsafe(Rele *rele, bool estado, int override = 0);
 String releControla(int numRele, bool estado, int override = 0);

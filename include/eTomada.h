@@ -19,7 +19,8 @@ ModoOperacao eTomadaGetModoOperacao();
 
 void eTomadaRoleta();
 
-String eTomadaGetSnapshotJSON();
+String eTomadaGetSnapshotJSON(bool full);
+
 String eTomadaGetReleString(int numRele);
 String eTomadaGetRelesString();
 
