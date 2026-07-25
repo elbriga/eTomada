@@ -32,8 +32,6 @@ void setup() {
     logaTitulo("Erro LittleFS - Desativando Servidor Web");
   }
 
-  eTomadaInit();
-
   displayMostraString(0, 20, "Conectando...");
   WiFiConnect();
 
@@ -42,13 +40,12 @@ void setup() {
     displayMostraString(0, 40, "Buscando Hora...");
     ntpSyncTimeTS = ntpSyncTime();
   }
+
+  eTomadaInit();
   
   if (FSOK) {
-    // TODO :: Iniciar o server assim que conectar, mostrar INICIALIZANDO
     httpServerInit();
   }
-
-  discoverInit();
 
   logaTitulo("Setup OK!");
 }

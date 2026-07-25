@@ -12,6 +12,9 @@
 #include "mutex.h"
 #include "loga.h"
 #include "prefs.h"
+#include "nodoRemoto.h"
+#include "recurso.h"
+#include "discover.h"
 
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
@@ -55,6 +58,19 @@ void eTomadaInit() {
 
   logaMensagem("Carregando Configuracao dos Sensores:");
   sensoresInit(); // Carrega os sensores do prefs
+
+  // TODO
+  //logaMensagem("Carregando Configuracao dos Botões:");
+  //botoesInit(); // Carrega os botoes do prefs
+
+  logaMensagem("Inicializando o Discover:");
+  discoverInit();
+
+  logaMensagem("Carregando Nodos Remotos:");
+  nodoRemotoInit();
+
+  logaMensagem("Inicializando Recursos:");
+  recursosInit();
 
   Serial.println("");
 }

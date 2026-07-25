@@ -5,16 +5,38 @@
 
 #include "eTomada.h"
 #include "loga.h"
+#include "nodoRemoto.h"
 
 #define DISCOVER_PORT 8266
 
 static WiFiUDP discoverUdp;
+static int totDiscoverNodos = 0;
+static NodoRemoto discoverNodos[MAX_NODOS_REMOTOS];
 
 void discoverTask(void *arg);
 static bool discoverTaskRunning = false;
 
 void discoverInit() {
     discoverUdp.begin(DISCOVER_PORT);
+}
+
+bool getDiscoverTaskRunning() {
+    return discoverTaskRunning;
+}
+
+int getDiscoverNodosCount() {
+    return totDiscoverNodos;
+}
+
+NodoRemoto *getDiscoverNodo(const char *deviceID) {
+    int tot = getDiscoverNodosCount();
+    for (int dn=0; dn < tot; dn++) {
+        NodoRemoto *nodo = &discoverNodos[dn];
+        if (!strncmp(nodo->deviceID, deviceID, 32)) {
+            return nodo;
+        }
+    }
+    return NULL;
 }
 
 void discoverLoop() {
@@ -53,6 +75,7 @@ void discoverStart() {
         return;
     }
 
+    discoverTaskRunning = true;
     xTaskCreate(
         discoverTask,
         "discover",
@@ -74,8 +97,9 @@ void discoverTask(void *arg) {
     discoverUdp.print("{\"cmd\":\"discover\"}");
     discoverUdp.endPacket();
     
+    logaMensagem("Aguardar por 3 segundos");
+    totDiscoverNodos = 0;
     uint32_t inicio = millis();
-    logaMensagem("Loop 3s");
     while (millis() - inicio < 3000) {
         int len = replyUdp.parsePacket();
         if (len > 0) {
@@ -88,11 +112,23 @@ void discoverTask(void *arg) {
                 continue;
             }
 
+            totDiscoverNodos++;
+
             Serial.printf("Resposta de %s:\n", replyUdp.remoteIP().toString().c_str());
             String s;
             serializeJson(doc, s);
             Serial.write(s.c_str(), s.length());
             Serial.println();
+
+            if (totDiscoverNodos > MAX_NODOS_REMOTOS) {
+                logaMensagem("IGNORANDO NODO %d!!!", totDiscoverNodos);
+            } else {
+                NodoRemoto *nr = &discoverNodos[totDiscoverNodos - 1];
+                nr->ip = replyUdp.remoteIP();
+                String mac = doc["mac"];
+                strncpy(nr->deviceID, mac.c_str(),  sizeof(nr->deviceID) - 1);
+                nr->deviceID[sizeof(nr->deviceID) - 1] = '\0';
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(20));
