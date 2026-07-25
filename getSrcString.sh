@@ -1,10 +1,20 @@
 #!/bin/bash
 
 for ARQ in `ls include/`; do
-    echo "include/$ARQ"
-    echo "==="
-    cat "include/$ARQ"
-    echo
+    if [ -d "include/$ARQ" ]; then
+        # 1 nivel de recursao manual
+        for ARQ2 in `ls include/$ARQ/`; do
+            echo "$ARQ/$ARQ2"
+            echo "==="
+            cat "include/$ARQ/$ARQ2"
+            echo
+        done
+    else
+        echo "include/$ARQ"
+        echo "==="
+        cat "include/$ARQ"
+        echo
+    fi
 done
 
 for ARQ in `ls src/`; do
