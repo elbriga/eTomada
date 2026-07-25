@@ -5,32 +5,16 @@
 #include "prefs.h"
 #include "recurso.h"
 #include "nodoRemoto.h"
-#include "reles.h"
+#include "recursoRemoto.h"
 
-Recurso *recursos;
+static Recurso *recursos;
 static int totRecursos = 0;
-static int totRecursosRemotos = 0;
 
 void recursosInit() {
   int recursoAddCount = 0;
   int totRelesLocais = relesGetCount();
   int totSensoresLocais = sensoresGetCount();
-
-  Preferences prefs;
-  prefs.begin("recursosRemotos", false);
-
-  // Para testes
-  // prefs.putString("total0", "2");
-  // prefs.putString("id1", "9");
-  // prefs.putString("tipo1", "1");
-  // prefs.putString("nodo1", "1");
-  // prefs.putString("num1",  "1");
-  // prefs.putString("id2", "10");
-  // prefs.putString("tipo2", "1");
-  // prefs.putString("nodo2", "1");
-  // prefs.putString("num2",  "2");
-
-  totRecursosRemotos = getPrefsAtr(prefs, 0, "total").toInt();
+  int totRecursosRemotos = recursosRemotosGetCount();
 
   totRecursos = totRelesLocais + totSensoresLocais + totRecursosRemotos;
   recursos = (Recurso *)calloc(sizeof(Recurso), totRecursos);
@@ -58,30 +42,23 @@ void recursosInit() {
     recurso->device = sensorGet(s);
   }
 
-  for (int rr=1; rr <= totRecursosRemotos; rr++) {
+  for (int rr=0; rr < totRecursosRemotos; rr++) {
     Recurso *recurso = &recursos[recursoAddCount++];
 
-    String id   = getPrefsAtr(prefs, rr, "id");
-    String tipo = getPrefsAtr(prefs, rr, "tipo");
-    int numNodo = atoi(getPrefsAtr(prefs, rr, "nodo").c_str());
+    recurso->device = recursoRemotoGetPorId(rr);
+    RecursoRemoto *recursoRemoto = (RecursoRemoto *)recurso->device;
 
-    char tipoChar = tipo == "1" ? 'R' : (tipo == "2" ? 'S' : 'B');
-    snprintf(recurso->id, 8, "%c%s", tipoChar, id.c_str());
-
-    recurso->tipo = tipo == "1" ? RECURSO_RELE : 
-      (tipo == "2" ? RECURSO_SENSOR : RECURSO_BOTAO);
-    recurso->num    = getPrefsAtr(prefs, rr, "num").toInt();
+    strcpy(recurso->id, recursoRemoto->id);
+    recurso->tipo   = recursoRemoto->tipo;
+    recurso->num    = recursoRemoto->numRR;
     recurso->remoto = true;
-
-    recurso->device = nodoRemotoGet(numNodo);
-    recursoPrint(recurso);
   }
 
-  prefs.end();
-}
-
-void setRecursoID(Recurso *r, int num) {
-
+  int tot = recursosGetCount(RECURSO_TODOS);
+  for (int r=0; r < tot; r++) {
+    Recurso *recurso = &recursos[r];
+    recursoPrint(recurso);
+  }
 }
 
 int recursosGetCount(TipoRecurso tipo) {
@@ -99,7 +76,7 @@ int recursosGetCount(TipoRecurso tipo) {
   return ret;
 }
 
-int recursoSetEstado(Recurso *r, bool estado) {
+/*int recursoSetEstado(Recurso *r, bool estado) {
   if (r->tipo != RECURSO_RELE) return 10;
 
   if (r->remoto) {
@@ -111,7 +88,7 @@ int recursoSetEstado(Recurso *r, bool estado) {
   }
 
   return 0;
-}
+}*/
 
 Recurso *recursoGetPorId(int posicao) {
   if (posicao >= 0 && posicao < recursosGetCount()) {
@@ -150,12 +127,28 @@ JsonDocument recursoGetJSONDoc(Recurso *r, bool full) {
   doc["id"]   = r->id;
   doc["tipo"] = recursoGetTipoStr(r->tipo);
 
+  switch (r->tipo)
+  {
+  case RECURSO_RELE:
+    Rele *rele;
+    if (r->remoto) rele = &((RecursoRemoto *)r->device)->rele;
+    else           rele = (Rele *)r->device;
+    doc["device"] = releGetJSONDoc(rele, true);
+    break;
+
+  case RECURSO_SENSOR:
+    Sensor *sensor;
+    if (r->remoto) sensor = &((RecursoRemoto *)r->device)->sensor;
+    else           sensor = (Sensor *)r->device;
+    doc["device"] = sensorGetJSONDoc(sensor, true);
+    break;
+  
+  default:
+  doc["device"] = "???";
+    break;
+  }
+
   // if (full) {
-  //   doc["pino"]     = r->pino;
-  //   doc["regra"]    = r->regra;
-  //   doc["ativo"]    = r->ativo;
-  //   doc["estado"]   = r->estado;
-  //   doc["override"] = r->override;
   // }
 
   return doc;

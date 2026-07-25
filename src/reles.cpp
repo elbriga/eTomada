@@ -39,8 +39,11 @@ void relesInit() {
   
   int totReles = relesGetCount();
   for (int r=1; r <= totReles; r++) {
-    Rele *rele = releLoadFromPrefs(r, prefs);
+    Rele *rele = releGet(r);
+    releLoadFromPrefs(rele, r, prefs);
 
+    rele->pino = hardwareProfile.gpioReles[r - 1];
+    
     pinMode(rele->pino, OUTPUT);
     digitalWrite(rele->pino, rele->estado);
 
@@ -70,18 +73,10 @@ void relePrint(Rele *rele) {
       (rele->ativo ? "on" : "off"), rele->regra);
 }
 
-Rele *releLoadFromPrefs(int num, Preferences &prefs) {
-  Rele *rele = releGet(num);
-  if (!rele) {
-    logaMensagem("ERRO no rele [%d]", num);
-    return NULL;
-  }
-
+void releLoadFromPrefs(Rele *rele, int num, Preferences &prefs) {
   rele->num = num;
   strncpy(rele->nome,  getPrefsAtr(prefs, num, "nome").c_str(),  sizeof(rele->nome) - 1);
   rele->nome[sizeof(rele->nome) - 1] = '\0';
-
-  rele->pino = hardwareProfile.gpioReles[num - 1];
 
   strncpy(rele->regra, getPrefsAtr(prefs, num, "regra").c_str(), sizeof(rele->regra) - 1);
   rele->regra[sizeof(rele->regra) - 1] = '\0';
@@ -97,8 +92,6 @@ Rele *releLoadFromPrefs(int num, Preferences &prefs) {
   // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
   rele->estado = 0;
   rele->override = 0;
-
-  return rele;
 }
 
 String relesSetFromJSON(uint8_t *json)

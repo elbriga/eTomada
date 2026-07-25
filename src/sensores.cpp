@@ -27,7 +27,8 @@ void sensoresInit() {
   
   int totSensores = sensoresGetCount();
   for (int s=1; s <= totSensores; s++) {
-    Sensor *sensor = sensorLoadFromPrefs(s, prefs);
+    Sensor *sensor = sensorGet(s);
+    sensorLoadFromPrefs(sensor, s, prefs);
     TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
 
     sensor->ativo = !!tipoSensor;
@@ -76,13 +77,7 @@ void sensorPrint(Sensor *sensor) {
     );
 }
 
-Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
-  Sensor *sensor = sensorGet(num);
-  if (!sensor) {
-    logaMensagem("ERRO no sensor [%d]", num);
-    return NULL;
-  }
-
+void sensorLoadFromPrefs(Sensor *sensor, int num, Preferences &prefs) {
   sensor->num = num;
 
   strncpy(sensor->nome, getPrefsAtr(prefs, num, "nome").c_str(),  sizeof(sensor->nome) - 1);
@@ -97,8 +92,6 @@ Sensor *sensorLoadFromPrefs(int num, Preferences &prefs) {
 
   // Falta verificar se o TipoSensor inicializou OK
   sensor->ativo = false;
-
-  return sensor;
 }
 
 // REQUIRE sensorMutex locked

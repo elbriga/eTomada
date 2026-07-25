@@ -19,7 +19,7 @@ int sensoresGetCount();
 Sensor *sensorGet(int numSensor);
 void sensorPrint(Sensor *sensor);
 
-Sensor *sensorLoadFromPrefs(int num, Preferences &prefs);
+void sensorLoadFromPrefs(Sensor *s, int num, Preferences &prefs);
 JsonDocument sensorGetJSONDoc(Sensor *s, bool full);
 
 void sensoresAtualiza();

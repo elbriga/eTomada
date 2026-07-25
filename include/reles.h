@@ -20,7 +20,7 @@ int relesGetCount();
 Rele *releGet(int numRele);
 void relePrint(Rele *rele);
 
-Rele *releLoadFromPrefs(int num, Preferences &prefs);
+void releLoadFromPrefs(Rele *r, int num, Preferences &prefs);
 JsonDocument releGetJSONDoc(Rele *r, bool full);
 
 String releControlaUnsafe(Rele *rele, bool estado, int override = 0);

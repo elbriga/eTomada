@@ -16,7 +16,7 @@ struct Recurso {
   // TODO trazer o "nome" para ca
   int num;
   bool remoto;
-  void *device;  // Rele / Sensor / Botao / NodoRemoto
+  void *device;  // Rele / Sensor / Botao / RecursoRemoto
 };
 
 void recursosInit();
@@ -24,5 +24,6 @@ int recursosGetCount(TipoRecurso tipo = RECURSO_TODOS);
 Recurso *recursoGet(TipoRecurso tipo, int num);
 Recurso *recursoGetPorId(int posicao);
 
+const char *recursoGetTipoStr(TipoRecurso tipo);
 JsonDocument recursoGetJSONDoc(Recurso *r, bool full);
 void recursoPrint(Recurso *recurso);

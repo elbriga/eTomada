@@ -14,6 +14,7 @@
 #include "prefs.h"
 #include "nodoRemoto.h"
 #include "recurso.h"
+#include "recursoRemoto.h"
 #include "discover.h"
 
 // Modo de Operação
@@ -53,21 +54,24 @@ void eTomadaInit() {
 
   prefs.end();
   
-  logaMensagem("Carregando Configuracao dos reles:");
-  relesInit(); // Carrega os reles do prefs
+  logaMensagem("Inicializando Relés Locais:");
+  relesInit();
 
-  logaMensagem("Carregando Configuracao dos Sensores:");
-  sensoresInit(); // Carrega os sensores do prefs
+  logaMensagem("Inicializando Sensores Locais:");
+  sensoresInit();
 
   // TODO
-  //logaMensagem("Carregando Configuracao dos Botões:");
-  //botoesInit(); // Carrega os botoes do prefs
+  //logaMensagem("Inicializando Botões Locais:");
+  //botoesInit();
 
   logaMensagem("Inicializando o Discover:");
   discoverInit();
 
   logaMensagem("Carregando Nodos Remotos:");
   nodoRemotoInit();
+
+  logaMensagem("Inicializando Recursos Remotos:");
+  recursosRemotosInit();
 
   logaMensagem("Inicializando Recursos:");
   recursosInit();
