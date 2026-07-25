@@ -209,6 +209,16 @@ String eTomadaGetSnapshotJSON(bool full) {
     }
   }
 
+  Recurso *recurso;
+  int totRecursos = recursosGetCount();
+  JsonArray recursos = doc["recursos"].to<JsonArray>();
+  for (int i=0; i < totRecursos; i++) {
+    recurso = recursoGetPorId(i);
+    if (!recurso) continue;
+
+    recursos.add(recursoGetJSONDoc(recurso, full));
+  }
+
   String out;
   serializeJson(doc, out);
 
