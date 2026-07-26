@@ -22,10 +22,16 @@ void recursosRemotosInit() {
   // prefs.putString("tipo1", "1");
   // prefs.putString("nodo1", "1");
   // prefs.putString("num1",  "1");
+  // prefs.putString("nome1", "RREMOTO1");
+  // prefs.putString("regra1", "");
+  // prefs.putString("ativo1", "1");
   // prefs.putString("id2", "10");
   // prefs.putString("tipo2", "1");
   // prefs.putString("nodo2", "1");
   // prefs.putString("num2",  "2");
+  // prefs.putString("nome2", "RREMOTO2");
+  // prefs.putString("regra2", "");
+  // prefs.putString("ativo2", "1");
 
   totRecursosRemotos = getPrefsAtr(prefs, 0, "total").toInt();
   recursosRemotos = (RecursoRemoto *)calloc(sizeof(RecursoRemoto), totRecursosRemotos);

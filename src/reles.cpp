@@ -74,11 +74,15 @@ void relePrint(Rele *rele) {
 }
 
 void releLoadFromPrefs(Rele *rele, int num, Preferences &prefs) {
+  String nome  = getPrefsAtr(prefs, num, "nome");
+  String regra = getPrefsAtr(prefs, num, "regra");
+  String ativo = getPrefsAtr(prefs, num, "ativo");
+
   rele->num = num;
-  strncpy(rele->nome,  getPrefsAtr(prefs, num, "nome").c_str(),  sizeof(rele->nome) - 1);
+  strncpy(rele->nome, nome.c_str(), sizeof(rele->nome) - 1);
   rele->nome[sizeof(rele->nome) - 1] = '\0';
 
-  strncpy(rele->regra, getPrefsAtr(prefs, num, "regra").c_str(), sizeof(rele->regra) - 1);
+  strncpy(rele->regra, regra.c_str(), sizeof(rele->regra) - 1);
   rele->regra[sizeof(rele->regra) - 1] = '\0';
 
   String regraOK = validaRegra(rele->regra);
@@ -87,7 +91,7 @@ void releLoadFromPrefs(Rele *rele, int num, Preferences &prefs) {
     rele->regra[0] = '\0';
   }
 
-  rele->ativo = (getPrefsAtr(prefs, num, "ativo") == "1");
+  rele->ativo = (ativo == "1");
 
   // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
   rele->estado = 0;
