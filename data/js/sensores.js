@@ -24,11 +24,14 @@ function sensorGetCard(sensor) {
   return card;
 }
 
-function sensoresRender(sensores) {
+function sensoresRenderFromRecursos() {
   const container = document.getElementById("sensores");
   container.innerHTML = "";
 
-  sensores.forEach((sensor, i) => {
+  eTomadaData.recursos.forEach((recurso, i) => {
+    if (recurso.tipo != "SENSOR") return;
+
+    let sensor = recurso.device;
     if (sensor.pino == -1) return;
     if (!sensor.nome) sensor.nome = "---";
 
@@ -89,5 +92,5 @@ function sensorAtualiza(sensor) {
   oldCard.parentNode.replaceChild(newCard, oldCard);
 
   // Ao mudar o nome do sensor pode precisar atualizar regras SE dos reles
-  relesRender(eTomadaData.reles);
+  relesRenderFromRecursos();
 }

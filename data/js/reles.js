@@ -29,11 +29,14 @@ function releGetCard(rele) {
   return card;
 }
 
-function relesRender(reles) {
+function relesRenderFromRecursos() {
   const container = document.getElementById("reles");
   container.innerHTML = "";
 
-  reles.forEach((rele, i) => {
+  eTomadaData.recursos.forEach((recurso, i) => {
+    if (recurso.tipo != "RELE") return;
+
+    let rele = recurso.device;
     if (!rele.ativo) return;
 
     const card = releGetCard(rele);

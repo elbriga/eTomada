@@ -45,9 +45,8 @@ async function eTomadaRender(snapshot) {
       " - " +
       eTomadaData.datahorastr;
 
-    sensoresRender(eTomadaData.sensores);
-
-    relesRender(eTomadaData.reles);
+    sensoresRenderFromRecursos();
+    relesRenderFromRecursos();
   } catch (e) {
     statusMsg("Erro eTomadaRender: " + e);
   } finally {
