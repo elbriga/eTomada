@@ -1,14 +1,19 @@
 let sensorEditando = null;
 
-function sensorGetCard(sensor) {
+function sensorGetCard(recurso) {
+  if (recurso.tipo != "SENSOR") return null;
+
+  let sensor = recurso.device;
   const tipoSensor = eTomadaData.tipoSensores.find(
     (ts) => ts.nome == sensor.tipo,
   );
   const tsOK = tipoSensor.status == "OK";
   const valor = !tsOK ? tipoSensor.status : `${sensor.valor} ${sensor.unidade}`;
   const card = document.createElement("div");
-  card.id = "sensorCard-" + sensor.num;
-  card.className = `card cardSensor${!tsOK ? " cardSensorInativo" : ""}`;
+  card.id = `recursoCard-${recurso.id}`;
+  card.className =
+    `card cardSensor${!tsOK ? " cardSensorInativo" : ""}` +
+    (recurso.remoto ? " cardRemoto" : "");
   card.innerHTML = `
 <div class="headerTop">
   <div>
@@ -16,7 +21,7 @@ function sensorGetCard(sensor) {
     <div class="title">${escapeHtml(sensor.nome || "")}</div>
     <div class="small">pino: ${escapeHtml(sensor.pino)}</div>
   </div>
-  <button class="editBtn" onclick="sensorOpenEditModal(${sensor.num})">✏️</button>
+  <button class="editBtn" onclick="sensorOpenEditModal('${recurso.id}')">✏️</button>
 </div>
 <br>
 <div class="status on">${valor}</div>
@@ -35,19 +40,20 @@ function sensoresRenderFromRecursos() {
     if (sensor.pino == -1) return;
     if (!sensor.nome) sensor.nome = "---";
 
-    const card = sensorGetCard(sensor);
+    const card = sensorGetCard(recurso);
     container.appendChild(card);
   });
 }
 
-function sensorOpenEditModal(numSensor) {
-  const sensor = eTomadaData.sensores.find((r) => r.num == numSensor);
-  if (!sensor) return;
+function sensorOpenEditModal(recursoID) {
+  const recurso = eTomadaData.recursos.find((r) => r.id == recursoID);
+  if (!recurso) return;
 
-  sensorEditando = numSensor;
+  const sensor = recurso.device;
+  sensorEditando = recursoID;
 
   document.getElementById("modalTitle").innerHTML =
-    "Editar Sensor " + numSensor;
+    "Editar Sensor " + recursoID;
   document.getElementById("modalNome").value = sensor.nome || "";
   document.getElementById("modalDivRegra").style.display = "none";
   document.getElementById("modalSalvarBtn").onclick = function () {
@@ -67,9 +73,9 @@ async function sensorSalvarFromModal() {
 
   try {
     await eTomadaAPI(
-      "setSensorConfig",
+      "setRecursoConfig",
       {
-        sensor: sensorEditando,
+        id: sensorEditando,
         nome: document.getElementById("modalNome").value,
       },
       "PUT",
@@ -82,15 +88,4 @@ async function sensorSalvarFromModal() {
     btn.disabled = false;
     btn.innerText = "💾 Salvar";
   }
-}
-
-function sensorAtualiza(sensor) {
-  eTomadaData.sensores[sensor.num - 1] = sensor;
-
-  const newCard = sensorGetCard(sensor);
-  const oldCard = document.getElementById(`sensorCard-${sensor.num}`);
-  oldCard.parentNode.replaceChild(newCard, oldCard);
-
-  // Ao mudar o nome do sensor pode precisar atualizar regras SE dos reles
-  relesRenderFromRecursos();
 }

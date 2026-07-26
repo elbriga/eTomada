@@ -31,15 +31,9 @@ function sseInit() {
   });
 
   // Refresh de um rele
-  SSE.addEventListener("sse_rele", (e) => {
-    const rele = JSON.parse(e.data);
-    releAtualiza(rele);
-  });
-
-  // refresh de um sensor
-  SSE.addEventListener("sse_sensor", (e) => {
-    const sensor = JSON.parse(e.data);
-    sensorAtualiza(sensor);
+  SSE.addEventListener("sse_recurso", (e) => {
+    const recurso = JSON.parse(e.data);
+    recursoAtualiza(recurso);
   });
 
   SSE.addEventListener("sse_ping", () => {

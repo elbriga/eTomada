@@ -1,11 +1,14 @@
 let releEditando = null;
 
-function releGetCard(rele) {
+function releGetCard(recurso) {
+  if (recurso.tipo != "RELE") return null;
+
+  let rele = recurso.device;
   if (!rele.nome) rele.nome = "---";
 
   const card = document.createElement("div");
-  card.id = "tomadaCard-" + rele.num;
-  card.className = "card cardRele";
+  card.id = `recursoCard-${recurso.id}`;
+  card.className = "card cardRele" + (recurso.remoto ? " cardRemoto" : "");
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">
@@ -14,7 +17,7 @@ function releGetCard(rele) {
     <div class="medio">${releGetRegraTXT(rele.regra)}</div>
     <div class="small">pino: ${escapeHtml(rele.pino)}</div>
   </div>
-  <button class="editBtn" onclick="releOpenEditModal(${rele.num})">✏️</button>
+  <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
 </div>
 <br>
 <div class="status ${rele.estado ? "on" : "off"}">
@@ -39,7 +42,7 @@ function relesRenderFromRecursos() {
     let rele = recurso.device;
     if (!rele.ativo) return;
 
-    const card = releGetCard(rele);
+    const card = releGetCard(recurso);
     container.appendChild(card);
   });
 }
@@ -57,18 +60,20 @@ function releGetOptionsSensores() {
   );
 }
 
-function releOpenEditModal(numRele) {
-  const rele = eTomadaData.reles.find((r) => r.num == numRele);
-  if (!rele) return;
+function releOpenEditModal(recursoID) {
+  const recurso = eTomadaData.recursos.find((r) => r.id == recursoID);
+  if (!recurso) return;
 
-  releEditando = numRele;
+  const rele = recurso.device;
+  releEditando = recursoID;
 
   let [acao, param1, param2] = rele.regra.split("|");
 
   if (!param1) param1 = "";
   if (!param2) param2 = "";
 
-  document.getElementById("modalTitle").innerHTML = "Editar Tomada " + numRele;
+  document.getElementById("modalTitle").innerHTML =
+    "Editar Tomada " + recursoID;
   document.getElementById("modalNome").value = rele.nome || "";
 
   document.getElementById("modalDivRegra").style.display = "block";
@@ -137,9 +142,9 @@ async function releSalvarFromModal() {
     }
 
     await eTomadaAPI(
-      "setReleConfig",
+      "setRecursoConfig",
       {
-        rele: releEditando,
+        id: releEditando,
         nome: document.getElementById("modalNome").value,
         regra: regra,
       },
@@ -227,12 +232,4 @@ function releGetRegraTXT(regra) {
   }
 
   return "??" + regra;
-}
-
-function releAtualiza(rele) {
-  eTomadaData.reles[rele.num - 1] = rele;
-
-  const newCard = releGetCard(rele);
-  const oldCard = document.getElementById(`tomadaCard-${rele.num}`);
-  oldCard.parentNode.replaceChild(newCard, oldCard);
 }

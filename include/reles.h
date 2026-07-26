@@ -3,6 +3,8 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
+#include "recurso.h"
+
 #define MAX_RELES 8
 
 struct Rele {
@@ -27,4 +29,4 @@ String releControlaUnsafe(Rele *rele, bool estado, int override = 0);
 String releControla(int numRele, bool estado, int override = 0);
 
 String relesSetFromJSON(uint8_t *json);
-String releAtualizaConfigFromJSON(uint8_t *json);
+String releAtualizaConfigFromJSON(Recurso *r, JsonDocument doc);

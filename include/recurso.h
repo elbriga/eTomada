@@ -21,9 +21,12 @@ struct Recurso {
 
 void recursosInit();
 int recursosGetCount(TipoRecurso tipo = RECURSO_TODOS);
-Recurso *recursoGet(TipoRecurso tipo, int num);
+Recurso *recursoGet(const char *id);
 Recurso *recursoGetPorId(int posicao);
 
 const char *recursoGetTipoStr(TipoRecurso tipo);
 JsonDocument recursoGetJSONDoc(Recurso *r, bool full);
+
+String recursoAtualizaConfigFromJSON(uint8_t *json);
+
 void recursoPrint(Recurso *recurso);

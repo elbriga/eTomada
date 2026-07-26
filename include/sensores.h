@@ -3,6 +3,8 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
+#include "recurso.h"
+
 #define MAX_SENSORES 4
 
 struct Sensor {
@@ -24,4 +26,4 @@ JsonDocument sensorGetJSONDoc(Sensor *s, bool full);
 
 void sensoresAtualiza();
 
-String sensorAtualizaConfigFromJSON(uint8_t *json);
+String sensorAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc);

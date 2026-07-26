@@ -7,6 +7,8 @@
 #include "http.h"
 #include "mutex.h"
 #include "prefs.h"
+#include "recurso.h"
+#include "recursoRemoto.h"
 
 static Sensor sensores[MAX_SENSORES];
 
@@ -124,65 +126,51 @@ String sensorGetJSONString(Sensor *s) {
   return out;
 }
 
-String sensorAtualizaConfigFromJSON(uint8_t *json)
+String sensorAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
 {
-  JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, json);
-  if (err) {
-    return "JSON Invalido";
+  if (recurso->tipo != RECURSO_SENSOR ) {
+    return "Recurso nao é SENSOR!";
   }
 
-  int numSensor = doc["sensor"];
-  if (numSensor < 1 || numSensor > MAX_SENSORES) {
-    return "Sensor invalido";
+  MutexLock lock(sensorMutex, pdMS_TO_TICKS(2500));
+  if (!lock) {
+    return "mutex timeout";
   }
 
-  Sensor sensorCopy;
-  {
-    MutexLock lock(sensorMutex, pdMS_TO_TICKS(2500));
-    if (!lock) {
-      return "mutex timeout";
-    }
+  Sensor *sensor = recurso->remoto ?
+    &((RecursoRemoto *)recurso->device)->sensor :
+    (Sensor *)recurso->device;
 
-    Sensor *sensor = &sensores[numSensor - 1];
-
-    if (!doc["tipo"].isNull()) {
-      String novoTipo = doc["tipo"].as<String>();
-      if (novoTipo != "") {
-        TipoSensor *ts = tipoSensorGet(novoTipo.c_str());
-        if (!ts) {
-          return "TipoSensor ["+novoTipo+"] Invalido";
-        }
-        // if (ts->status != "OK") {
-        //   return "TipoSensor ["+novoTipo+"] Inativo ["+ts->status+"]";
-        // }
+  if (!doc["tipo"].isNull()) {
+    String novoTipo = doc["tipo"].as<String>();
+    if (novoTipo != "") {
+      TipoSensor *ts = tipoSensorGet(novoTipo.c_str());
+      if (!ts) {
+        return "TipoSensor ["+novoTipo+"] Invalido";
       }
-      strncpy(sensor->tipo, novoTipo.c_str(), sizeof(sensor->tipo) - 1);
-      sensor->tipo[sizeof(sensor->tipo) - 1] = '\0';
+      // if (ts->status != "OK") {
+      //   return "TipoSensor ["+novoTipo+"] Inativo ["+ts->status+"]";
+      // }
     }
-
-    sensor->ativo = !!strlen(sensor->tipo);
-
-    if (!doc["nome"].isNull()) {
-      String nome = doc["nome"].as<String>();
-      if (nome == "") {
-        nome = "??";
-      }
-      strncpy(sensor->nome, nome.c_str(), sizeof(sensor->nome) - 1);
-      sensor->nome[sizeof(sensor->nome) - 1] = '\0';
-    }
-
-    memcpy(&sensorCopy, sensor, sizeof(Sensor));
+    strncpy(sensor->tipo, novoTipo.c_str(), sizeof(sensor->tipo) - 1);
+    sensor->tipo[sizeof(sensor->tipo) - 1] = '\0';
   }
-  
-  logaMensagem(">> SENSOR [%d] nome[%s] pino[%d] tipo[%d]",
-    numSensor, sensorCopy.nome, sensorCopy.pino, sensorCopy.tipo);
-  
+
+  sensor->ativo = !!strlen(sensor->tipo);
+
+  if (!doc["nome"].isNull()) {
+    String nome = doc["nome"].as<String>();
+    if (nome == "") {
+      nome = "??";
+    }
+    strncpy(sensor->nome, nome.c_str(), sizeof(sensor->nome) - 1);
+    sensor->nome[sizeof(sensor->nome) - 1] = '\0';
+  }
+
   // Setar no prefs
-  eTomadaSalvaSensor(&sensorCopy);
+  eTomadaSalvaSensor(recurso);
 
-  String sensorJSON = sensorGetJSONString(&sensorCopy);
-  httpEnviaEvento(sensorJSON, "sse_sensor");
+  sensorPrint(sensor);
 
   return "OK";
 }

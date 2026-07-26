@@ -9,6 +9,8 @@
 #include "display.h"
 #include "http.h"
 #include "prefs.h"
+#include "recurso.h"
+#include "recursoRemoto.h"
 
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
@@ -149,56 +151,42 @@ String releGetJSONString(Rele *r) {
   return out;
 }
 
-String releAtualizaConfigFromJSON(uint8_t *json)
+String releAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
 {
-  JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, json);
-  if (err) {
-    return "JSON Invalido";
+  if (recurso->tipo != RECURSO_RELE ) {
+    return "Recurso nao é RELE!";
   }
 
-  int numRele = doc["rele"];
-  if (numRele < 1 || numRele > MAX_RELES) {
-    return "Rele invalido";
+  MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
+  if (!lock) {
+    return "mutex timeout";
   }
 
-  Rele releCopy;
-  {
-    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
-    if (!lock) {
-      return "mutex timeout";
-    }
-
-    Rele *rele = &reles[numRele - 1];
-
-    String novaRegra = doc["regra"].isNull() ? String(rele->regra) : doc["regra"].as<String>();
-    String regraOK = validaRegra(novaRegra);
-    if (regraOK != "OK") {
-      return "Regra Invalida :: " + regraOK;
-    }
-    strncpy(rele->regra, novaRegra.c_str(), sizeof(rele->regra) - 1);
-    rele->regra[sizeof(rele->regra) - 1] = '\0';
-
-    if (!doc["nome"].isNull()) {
-      strncpy(rele->nome, doc["nome"].as<String>().c_str(), sizeof(rele->nome) - 1);
-      rele->nome[sizeof(rele->nome) - 1] = '\0';
-    }
-
-    if (!doc["ativo"].isNull()) {
-      rele->ativo = (doc["ativo"] == "1" || doc["ativo"] == 1);
-    }
-
-    memcpy(&releCopy, rele, sizeof(Rele));
+  Rele *rele = recurso->remoto ?
+    &((RecursoRemoto *)recurso->device)->rele :
+    (Rele *)recurso->device;
+    
+  String novaRegra = doc["regra"].isNull() ? String(rele->regra) : doc["regra"].as<String>();
+  String regraOK = validaRegra(novaRegra);
+  if (regraOK != "OK") {
+    return "Regra Invalida :: " + regraOK;
   }
+  strncpy(rele->regra, novaRegra.c_str(), sizeof(rele->regra) - 1);
+  rele->regra[sizeof(rele->regra) - 1] = '\0';
+
+  if (!doc["nome"].isNull()) {
+    strncpy(rele->nome, doc["nome"].as<String>().c_str(), sizeof(rele->nome) - 1);
+    rele->nome[sizeof(rele->nome) - 1] = '\0';
+  }
+
+  if (!doc["ativo"].isNull()) {
+    rele->ativo = (doc["ativo"] == "1" || doc["ativo"] == 1);
+  }
+
+  eTomadaSalvaRele(recurso);
   
-  relePrint(&releCopy);
+  relePrint(rele);
   
-  // Setar no prefs
-  eTomadaSalvaRele(&releCopy);
-
-  String releJSON = releGetJSONString(&releCopy);
-  httpEnviaEvento(releJSON, "sse_rele");
-
   return "OK";
 }
 

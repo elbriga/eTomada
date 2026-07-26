@@ -36,7 +36,7 @@ async function eTomadaRender(snapshot) {
   if (_eTomadaLoading) return;
   _eTomadaLoading = true;
 
-  try {
+  {
     await eTomadaRefresh(snapshot);
 
     document.getElementById("datahora").innerHTML =
@@ -47,11 +47,9 @@ async function eTomadaRender(snapshot) {
 
     sensoresRenderFromRecursos();
     relesRenderFromRecursos();
-  } catch (e) {
-    statusMsg("Erro eTomadaRender: " + e);
-  } finally {
-    _eTomadaLoading = false;
   }
+
+  _eTomadaLoading = false;
 }
 
 function eTomadaDiscover() {

@@ -6,6 +6,7 @@
 #include "recurso.h"
 #include "nodoRemoto.h"
 #include "recursoRemoto.h"
+#include "http.h"
 
 static Recurso *recursos;
 static int totRecursos = 0;
@@ -97,15 +98,11 @@ Recurso *recursoGetPorId(int posicao) {
   return NULL;
 }
 
-Recurso *recursoGet(TipoRecurso tipo, int posicao) {
-  int pos = 0;
+Recurso *recursoGet(const char *id) {
   int tot = recursosGetCount(RECURSO_TODOS);
   for (int r=0; r < tot; r++) {
-    Recurso *recurso = &recursos[r];
-    if (recurso->tipo == tipo) {
-      pos++;
-      if (pos == posicao)
-        return recurso;
+    if (!strcmp(recursos[r].id, id)) {
+      return &recursos[r];
     }
   }
   return NULL;
@@ -128,31 +125,75 @@ JsonDocument recursoGetJSONDoc(Recurso *r, bool full) {
   doc["tipo"]   = recursoGetTipoStr(r->tipo);
   doc["remoto"] = r->remoto;
 
-  switch (r->tipo)
-  {
-  case RECURSO_RELE:
-    Rele *rele;
-    if (r->remoto) rele = &((RecursoRemoto *)r->device)->rele;
-    else           rele = (Rele *)r->device;
-    doc["device"] = releGetJSONDoc(rele, true);
-    break;
+  if (full) {
 
-  case RECURSO_SENSOR:
-    Sensor *sensor;
-    if (r->remoto) sensor = &((RecursoRemoto *)r->device)->sensor;
-    else           sensor = (Sensor *)r->device;
-    doc["device"] = sensorGetJSONDoc(sensor, true);
-    break;
-  
-  default:
-  doc["device"] = "???";
-    break;
+    switch (r->tipo)
+    {
+    case RECURSO_RELE:
+      Rele *rele;
+      if (r->remoto) rele = &((RecursoRemoto *)r->device)->rele;
+      else           rele = (Rele *)r->device;
+      doc["device"] = releGetJSONDoc(rele, true);
+      break;
+
+    case RECURSO_SENSOR:
+      Sensor *sensor;
+      if (r->remoto) sensor = &((RecursoRemoto *)r->device)->sensor;
+      else           sensor = (Sensor *)r->device;
+      doc["device"] = sensorGetJSONDoc(sensor, true);
+      break;
+    
+    default:
+    doc["device"] = "???";
+      break;
+    }
   }
 
-  // if (full) {
-  // }
-
   return doc;
+}
+
+// REQUIRE releMutex/sensorMutex locked
+String recursoGetJSONString(Recurso *r) {
+  String out;
+  JsonDocument doc = recursoGetJSONDoc(r, true);
+
+  serializeJson(doc, out);
+  return out;
+}
+
+String recursoAtualizaConfigFromJSON(uint8_t *json) {
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, json);
+  if (err) {
+    return "JSON Invalido";
+  }
+
+  String id = doc["id"];
+  Recurso *recurso = recursoGet(id.c_str());
+  if (!recurso) {
+    return "Recurso Invalido";
+  }
+
+  String msg;
+  switch (recurso->tipo) {
+  case RECURSO_RELE:
+    msg = releAtualizaConfigFromJSON(recurso, doc);
+    break;
+  case RECURSO_SENSOR:
+    msg = sensorAtualizaConfigFromJSON(recurso, doc);
+    break;
+  default:
+    msg = "Recurso Desconhecido";
+  }
+
+  if (msg != "OK") {
+    return msg;
+  }
+
+  String recursoJSON = recursoGetJSONString(recurso);
+  httpEnviaEvento(recursoJSON, "sse_recurso");
+  
+  return "OK";
 }
 
 void recursoPrint(Recurso *recurso) {

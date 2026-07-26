@@ -20,25 +20,6 @@
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
 
-// Valores default
-static Rele relesConfigDefault[MAX_RELES] = {
-  { 1, 16, "Luz",             "OF|02:00|07:59", 1, 0 },
-  { 2, 13, "Umidificador",    "ON|08:00|20:00", 1, 0 },
-  { 3, 17, "Ventilador",      "SE|S1>20|S1<10", 1, 0 },
-  { 4, 14, "Desumidificador", "",               1, 0 },
-  { 5, -1, "", "", 0, 0 },
-  { 6, -1, "", "", 0, 0 },
-  { 7, -1, "", "", 0, 0 },
-  { 8, -1, "", "", 0, 0 }
-};
-
-static Sensor sensoresConfigDefault[MAX_SENSORES] = {
-  { 1,  1, "Temp", "AHT10t",   0, 0 },
-  { 2,  2, "Umid", "UmidXPTO", 0, 0 },
-  { 3,  3, "lux",  "LUXXPTO",  0, 0 },
-  { 4, -1, "",     "",         0, 0 }
-};
-
 void eTomadaInit() {
   mutexInit();
 
@@ -81,45 +62,6 @@ void eTomadaInit() {
 
 ModoOperacao eTomadaGetModoOperacao() {
   return modoOperacao;
-}
-
-void eTomadaRoleta() {
-  logaTitulo("ROLETA!");
-
-  Rele *rele;
-  int totReles = relesGetCount();
-  
-  for (int r=1; r <= totReles; r++) {
-    releControla(r, 0);
-  }
-
-  int delay = 25, delta = 2;
-  int num = (esp_random() % totReles) + 1;
-  int oldNum = num;
-  int loop = 0;
-
-  while (delay < 440) {
-    esp_task_wdt_reset(); // alimenta o watchdog
-
-    oldNum = num;
-    num++;
-    if (num > totReles) {
-      num = 1;
-    }
-    releControla(oldNum, 0, 10);
-    releControla(num, 1, 10);
-    
-    loop++;
-    if(loop > 40) {
-      delay += delta;
-      if (loop > 90) {
-        delta += 1;
-      }
-    }
-    vTaskDelay(pdMS_TO_TICKS(delay));
-  }
-
-  logaMensagem("** Numero Sorteado: %d **", num);
 }
 
 String eTomadaGetSnapshotJSON(bool full) {
@@ -229,151 +171,124 @@ String eTomadaGetSnapshotJSON(bool full) {
   return out;
 }
 
-String eTomadaGetReleString(int numRele) {
-  JsonDocument doc;
-  {
-    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
-    if (!lock) {
-      doc["erro"] = "mutex rele timeout";
-    } else {
-      Rele *rele = releGet(numRele);
-      if (!rele) {
-        doc["erro"] = "rele invalido";
-      } else {
-        doc = releGetJSONDoc(rele, true);
-      }
-    }
-  }
-
-  String out;
-  serializeJson(doc, out);
-  return out;
-}
-
-String eTomadaGetRelesString() {
-  JsonDocument doc;
-  Rele *rele;
-  int totReles = relesGetCount();
-  JsonArray reles = doc["reles"].to<JsonArray>();
-
-  {
-    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
-
-    if (!lock) {
-      doc["erro"] = "mutex rele timeout";
-    } else {
-      for (int i = 1; i <= totReles; i++) {
-        rele = releGet(i);
-        if (!rele) {
-          // TODO :: o que fazer aqui??
-          continue;
-        }
-
-        reles.add(releGetJSONDoc(rele, true));
-      }
-    }
-  }
-
-  String out;
-  serializeJson(doc, out);
-
-  return out;
-}
-
-void eTomadaSalvaReleUnsafe(Rele *rele) {
-  Preferences prefs;
-  
-  prefs.begin("reles", false);
-  
-  setPrefsAtr(prefs, rele->num, "nome",  String(rele->nome));
-  setPrefsAtr(prefs, rele->num, "regra", String(rele->regra));
-  setPrefsAtr(prefs, rele->num, "ativo", String(rele->ativo));
-
-  int oldPin = atoi(setPrefsAtr(prefs, rele->num, "pino",  String(rele->pino)).c_str());
-  if (rele->pino != oldPin) {
-    // Desligar pino antigo
-    if (oldPin != -1) {
-      digitalWrite(oldPin, LOW);
-    }
-
-    // Ativar o pino novo
-    if (rele->pino != -1) {
-      pinMode(rele->pino, OUTPUT);
-    }
-  }
-  
-  prefs.end();
-}
-
-void eTomadaSalvaRele(Rele *rele) {
+void eTomadaSalvaRele(Recurso *recurso) {
   MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
   if (!lock) {
     logaMensagem("eTomadaSalvaRele: erro de mutex!");
     return;
   }
 
-  eTomadaSalvaReleUnsafe(rele);
-}
-
-void eTomadaSalvaSensorUnsafe(Sensor *sensor) {
   Preferences prefs;
-  prefs.begin("sensores", false);
   
-  setPrefsAtr(prefs, sensor->num, "nome",  String(sensor->nome));
-  setPrefsAtr(prefs, sensor->num, "pino",  String(sensor->pino));
-  setPrefsAtr(prefs, sensor->num, "tipo",  String(sensor->tipo));
+  int num = 0;
+  Rele *rele;
+  if (recurso->remoto) {
+    RecursoRemoto *rr = (RecursoRemoto *)recurso->device;
+    num = rr->numRR;
+    rele = &rr->rele;
+    prefs.begin("recursosRemotos", false);
+  } else {
+    num = recurso->num;
+    rele = (Rele *)recurso->device;
+    prefs.begin("reles", false);
+  }
+  
+  setPrefsAtr(prefs, num, "nome",  String(rele->nome));
+  setPrefsAtr(prefs, num, "regra", String(rele->regra));
+  setPrefsAtr(prefs, num, "ativo", String(rele->ativo));
 
   prefs.end();
 }
 
-void eTomadaSalvaSensor(Sensor *sensor) {
+void eTomadaSalvaSensor(Recurso *recurso) {
   MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
   if (!lock) {
     logaMensagem("eTomadaSalvaSensor: erro de mutex!");
     return;
   }
 
-  eTomadaSalvaSensorUnsafe(sensor);
+  Preferences prefs;
+
+  int num = 0;
+  Sensor *sensor;
+  if (recurso->remoto) {
+    RecursoRemoto *rr = (RecursoRemoto *)recurso->device;
+    num = rr->numRR;
+    sensor = &rr->sensor;
+    prefs.begin("recursosRemotos", false);
+  } else {
+    num = recurso->num;
+    sensor = (Sensor *)recurso->device;
+    prefs.begin("sensores", false);
+  }
+
+  setPrefsAtr(prefs, num, "nome", String(sensor->nome));
+  setPrefsAtr(prefs, num, "pino", String(sensor->pino));
+  setPrefsAtr(prefs, num, "tipo", String(sensor->tipo));
+
+  prefs.end();
+}
+
+void eTomadaRoleta() {
+  logaTitulo("ROLETA!");
+
+  Rele *rele;
+  int totReles = relesGetCount();
+  
+  for (int r=1; r <= totReles; r++) {
+    releControla(r, 0);
+  }
+
+  int delay = 25, delta = 2;
+  int num = (esp_random() % totReles) + 1;
+  int oldNum = num;
+  int loop = 0;
+
+  while (delay < 440) {
+    esp_task_wdt_reset(); // alimenta o watchdog
+
+    oldNum = num;
+    num++;
+    if (num > totReles) {
+      num = 1;
+    }
+    releControla(oldNum, 0, 10);
+    releControla(num, 1, 10);
+    
+    loop++;
+    if(loop > 40) {
+      delay += delta;
+      if (loop > 90) {
+        delta += 1;
+      }
+    }
+    vTaskDelay(pdMS_TO_TICKS(delay));
+  }
+
+  logaMensagem("** Numero Sorteado: %d **", num);
 }
 
 void eTomadaFactoryReset() {
-  {
-    MutexLock lockPrefs(prefsMutex, pdMS_TO_TICKS(2500));
-    MutexLock lockReles(releMutex, pdMS_TO_TICKS(2500));
-    MutexLock lockSensores(sensorMutex, pdMS_TO_TICKS(2500));
-    if (!lockPrefs || !lockReles || !lockSensores) {
-      logaMensagem("Erro de mutex no factory reset!");
-      return;
-    }
-
-    Preferences prefs;
-    prefs.begin("reles", false);
-    prefs.clear();
-    prefs.end();
-    prefs.begin("sensores", false);
-    prefs.clear();
-    prefs.end();
-
-    logaMensagem("Factory Reset: Gravando Reles:");
-    int totReles = relesGetCount();
-    for (int r=1; r <= totReles; r++) {
-      Rele *rele = releGet(r);
-      memcpy(rele, &relesConfigDefault[r - 1], sizeof(Rele));
-
-      eTomadaSalvaReleUnsafe(rele);
-      relePrint(rele);
-    }
-    
-    logaMensagem("Factory Reset: Gravando Sensores:");
-    int totSensores = sensoresGetCount();
-    for (int s=1; s <= totSensores; s++) {
-      Sensor *sensor = sensorGet(s);
-      memcpy(sensor, &sensoresConfigDefault[s - 1], sizeof(Sensor));
-
-      eTomadaSalvaSensorUnsafe(sensor);
-      sensorPrint(sensor);
-    }
+  MutexLock lockPrefs(prefsMutex, pdMS_TO_TICKS(2500));
+  if (!lockPrefs) {
+    logaMensagem("Erro de mutex no factory reset!");
+    return;
   }
 
-  processaRegras();
+  Preferences prefs;
+
+  prefs.begin("reles", false);
+  prefs.clear();
+  prefs.end();
+
+  prefs.begin("sensores", false);
+  prefs.clear();
+  prefs.end();
+
+  prefs.begin("recursosRemotos", false);
+  prefs.clear();
+  prefs.end();
+
+  logaTitulo("RESET!");
+  ESP.restart();
 }

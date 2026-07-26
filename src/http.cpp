@@ -6,6 +6,7 @@
 #include "sensor.h"
 #include "wifi.h"
 #include "discover.h"
+#include "recurso.h"
 
 #define DEV // TODO :: remover
 
@@ -72,20 +73,6 @@ void httpServerInitModoAPI() {
     discoverStart();
   });
 
-  httpServer.on("/api/reles", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String body = eTomadaGetRelesString();
-    request->send(200, "application/json", body);
-    logaRequest(request, "200 OK");
-  });
-
-  httpServer.on("^\\/api\\/rele\\/([0-9]+)$", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String releStr = request->pathArg(0);
-    String body = eTomadaGetReleString(releStr.toInt());
-    // TODO :: nao enviar sempre o 200!
-    request->send(200, "application/json", body);
-    logaRequest(request, "200 OK");
-  });
-
   httpServer.on("/api/setRele", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     String setOK = relesSetFromJSON(data);
     if (setOK == "OK") {
@@ -97,21 +84,8 @@ void httpServerInitModoAPI() {
     }
   });
 
-  httpServer.on("/api/setReleConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-    String atzCfgOK = releAtualizaConfigFromJSON(data);
-    if (atzCfgOK == "OK") {
-      processaRegras();
-      
-      request->send(200, "application/json", "{\"msg\": \"OK\"}");
-      logaRequest(request, "200 OK");
-    } else {
-      request->send(400, "application/json", "{\"msg\": \""+atzCfgOK+"\"}"); 
-      logaRequest(request, "400 " + atzCfgOK);
-    }
-  });
-
-  httpServer.on("/api/setSensorConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-    String atzCfgOK = sensorAtualizaConfigFromJSON(data);
+  httpServer.on("/api/setRecursoConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+    String atzCfgOK = recursoAtualizaConfigFromJSON(data);
     if (atzCfgOK == "OK") {
       processaRegras();
       
