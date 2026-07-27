@@ -100,30 +100,6 @@ void releLoadFromPrefs(Rele *rele, int num, Preferences &prefs) {
   rele->override = 0;
 }
 
-String relesSetFromJSON(uint8_t *json)
-{
-  JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, json);
-  if (err) {
-    return "JSON Invalido";
-  }
- 
-  int numRele = doc["rele"];
-  if (numRele < 1 || numRele > MAX_RELES) {
-    return "Rele invalido";
-  }
-
-  bool estado = (doc["estado"].as<String>() == "1");
-
-  String msg = releControla(numRele, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
-  if (msg != "") {
-    // logaMensagem(msg.c_str());
-    displayMostraMsg(msg.c_str(), 5000);
-  }
-
-  return "OK";
-}
-
 // REQUIRE releMutex locked
 JsonDocument releGetJSONDoc(Rele *r, bool full) {
   JsonDocument doc;
@@ -229,9 +205,6 @@ String releControlaUnsafe(Rele *rele, bool estado, int override)
     snprintf(msg, sizeof(msg), "%s %s (rele %d, pino %d)",
       (estado ? "Ligando" : "Desligando"), rele->nome, rele->num, rele->pino);
     ret = msg;
-
-    String releJSON = releGetJSONString(rele);
-    httpEnviaEvento(releJSON, "sse_rele");
   }
 
   return ret;

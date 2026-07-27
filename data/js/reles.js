@@ -25,7 +25,7 @@ function releGetCard(recurso) {
   ${rele.override > Date.now() / 1000 && rele.regra != "" ? ` (até ${getHoraFromTS(rele.override)})` : ""}
 </div>
 
-<button onclick="releOverride(${rele.num}, ${rele.estado ? "false" : "true"}, this)">
+<button onclick="releOverride('${recurso.id}', ${rele.estado ? "false" : "true"}, this)">
   ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
 </button>
 `;
@@ -160,15 +160,15 @@ async function releSalvarFromModal() {
   }
 }
 
-async function releOverride(numRele, novoEstado, btn) {
+async function releOverride(recursoID, novoEstado, btn) {
   btn.innerText = "Processando...";
   btn.disabled = true;
 
   try {
     await eTomadaAPI(
-      "setRele",
+      "setRecurso",
       {
-        rele: numRele,
+        id: recursoID,
         estado: novoEstado ? "1" : "0",
       },
       "PUT",

@@ -176,7 +176,6 @@ String sensorAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
 }
 
 void sensoresAtualiza() {
-  // logaMensagem("Atualizar Sensores");
   String jsonAtualiza[MAX_SENSORES];
 
   {

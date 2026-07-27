@@ -77,19 +77,44 @@ int recursosGetCount(TipoRecurso tipo) {
   return ret;
 }
 
-/*int recursoSetEstado(Recurso *r, bool estado) {
-  if (r->tipo != RECURSO_RELE) return 10;
+// REQUIRE releMutex/sensorMutex locked
+String recursoGetJSONString(Recurso *r) {
+  String out;
+  JsonDocument doc = recursoGetJSONDoc(r, true);
 
-  if (r->remoto) {
-    // API
-    NodoRemoto *nr = (NodoRemoto *)r->device;
-    logaMensagem("Acionar rele remoto em %s", nr->ip.toString().c_str());
-  } else {
-    releControla(r->num, estado);
+  serializeJson(doc, out);
+  return out;
+}
+
+String recursoSetFromJSON(uint8_t *json)
+{
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, json);
+  if (err) {
+    return "JSON Invalido";
+  }
+ 
+  String recursoID = doc["id"];
+  Recurso *recurso = recursoGet(recursoID.c_str());
+  if (!recurso || recurso->tipo != RECURSO_RELE) {
+    return "Recurso invalido";
   }
 
-  return 0;
-}*/
+  bool estado = (doc["estado"].as<String>() == "1");
+
+  if (recurso->remoto) {
+    // API
+    NodoRemoto *nr = (NodoRemoto *)recurso->device;
+    logaMensagem("Acionar recurso remoto em %s", nr->ip.toString().c_str());
+  } else {
+    releControla(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
+  }
+
+  String recursoJSON = recursoGetJSONString(recurso);
+  httpEnviaEvento(recursoJSON, "sse_recurso");
+
+  return "OK";
+}
 
 Recurso *recursoGetPorId(int posicao) {
   if (posicao >= 0 && posicao < recursosGetCount()) {
@@ -152,15 +177,6 @@ JsonDocument recursoGetJSONDoc(Recurso *r, bool full) {
   return doc;
 }
 
-// REQUIRE releMutex/sensorMutex locked
-String recursoGetJSONString(Recurso *r) {
-  String out;
-  JsonDocument doc = recursoGetJSONDoc(r, true);
-
-  serializeJson(doc, out);
-  return out;
-}
-
 String recursoAtualizaConfigFromJSON(uint8_t *json) {
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, json);
@@ -192,7 +208,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json) {
 
   String recursoJSON = recursoGetJSONString(recurso);
   httpEnviaEvento(recursoJSON, "sse_recurso");
-  
+
   return "OK";
 }
 

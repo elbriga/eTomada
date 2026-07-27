@@ -28,5 +28,4 @@ JsonDocument releGetJSONDoc(Rele *r, bool full);
 String releControlaUnsafe(Rele *rele, bool estado, int override = 0);
 String releControla(int numRele, bool estado, int override = 0);
 
-String relesSetFromJSON(uint8_t *json);
 String releAtualizaConfigFromJSON(Recurso *r, JsonDocument doc);
