@@ -74,19 +74,15 @@ void httpServerInitModoAPI() {
   });
 
   httpServer.on("/api/setRecurso", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-    String setOK = recursoSetFromJSON(data);
-    if (setOK == "OK") {
-      request->send(200, "application/json", "{\"msg\": \"OK\"}");
-      logaRequest(request, "200 OK");
-    } else {
-      request->send(400, "application/json", "{\"msg\": \""+setOK+"\"}"); 
-      logaRequest(request, "400 " + setOK);
-    }
+    //logaMensagem(">>> /api/setRecurso :: %s", data);
+    String msg = recursoSetFromJSON(data);
+    request->send(200, "application/json", "{\"msg\": \"" + msg + "\"}"); 
+    logaRequest(request, "200 " + msg);
   });
 
   httpServer.on("/api/setRecursoConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     String atzCfgOK = recursoAtualizaConfigFromJSON(data);
-    
+
     request->send(200, "application/json", "{\"msg\": \""+atzCfgOK+"\"}");
     logaRequest(request, "200 " + atzCfgOK);
 

@@ -36,7 +36,6 @@ void relesInit() {
   // Para testes
   // prefs.putString("nome1", "Luz");
   // prefs.putString("regra1", "OF|02:00|07:59");
-  // prefs.putString("pino1", "16");
   // prefs.putString("ativo1", "1");
   
   int totReles = relesGetCount();

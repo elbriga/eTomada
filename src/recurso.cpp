@@ -7,6 +7,7 @@
 #include "nodoRemoto.h"
 #include "recursoRemoto.h"
 #include "http.h"
+#include "apiInterna.h"
 
 static Recurso *recursos;
 static int totRecursos = 0;
@@ -102,18 +103,21 @@ String recursoSetFromJSON(uint8_t *json)
 
   bool estado = (doc["estado"].as<String>() == "1");
 
+  String ret;
   if (recurso->remoto) {
     // API
-    NodoRemoto *nr = (NodoRemoto *)recurso->device;
-    logaMensagem("Acionar recurso remoto em %s", nr->ip.toString().c_str());
+    RecursoRemoto *rr = (RecursoRemoto *)recurso->device;
+    NodoRemoto    *nr = rr->nodo;
+    String         id = String("R") + String(rr->num);
+    ret = apiInternaSetRecurso(nr, id, estado ? "1" : "0");
   } else {
-    releControla(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
+    ret = releControla(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   }
 
   String recursoJSON = recursoGetJSONString(recurso);
   httpEnviaEvento(recursoJSON, "sse_recurso");
 
-  return "OK";
+  return ret;
 }
 
 Recurso *recursoGetPorId(int posicao) {
