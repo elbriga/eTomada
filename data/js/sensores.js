@@ -4,9 +4,12 @@ function sensorGetCard(recurso) {
   if (recurso.tipo != "SENSOR") return null;
 
   let sensor = recurso.device;
-  const tipoSensor = eTomadaData.tipoSensores.find(
+  let tipoSensor = eTomadaData.tipoSensores.find(
     (ts) => ts.nome == sensor.tipo,
   );
+  if (!tipoSensor) {
+    tipoSensor = { status: "TipoSensor Invalido" };
+  }
   const tsOK = tipoSensor.status == "OK";
   const valor = !tsOK ? tipoSensor.status : `${sensor.valor} ${sensor.unidade}`;
   const card = document.createElement("div");
