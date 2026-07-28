@@ -17,6 +17,7 @@ typedef struct {
 
 void eTomadaInit();
 ModoOperacao eTomadaGetModoOperacao();
+const char *eTomadaGetModoOperacaoStr();
 
 String eTomadaGetSnapshotJSON(bool full);
 

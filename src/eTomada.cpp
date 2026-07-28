@@ -34,6 +34,8 @@ void eTomadaInit() {
     MODO_CONTROLADOR : MODO_NO;
 
   prefs.end();
+
+  logaMensagem("Modo de Operação: %s", eTomadaGetModoOperacaoStr());
   
   logaMensagem("Inicializando Relés Locais:");
   relesInit();
@@ -62,6 +64,14 @@ void eTomadaInit() {
 
 ModoOperacao eTomadaGetModoOperacao() {
   return modoOperacao;
+}
+
+const char *eTomadaGetModoOperacaoStr() {
+  switch (modoOperacao) {
+    case MODO_CONTROLADOR: return "CONTROLADOR";
+    case MODO_NO:          return "NÓ";
+    default:               return "MODOOPERACAOINVALIDO!";
+  }
 }
 
 String eTomadaGetSnapshotJSON(bool full) {
