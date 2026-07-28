@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
+#include <nvs.h>
+#include <nvs_flash.h>
 
 #include "eTomada.h"
 #include "loga.h"
@@ -24,6 +26,11 @@ void setup() {
   // WDT : 5 segundos de timeout
   esp_task_wdt_init(5, true);  // true = resetar automaticamente
   esp_task_wdt_add(NULL);      // adiciona a task atual (loop)
+
+  nvs_stats_t stats;
+  nvs_get_stats(NULL, &stats);
+  logaMensagem("Inicializando Preferences: (used:%d, free:%d)",
+    stats.used_entries, stats.free_entries);
 
   displayInit();
 
