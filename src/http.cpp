@@ -74,9 +74,16 @@ void httpServerInitModoAPI() {
   });
 
   httpServer.on("/api/setRecurso", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-    //logaMensagem(">>> /api/setRecurso :: %s", data);
-    String msg = recursoSetFromJSON(data);
-    request->send(200, "application/json", "{\"msg\": \"" + msg + "\"}"); 
+    JsonDocument recursoJson;
+    String msg = recursoSetFromJSON(data, recursoJson);
+
+    JsonDocument resposta;
+    resposta["msg"] = msg;
+    resposta["recurso"] = recursoJson;
+    String payload;
+    serializeJson(resposta, payload);
+    request->send(200, "application/json", payload); 
+
     logaRequest(request, "200 " + msg);
   });
 

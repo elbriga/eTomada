@@ -87,37 +87,37 @@ String recursoGetJSONString(Recurso *r) {
   return out;
 }
 
-String recursoSetFromJSON(uint8_t *json)
+String recursoSetFromJSON(uint8_t *json, JsonDocument &jsonOut)
 {
-  JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, json);
+  JsonDocument jsonIN;
+  DeserializationError err = deserializeJson(jsonIN, json);
   if (err) {
     return "JSON Invalido";
   }
  
-  String recursoID = doc["id"];
+  String recursoID = jsonIN["id"];
   Recurso *recurso = recursoGet(recursoID.c_str());
   if (!recurso || recurso->tipo != RECURSO_RELE) {
     return "Recurso invalido";
   }
 
-  bool estado = (doc["estado"].as<String>() == "1");
+  bool estado = (jsonIN["estado"].as<String>() == "1");
 
-  String ret;
+  String msg;
   if (recurso->remoto) {
     // API
-    RecursoRemoto *rr = (RecursoRemoto *)recurso->device;
-    NodoRemoto    *nr = rr->nodo;
-    String         id = String("R") + String(rr->num);
-    ret = apiInternaSetRecurso(nr, id, estado ? "1" : "0");
+    msg = apiInternaSetRecurso(recurso, estado ? "1" : "0");
   } else {
-    ret = releControla(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
+    msg = releControla(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   }
 
-  String recursoJSON = recursoGetJSONString(recurso);
-  httpEnviaEvento(recursoJSON, "sse_recurso");
+  jsonOut = recursoGetJSONDoc(recurso, true);
+  
+  String recursoStr;
+  serializeJson(jsonOut, recursoStr);
+  httpEnviaEvento(recursoStr, "sse_recurso");
 
-  return ret;
+  return msg;
 }
 
 Recurso *recursoGetPorId(int posicao) {

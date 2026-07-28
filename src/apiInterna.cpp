@@ -4,6 +4,7 @@
 #include "eTomada.h"
 #include "loga.h"
 #include "nodoRemoto.h"
+#include "recursoRemoto.h"
 
 int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
 
@@ -13,16 +14,40 @@ String apiInternaGetSnapshot(NodoRemoto *nodo, JsonDocument &doc) {
   return code == 200 ? "OK" : String(code);
 }
 
-String apiInternaSetRecurso(NodoRemoto *nodo, String id, String estado) {
-  JsonDocument request, response;
+String apiInternaSetRecurso(Recurso *recurso, String estado) {
+  if (!recurso->remoto) {
+    return "Recurso nao Remoto";
+  }
 
+  RecursoRemoto *rr = (RecursoRemoto *)recurso->device;
+  NodoRemoto    *nr = rr->nodo;
+  String         id = String("R") + String(rr->num);
+  
+  JsonDocument request, resposta;
   request["id"]     = id;
   request["estado"] = estado;
+  
+  int code = apiInterna(nr, "setRecurso", "PUT", &request, &resposta);
+  if (code != 200) {
+    logaMensagem("Erro API Interna: %d", code);
+    // TODO ??
+  }
 
-  int code = apiInterna(nodo, "setRecurso", "PUT", &request, &response);
+  String out;
+  serializeJson(resposta, out);
+  logaMensagem("ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
 
-  String msg = response["msg"];
-  return msg;
+  switch (recurso->tipo)
+  {
+  case RECURSO_RELE:
+    Rele *rele = &rr->rele;
+    rele->estado   = resposta["recurso"]["device"]["estado"].as<bool>();
+    rele->override = resposta["recurso"]["device"]["override"].as<int>();
+    break;
+  }
+
+  // TODO localizar a msg para os params locais
+  return resposta["msg"].as<String>();
 }
 
 int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *request, JsonDocument *response) {
