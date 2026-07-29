@@ -9,6 +9,8 @@
 NodoRemoto *nodosRemotos = 0;
 static int totNodosRemotos = 0;
 
+void nodosRemotosRefreshTask(void *args);
+
 void nodoRemotoInit() {
   Preferences prefs;
   prefs.begin("nodosRemotos", false);
@@ -26,18 +28,7 @@ void nodoRemotoInit() {
       // TODO :: DIE!
     }
 
-    // Escanear
-    discoverStart();
-    long start = millis();
-    while (millis() - start < 5000) {
-      if (!getDiscoverTaskRunning())
-        break;
-      vTaskDelay(pdMS_TO_TICKS(250));
-    }
-    if (getDiscoverTaskRunning()) {
-      // TODO :: Erro!!
-    }
-    
+    // Inicializar
     for (int nr=1; nr <= totNodosRemotos; nr++) {
       NodoRemoto *nodoRemoto = &nodosRemotos[nr - 1];
 
@@ -46,16 +37,10 @@ void nodoRemotoInit() {
       strncpy(nodoRemoto->deviceID, getPrefsAtr(prefs, nr, "deviceID").c_str(),  sizeof(nodoRemoto->deviceID) - 1);
       nodoRemoto->deviceID[sizeof(nodoRemoto->deviceID) - 1] = '\0';
 
-      NodoRemoto *nodoDescoberto = getDiscoverNodo(nodoRemoto->deviceID);
-      if (nodoDescoberto) {
-        nodoRemoto->ip = nodoDescoberto->ip;
-      } else {
-        nodoRemoto->ip = (uint32_t)0;
-        logaMensagem("Nodo Remoto %d OFFLINE", nr);
-      }
-      
       nodoRemotoPrint(nodoRemoto);
     }
+
+    nodosRemotosRefreshTask(nullptr);
   }
 
   prefs.end();
@@ -70,6 +55,47 @@ NodoRemoto *nodoRemotoGet(int num) {
     return &nodosRemotos[num - 1];
   }
   return NULL;
+}
+
+void nodosRemotosRefresh() {
+  const char *argsFlagTask = "TASK";
+  xTaskCreate(
+        nodosRemotosRefreshTask,
+        "nrRefresh",
+        4096,
+        (void *)argsFlagTask,
+        1,
+        NULL
+    );
+}
+
+void nodosRemotosRefreshTask(void *args) {
+  bool ehTask = args && !strncmp((char *)args, "TASK", 4);
+
+  // Escanear
+  discoverWaitRun(ehTask);
+
+  int totNR = nodosRemotosGetCount();
+  for (int nr=1; nr <= totNR; nr++) {
+    NodoRemoto *nodoRemoto = nodoRemotoGet(nr);
+
+    // Buscar este deviceID nos nodos escaneados
+    NodoRemoto *nodoDescoberto = getDiscoverNodo(nodoRemoto->deviceID);
+    if (nodoDescoberto) {
+      if (nodoRemoto->ip != nodoDescoberto->ip) {
+        nodoRemoto->ip = nodoDescoberto->ip;
+        logaMensagem("Nodo Remoto %d - Novo IP: %s",
+          nr, nodoRemoto->ip.toString().c_str());
+      }
+    } else {
+      nodoRemoto->ip = (uint32_t)0;
+      logaMensagem("Nodo Remoto %d OFFLINE", nr);
+    }
+  }
+
+  if (ehTask) {
+    vTaskDelete(NULL);
+  }
 }
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto) {

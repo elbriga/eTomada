@@ -39,6 +39,10 @@ NodoRemoto *getDiscoverNodo(const char *deviceID) {
     return NULL;
 }
 
+/**
+ * Função importante dentro do nodo filho:
+ * Responsável por responder ao broadcast do Controlador
+ */
 void discoverLoop() {
     if (discoverTaskRunning) {
         return;
@@ -70,55 +74,82 @@ void discoverLoop() {
     discoverUdp.endPacket();
 }
 
-void discoverStart() {
+void discoverStart(bool ehTask) {
     if (discoverTaskRunning) {
         return;
     }
 
     discoverTaskRunning = true;
+
+    const char *args = ehTask ? "TASK" : "BOOT";
     xTaskCreate(
         discoverTask,
         "discover",
         4096,
-        NULL,
+        (void *)args,
         1,
         NULL
     );
 }
 
-void discoverTask(void *arg) {
+void discoverWaitRun(bool ehTask) {
+    discoverStart(ehTask);
+
+    long start = millis();
+    while (millis() - start < 5000) {
+      if (!getDiscoverTaskRunning())
+        break;
+      vTaskDelay(pdMS_TO_TICKS(250));
+    }
+    if (getDiscoverTaskRunning()) {
+      // TODO :: Erro!!
+    }
+}
+
+/**
+ * Task de 3 segundos:
+ * Envia um broadcast e espera por resposta dos nodos filho
+ */
+void discoverTask(void *args) {
+    bool ehTask = args && !strncmp((char *)args, "TASK", 4);
+
     WiFiUDP replyUdp;
     IPAddress broadcast = ~WiFi.subnetMask() | WiFi.localIP();
 
     replyUdp.begin(DISCOVER_PORT + 1);
 
-    logaMensagem("Enviando cmd discover para o broadcast: %s", broadcast.toString().c_str());
+    if (!ehTask)
+        logaMensagem("Enviando cmd discover para o broadcast: %s", broadcast.toString().c_str());
     discoverUdp.beginPacket(broadcast, DISCOVER_PORT);
     discoverUdp.print("{\"cmd\":\"discover\"}");
     discoverUdp.endPacket();
     
-    logaMensagem("Aguardar por 3 segundos");
+    if (!ehTask)
+        logaMensagem("Aguardar por 3 segundos");
     totDiscoverNodos = 0;
     uint32_t inicio = millis();
     while (millis() - inicio < 3000) {
         int len = replyUdp.parsePacket();
         if (len > 0) {
-            logaMensagem("Achei!");
+            if (!ehTask)
+                logaMensagem("Achei!");
 
             JsonDocument doc;
             DeserializationError err = deserializeJson(doc, replyUdp);
             if (err) {
-                Serial.printf("Erro JSON: %s\n", err.c_str());
+                Serial.printf("discoverTask : Erro JSON: %s\n", err.c_str());
                 continue;
             }
 
             totDiscoverNodos++;
 
-            Serial.printf("Resposta de %s:\n", replyUdp.remoteIP().toString().c_str());
-            String s;
-            serializeJson(doc, s);
-            Serial.write(s.c_str(), s.length());
-            Serial.println();
+            if (!ehTask) {
+                Serial.printf("Resposta de %s:\n", replyUdp.remoteIP().toString().c_str());
+                String s;
+                serializeJson(doc, s);
+                Serial.write(s.c_str(), s.length());
+                Serial.println();
+            }
 
             if (totDiscoverNodos > MAX_NODOS_REMOTOS) {
                 logaMensagem("IGNORANDO NODO %d!!!", totDiscoverNodos);
@@ -135,7 +166,9 @@ void discoverTask(void *arg) {
     }
 
     replyUdp.stop();
-    logaMensagem("Scanner completo");
+
+    if (!ehTask)
+        logaMensagem("Scanner completo");
 
     discoverTaskRunning = false;
     vTaskDelete(NULL);

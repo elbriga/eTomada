@@ -14,3 +14,5 @@ void nodoRemotoInit();
 int nodosRemotosGetCount();
 NodoRemoto *nodoRemotoGet(int num);
 void nodoRemotoPrint(NodoRemoto *nodoRemoto);
+
+void nodosRemotosRefresh();

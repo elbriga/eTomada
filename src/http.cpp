@@ -70,12 +70,12 @@ void httpServerInitModoAPI() {
     request->send(200, "application/json", body);
     logaRequest(request, "200 OK");
 
-    discoverStart();
+    discoverStart(false);
   });
 
   httpServer.on("/api/setRecurso", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     JsonDocument recursoJson;
-    String msg = recursoSetFromJSON(data, recursoJson);
+    String msg = recursoSetFromJSON(data, &recursoJson);
 
     JsonDocument resposta;
     resposta["msg"] = msg;

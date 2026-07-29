@@ -87,7 +87,7 @@ String recursoGetJSONString(Recurso *r) {
   return out;
 }
 
-String recursoSetFromJSON(uint8_t *json, JsonDocument &jsonOut)
+String recursoSetFromJSON(uint8_t *json, JsonDocument *jsonOut)
 {
   JsonDocument jsonIN;
   DeserializationError err = deserializeJson(jsonIN, json);
@@ -103,6 +103,11 @@ String recursoSetFromJSON(uint8_t *json, JsonDocument &jsonOut)
 
   bool estado = (jsonIN["estado"].as<String>() == "1");
 
+  return recursoSet(recurso, estado, jsonOut);
+}
+
+String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut)
+{
   String msg;
   if (recurso->remoto) {
     // API
@@ -111,10 +116,15 @@ String recursoSetFromJSON(uint8_t *json, JsonDocument &jsonOut)
     msg = releControla(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   }
 
-  jsonOut = recursoGetJSONDoc(recurso, true);
-  
   String recursoStr;
-  serializeJson(jsonOut, recursoStr);
+  if (jsonOut) {
+    *jsonOut = recursoGetJSONDoc(recurso, true);
+    serializeJson(*jsonOut, recursoStr);
+  } else {
+    JsonDocument js = recursoGetJSONDoc(recurso, true);
+    serializeJson(js, recursoStr);
+  }
+  
   httpEnviaEvento(recursoStr, "sse_recurso");
 
   return msg;

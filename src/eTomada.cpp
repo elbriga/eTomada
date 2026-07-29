@@ -242,28 +242,49 @@ void eTomadaSalvaSensor(Recurso *recurso) {
 void eTomadaRoleta() {
   logaTitulo("ROLETA!");
 
-  Rele *rele;
-  int totReles = relesGetCount();
-  
-  for (int r=1; r <= totReles; r++) {
-    releControla(r, 0);
+  int totRelesLocais = 0;
+  int totRecursos = recursosGetCount();
+  for (int r=0; r < totRecursos; r++) {
+    Recurso *recurso = recursoGetPorId(r);
+    if (recurso->tipo == RECURSO_RELE && !recurso->remoto) {
+      totRelesLocais++;
+    }
   }
 
-  int delay = 25, delta = 2;
-  int num = (esp_random() % totReles) + 1;
+  Recurso **relesLocais = (Recurso **)calloc(sizeof(Recurso *), totRelesLocais);
+  if (!relesLocais) {
+    logaTitulo("ROLETA :: ERRO DE MALLOC");
+    return;
+  }
+
+  int rli = 0;
+  for (int r=0; r < totRecursos; r++) {
+    Recurso *recurso = recursoGetPorId(r);
+    if (recurso->tipo == RECURSO_RELE && !recurso->remoto) {
+      relesLocais[rli++] = recurso;
+    }
+  }
+
+  for (int r=0; r < totRelesLocais; r++) {
+    Recurso *recurso = relesLocais[r];
+    recursoSet(recurso, false);
+  }
+
+  int delay  = 25, delta = 2;
+  int num    = esp_random() % totRelesLocais;
   int oldNum = num;
-  int loop = 0;
+  int loop   = 0;
 
   while (delay < 440) {
     esp_task_wdt_reset(); // alimenta o watchdog
 
     oldNum = num;
     num++;
-    if (num > totReles) {
-      num = 1;
+    if (num >= totRelesLocais) {
+      num = 0;
     }
-    releControla(oldNum, 0, 10);
-    releControla(num, 1, 10);
+    recursoSet(relesLocais[oldNum], false);
+    recursoSet(relesLocais[num], true);
     
     loop++;
     if(loop > 40) {
@@ -275,7 +296,9 @@ void eTomadaRoleta() {
     vTaskDelay(pdMS_TO_TICKS(delay));
   }
 
-  logaMensagem("** Numero Sorteado: %d **", num);
+  free(relesLocais);
+
+  logaMensagem("** Numero Sorteado: %d **", num+1);
 }
 
 void eTomadaFactoryReset() {

@@ -24,7 +24,8 @@ int recursosGetCount(TipoRecurso tipo = RECURSO_TODOS);
 Recurso *recursoGet(const char *id);
 Recurso *recursoGetPorId(int posicao);
 
-String recursoSetFromJSON(uint8_t *json, JsonDocument &docOut);
+String recursoSetFromJSON(uint8_t *json, JsonDocument *docOut = nullptr);
+String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut = nullptr);
 
 const char *recursoGetTipoStr(TipoRecurso tipo);
 JsonDocument recursoGetJSONDoc(Recurso *r, bool full);

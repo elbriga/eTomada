@@ -117,6 +117,9 @@ void loop() {
 
       // Keepalive para a interface web
       httpEnviaEvento("{}", "sse_ping");
+
+      // Verificar os NÓs remotos (em nova Task):
+      nodosRemotosRefresh();
     }
 
     // Verificar o WiFi
