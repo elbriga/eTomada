@@ -3,12 +3,10 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
-typedef enum {
-  RECURSO_TODOS  = 0,
-  RECURSO_RELE   = 1,
-  RECURSO_SENSOR = 2,
-  RECURSO_BOTAO  = 3,
-} TipoRecurso;
+#include "reles.h"
+#include "sensores.h"
+#include "recursoRemoto.h"
+#include "tipoRecurso.h"
 
 struct Recurso {
   char id[9];
@@ -16,13 +14,21 @@ struct Recurso {
   // TODO trazer o "nome" para ca
   int num;
   bool remoto;
-  void *device;  // Rele / Sensor / Botao / RecursoRemoto
+  union {
+    Rele *rele;
+    Sensor *sensor;
+    //Botao *botao;
+    RecursoRemoto *recursoRemoto;
+  };
 };
 
 void recursosInit();
 int recursosGetCount(TipoRecurso tipo = RECURSO_TODOS);
 Recurso *recursoGet(const char *id);
 Recurso *recursoGetPorId(int posicao);
+
+Rele *recursoGetRele(Recurso *r);
+Sensor *recursoGetSensor(Recurso *r);
 
 String recursoSetFromJSON(uint8_t *json, JsonDocument *docOut = nullptr);
 String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut = nullptr);

@@ -3,7 +3,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
-#include "recurso.h"
+struct Recurso;   // Forward declaration
 
 #define MAX_SENSORES 4
 

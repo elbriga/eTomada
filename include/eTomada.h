@@ -2,7 +2,8 @@
 
 #include "reles.h"
 #include "sensores.h"
-#include "recurso.h"
+
+struct Recurso;   // Forward declaration
 
 typedef enum {
     MODO_NO = 0,

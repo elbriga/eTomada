@@ -4,6 +4,7 @@
 #include "eTomada.h"
 #include "loga.h"
 #include "nodoRemoto.h"
+#include "recurso.h"
 #include "recursoRemoto.h"
 
 int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
@@ -19,7 +20,7 @@ String apiInternaSetRecurso(Recurso *recurso, String estado) {
     return "Recurso nao Remoto";
   }
 
-  RecursoRemoto *rr = (RecursoRemoto *)recurso->device;
+  RecursoRemoto *rr = recurso->recursoRemoto;
   NodoRemoto    *nr = rr->nodo;
   String         id = String("R") + String(rr->num);
   

@@ -193,13 +193,13 @@ void eTomadaSalvaRele(Recurso *recurso) {
   int num = 0;
   Rele *rele;
   if (recurso->remoto) {
-    RecursoRemoto *rr = (RecursoRemoto *)recurso->device;
+    RecursoRemoto *rr = recurso->recursoRemoto;
     num = rr->numRR;
     rele = &rr->rele;
     prefs.begin("recursosRemotos", false);
   } else {
     num = recurso->num;
-    rele = (Rele *)recurso->device;
+    rele = recurso->rele;
     prefs.begin("reles", false);
   }
   
@@ -222,13 +222,13 @@ void eTomadaSalvaSensor(Recurso *recurso) {
   int num = 0;
   Sensor *sensor;
   if (recurso->remoto) {
-    RecursoRemoto *rr = (RecursoRemoto *)recurso->device;
+    RecursoRemoto *rr = recurso->recursoRemoto;
     num = rr->numRR;
     sensor = &rr->sensor;
     prefs.begin("recursosRemotos", false);
   } else {
     num = recurso->num;
-    sensor = (Sensor *)recurso->device;
+    sensor = recurso->sensor;
     prefs.begin("sensores", false);
   }
 

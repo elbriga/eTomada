@@ -31,7 +31,7 @@ void recursosInit() {
     recurso->tipo   = RECURSO_RELE;
     recurso->num    = r;
     recurso->remoto = false;
-    recurso->device = releGet(r);
+    recurso->rele   = releGet(r);
   }
 
   for (int s=1; s <= totSensoresLocais; s++) {
@@ -41,18 +41,17 @@ void recursosInit() {
     recurso->tipo   = RECURSO_SENSOR;
     recurso->num    = s;
     recurso->remoto = false;
-    recurso->device = sensorGet(s);
+    recurso->sensor = sensorGet(s);
   }
 
   for (int rr=0; rr < totRecursosRemotos; rr++) {
     Recurso *recurso = &recursos[recursoAddCount++];
 
-    recurso->device = recursoRemotoGetPorId(rr);
-    RecursoRemoto *recursoRemoto = (RecursoRemoto *)recurso->device;
+    recurso->recursoRemoto = recursoRemotoGetPorId(rr);
 
-    strcpy(recurso->id, recursoRemoto->id);
-    recurso->tipo   = recursoRemoto->tipo;
-    recurso->num    = recursoRemoto->numRR;
+    strcpy(recurso->id, recurso->recursoRemoto->id);
+    recurso->tipo   = recurso->recursoRemoto->tipo;
+    recurso->num    = recurso->recursoRemoto->numRR;
     recurso->remoto = true;
   }
 
@@ -147,6 +146,18 @@ Recurso *recursoGet(const char *id) {
   return NULL;
 }
 
+Rele *recursoGetRele(Recurso *recurso) {
+  return recurso->remoto ?
+    &recurso->recursoRemoto->rele :
+    recurso->rele;
+}
+
+Sensor *recursoGetSensor(Recurso *recurso) {
+  return recurso->remoto ?
+    &recurso->recursoRemoto->sensor :
+    recurso->sensor;
+}
+
 const char *recursoGetTipoStr(TipoRecurso tipo) {
   switch (tipo) {
   case RECURSO_RELE:   return "RELE";
@@ -169,17 +180,11 @@ JsonDocument recursoGetJSONDoc(Recurso *r, bool full) {
     switch (r->tipo)
     {
     case RECURSO_RELE:
-      Rele *rele;
-      if (r->remoto) rele = &((RecursoRemoto *)r->device)->rele;
-      else           rele = (Rele *)r->device;
-      doc["device"] = releGetJSONDoc(rele, true);
+      doc["device"] = releGetJSONDoc(recursoGetRele(r), true);
       break;
 
     case RECURSO_SENSOR:
-      Sensor *sensor;
-      if (r->remoto) sensor = &((RecursoRemoto *)r->device)->sensor;
-      else           sensor = (Sensor *)r->device;
-      doc["device"] = sensorGetJSONDoc(sensor, true);
+      doc["device"] = sensorGetJSONDoc(recursoGetSensor(r), true);
       break;
     
     default:

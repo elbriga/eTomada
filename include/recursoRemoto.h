@@ -5,7 +5,7 @@
 
 #include "eTomada.h"
 #include "nodoRemoto.h"
-#include "recurso.h"
+#include "tipoRecurso.h"
 
 struct RecursoRemoto {
   TipoRecurso tipo;

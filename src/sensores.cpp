@@ -137,9 +137,7 @@ String sensorAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
     return "mutex timeout";
   }
 
-  Sensor *sensor = recurso->remoto ?
-    &((RecursoRemoto *)recurso->device)->sensor :
-    (Sensor *)recurso->device;
+  Sensor *sensor = recursoGetSensor(recurso);
 
   if (!doc["tipo"].isNull()) {
     String novoTipo = doc["tipo"].as<String>();

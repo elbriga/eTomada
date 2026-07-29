@@ -139,9 +139,7 @@ String releAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
     return "mutex timeout";
   }
 
-  Rele *rele = recurso->remoto ?
-    &((RecursoRemoto *)recurso->device)->rele :
-    (Rele *)recurso->device;
+  Rele *rele = recursoGetRele(recurso);
     
   String novaRegra = doc["regra"].isNull() ? String(rele->regra) : doc["regra"].as<String>();
   String regraOK = validaRegra(novaRegra);
