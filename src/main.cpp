@@ -119,7 +119,9 @@ void loop() {
       httpEnviaEvento("{}", "sse_ping");
 
       // Verificar os NÓs remotos (em nova Task):
-      nodosRemotosRefresh();
+      if (eTomadaGetModoOperacao() == MODO_CONTROLADOR) {
+        nodosRemotosRefresh();
+      }
     }
 
     // Verificar o WiFi
