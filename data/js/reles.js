@@ -15,7 +15,6 @@ function releGetCard(recurso) {
     <div class="medio">Tomada ${rele.num}</div>
     <div class="title">${escapeHtml(rele.nome || "")}</div>
     <div class="medio">${releGetRegraTXT(rele.regra)}</div>
-    <div class="small">pino: ${escapeHtml(rele.pino)}</div>
   </div>
   <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
 </div>
