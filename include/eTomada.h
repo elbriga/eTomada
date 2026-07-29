@@ -13,6 +13,7 @@ typedef struct {
     const char *modelo;
     uint8_t gpioReles[8];
     uint8_t gpioBotoes[8];
+    bool relesInvertidos;
 } HardwareProfile;
 
 void eTomadaInit();

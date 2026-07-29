@@ -46,7 +46,9 @@ void relesInit() {
     rele->pino = hardwareProfile.gpioReles[r - 1];
     
     pinMode(rele->pino, OUTPUT);
-    digitalWrite(rele->pino, rele->estado);
+    bool estadoOut = hardwareProfile.relesInvertidos ?
+      !rele->estado : rele->estado;
+    digitalWrite(rele->pino, estadoOut);
 
     relePrint(rele);
   }
@@ -195,7 +197,8 @@ String releControlaUnsafe(Rele *rele, bool estado, int override)
 
   String ret = "";
   if (estado != rele->estado) {
-    digitalWrite(rele->pino, estado);
+    bool estadoOut = hardwareProfile.relesInvertidos ? !estado : estado;
+    digitalWrite(rele->pino, estadoOut);
     rele->estado = estado;
 
     rele->override = (override > 0) ? time(nullptr) + override : 0;
