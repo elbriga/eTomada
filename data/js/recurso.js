@@ -30,3 +30,7 @@ function recursoAtualiza(recurso) {
     relesRenderFromRecursos();
   }
 }
+
+function recursoGet(id) {
+  return eTomadaData.recursos.find((r) => r.id === id) || null;
+}

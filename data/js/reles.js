@@ -49,12 +49,9 @@ function relesRenderFromRecursos() {
 function releGetOptionsSensores() {
   return (
     "<option value=''>Escolha um Sensor</option>" +
-    eTomadaData.sensores
-      .map((s) => {
-        return s.pino == -1
-          ? ""
-          : `<option value="S${s.num}">${s.nome}</option>`;
-      })
+    eTomadaData.recursos
+      .filter((r) => r.tipo === "SENSOR" && r.device.pino != -1)
+      .map((r) => `<option value="${r.id}">${r.device.nome}</option>`)
       .join("")
   );
 }
@@ -206,17 +203,16 @@ function releGetRegraTXT(regra) {
 
   if (acao === "SE") {
     if (param1 != "") {
-      let numSensor = parseInt(param1[1] + "") - 1;
-      let sensor = eTomadaData.sensores[numSensor];
+      let sensor = recursoGet(param1);
       if (sensor) {
+        // TODO : melhorar o parser para IDs com dois digitos
         let op = param1[2];
         let val = param1.substring(3);
         param1 = `${sensor.nome} ${op} ${val}`;
       }
     }
     if (param2 != "") {
-      let numSensor = parseInt(param2[1] + "") - 1;
-      let sensor = eTomadaData.sensores[numSensor];
+      let sensor = recursoGet(param2);
       if (sensor) {
         let op = param2[2];
         let val = param2.substring(3);

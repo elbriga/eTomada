@@ -110,49 +110,6 @@ String eTomadaGetSnapshotJSON(bool full) {
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
   doc["datahorastr"] = formattedTime;
 
-  Rele *rele;
-  int totReles = relesGetCount();
-  JsonArray reles = doc["reles"].to<JsonArray>();
-
-  {
-    MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
-
-    if (!lock) {
-      doc["erro"] = "mutex rele timeout";
-    } else {
-      for (int i = 1; i <= totReles; i++) {
-        rele = releGet(i);
-        if (!rele) {
-          // TODO :: o que fazer aqui??
-          continue;
-        }
-
-        reles.add(releGetJSONDoc(rele, full));
-      }
-    }
-  }
-
-  Sensor *sensor;
-  int totSensores = sensoresGetCount();
-  JsonArray sensores = doc["sensores"].to<JsonArray>();
-  {
-    MutexLock lock(sensorMutex, pdMS_TO_TICKS(2500));
-
-    if (!lock) {
-      doc["erro"] = "mutex sensor timeout";
-    } else {
-      for (int i = 1; i <= totSensores; i++) {
-        sensor = sensorGet(i);
-        if (!sensor) {
-          // TODO :: o que fazer aqui??
-          continue;
-        }
-
-        sensores.add(sensorGetJSONDoc(sensor, full));
-      }
-    }
-  }
-  
   if (full) {
     TipoSensor *ts;
     int totTS = tipoSensorGetCount();

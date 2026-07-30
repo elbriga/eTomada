@@ -21,22 +21,22 @@ function renderConfig() {
 
   let html = "";
 
-  eTomadaData.sensores.forEach((sensor, i) => {
-    const num = i + 1;
-
-    html += `
+  eTomadaData.recursos
+    .filter((r) => r.tipo === "SENSOR" && r.device.pino != -1)
+    .forEach((rs, i) => {
+      html += `
 <div class="configCard cardSensor">
   <div class="headerTop">
-    <div><b>Sensor ${num}</b></div>
+    <div><b>Sensor ${rs.id}</b></div>
     <span>
-      <select id="cfg-sensor-${num}">
-        ${getTipoSensorOptions(sensor.tipo)}
+      <select id="cfg-sensor-${rs.id}">
+        ${getTipoSensorOptions(rs.tipo)}
       </select>
     </span>
   </div>
 </div>
 `;
-  });
+    });
 
   container.innerHTML = html;
 }
@@ -59,7 +59,9 @@ function getTipoSensorOptions(selected) {
 async function salvarConfigGeral() {
   try {
     await Promise.all(
-      eTomadaData.sensores.map(async (old, i) => {
+      eTomadaData.recursos
+        .filter((r) => r.tipo === "SENSOR" && r.device.pino != -1)
+        .map(async (old, i) => {
         const sensor = i + 1;
         const tipo = document.getElementById(`cfg-sensor-${sensor}`).value;
 

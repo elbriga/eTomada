@@ -16,8 +16,8 @@ async function eTomadaRefresh(snapshot) {
     snapshot = await eTomadaAPI("getSnapshot");
   }
 
-  if (!snapshot.reles || !snapshot.sensores) {
-    statusMsg("Erro nos dados!");
+  if (!snapshot.recursos) {
+    statusMsg("Erro nos dados, sem recursos!");
     return;
   }
 
