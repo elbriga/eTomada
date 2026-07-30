@@ -20,16 +20,23 @@ void discoverInit() {
     discoverUdp.begin(DISCOVER_PORT);
 }
 
-bool getDiscoverTaskRunning() {
+bool discoverGetTaskRunning() {
     return discoverTaskRunning;
 }
 
-int getDiscoverNodosCount() {
+int discoverGetNodosCount() {
     return totDiscoverNodos;
 }
 
-NodoRemoto *getDiscoverNodo(const char *deviceID) {
-    int tot = getDiscoverNodosCount();
+NodoRemoto *discoverGetNodoPorId(int id) {
+    if (id >= 0 && id < discoverGetNodosCount()) {
+        return &discoverNodos[id];
+    }
+    return NULL;
+}
+
+NodoRemoto *discoverGetNodo(const char *deviceID) {
+    int tot = discoverGetNodosCount();
     for (int dn=0; dn < tot; dn++) {
         NodoRemoto *nodo = &discoverNodos[dn];
         if (!strncmp(nodo->deviceID, deviceID, 32)) {
@@ -97,11 +104,11 @@ void discoverWaitRun(bool ehTask) {
 
     long start = millis();
     while (millis() - start < 5000) {
-      if (!getDiscoverTaskRunning())
+      if (!discoverGetTaskRunning())
         break;
       vTaskDelay(pdMS_TO_TICKS(250));
     }
-    if (getDiscoverTaskRunning()) {
+    if (discoverGetTaskRunning()) {
       // TODO :: Erro!!
     }
 }

@@ -76,11 +76,33 @@ void nodosRemotosRefreshTask(void *args) {
   discoverWaitRun(ehTask);
 
   int totNR = nodosRemotosGetCount();
+  int totND = discoverGetNodosCount();
+
+  logaMensagem("NodosRefreshTask: totNR:%d, totND:%d", totNR, totND);
+
+  // Verificar por novos nodos
+  for (int nd=1; nd <= totND; nd++) {
+    NodoRemoto *nodoDiscover = discoverGetNodoPorId(nd - 1);
+    bool achei = false;
+    for (int nr=1; nr <= totNR; nr++) {
+      NodoRemoto *nodoRemoto = nodoRemotoGet(nr);
+      if (!strcmp(nodoDiscover->deviceID, nodoRemoto->deviceID)) {
+        achei = true;
+        break;
+      }
+    }
+    if (!achei) {
+      logaMensagem(">>> Nodo [%s] encontrado em %s. Avisar na interface",
+        nodoDiscover->deviceID, nodoDiscover->ip.toString().c_str());
+      // TODO
+    }
+  }
+
   for (int nr=1; nr <= totNR; nr++) {
     NodoRemoto *nodoRemoto = nodoRemotoGet(nr);
 
     // Buscar este deviceID nos nodos escaneados
-    NodoRemoto *nodoDescoberto = getDiscoverNodo(nodoRemoto->deviceID);
+    NodoRemoto *nodoDescoberto = discoverGetNodo(nodoRemoto->deviceID);
     if (nodoDescoberto) {
       if (nodoRemoto->ip != nodoDescoberto->ip) {
         nodoRemoto->ip = nodoDescoberto->ip;

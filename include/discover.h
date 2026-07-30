@@ -6,6 +6,8 @@ void discoverLoop();
 void discoverStart(bool ehTask);
 void discoverWaitRun(bool ehTask);
 
-bool getDiscoverTaskRunning();
-int getDiscoverNodosCount();
-NodoRemoto *getDiscoverNodo(const char *deviceID);
+bool discoverGetTaskRunning();
+int discoverGetNodosCount();
+
+NodoRemoto *discoverGetNodo(const char *deviceID);
+NodoRemoto *discoverGetNodoPorId(int id);
