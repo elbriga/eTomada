@@ -15,7 +15,10 @@ struct NodoRemoto
 
 void nodoRemotoInit();
 int nodosRemotosGetCount();
+
 NodoRemoto *nodoRemotoGet(int num);
+JsonObject nodoGetRecursoSnapshot(NodoRemoto *nodo, String id);
+
 void nodoRemotoPrint(NodoRemoto *nodoRemoto);
 
 void nodosRemotosRefresh();

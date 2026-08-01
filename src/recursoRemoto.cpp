@@ -9,6 +9,7 @@
 #include "reles.h"
 #include "sensores.h"
 #include "discover.h"
+#include "tipoRecurso.h"
 
 static RecursoRemoto *recursosRemotos;
 static int totRecursosRemotos = 0;
@@ -51,13 +52,18 @@ void recursosRemotosInit()
     int num = getPrefsAtr(prefs, rr, "num").toInt();
     int nodo = getPrefsAtr(prefs, rr, "nodo").toInt();
 
+    // TODO :: VALIDAR TIPO!!! esta acessando TipoRecursoChar[tipo] AQUI!
+    snprintf(recursoRemoto->id, sizeof(recursoRemoto->id), "%c%d", TipoRecursoChar[tipo], id);
+
     recursoRemoto->num = num;
     recursoRemoto->numRR = rr;
     recursoRemoto->nodo = nodoRemotoGet(nodo);
 
+    // TODO :: nao usar o discover > discover setar em nodoRemoto[]
+
     // Buscar o nodo remoto do discover que foi feito no nodoRemotoInit()
     NodoRemoto *nodoDiscover = discoverGetNodo(recursoRemoto->nodo->deviceID);
-    JsonObject *cacheRR = NULL;
+    JsonObject cacheRR;
 
     if (!nodoDiscover)
     {
@@ -65,20 +71,7 @@ void recursosRemotosInit()
     }
     else
     {
-      JsonDocument &snapshot = nodoDiscover->snapshot;
-
-      JsonArray recursos = snapshot["recursos"];
-      String idRemoto = String(tipo == RECURSO_RELE ? "R" : "S") + String(num);
-      for (JsonObject r : recursos)
-      {
-        String idAux = r["id"].as<String>();
-        logaMensagem(">>> cacheRR %s === %s ??", idAux.c_str(), idRemoto.c_str());
-        if (r["id"] == idRemoto)
-        {
-          cacheRR = &r;
-          break;
-        }
-      }
+      cacheRR = nodoGetRecursoSnapshot(nodoDiscover, String(recursoRemoto->id));
     }
 
     switch (tipo)
@@ -92,9 +85,9 @@ void recursosRemotosInit()
       releLoadFromPrefs(rele, rr, prefs);
       rele->num = num;
 
-      if (cacheRR)
+      if (!cacheRR.isNull())
       {
-        JsonObject releRemoto = (*cacheRR)["device"];
+        JsonObject releRemoto = cacheRR["device"];
         rele->estado = releRemoto["estado"].as<bool>();
       }
     }
@@ -102,7 +95,6 @@ void recursosRemotosInit()
 
     case RECURSO_SENSOR:
     {
-      snprintf(recursoRemoto->id, sizeof(recursoRemoto->id), "S%d", id);
       recursoRemoto->tipo = RECURSO_SENSOR;
 
       Sensor *sensor = &recursoRemoto->sensor;
@@ -112,7 +104,6 @@ void recursosRemotosInit()
     break;
 
     default:
-      snprintf(recursoRemoto->id, sizeof(recursoRemoto->id), "?%d", id);
       break;
     }
 

@@ -65,8 +65,22 @@ NodoRemoto *nodoRemotoGet(int num)
   return NULL;
 }
 
-JsonObject nodoGetRecursoSnapshot(NodoRemoto *nodo, const char *id)
+JsonObject nodoGetRecursoSnapshot(NodoRemoto *nodo, String id)
 {
+  JsonObject recurso;
+
+  JsonArray recursos = nodo->snapshot["recursos"];
+  for (JsonObject r : recursos)
+  {
+    String idAux = r["id"].as<String>();
+    if (r["id"] == id)
+    {
+      recurso = r;
+      break;
+    }
+  }
+
+  return recurso;
 }
 
 void nodosRemotosRefresh()
