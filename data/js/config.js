@@ -19,73 +19,17 @@ function closeConfig() {
 function renderConfig() {
   const container = document.getElementById("configContent");
 
-  let html = "";
-
-  eTomadaData.recursos
-    .filter((r) => r.tipo === "SENSOR" && r.device.pino != -1)
-    .forEach((rs, i) => {
-      html += `
-<div class="configCard cardSensor">
-  <div class="headerTop">
-    <div><b>Sensor ${rs.id}</b></div>
-    <span>
-      <select id="cfg-sensor-${rs.id}">
-        ${getTipoSensorOptions(rs.tipo)}
-      </select>
-    </span>
-  </div>
-</div>
-`;
-    });
+  let html = "confAdd?";
 
   container.innerHTML = html;
 }
 
-function getTipoSensorOptions(selected) {
-  return (
-    `<option value="">Desativado!</option>\n` +
-    eTomadaData.tipoSensores
-      .map((ts) => {
-        return `
-<option value="${ts.nome}" ${ts.nome == selected ? "selected" : ""}>
-  ${ts.tipo} - ${ts.nome}
-</option>
-`;
-      })
-      .join("")
-  );
-}
-
 async function salvarConfigGeral() {
-  try {
-    await Promise.all(
-      eTomadaData.recursos
-        .filter((r) => r.tipo === "SENSOR" && r.device.pino != -1)
-        .map(async (old, i) => {
-        const sensor = i + 1;
-        const tipo = document.getElementById(`cfg-sensor-${sensor}`).value;
+  statusMsg("Configuração salva");
 
-        if (old.tipo != tipo) {
-          await eTomadaAPI(
-            "setSensorConfig",
-            {
-              sensor,
-              tipo,
-            },
-            "PUT",
-          );
-        }
-      }),
-    );
+  closeConfig();
 
-    statusMsg("Configuração salva");
-
-    closeConfig();
-
-    eTomadaRender();
-  } catch (e) {
-    statusMsg("Erro salvarConfigGeral: " + e);
-  }
+  eTomadaRender();
 }
 
 async function factoryReset() {

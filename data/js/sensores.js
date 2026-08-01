@@ -22,7 +22,6 @@ function sensorGetCard(recurso) {
   <div>
     <div class="medio">Sensor ${sensor.num} - ${tipoSensor.nome} - ${tipoSensor.tipo}</div>
     <div class="title">${escapeHtml(sensor.nome || "")}</div>
-    <div class="small">pino: ${escapeHtml(sensor.pino)}</div>
   </div>
   <button class="editBtn" onclick="sensorOpenEditModal('${recurso.id}')">✏️</button>
 </div>
