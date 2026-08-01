@@ -1,8 +1,14 @@
-#include "eTomada.h"
+#include "hardwareProfile.h"
 
 const HardwareProfile hardwareProfile = {
     .modelo = "C3MINI",
-    .gpioReles = { 3,2, 255 },
-    .gpioBotoes = { 20,21, 255 },
-    .relesInvertidos = true,
+    .reles = {
+        {3, true},
+        {2, true},
+        {255, true}, // FIM
+    },
+    .sensores = {
+        {"", 255}, // Indicar Vazio
+    },
+    //.gpioBotoes = { 20,21, 255 },
 };

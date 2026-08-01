@@ -3,17 +3,19 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
-struct Recurso;   // Forward declaration
+struct Recurso; // Forward declaration
 
 #define MAX_RELES 8
 
-struct Rele {
+struct Rele
+{
   int num;
   int pino;
   char nome[32];
   char regra[32];
   bool ativo;
   bool estado;
+  bool invertido;
   unsigned long override; // TS para sobrepor o estado manual as regras
 };
 

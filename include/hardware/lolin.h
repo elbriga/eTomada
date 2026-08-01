@@ -1,10 +1,24 @@
 #pragma once
 
-#include "eTomada.h"
+#include "hardwareProfile.h"
 
 const HardwareProfile hardwareProfile = {
-    .modelo = "LOLIN",
-    .gpioReles = { 16,13,15,12,14,0,2,3 },
-    .gpioBotoes = { 255 },
-    .relesInvertidos = false,
+    .modelo = "LOLIN-OLED",
+    .reles = {
+        {16, false},
+        {13, false},
+        {15, false},
+        {12, false},
+        {14, false},
+        {0, false},
+        {2, false},
+        {3, false},
+    },
+    .sensores = {
+        {"AHT10t", 0},
+        {"AHT10u", 0},
+        {"BH1750", 0},
+        {"ACS712", 39},
+    },
+    //.gpioBotoes = { 255 },
 };
