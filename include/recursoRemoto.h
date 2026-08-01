@@ -7,23 +7,24 @@
 #include "nodoRemoto.h"
 #include "tipoRecurso.h"
 
-struct RecursoRemoto {
+struct RecursoRemoto
+{
   TipoRecurso tipo;
   char id[8]; // ID local do recurso dentro do tipo. ex.: R10
   int numRR;  // Numero LOCAL dentro de prefs[recursoRemoto]
   int num;    // Numero REMOTO para acionamento
   NodoRemoto *nodo;
-  union {
+  union
+  {
     Rele rele;
     Sensor sensor;
-    //Botao botao;
+    // Botao botao;
   };
 };
 
 void recursosRemotosInit();
 int recursosRemotosGetCount();
 RecursoRemoto *recursoRemotoGet(const char *id);
-RecursoRemoto *recursoRemotoGetPorId(int i) ;
+RecursoRemoto *recursoRemotoGetPorId(int i);
 
-JsonDocument recursoRemotoGetJSONDoc(RecursoRemoto *r, bool full);
 void recursoRemotoPrint(RecursoRemoto *r);

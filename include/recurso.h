@@ -8,16 +8,18 @@
 #include "recursoRemoto.h"
 #include "tipoRecurso.h"
 
-struct Recurso {
+struct Recurso
+{
   char id[9];
   TipoRecurso tipo;
   // TODO trazer o "nome" para ca
   int num;
   bool remoto;
-  union {
+  union
+  {
     Rele *rele;
     Sensor *sensor;
-    //Botao *botao;
+    // Botao *botao;
     RecursoRemoto *recursoRemoto;
   };
 };
@@ -34,7 +36,7 @@ String recursoSetFromJSON(uint8_t *json, JsonDocument *docOut = nullptr);
 String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut = nullptr);
 
 const char *recursoGetTipoStr(TipoRecurso tipo);
-JsonDocument recursoGetJSONDoc(Recurso *r, bool full);
+JsonDocument recursoGetJSONDoc(Recurso *r);
 
 String recursoAtualizaConfigFromJSON(uint8_t *json);
 

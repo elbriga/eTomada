@@ -16,30 +16,38 @@ static NodoRemoto discoverNodos[MAX_NODOS_REMOTOS];
 void discoverTask(void *arg);
 static bool discoverTaskRunning = false;
 
-void discoverInit() {
+void discoverInit()
+{
     discoverUdp.begin(DISCOVER_PORT);
 }
 
-bool discoverGetTaskRunning() {
+bool discoverGetTaskRunning()
+{
     return discoverTaskRunning;
 }
 
-int discoverGetNodosCount() {
+int discoverGetNodosCount()
+{
     return totDiscoverNodos;
 }
 
-NodoRemoto *discoverGetNodoPorId(int id) {
-    if (id >= 0 && id < discoverGetNodosCount()) {
+NodoRemoto *discoverGetNodoPorId(int id)
+{
+    if (id >= 0 && id < discoverGetNodosCount())
+    {
         return &discoverNodos[id];
     }
     return NULL;
 }
 
-NodoRemoto *discoverGetNodo(const char *deviceID) {
+NodoRemoto *discoverGetNodo(const char *deviceID)
+{
     int tot = discoverGetNodosCount();
-    for (int dn=0; dn < tot; dn++) {
+    for (int dn = 0; dn < tot; dn++)
+    {
         NodoRemoto *nodo = &discoverNodos[dn];
-        if (!strncmp(nodo->deviceID, deviceID, 32)) {
+        if (!strncmp(nodo->deviceID, deviceID, 32))
+        {
             return nodo;
         }
     }
@@ -50,8 +58,10 @@ NodoRemoto *discoverGetNodo(const char *deviceID) {
  * Função importante dentro do nodo filho:
  * Responsável por responder ao broadcast do Controlador
  */
-void discoverLoop() {
-    if (discoverTaskRunning) {
+void discoverLoop()
+{
+    if (discoverTaskRunning)
+    {
         return;
     }
 
@@ -69,20 +79,21 @@ void discoverLoop() {
     vTaskDelay(pdMS_TO_TICKS(20));
 
     logaMensagem("Respondendo ao DISCOVER para %s:%d",
-        discoverUdp.remoteIP().toString().c_str(),
-        discoverUdp.remotePort() + 1);
+                 discoverUdp.remoteIP().toString().c_str(),
+                 discoverUdp.remotePort() + 1);
 
     // RESPONDER ==
     discoverUdp.beginPacket(
         discoverUdp.remoteIP(),
-        discoverUdp.remotePort() + 1
-    );
-    discoverUdp.print(eTomadaGetSnapshotJSON(false));
+        discoverUdp.remotePort() + 1);
+    discoverUdp.print(eTomadaGetSnapshotJSON());
     discoverUdp.endPacket();
 }
 
-void discoverStart(bool ehTask) {
-    if (discoverTaskRunning) {
+void discoverStart(bool ehTask)
+{
+    if (discoverTaskRunning)
+    {
         return;
     }
 
@@ -95,21 +106,23 @@ void discoverStart(bool ehTask) {
         4096,
         (void *)args,
         1,
-        NULL
-    );
+        NULL);
 }
 
-void discoverWaitRun(bool ehTask) {
+void discoverWaitRun(bool ehTask)
+{
     discoverStart(ehTask);
 
     long start = millis();
-    while (millis() - start < 5000) {
-      if (!discoverGetTaskRunning())
-        break;
-      vTaskDelay(pdMS_TO_TICKS(250));
+    while (millis() - start < 5000)
+    {
+        if (!discoverGetTaskRunning())
+            break;
+        vTaskDelay(pdMS_TO_TICKS(250));
     }
-    if (discoverGetTaskRunning()) {
-      // TODO :: Erro!!
+    if (discoverGetTaskRunning())
+    {
+        // TODO :: Erro!!
     }
 }
 
@@ -117,7 +130,8 @@ void discoverWaitRun(bool ehTask) {
  * Task de 3 segundos:
  * Envia um broadcast e espera por resposta dos nodos filho
  */
-void discoverTask(void *args) {
+void discoverTask(void *args)
+{
     bool ehTask = args && !strncmp((char *)args, "TASK", 4);
 
     WiFiUDP replyUdp;
@@ -130,27 +144,31 @@ void discoverTask(void *args) {
     discoverUdp.beginPacket(broadcast, DISCOVER_PORT);
     discoverUdp.print("{\"cmd\":\"discover\"}");
     discoverUdp.endPacket();
-    
+
     if (!ehTask)
         logaMensagem("Aguardar por 3 segundos");
     totDiscoverNodos = 0;
     uint32_t inicio = millis();
-    while (millis() - inicio < 3000) {
+    while (millis() - inicio < 3000)
+    {
         int len = replyUdp.parsePacket();
-        if (len > 0) {
+        if (len > 0)
+        {
             if (!ehTask)
                 logaMensagem("Achei!");
 
             JsonDocument doc;
             DeserializationError err = deserializeJson(doc, replyUdp);
-            if (err) {
+            if (err)
+            {
                 Serial.printf("discoverTask : Erro JSON: %s\n", err.c_str());
                 continue;
             }
 
             totDiscoverNodos++;
 
-            if (!ehTask) {
+            if (!ehTask)
+            {
                 Serial.printf("Resposta de %s:\n", replyUdp.remoteIP().toString().c_str());
                 String s;
                 serializeJson(doc, s);
@@ -158,14 +176,20 @@ void discoverTask(void *args) {
                 Serial.println();
             }
 
-            if (totDiscoverNodos > MAX_NODOS_REMOTOS) {
+            if (totDiscoverNodos > MAX_NODOS_REMOTOS)
+            {
                 logaMensagem("IGNORANDO NODO %d!!!", totDiscoverNodos);
-            } else {
+            }
+            else
+            {
                 NodoRemoto *nr = &discoverNodos[totDiscoverNodos - 1];
                 nr->ip = replyUdp.remoteIP();
                 String mac = doc["mac"];
-                strncpy(nr->deviceID, mac.c_str(),  sizeof(nr->deviceID) - 1);
+                strncpy(nr->deviceID, mac.c_str(), sizeof(nr->deviceID) - 1);
                 nr->deviceID[sizeof(nr->deviceID) - 1] = '\0';
+
+                // TODO :: Setar o snapshot em nodosRemotos[] .cpp
+                nr->snapshot = doc;
             }
         }
 

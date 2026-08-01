@@ -18,11 +18,13 @@ void httpServerInitModoAP();
 void httpServerInitModoAPI();
 void logaRequest(AsyncWebServerRequest *request, String resultado);
 
-void httpEnviaEvento(String msg, String tipo) {
+void httpEnviaEvento(String msg, String tipo)
+{
   sse.send(msg, tipo);
 }
 
-void httpServerInit() {
+void httpServerInit()
+{
 #ifdef DEV
   //  Adicionar headers para functionar o CORS quando em DEV localhost
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
@@ -30,10 +32,13 @@ void httpServerInit() {
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
 #endif
 
-  if (WiFiGetModoAP()) httpServerInitModoAP();
-  else                 httpServerInitModoAPI();
+  if (WiFiGetModoAP())
+    httpServerInitModoAP();
+  else
+    httpServerInitModoAPI();
 
-  httpServer.onNotFound([](AsyncWebServerRequest *request) {
+  httpServer.onNotFound([](AsyncWebServerRequest *request)
+                        {
     if (WiFiGetModoAP()) {
       logaRequest(request, "Redir /");
       request->redirect("/");
@@ -47,33 +52,35 @@ void httpServerInit() {
     } else {
       request->send(404);
       logaRequest(request, "404 Not Found");
-    }
-  });
+    } });
 
   httpServer.begin();
 }
 
-void roletaTask(void *arg) {
+void roletaTask(void *arg)
+{
   eTomadaRoleta();
   vTaskDelete(NULL);
 }
 
-void httpServerInitModoAPI() {
-  httpServer.on("/api/getSnapshot", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String body = eTomadaGetSnapshotJSON(true);
+void httpServerInitModoAPI()
+{
+  httpServer.on("/api/getSnapshot", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
+    String body = eTomadaGetSnapshotJSON();
     request->send(200, "application/json", body);
-    logaRequest(request, "200 OK");
-  });
+    logaRequest(request, "200 OK"); });
 
-  httpServer.on("/api/discover", HTTP_GET, [](AsyncWebServerRequest *request) {
+  httpServer.on("/api/discover", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
     String body = "{\"scantime\":3,\"msg\":\"Escaneando...\"}";
     request->send(200, "application/json", body);
     logaRequest(request, "200 OK");
 
-    discoverStart(false);
-  });
+    discoverStart(false); });
 
-  httpServer.on("/api/setRecurso", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  httpServer.on("/api/setRecurso", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+                {
     JsonDocument recursoJson;
     String msg = recursoSetFromJSON(data, &recursoJson);
 
@@ -84,34 +91,34 @@ void httpServerInitModoAPI() {
     serializeJson(resposta, payload);
     request->send(200, "application/json", payload); 
 
-    logaRequest(request, "200 " + msg);
-  });
+    logaRequest(request, "200 " + msg); });
 
-  httpServer.on("/api/setRecursoConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  httpServer.on("/api/setRecursoConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+                {
     String atzCfgOK = recursoAtualizaConfigFromJSON(data);
 
     request->send(200, "application/json", "{\"msg\": \""+atzCfgOK+"\"}");
     logaRequest(request, "200 " + atzCfgOK);
 
-    processaRegras();
-  });
+    processaRegras(); });
 
-  httpServer.on("/api/factoryReset", HTTP_POST, [](AsyncWebServerRequest *request) {
+  httpServer.on("/api/factoryReset", HTTP_POST, [](AsyncWebServerRequest *request)
+                {
     eTomadaFactoryReset();
     request->send(200, "application/json", "{\"msg\": \"OK\"}");
-    logaRequest(request, "200 OK");
-  });
-  
-  httpServer.on("/api/resetWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request) {
+    logaRequest(request, "200 OK"); });
+
+  httpServer.on("/api/resetWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request)
+                {
     WiFiResetConfig();
     request->send(200, "application/json", "{\"msg\":\"OK\"}");
     logaRequest(request, "200 OK");
 
     delay(1000);
-    ESP.restart();
-  });
+    ESP.restart(); });
 
-  httpServer.on("/api/roleta", HTTP_GET, [](AsyncWebServerRequest *request) {
+  httpServer.on("/api/roleta", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
     String body = "Sorteando!";
     request->send(200, "application/json", body);
     logaRequest(request, "200 OK");
@@ -124,46 +131,47 @@ void httpServerInitModoAPI() {
       1,
       NULL,
       1
-    );
-  });
+    ); });
 
   // Eventos de conexão/desconexão
-  sse.onConnect([](AsyncEventSourceClient *client) {
+  sse.onConnect([](AsyncEventSourceClient *client)
+                {
     logaMensagem("Cliente SSE conectado de [%s]", client->client()->remoteIP().toString().c_str());
 
     // Snapshot ao conectar
-    String body = eTomadaGetSnapshotJSON(true);
-    client->send(body, "sse_snapshot", millis(), 2500);
-  });
+    String body = eTomadaGetSnapshotJSON();
+    client->send(body, "sse_snapshot", millis(), 2500); });
 
   httpServer.addHandler(&sse);
 
   httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
 }
 
-void httpServerInitModoAP() {
+void httpServerInitModoAP()
+{
   // Android
-  httpServer.on("/generate_204", HTTP_GET, [](AsyncWebServerRequest *request) {
+  httpServer.on("/generate_204", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
     request->redirect("/");
-    logaRequest(request, "Redir /");
-  });
+    logaRequest(request, "Redir /"); });
   // iOS
-  httpServer.on("/hotspot-detect.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+  httpServer.on("/hotspot-detect.html", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
     request->redirect("/");
-    logaRequest(request, "Redir /");
-  });
+    logaRequest(request, "Redir /"); });
   // Windows
-  httpServer.on("/connecttest.txt", HTTP_GET, [](AsyncWebServerRequest *request) {
+  httpServer.on("/connecttest.txt", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
     request->redirect("/");
-    logaRequest(request, "Redir /");
-  });
+    logaRequest(request, "Redir /"); });
 
-  httpServer.on("/api/redes", HTTP_GET, [](AsyncWebServerRequest *request) {
+  httpServer.on("/api/redes", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
     request->send(200, "application/json", WiFiGetScanJSON());
-    logaRequest(request, "200 OK");
-  });
+    logaRequest(request, "200 OK"); });
 
-  httpServer.on("/api/setWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  httpServer.on("/api/setWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+                {
     JsonDocument doc;
 
     DeserializationError err = deserializeJson(doc, data);
@@ -187,16 +195,16 @@ void httpServerInitModoAP() {
     logaRequest(request, "200 OK");
 
     delay(1000);
-    ESP.restart();
-  });
+    ESP.restart(); });
 
   httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("portal.html");
 }
 
-void logaRequest(AsyncWebServerRequest *request, String resultado) {
+void logaRequest(AsyncWebServerRequest *request, String resultado)
+{
   logaMensagem("[org:%s] %s %s => [%s]",
-    request->client()->remoteIP().toString(),
-    request->methodToString(),
-    request->url().c_str(),
-    resultado.c_str());
+               request->client()->remoteIP().toString(),
+               request->methodToString(),
+               request->url().c_str(),
+               resultado.c_str());
 }

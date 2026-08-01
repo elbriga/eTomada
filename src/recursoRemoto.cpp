@@ -8,11 +8,13 @@
 #include "recursoRemoto.h"
 #include "reles.h"
 #include "sensores.h"
+#include "discover.h"
 
 static RecursoRemoto *recursosRemotos;
 static int totRecursosRemotos = 0;
 
-void recursosRemotosInit() {
+void recursosRemotosInit()
+{
   Preferences prefs;
   prefs.begin("recursosRemotos", false);
 
@@ -35,39 +37,72 @@ void recursosRemotosInit() {
 
   totRecursosRemotos = getPrefsAtr(prefs, 0, "total").toInt();
   recursosRemotos = (RecursoRemoto *)calloc(sizeof(RecursoRemoto), totRecursosRemotos);
-  if (!recursosRemotos) {
+  if (!recursosRemotos)
+  {
     // TODO :: DIE!
   }
 
-  for (int rr=1; rr <= totRecursosRemotos; rr++) {
+  for (int rr = 1; rr <= totRecursosRemotos; rr++)
+  {
     RecursoRemoto *recursoRemoto = &recursosRemotos[rr - 1];
 
-    int id   = getPrefsAtr(prefs, rr, "id").toInt();
+    int id = getPrefsAtr(prefs, rr, "id").toInt();
     int tipo = getPrefsAtr(prefs, rr, "tipo").toInt();
-    int num  = getPrefsAtr(prefs, rr, "num").toInt();
+    int num = getPrefsAtr(prefs, rr, "num").toInt();
     int nodo = getPrefsAtr(prefs, rr, "nodo").toInt();
 
-    recursoRemoto->num   = num;
+    recursoRemoto->num = num;
     recursoRemoto->numRR = rr;
-    recursoRemoto->nodo  = nodoRemotoGet(nodo);
+    recursoRemoto->nodo = nodoRemotoGet(nodo);
 
-    char tipoChar;
+    // Buscar o nodo remoto do discover que foi feito no nodoRemotoInit()
+    NodoRemoto *nodoDiscover = discoverGetNodo(recursoRemoto->nodo->deviceID);
+    JsonObject *cacheRR = NULL;
+
+    if (!nodoDiscover)
+    {
+      logaMensagem("Erro ao achar nodo do recursoRemoto %d!!", rr);
+    }
+    else
+    {
+      JsonDocument &snapshot = nodoDiscover->snapshot;
+
+      JsonArray recursos = snapshot["recursos"];
+      String idRemoto = String(tipo == RECURSO_RELE ? "R" : "S") + String(num);
+      for (JsonObject r : recursos)
+      {
+        String idAux = r["id"].as<String>();
+        logaMensagem(">>> cacheRR %s === %s ??", idAux.c_str(), idRemoto.c_str());
+        if (r["id"] == idRemoto)
+        {
+          cacheRR = &r;
+          break;
+        }
+      }
+    }
+
     switch (tipo)
     {
     case RECURSO_RELE:
     {
-      tipoChar = 'R';
+      snprintf(recursoRemoto->id, sizeof(recursoRemoto->id), "R%d", id);
       recursoRemoto->tipo = RECURSO_RELE;
 
       Rele *rele = &recursoRemoto->rele;
       releLoadFromPrefs(rele, rr, prefs);
       rele->num = num;
+
+      if (cacheRR)
+      {
+        JsonObject releRemoto = (*cacheRR)["device"];
+        rele->estado = releRemoto["estado"].as<bool>();
+      }
     }
     break;
 
     case RECURSO_SENSOR:
     {
-      tipoChar = 'S';
+      snprintf(recursoRemoto->id, sizeof(recursoRemoto->id), "S%d", id);
       recursoRemoto->tipo = RECURSO_SENSOR;
 
       Sensor *sensor = &recursoRemoto->sensor;
@@ -75,65 +110,49 @@ void recursosRemotosInit() {
       sensor->num = num;
     }
     break;
-      
+
     default:
-      tipoChar = '?';
+      snprintf(recursoRemoto->id, sizeof(recursoRemoto->id), "?%d", id);
       break;
     }
 
-    snprintf(recursoRemoto->id, sizeof(recursoRemoto->id),
-        "%c%d", tipoChar, id);
     recursoRemotoPrint(recursoRemoto);
   }
 
   prefs.end();
 }
 
-int recursosRemotosGetCount() {
+int recursosRemotosGetCount()
+{
   return totRecursosRemotos;
 }
 
-RecursoRemoto *recursoRemotoGet(const char *id) {
+RecursoRemoto *recursoRemotoGet(const char *id)
+{
   int totRR = recursosRemotosGetCount();
-  for (int i=0; i < totRR; i++) {
-    if (!strcmp(recursosRemotos[i].id, id)) {
+  for (int i = 0; i < totRR; i++)
+  {
+    if (!strcmp(recursosRemotos[i].id, id))
+    {
       return &recursosRemotos[i];
     }
   }
   return NULL;
 }
 
-RecursoRemoto *recursoRemotoGetPorId(int i) {
-  if (i < 0 || i >= recursosRemotosGetCount()) {
+RecursoRemoto *recursoRemotoGetPorId(int i)
+{
+  if (i < 0 || i >= recursosRemotosGetCount())
+  {
     return NULL;
   }
 
   return &recursosRemotos[i];
 }
 
-JsonDocument recursoRemotoGetJSONDoc(RecursoRemoto *r, bool full) {
-  JsonDocument doc;
-
-  //doc["nome"] = r->nome;
-  doc["id"]   = r->id;
-  doc["tipo"] = recursoGetTipoStr(r->tipo);
-
-  Rele *teste = releGet(1);
-  doc["device"] = releGetJSONDoc(teste, true);
-
-  // if (full) {
-  //   doc["pino"]     = r->pino;
-  //   doc["regra"]    = r->regra;
-  //   doc["ativo"]    = r->ativo;
-  //   doc["estado"]   = r->estado;
-  //   doc["override"] = r->override;
-  // }
-
-  return doc;
-}
-
-void recursoRemotoPrint(RecursoRemoto *recursoRemoto) {
+void recursoRemotoPrint(RecursoRemoto *recursoRemoto)
+{
   logaMensagem("RecursoRemoto %s[%d] em %s",
-      recursoGetTipoStr(recursoRemoto->tipo), recursoRemoto->num,
-      recursoRemoto->nodo->ip.toString().c_str());
+               recursoGetTipoStr(recursoRemoto->tipo), recursoRemoto->num,
+               recursoRemoto->nodo->ip.toString().c_str());
 }

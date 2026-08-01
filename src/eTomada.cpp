@@ -20,7 +20,8 @@
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
 
-void eTomadaInit() {
+void eTomadaInit()
+{
   mutexInit();
 
   Preferences prefs;
@@ -30,13 +31,12 @@ void eTomadaInit() {
     prefs.putUChar("modo", MODO_NO);
 
   modoOperacao =
-    (prefs.getUChar("modo") == MODO_CONTROLADOR) ?
-    MODO_CONTROLADOR : MODO_NO;
+      (prefs.getUChar("modo") == MODO_CONTROLADOR) ? MODO_CONTROLADOR : MODO_NO;
 
   prefs.end();
 
   logaMensagem("Modo de Operação: %s", eTomadaGetModoOperacaoStr());
-  
+
   logaMensagem("Inicializando Relés Locais:");
   relesInit();
 
@@ -44,8 +44,8 @@ void eTomadaInit() {
   sensoresInit();
 
   // TODO
-  //logaMensagem("Inicializando Botões Locais:");
-  //botoesInit();
+  // logaMensagem("Inicializando Botões Locais:");
+  // botoesInit();
 
   logaMensagem("Inicializando o Discover:");
   discoverInit();
@@ -62,74 +62,82 @@ void eTomadaInit() {
   Serial.println("");
 }
 
-ModoOperacao eTomadaGetModoOperacao() {
+ModoOperacao eTomadaGetModoOperacao()
+{
   return modoOperacao;
 }
 
-const char *eTomadaGetModoOperacaoStr() {
-  switch (modoOperacao) {
-    case MODO_CONTROLADOR: return "CONTROLADOR";
-    case MODO_NO:          return "NÓ";
-    default:               return "MODOOPERACAOINVALIDO!";
+const char *eTomadaGetModoOperacaoStr()
+{
+  switch (modoOperacao)
+  {
+  case MODO_CONTROLADOR:
+    return "CONTROLADOR";
+  case MODO_NO:
+    return "NÓ";
+  default:
+    return "MODOOPERACAOINVALIDO!";
   }
 }
 
-String eTomadaGetSnapshotJSON(bool full) {
+String eTomadaGetSnapshotJSON()
+{
   JsonDocument doc;
-  
+
   uint64_t MAC = ESP.getEfuseMac();
   char deviceID[32];
-  
+
   sprintf(deviceID, "etomada_%04X", (uint16_t)(MAC & 0xFFFF));
-  doc["device_id"]   = deviceID;
+  doc["device_id"] = deviceID;
   doc["device_name"] = "eTomada Sala"; // TODO
-  doc["fw_version"]  = "1.3.0";
-  
+  doc["fw_version"] = "1.3.0";
+
   char macStr[18];
   sprintf(
-    macStr,
-    "%02X:%02X:%02X:%02X:%02X:%02X",
-    (uint8_t)(MAC >> 40),
-    (uint8_t)(MAC >> 32),
-    (uint8_t)(MAC >> 24),
-    (uint8_t)(MAC >> 16),
-    (uint8_t)(MAC >> 8),
-    (uint8_t)(MAC)
-  );
+      macStr,
+      "%02X:%02X:%02X:%02X:%02X:%02X",
+      (uint8_t)(MAC >> 40),
+      (uint8_t)(MAC >> 32),
+      (uint8_t)(MAC >> 24),
+      (uint8_t)(MAC >> 16),
+      (uint8_t)(MAC >> 8),
+      (uint8_t)(MAC));
   doc["mac"] = macStr;
-  
-  doc["api"]    = 3; // versão da API
+
+  doc["api"] = 3; // versão da API
   doc["uptime"] = millis();
-    
+
   time_t agora;
   struct tm timeinfo;
   ntpGetTime(&timeinfo, &agora);
-  
+
   doc["datahora"] = (unsigned long)agora;
   char formattedTime[32];
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
   doc["datahorastr"] = formattedTime;
 
-  if (full) {
-    TipoSensor *ts;
-    int totTS = tipoSensorGetCount();
-    JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
-    for (int i=0; i < totTS; i++) {
-      ts = tipoSensorGetPorId(i);
-      if (!ts) continue;
+  TipoSensor *ts;
+  int totTS = tipoSensorGetCount();
+  JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
+  for (int i = 0; i < totTS; i++)
+  {
+    ts = tipoSensorGetPorId(i);
+    if (!ts)
+      continue;
 
-      tipoSensores.add(tipoSensorGetJSONDoc(ts));
-    }
+    tipoSensores.add(tipoSensorGetJSONDoc(ts));
   }
 
   Recurso *recurso;
   int totRecursos = recursosGetCount();
   JsonArray recursos = doc["recursos"].to<JsonArray>();
-  for (int i=0; i < totRecursos; i++) {
+  for (int i = 0; i < totRecursos; i++)
+  {
     recurso = recursoGetPorId(i);
-    if (!recurso) continue;
+    if (!recurso)
+      continue;
 
-    recursos.add(recursoGetJSONDoc(recurso, full));
+    recursos.add(recursoGetJSONDoc(recurso));
   }
 
   String out;
@@ -138,38 +146,45 @@ String eTomadaGetSnapshotJSON(bool full) {
   return out;
 }
 
-void eTomadaSalvaRele(Recurso *recurso) {
+void eTomadaSalvaRele(Recurso *recurso)
+{
   MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
-  if (!lock) {
+  if (!lock)
+  {
     logaMensagem("eTomadaSalvaRele: erro de mutex!");
     return;
   }
 
   Preferences prefs;
-  
+
   int num = 0;
   Rele *rele;
-  if (recurso->remoto) {
+  if (recurso->remoto)
+  {
     RecursoRemoto *rr = recurso->recursoRemoto;
     num = rr->numRR;
     rele = &rr->rele;
     prefs.begin("recursosRemotos", false);
-  } else {
+  }
+  else
+  {
     num = recurso->num;
     rele = recurso->rele;
     prefs.begin("reles", false);
   }
-  
-  setPrefsAtr(prefs, num, "nome",  String(rele->nome));
+
+  setPrefsAtr(prefs, num, "nome", String(rele->nome));
   setPrefsAtr(prefs, num, "regra", String(rele->regra));
   setPrefsAtr(prefs, num, "ativo", String(rele->ativo));
 
   prefs.end();
 }
 
-void eTomadaSalvaSensor(Recurso *recurso) {
+void eTomadaSalvaSensor(Recurso *recurso)
+{
   MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
-  if (!lock) {
+  if (!lock)
+  {
     logaMensagem("eTomadaSalvaSensor: erro de mutex!");
     return;
   }
@@ -178,12 +193,15 @@ void eTomadaSalvaSensor(Recurso *recurso) {
 
   int num = 0;
   Sensor *sensor;
-  if (recurso->remoto) {
+  if (recurso->remoto)
+  {
     RecursoRemoto *rr = recurso->recursoRemoto;
     num = rr->numRR;
     sensor = &rr->sensor;
     prefs.begin("recursosRemotos", false);
-  } else {
+  }
+  else
+  {
     num = recurso->num;
     sensor = recurso->sensor;
     prefs.begin("sensores", false);
@@ -196,57 +214,68 @@ void eTomadaSalvaSensor(Recurso *recurso) {
   prefs.end();
 }
 
-void eTomadaRoleta() {
+void eTomadaRoleta()
+{
   logaTitulo("ROLETA!");
 
   int totRelesLocais = 0;
   int totRecursos = recursosGetCount();
-  for (int r=0; r < totRecursos; r++) {
+  for (int r = 0; r < totRecursos; r++)
+  {
     Recurso *recurso = recursoGetPorId(r);
-    if (recurso->tipo == RECURSO_RELE && !recurso->remoto) {
+    if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
+    {
       totRelesLocais++;
     }
   }
 
   Recurso **relesLocais = (Recurso **)calloc(sizeof(Recurso *), totRelesLocais);
-  if (!relesLocais) {
+  if (!relesLocais)
+  {
     logaTitulo("ROLETA :: ERRO DE MALLOC");
     return;
   }
 
   int rli = 0;
-  for (int r=0; r < totRecursos; r++) {
+  for (int r = 0; r < totRecursos; r++)
+  {
     Recurso *recurso = recursoGetPorId(r);
-    if (recurso->tipo == RECURSO_RELE && !recurso->remoto) {
+    if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
+    {
       relesLocais[rli++] = recurso;
     }
   }
 
-  for (int r=0; r < totRelesLocais; r++) {
+  for (int r = 0; r < totRelesLocais; r++)
+  {
     Recurso *recurso = relesLocais[r];
     recursoSet(recurso, false);
   }
 
-  int delay  = 25, delta = 2;
-  int num    = esp_random() % totRelesLocais;
+  int delay = 25, delta = 2;
+  int num = esp_random() % totRelesLocais;
   int oldNum = num;
-  int loop   = 0;
+  int loop = 0;
 
-  while (delay < 440) {
+  while (delay < 440)
+  {
     esp_task_wdt_reset(); // alimenta o watchdog
 
     oldNum = num;
     num++;
-    if (num >= totRelesLocais) {
+    if (num >= totRelesLocais)
+    {
       num = 0;
     }
     recursoSet(relesLocais[oldNum], false);
     recursoSet(relesLocais[num], true);
-    
+
     loop++;
-    if(loop > 40) {
+    if (loop > 40)
+    {
       delay += delta;
-      if (loop > 90) {
+      if (loop > 90)
+      {
         delta += 1;
       }
     }
@@ -255,12 +284,14 @@ void eTomadaRoleta() {
 
   free(relesLocais);
 
-  logaMensagem("** Numero Sorteado: %d **", num+1);
+  logaMensagem("** Numero Sorteado: %d **", num + 1);
 }
 
-void eTomadaFactoryReset() {
+void eTomadaFactoryReset()
+{
   MutexLock lockPrefs(prefsMutex, pdMS_TO_TICKS(2500));
-  if (!lockPrefs) {
+  if (!lockPrefs)
+  {
     logaMensagem("Erro de mutex no factory reset!");
     return;
   }

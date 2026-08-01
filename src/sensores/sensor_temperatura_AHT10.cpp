@@ -3,18 +3,20 @@
 #include "tipoSensores.h"
 #include "tipoSensor_AHT10.h"
 
-static String sensorTemperaturaAHT10Init() {
+static String sensorTemperaturaAHT10Init()
+{
   return sensorAHT10Init();
 }
 
-static int sensorTemperaturaAHT10Ler(Sensor *s) {
+static int sensorTemperaturaAHT10Ler(Sensor *s)
+{
   return sensorAHT10LerTemperatura();
 }
 
 TipoSensor sensorTemperaturaAHT10 = {
-    "AHT10t",
-    "Temperatura",
-    "° C",
-    sensorTemperaturaAHT10Init,
-    sensorTemperaturaAHT10Ler
+    .nome = "AHT10t",
+    .tipo = "Temperatura",
+    .unidade = "° C",
+    .inicializaSensor = sensorTemperaturaAHT10Init,
+    .lerSensor = sensorTemperaturaAHT10Ler,
 };
