@@ -40,4 +40,6 @@ JsonDocument recursoGetJSONDoc(Recurso *r);
 
 String recursoAtualizaConfigFromJSON(uint8_t *json);
 
+void recursoEnviaSSE(Recurso *recurso, JsonDocument *jsonOut = nullptr);
+
 void recursoPrint(Recurso *recurso);

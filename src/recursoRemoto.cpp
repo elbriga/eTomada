@@ -162,18 +162,15 @@ void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
     if (!deviceRemoto)
       continue;
 
+    bool mudou = false;
     switch (rr->tipo)
     {
     case RECURSO_RELE:
     {
       Rele *rele = &rr->rele;
       bool estadoRemoto = deviceRemoto["estado"].as<bool>();
-      if (rele->estado != estadoRemoto)
-      {
-        logaMensagem(">>>> nodosRemotosRefreshTask -> recursoRemotoSetFromSnapshot[%d] >> ID:%s >> Rele Mudou!", i, cacheRR["id"].as<const char *>());
-        rele->estado = estadoRemoto;
-        // TODO sse
-      }
+      mudou = (rele->estado != estadoRemoto);
+      rele->estado = estadoRemoto;
     }
     break;
 
@@ -181,14 +178,16 @@ void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
     {
       Sensor *sensor = &rr->sensor;
       int valorRemoto = deviceRemoto["valor"].as<int>();
-      if (sensor->valor != valorRemoto)
-      {
-        logaMensagem(">>>> nodosRemotosRefreshTask -> recursoRemotoSetFromSnapshot[%d] >> ID:%s >> Sensor Mudou!", i, cacheRR["id"].as<const char *>());
-        sensor->valor = valorRemoto;
-        // TODO sse
-      }
+      mudou = (sensor->valor != valorRemoto);
+      sensor->valor = valorRemoto;
     }
     break;
+    }
+
+    if (mudou)
+    {
+      Recurso *recurso = recursoGet(rr->idLocal);
+      recursoEnviaSSE(recurso);
     }
   }
 }

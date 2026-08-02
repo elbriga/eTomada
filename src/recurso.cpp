@@ -131,6 +131,13 @@ String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut)
     msg = releControla(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   }
 
+  recursoEnviaSSE(recurso, jsonOut);
+
+  return msg;
+}
+
+void recursoEnviaSSE(Recurso *recurso, JsonDocument *jsonOut)
+{
   String recursoStr;
   if (jsonOut)
   {
@@ -142,10 +149,7 @@ String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut)
     JsonDocument js = recursoGetJSONDoc(recurso);
     serializeJson(js, recursoStr);
   }
-
   httpEnviaEvento(recursoStr, "sse_recurso");
-
-  return msg;
 }
 
 Recurso *recursoGetPorId(int posicao)
@@ -256,8 +260,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
     return msg;
   }
 
-  String recursoJSON = recursoGetJSONString(recurso);
-  httpEnviaEvento(recursoJSON, "sse_recurso");
+  recursoEnviaSSE(recurso);
 
   return "OK";
 }
