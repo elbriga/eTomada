@@ -21,16 +21,16 @@ void recursosRemotosInit()
 
   // Para testes
   // prefs.putString("total0", "2");
-  prefs.putString("idLocal1", "R9");
+  // prefs.putString("idLocal1", "R9");
   // prefs.putString("tipo1", "1");
   // prefs.putString("nodo1", "1");
-  prefs.putString("idRemoto1", "R1");
+  // prefs.putString("idRemoto1", "R1");
   // prefs.putString("nome1", "RREMOTO1");
   // prefs.putString("regra1", "");
-  prefs.putString("idLocal2", "R10");
+  // prefs.putString("idLocal2", "R10");
   // prefs.putString("tipo2", "1");
   // prefs.putString("nodo2", "1");
-  prefs.putString("idRemoto2", "R2");
+  // prefs.putString("idRemoto2", "R2");
   // prefs.putString("nome2", "RREMOTO2");
   // prefs.putString("regra2", "");
 
@@ -38,7 +38,7 @@ void recursosRemotosInit()
   recursosRemotos = new RecursoRemoto[totRecursosRemotos]();
   if (!recursosRemotos)
   {
-    logaMensagem("ERRO!!!!!! new RecursoRemoto[%d]", totRecursosRemotos);
+    logaMensagem("DIE!! ERRO!!!!!! new RecursoRemoto[%d]", totRecursosRemotos);
     // TODO :: DIE!
   }
 
@@ -61,11 +61,14 @@ void recursosRemotosInit()
       break;
 
     default:
+      logaMensagem(">>> recursoRemoto com tipo [%d] invalido!!", tipo);
       recursoRemoto->tipo = RECURSO_INVALIDO;
       break;
     }
 
     strcpy(recursoRemoto->idLocal, idLocal.c_str());
+    strcpy(recursoRemoto->idRemoto, idRemoto.c_str());
+
     recursoRemoto->num = rr;
     recursoRemoto->nodo = nodoRemotoGet(nodo);
 
@@ -75,6 +78,7 @@ void recursosRemotosInit()
     {
       Rele *rele = &recursoRemoto->rele;
       releLoadFromPrefs(rele, rr, prefs);
+      rele->ativo = true;
       // rele->estado sera setado em nodosRemotosRefreshTask
     }
     break;
@@ -83,12 +87,10 @@ void recursosRemotosInit()
     {
       Sensor *sensor = &recursoRemoto->sensor;
       sensorLoadFromPrefs(sensor, rr, prefs);
+      sensor->ativo = true;
       // sensor->valor sera setado em nodosRemotosRefreshTask
     }
     break;
-
-    default:
-      break;
     }
 
     recursoRemotoPrint(recursoRemoto);
@@ -132,7 +134,6 @@ JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id)
   JsonArray recursos = (*snapshot)["recursos"];
   for (JsonObject r : recursos)
   {
-    logaMensagem("&&&&&&&& %s == %s ??", r["id"].as<String>().c_str(), id.c_str());
     if (r["id"].as<String>() == id)
     {
       recurso = r;
@@ -153,10 +154,42 @@ void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
     if (rr->nodo != nodo)
       continue;
 
-    JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, String(rr->idLocal));
+    JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, String(rr->idRemoto));
+    if (!cacheRR)
+      continue;
 
-    if (cacheRR)
-      logaMensagem(">>>> nodosRemotosRefreshTask -> recursoRemotoSetFromSnapshot[%d] >> ID:%s", i, cacheRR["id"].as<const char *>());
+    JsonObject deviceRemoto = cacheRR["device"];
+    if (!deviceRemoto)
+      continue;
+
+    switch (rr->tipo)
+    {
+    case RECURSO_RELE:
+    {
+      Rele *rele = &rr->rele;
+      bool estadoRemoto = deviceRemoto["estado"].as<bool>();
+      if (rele->estado != estadoRemoto)
+      {
+        logaMensagem(">>>> nodosRemotosRefreshTask -> recursoRemotoSetFromSnapshot[%d] >> ID:%s >> Rele Mudou!", i, cacheRR["id"].as<const char *>());
+        rele->estado = estadoRemoto;
+        // TODO sse
+      }
+    }
+    break;
+
+    case RECURSO_SENSOR:
+    {
+      Sensor *sensor = &rr->sensor;
+      int valorRemoto = deviceRemoto["valor"].as<int>();
+      if (sensor->valor != valorRemoto)
+      {
+        logaMensagem(">>>> nodosRemotosRefreshTask -> recursoRemotoSetFromSnapshot[%d] >> ID:%s >> Sensor Mudou!", i, cacheRR["id"].as<const char *>());
+        sensor->valor = valorRemoto;
+        // TODO sse
+      }
+    }
+    break;
+    }
   }
 }
 

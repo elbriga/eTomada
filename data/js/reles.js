@@ -12,7 +12,7 @@ function releGetCard(recurso) {
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">
-    <div class="medio">Tomada ${rele.num}</div>
+    <div class="medio">Tomada ${recurso.id}</div>
     <div class="title">${escapeHtml(rele.nome || "")}</div>
     <div class="medio">${releGetRegraTXT(rele.regra)}</div>
   </div>
