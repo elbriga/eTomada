@@ -6,11 +6,5 @@ typedef enum
   RECURSO_RELE = 1,
   RECURSO_SENSOR = 2,
   RECURSO_BOTAO = 3,
+  RECURSO_INVALIDO = 250,
 } TipoRecurso;
-
-static constexpr char TipoRecursoChar[] = {
-    '*', // RECURSO_TODOS
-    'R', // RECURSO_RELE
-    'S', // RECURSO_SENSOR
-    'B', // RECURSO_BOTAO
-};
