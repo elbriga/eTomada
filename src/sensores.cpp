@@ -17,6 +17,15 @@ static Sensor sensores[MAX_SENSORES];
 
 static int boardSensorCount = 0;
 
+// struct temporaria usada em sensoresAtualiza
+struct AtualizacaoSensor
+{
+  Recurso *rec;
+  int novoValor;
+  bool mudou;
+  bool desativar;
+};
+
 void sensoresInit()
 {
   // Zerar tudo
@@ -167,7 +176,8 @@ String sensorAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
     return "Recurso nao é SENSOR!";
   }
 
-  MutexLock lock(sensorMutex, pdMS_TO_TICKS(2500));
+  // TODO : Precisa do Lock aqui?
+  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
   if (!lock)
   {
     return "mutex timeout";
@@ -196,17 +206,16 @@ String sensorAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
 
 void sensoresAtualiza()
 {
-  MutexLock lock(sensorMutex);
-  if (!lock)
-  {
-    logaMensagem("sensorAtualiza: mutex timeout");
-    return;
-  }
+  int totRecursos = recursosGetCount(RECURSO_TODOS);
+  int maxSensores = recursosGetCount(RECURSO_SENSOR);
 
-  int totRecursos = recursosGetCount();
+  AtualizacaoSensor *atual = new AtualizacaoSensor[maxSensores]();
+
+  // Ler os sensores sem o Lock
+  int totSensoresOK = 0;
   for (int r = 0; r < totRecursos; r++)
   {
-    Recurso *rec = recursoGetPorId(r);
+    Recurso *rec = recursoGetPorIndice(r);
     if (rec->tipo != RECURSO_SENSOR)
       continue;
 
@@ -217,28 +226,60 @@ void sensoresAtualiza()
       // Desativado
       continue;
     }
-
     TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
     if (!tipoSensor)
     {
       logaMensagem("Sensor[%s] tipo invalido [%p]", rec->id, sensor->tipo);
       continue;
     }
+
+    int idx = totSensoresOK++;
+    atual[idx].rec = rec;
+
     if (tipoSensor->status != "OK")
     {
       logaMensagem("Sensor[%s] tipo inativo [%s]. Inativando sensor", rec->id, tipoSensor->nome);
-      sensor->ativo = false;
+      atual[idx].desativar = true;
       continue;
     }
 
-    int novoValor = tipoSensor->lerSensor(sensor);
+    atual[idx].novoValor = tipoSensor->lerSensor(sensor);
+  }
 
-    if (sensor->valor != novoValor)
+  // Atualizar os recrusos SENSORES COM LOCK
+  {
+    MutexLock lock(recursosMutex);
+    if (!lock)
     {
-      // MUDOU valor do sensor
-      sensor->valor = novoValor;
+      delete[] atual;
+      logaMensagem("sensorAtualiza: mutex timeout");
+      return;
+    }
 
-      recursoEnviaSSE(rec);
+    for (int rs = 0; rs < totSensoresOK; rs++)
+    {
+      Recurso *rec = atual[rs].rec;
+      Sensor *sensor = rec->sensor;
+
+      if (atual[rs].desativar)
+      {
+        sensor->ativo = false;
+        continue;
+      }
+
+      atual[rs].mudou = (sensor->valor != atual[rs].novoValor);
+      sensor->valor = atual[rs].novoValor;
     }
   }
+
+  // Enviar os SSE sem Lock
+  for (int rs = 0; rs < totSensoresOK; rs++)
+  {
+    if (!atual[rs].mudou)
+      continue;
+
+    recursoEnviaSSE(atual[rs].rec);
+  }
+
+  delete[] atual;
 }
