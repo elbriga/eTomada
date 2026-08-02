@@ -196,58 +196,49 @@ String sensorAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
 
 void sensoresAtualiza()
 {
-  int totS = sensoresGetCount();
-  String jsonAtualiza[totS];
-
+  MutexLock lock(sensorMutex);
+  if (!lock)
   {
-    MutexLock lock(sensorMutex);
-    if (!lock)
-    {
-      logaMensagem("sensorAtualiza: mutex timeout");
-      return;
-    }
-
-    for (int s = 1; s <= totS; s++)
-    {
-      Sensor *sensor = &sensores[s - 1];
-
-      if (!sensor->ativo || sensor->pino == -1)
-      {
-        // Desativado
-        continue;
-      }
-
-      TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
-      if (!tipoSensor)
-      {
-        logaMensagem("Sensor[%d] tipo invalido [%p]", s, sensor->tipo);
-        continue;
-      }
-      if (tipoSensor->status != "OK")
-      {
-        logaMensagem("Sensor[%d] tipo inativo [%s]. Inativando sensor", s, tipoSensor->nome);
-        sensor->ativo = false;
-        continue;
-      }
-
-      int novoValor = tipoSensor->lerSensor(sensor);
-
-      if (sensor->valor != novoValor)
-      {
-        // MUDOU valor do sensor
-        sensor->valor = novoValor;
-
-        jsonAtualiza[s - 1] = sensorGetJSONString(sensor);
-      }
-    }
+    logaMensagem("sensorAtualiza: mutex timeout");
+    return;
   }
 
-  // Enviar os eventos sem o mutex
-  for (int s = 0; s < totS; s++)
+  int totRecursos = recursosGetCount();
+  for (int r = 0; r < totRecursos; r++)
   {
-    if (jsonAtualiza[s] != "")
+    Recurso *rec = recursoGetPorId(r);
+    if (rec->tipo != RECURSO_SENSOR)
+      continue;
+
+    Sensor *sensor = rec->sensor;
+
+    if (!sensor->ativo || sensor->pino == -1)
     {
-      httpEnviaEvento(jsonAtualiza[s], "sse_sensor");
+      // Desativado
+      continue;
+    }
+
+    TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
+    if (!tipoSensor)
+    {
+      logaMensagem("Sensor[%s] tipo invalido [%p]", rec->id, sensor->tipo);
+      continue;
+    }
+    if (tipoSensor->status != "OK")
+    {
+      logaMensagem("Sensor[%s] tipo inativo [%s]. Inativando sensor", rec->id, tipoSensor->nome);
+      sensor->ativo = false;
+      continue;
+    }
+
+    int novoValor = tipoSensor->lerSensor(sensor);
+
+    if (sensor->valor != novoValor)
+    {
+      // MUDOU valor do sensor
+      sensor->valor = novoValor;
+
+      recursoEnviaSSE(rec);
     }
   }
 }
