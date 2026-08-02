@@ -146,7 +146,7 @@ String releAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
     return "Recurso nao é RELE!";
   }
 
-  MutexLock lock(releMutex, pdMS_TO_TICKS(2500));
+  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
   if (!lock)
   {
     return "mutex timeout";
@@ -178,16 +178,16 @@ String releAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
 
 String releControla(int numRele, bool estado, int override)
 {
-  MutexLock lock(releMutex);
-  if (!lock)
-  {
-    return "releControla: mutex timeout";
-  }
-
   Rele *rele = releGet(numRele);
   if (!rele)
   {
     return "releControla: numRele invalido";
+  }
+
+  MutexLock lock(recursosMutex);
+  if (!lock)
+  {
+    return "releControla: mutex timeout";
   }
 
   return releControlaUnsafe(rele, estado, override);

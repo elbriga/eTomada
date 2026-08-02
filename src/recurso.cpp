@@ -87,7 +87,7 @@ int recursosGetCount(TipoRecurso tipo)
   return ret;
 }
 
-// REQUIRE releMutex/sensorMutex locked
+// REQUIRE recursosMutex locked
 String recursoGetJSONString(Recurso *r)
 {
   String out;

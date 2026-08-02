@@ -3,13 +3,13 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
-extern SemaphoreHandle_t releMutex;
-extern SemaphoreHandle_t sensorMutex;
+extern SemaphoreHandle_t recursosMutex;
 extern SemaphoreHandle_t prefsMutex;
 
 void mutexInit();
 
-class MutexLock {
+class MutexLock
+{
 public:
     MutexLock(SemaphoreHandle_t mutex,
               TickType_t timeout = portMAX_DELAY)
@@ -20,7 +20,8 @@ public:
 
     ~MutexLock()
     {
-        if (locked) {
+        if (locked)
+        {
             xSemaphoreGive(mutex);
         }
     }
