@@ -10,7 +10,6 @@ struct NodoRemoto
   int num;
   char deviceID[32];
   IPAddress ip;
-  JsonDocument snapshot;
 };
 
 void nodoRemotoInit();

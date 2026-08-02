@@ -11,7 +11,10 @@
 
 static WiFiUDP discoverUdp;
 static int totDiscoverNodos = 0;
+
 static NodoRemoto discoverNodos[MAX_NODOS_REMOTOS];
+// Buffer para transportar o JSON da resposta do discover para o nodosRemotosRefreshTask
+JsonDocument discoverSnapshotBuffer[MAX_NODOS_REMOTOS];
 
 void discoverTask(void *arg);
 static bool discoverTaskRunning = false;
@@ -49,6 +52,20 @@ NodoRemoto *discoverGetNodo(const char *deviceID)
         if (!strncmp(nodo->deviceID, deviceID, 32))
         {
             return nodo;
+        }
+    }
+    return NULL;
+}
+
+JsonDocument *discoverGetNodoSnapshot(const char *deviceID)
+{
+    int tot = discoverGetNodosCount();
+    for (int dn = 0; dn < tot; dn++)
+    {
+        NodoRemoto *nodo = &discoverNodos[dn];
+        if (!strncmp(nodo->deviceID, deviceID, 32))
+        {
+            return &discoverSnapshotBuffer[dn];
         }
     }
     return NULL;
@@ -169,7 +186,8 @@ void discoverTask(void *args)
 
             if (!ehTask)
             {
-                Serial.printf("Resposta de %s:\n", replyUdp.remoteIP().toString().c_str());
+                Serial.printf("Resposta[%d] de %s:\n",
+                              totDiscoverNodos, replyUdp.remoteIP().toString().c_str());
                 String s;
                 serializeJson(doc, s);
                 Serial.write(s.c_str(), s.length());
@@ -188,8 +206,7 @@ void discoverTask(void *args)
                 strncpy(nr->deviceID, mac.c_str(), sizeof(nr->deviceID) - 1);
                 nr->deviceID[sizeof(nr->deviceID) - 1] = '\0';
 
-                // TODO :: Setar o snapshot em nodosRemotos[] .cpp
-                nr->snapshot = doc;
+                discoverSnapshotBuffer[totDiscoverNodos - 1] = doc;
             }
         }
 

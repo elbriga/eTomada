@@ -1,3 +1,4 @@
+#include <ArduinoJson.h>
 #include "nodoRemoto.h"
 
 void discoverInit();
@@ -11,3 +12,4 @@ int discoverGetNodosCount();
 
 NodoRemoto *discoverGetNodo(const char *deviceID);
 NodoRemoto *discoverGetNodoPorId(int id);
+JsonDocument *discoverGetNodoSnapshot(const char *deviceID);

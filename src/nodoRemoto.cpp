@@ -6,6 +6,7 @@
 #include "prefs.h"
 #include "nodoRemoto.h"
 #include "discover.h"
+#include "recursoRemoto.h"
 
 NodoRemoto *nodosRemotos = 0;
 static int totNodosRemotos = 0;
@@ -26,7 +27,8 @@ void nodoRemotoInit()
 
   if (totNodosRemotos > 0)
   {
-    nodosRemotos = (NodoRemoto *)calloc(sizeof(NodoRemoto), totNodosRemotos);
+    // nodosRemotos = (NodoRemoto *)calloc(sizeof(NodoRemoto), totNodosRemotos);
+    nodosRemotos = new NodoRemoto[totNodosRemotos];
     if (!nodosRemotos)
     {
       // TODO :: DIE!
@@ -63,24 +65,6 @@ NodoRemoto *nodoRemotoGet(int num)
     return &nodosRemotos[num - 1];
   }
   return NULL;
-}
-
-JsonObject nodoGetRecursoSnapshot(NodoRemoto *nodo, String id)
-{
-  JsonObject recurso;
-
-  JsonArray recursos = nodo->snapshot["recursos"];
-  for (JsonObject r : recursos)
-  {
-    String idAux = r["id"].as<String>();
-    if (r["id"] == id)
-    {
-      recurso = r;
-      break;
-    }
-  }
-
-  return recurso;
 }
 
 void nodosRemotosRefresh()
@@ -141,6 +125,11 @@ void nodosRemotosRefreshTask(void *args)
         logaMensagem("Nodo Remoto %d - Novo IP: %s",
                      nr, nodoRemoto->ip.toString().c_str());
       }
+
+      // Atualizar os RecursoRemoto com o snapshot do discover
+      JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->deviceID);
+
+      recursoRemotoSetFromSnapshot(nodoRemoto, snapshot);
     }
     else
     {
