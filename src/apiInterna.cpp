@@ -9,27 +9,29 @@
 
 int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
 
-String apiInternaGetSnapshot(NodoRemoto *nodo, JsonDocument &doc) {
+String apiInternaGetSnapshot(NodoRemoto *nodo, JsonDocument &doc)
+{
   int code = apiInterna(nodo, "getSnapshot", "GET", nullptr, &doc);
 
   return code == 200 ? "OK" : String(code);
 }
 
-String apiInternaSetRecurso(Recurso *recurso, String estado) {
-  if (!recurso->remoto) {
+String apiInternaSetRecurso(Recurso *recurso, String estado)
+{
+  if (!recurso->remoto)
+  {
     return "Recurso nao Remoto";
   }
 
   RecursoRemoto *rr = recurso->recursoRemoto;
-  NodoRemoto    *nr = rr->nodo;
-  String         id = String("R") + String(rr->num);
-  
   JsonDocument request, resposta;
-  request["id"]     = id;
+
+  request["id"] = String(rr->idRemoto);
   request["estado"] = estado;
-  
-  int code = apiInterna(nr, "setRecurso", "PUT", &request, &resposta);
-  if (code != 200) {
+
+  int code = apiInterna(rr->nodo, "setRecurso", "PUT", &request, &resposta);
+  if (code != 200)
+  {
     logaMensagem("Erro API Interna: %d", code);
     // TODO ??
   }
@@ -42,7 +44,7 @@ String apiInternaSetRecurso(Recurso *recurso, String estado) {
   {
   case RECURSO_RELE:
     Rele *rele = &rr->rele;
-    rele->estado   = resposta["recurso"]["device"]["estado"].as<bool>();
+    rele->estado = resposta["recurso"]["device"]["estado"].as<bool>();
     rele->override = resposta["recurso"]["device"]["override"].as<int>();
     break;
   }
@@ -51,7 +53,8 @@ String apiInternaSetRecurso(Recurso *recurso, String estado) {
   return resposta["msg"].as<String>();
 }
 
-int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *request, JsonDocument *response) {
+int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *request, JsonDocument *response)
+{
   String url = "http://" + nodo->ip.toString() + "/api/" + endpoint;
 
   logaMensagem("apiInterna: Acionando %s", url.c_str());
@@ -60,19 +63,24 @@ int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *r
   http.begin(url);
 
   int code = 0;
-  if (metodo == "PUT") {
+  if (metodo == "PUT")
+  {
     String body = "{}";
-    if (request != nullptr) {
+    if (request != nullptr)
+    {
       serializeJson(*request, body);
     }
 
     http.addHeader("Content-Type", "application/json");
     code = http.PUT(body);
-  } else {
+  }
+  else
+  {
     code = http.GET();
   }
 
-  if (response && code == HTTP_CODE_OK) {
+  if (response && code == HTTP_CODE_OK)
+  {
     deserializeJson(*response, http.getStream());
   }
 

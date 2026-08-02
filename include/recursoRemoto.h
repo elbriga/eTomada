@@ -6,13 +6,15 @@
 #include "eTomada.h"
 #include "nodoRemoto.h"
 #include "tipoRecurso.h"
+#include "reles.h"
+#include "sensores.h"
 
 struct RecursoRemoto
 {
+  int num; // Numero LOCAL dentro de prefs[recursoRemoto]
   TipoRecurso tipo;
-  char id[8]; // ID local do recurso dentro do tipo. ex.: R10
-  int numRR;  // Numero LOCAL dentro de prefs[recursoRemoto]
-  int num;    // Numero REMOTO para acionamento
+  char idLocal[8];  // ID Local do recurso dentro do tipo. ex.: R10
+  char idRemoto[8]; // ID Remoto do recurso dentro do tipo. ex.: R2
   NodoRemoto *nodo;
   union
   {
@@ -26,5 +28,7 @@ void recursosRemotosInit();
 int recursosRemotosGetCount();
 RecursoRemoto *recursoRemotoGet(const char *id);
 RecursoRemoto *recursoRemotoGetPorId(int i);
+
+void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot);
 
 void recursoRemotoPrint(RecursoRemoto *r);

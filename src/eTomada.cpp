@@ -116,16 +116,19 @@ String eTomadaGetSnapshotJSON()
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
   doc["datahorastr"] = formattedTime;
 
-  TipoSensor *ts;
-  int totTS = tipoSensorGetCount();
-  JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
-  for (int i = 0; i < totTS; i++)
+  // TODO :: Mover para um endpoint da API
   {
-    ts = tipoSensorGetPorId(i);
-    if (!ts)
-      continue;
+    TipoSensor *ts;
+    int totTS = tipoSensorGetCount();
+    JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
+    for (int i = 0; i < totTS; i++)
+    {
+      ts = tipoSensorGetPorId(i);
+      if (!ts)
+        continue;
 
-    tipoSensores.add(tipoSensorGetJSONDoc(ts));
+      tipoSensores.add(tipoSensorGetJSONDoc(ts));
+    }
   }
 
   Recurso *recurso;
@@ -162,7 +165,7 @@ void eTomadaSalvaRele(Recurso *recurso)
   if (recurso->remoto)
   {
     RecursoRemoto *rr = recurso->recursoRemoto;
-    num = rr->numRR;
+    num = rr->num;
     rele = &rr->rele;
     prefs.begin("recursosRemotos", false);
   }
@@ -196,7 +199,7 @@ void eTomadaSalvaSensor(Recurso *recurso)
   if (recurso->remoto)
   {
     RecursoRemoto *rr = recurso->recursoRemoto;
-    num = rr->numRR;
+    num = rr->num;
     sensor = &rr->sensor;
     prefs.begin("recursosRemotos", false);
   }

@@ -21,25 +21,24 @@ void recursosRemotosInit()
 
   // Para testes
   // prefs.putString("total0", "2");
-  // prefs.putString("id1", "9");
+  prefs.putString("idLocal1", "R9");
   // prefs.putString("tipo1", "1");
   // prefs.putString("nodo1", "1");
-  // prefs.putString("num1",  "1");
+  prefs.putString("idRemoto1", "R1");
   // prefs.putString("nome1", "RREMOTO1");
   // prefs.putString("regra1", "");
-  // prefs.putString("ativo1", "1");
-  // prefs.putString("id2", "10");
+  prefs.putString("idLocal2", "R10");
   // prefs.putString("tipo2", "1");
   // prefs.putString("nodo2", "1");
-  // prefs.putString("num2",  "2");
+  prefs.putString("idRemoto2", "R2");
   // prefs.putString("nome2", "RREMOTO2");
   // prefs.putString("regra2", "");
-  // prefs.putString("ativo2", "1");
 
   totRecursosRemotos = getPrefsAtr(prefs, 0, "total").toInt();
-  recursosRemotos = (RecursoRemoto *)calloc(sizeof(RecursoRemoto), totRecursosRemotos);
+  recursosRemotos = new RecursoRemoto[totRecursosRemotos]();
   if (!recursosRemotos)
   {
+    logaMensagem("ERRO!!!!!! new RecursoRemoto[%d]", totRecursosRemotos);
     // TODO :: DIE!
   }
 
@@ -47,59 +46,44 @@ void recursosRemotosInit()
   {
     RecursoRemoto *recursoRemoto = &recursosRemotos[rr - 1];
 
-    int id = getPrefsAtr(prefs, rr, "id").toInt();
+    String idLocal = getPrefsAtr(prefs, rr, "idLocal");
+    String idRemoto = getPrefsAtr(prefs, rr, "idRemoto");
     int tipo = getPrefsAtr(prefs, rr, "tipo").toInt();
-    int num = getPrefsAtr(prefs, rr, "num").toInt();
     int nodo = getPrefsAtr(prefs, rr, "nodo").toInt();
 
-    // TODO :: VALIDAR TIPO!!! esta acessando TipoRecursoChar[tipo] AQUI!
-    snprintf(recursoRemoto->id, sizeof(recursoRemoto->id), "%c%d", TipoRecursoChar[tipo], id);
+    switch (tipo)
+    {
+    case RECURSO_RELE:
+      recursoRemoto->tipo = RECURSO_RELE;
+      break;
+    case RECURSO_SENSOR:
+      recursoRemoto->tipo = RECURSO_SENSOR;
+      break;
 
-    recursoRemoto->num = num;
-    recursoRemoto->numRR = rr;
+    default:
+      recursoRemoto->tipo = RECURSO_INVALIDO;
+      break;
+    }
+
+    strcpy(recursoRemoto->idLocal, idLocal.c_str());
+    recursoRemoto->num = rr;
     recursoRemoto->nodo = nodoRemotoGet(nodo);
-
-    // TODO :: nao usar o discover > discover setar em nodoRemoto[]
-
-    // Buscar o nodo remoto do discover que foi feito no nodoRemotoInit()
-    NodoRemoto *nodoDiscover = discoverGetNodo(recursoRemoto->nodo->deviceID);
-    JsonObject cacheRR;
-
-    if (!nodoDiscover)
-    {
-      logaMensagem("Erro ao achar nodo do recursoRemoto %d!!", rr);
-    }
-    else
-    {
-      cacheRR = nodoGetRecursoSnapshot(nodoDiscover, String(recursoRemoto->id));
-    }
 
     switch (tipo)
     {
     case RECURSO_RELE:
     {
-      snprintf(recursoRemoto->id, sizeof(recursoRemoto->id), "R%d", id);
-      recursoRemoto->tipo = RECURSO_RELE;
-
       Rele *rele = &recursoRemoto->rele;
       releLoadFromPrefs(rele, rr, prefs);
-      rele->num = num;
-
-      if (!cacheRR.isNull())
-      {
-        JsonObject releRemoto = cacheRR["device"];
-        rele->estado = releRemoto["estado"].as<bool>();
-      }
+      // rele->estado sera setado em nodosRemotosRefreshTask
     }
     break;
 
     case RECURSO_SENSOR:
     {
-      recursoRemoto->tipo = RECURSO_SENSOR;
-
       Sensor *sensor = &recursoRemoto->sensor;
       sensorLoadFromPrefs(sensor, rr, prefs);
-      sensor->num = num;
+      // sensor->valor sera setado em nodosRemotosRefreshTask
     }
     break;
 
@@ -123,7 +107,7 @@ RecursoRemoto *recursoRemotoGet(const char *id)
   int totRR = recursosRemotosGetCount();
   for (int i = 0; i < totRR; i++)
   {
-    if (!strcmp(recursosRemotos[i].id, id))
+    if (!strcmp(recursosRemotos[i].idLocal, id))
     {
       return &recursosRemotos[i];
     }
@@ -139,6 +123,41 @@ RecursoRemoto *recursoRemotoGetPorId(int i)
   }
 
   return &recursosRemotos[i];
+}
+
+JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id)
+{
+  JsonObject recurso;
+
+  JsonArray recursos = (*snapshot)["recursos"];
+  for (JsonObject r : recursos)
+  {
+    logaMensagem("&&&&&&&& %s == %s ??", r["id"].as<String>().c_str(), id.c_str());
+    if (r["id"].as<String>() == id)
+    {
+      recurso = r;
+      break;
+    }
+  }
+
+  return recurso;
+}
+
+void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
+{
+  RecursoRemoto *rr;
+  int totRR = recursosRemotosGetCount();
+  for (int i = 0; i < totRR; i++)
+  {
+    rr = recursoRemotoGetPorId(i);
+    if (rr->nodo != nodo)
+      continue;
+
+    JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, String(rr->idLocal));
+
+    if (cacheRR)
+      logaMensagem(">>>> nodosRemotosRefreshTask -> recursoRemotoSetFromSnapshot[%d] >> ID:%s", i, cacheRR["id"].as<const char *>());
+  }
 }
 
 void recursoRemotoPrint(RecursoRemoto *recursoRemoto)

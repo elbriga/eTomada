@@ -54,9 +54,9 @@ void recursosInit()
 
     recurso->recursoRemoto = recursoRemotoGetPorId(rr);
 
-    strcpy(recurso->id, recurso->recursoRemoto->id);
+    strcpy(recurso->id, recurso->recursoRemoto->idLocal);
     recurso->tipo = recurso->recursoRemoto->tipo;
-    recurso->num = recurso->recursoRemoto->numRR;
+    recurso->num = recurso->recursoRemoto->num;
     recurso->remoto = true;
   }
 
