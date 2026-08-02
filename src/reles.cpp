@@ -10,7 +10,6 @@
 #include "http.h"
 #include "prefs.h"
 #include "recurso.h"
-#include "recursoRemoto.h"
 
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
@@ -40,7 +39,6 @@ void relesInit()
   // Para testes
   // prefs.putString("nome1", "Luz");
   // prefs.putString("regra1", "OF|02:00|07:59");
-  // prefs.putString("ativo1", "1");
 
   int totReles = relesGetCount();
   for (int r = 1; r <= totReles; r++)
@@ -91,7 +89,6 @@ void releLoadFromPrefs(Rele *rele, int num, Preferences &prefs)
 {
   String nome = getPrefsAtr(prefs, num, "nome");
   String regra = getPrefsAtr(prefs, num, "regra");
-  String ativo = getPrefsAtr(prefs, num, "ativo");
 
   rele->num = num;
   strncpy(rele->nome, nome.c_str(), sizeof(rele->nome) - 1);
@@ -106,8 +103,6 @@ void releLoadFromPrefs(Rele *rele, int num, Preferences &prefs)
     logaMensagem("Regra [%s] INVALIDA! [%s] Convertendo Rele[%d] para manual", rele->regra, regraOK.c_str(), num);
     rele->regra[0] = '\0';
   }
-
-  rele->ativo = (ativo == "1");
 
   // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
   rele->estado = 0;
@@ -172,11 +167,6 @@ String releAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
   {
     strncpy(rele->nome, doc["nome"].as<String>().c_str(), sizeof(rele->nome) - 1);
     rele->nome[sizeof(rele->nome) - 1] = '\0';
-  }
-
-  if (!doc["ativo"].isNull())
-  {
-    rele->ativo = (doc["ativo"] == "1" || doc["ativo"] == 1);
   }
 
   eTomadaSalvaRele(recurso);

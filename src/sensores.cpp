@@ -9,7 +9,6 @@
 #include "mutex.h"
 #include "prefs.h"
 #include "recurso.h"
-#include "recursoRemoto.h"
 
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
