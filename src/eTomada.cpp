@@ -136,7 +136,7 @@ String eTomadaGetSnapshotJSON()
   JsonArray recursos = doc["recursos"].to<JsonArray>();
   for (int i = 0; i < totRecursos; i++)
   {
-    recurso = recursoGetPorId(i);
+    recurso = recursoGetPorIndice(i);
     if (!recurso)
       continue;
 
@@ -225,7 +225,7 @@ void eTomadaRoleta()
   int totRecursos = recursosGetCount();
   for (int r = 0; r < totRecursos; r++)
   {
-    Recurso *recurso = recursoGetPorId(r);
+    Recurso *recurso = recursoGetPorIndice(r);
     if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
     {
       totRelesLocais++;
@@ -242,7 +242,7 @@ void eTomadaRoleta()
   int rli = 0;
   for (int r = 0; r < totRecursos; r++)
   {
-    Recurso *recurso = recursoGetPorId(r);
+    Recurso *recurso = recursoGetPorIndice(r);
     if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
     {
       relesLocais[rli++] = recurso;

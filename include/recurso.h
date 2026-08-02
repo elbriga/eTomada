@@ -27,7 +27,7 @@ struct Recurso
 void recursosInit();
 int recursosGetCount(TipoRecurso tipo = RECURSO_TODOS);
 Recurso *recursoGet(const char *id);
-Recurso *recursoGetPorId(int posicao);
+Recurso *recursoGetPorIndice(int posicao);
 
 Rele *recursoGetRele(Recurso *r);
 Sensor *recursoGetSensor(Recurso *r);

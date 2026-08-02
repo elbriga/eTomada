@@ -152,7 +152,7 @@ void recursoEnviaSSE(Recurso *recurso, JsonDocument *jsonOut)
   httpEnviaEvento(recursoStr, "sse_recurso");
 }
 
-Recurso *recursoGetPorId(int posicao)
+Recurso *recursoGetPorIndice(int posicao)
 {
   if (posicao >= 0 && posicao < recursosGetCount())
   {
