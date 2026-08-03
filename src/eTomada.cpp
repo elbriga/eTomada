@@ -123,7 +123,7 @@ String eTomadaGetSnapshotJSON()
     JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
     for (int i = 0; i < totTS; i++)
     {
-      ts = tipoSensorGetPorId(i);
+      ts = tipoSensorGetPorIndice(i);
       if (!ts)
         continue;
 

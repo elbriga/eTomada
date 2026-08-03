@@ -3,7 +3,8 @@
 
 struct Sensor;
 
-struct TipoSensor {
+struct TipoSensor
+{
     const char *nome;
     const char *tipo;
     const char *unidade;
@@ -17,5 +18,5 @@ void tipoSensorInit();
 
 int tipoSensorGetCount();
 TipoSensor *tipoSensorGet(const char *nome);
-TipoSensor *tipoSensorGetPorId(int i);
+TipoSensor *tipoSensorGetPorIndice(int i);
 JsonDocument tipoSensorGetJSONDoc(TipoSensor *ts);
