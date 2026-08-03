@@ -35,7 +35,7 @@ int discoverGetNodosCount()
     return totDiscoverNodos;
 }
 
-NodoRemoto *discoverGetNodoPorId(int id)
+NodoRemoto *discoverGetNodoPorIndice(int id)
 {
     if (id >= 0 && id < discoverGetNodosCount())
     {

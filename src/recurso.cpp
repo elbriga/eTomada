@@ -21,7 +21,7 @@ void recursosInit()
   int totRecursosRemotos = recursosRemotosGetCount();
 
   totRecursos = totRelesLocais + totSensoresLocais + totRecursosRemotos;
-  recursos = (Recurso *)calloc(sizeof(Recurso), totRecursos);
+  recursos = new Recurso[totRecursos]();
   if (!recursos)
   {
     // TODO :: DIE!
@@ -53,7 +53,7 @@ void recursosInit()
   {
     Recurso *recurso = &recursos[recursoAddCount++];
 
-    recurso->recursoRemoto = recursoRemotoGetPorId(rr);
+    recurso->recursoRemoto = recursoRemotoGetPorIndice(rr);
 
     strcpy(recurso->id, recurso->recursoRemoto->idLocal);
     recurso->tipo = recurso->recursoRemoto->tipo;
@@ -237,6 +237,10 @@ JsonDocument recursoGetJSONEvento(Recurso *r)
   doc["mac"] = getMACStr();
   doc["id"] = String(r->id);
 
+  time_t now = 0;
+  time(&now);
+  doc["timestamp"] = (unsigned long)now;
+
   JsonDocument device;
   switch (r->tipo)
   {
@@ -282,23 +286,52 @@ String recursoEventoRecebido(uint8_t *json)
     {
       logaMensagem("Evento recebido! Atualizar recurso [%s]", rec->id);
 
-      bool novoEstado = doc["device"]["estado"].as<bool>();
-
-      bool mudou = false;
-      {
-        // TODO :: LOCK!
-        mudou = (rec->recursoRemoto->rele.estado != novoEstado);
-        rec->recursoRemoto->rele.estado = novoEstado;
-      }
-
-      if (mudou)
-        recursoEnviaSSE(rec);
-
-      return "OK";
+      return recursoAtualizaFromJson(rec, doc["device"], doc["timestamp"].as<unsigned long>());
     }
   }
 
   return "Recurso nao encontrado";
+}
+
+String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long timestamp)
+{
+  // Verificar a "idade" da atualizacao
+  if (timestamp <= recurso->tsAtualizacao)
+  {
+    return "ignorando atualização antiga";
+  }
+
+  // TODO :: LOCK!
+  recurso->tsAtualizacao = timestamp;
+
+  bool mudou = false;
+  switch (recurso->tipo)
+  {
+  case RECURSO_RELE:
+  {
+    Rele *rele = recursoGetRele(recurso);
+    bool novoEstado = doc["estado"].as<bool>();
+    mudou = (rele->estado != novoEstado);
+    rele->estado = novoEstado;
+  }
+  break;
+
+  case RECURSO_SENSOR:
+  {
+    Sensor *sensor = recursoGetSensor(recurso);
+    int novoValor = doc["valor"].as<int>();
+    mudou = (sensor->valor != novoValor);
+    sensor->valor = novoValor;
+  }
+  break;
+  }
+
+  if (mudou)
+  {
+    recursoEnviaSSE(recurso);
+  }
+
+  return "OK";
 }
 
 String recursoAtualizaConfigFromJSON(uint8_t *json)

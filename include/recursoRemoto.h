@@ -27,7 +27,7 @@ struct RecursoRemoto
 void recursosRemotosInit();
 int recursosRemotosGetCount();
 RecursoRemoto *recursoRemotoGet(const char *id);
-RecursoRemoto *recursoRemotoGetPorId(int i);
+RecursoRemoto *recursoRemotoGetPorIndice(int i);
 
 void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot);
 

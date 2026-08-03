@@ -11,5 +11,5 @@ bool discoverGetTaskRunning();
 int discoverGetNodosCount();
 
 NodoRemoto *discoverGetNodo(const char *deviceID);
-NodoRemoto *discoverGetNodoPorId(int id);
+NodoRemoto *discoverGetNodoPorIndice(int i);
 JsonDocument *discoverGetNodoSnapshot(const char *deviceID);

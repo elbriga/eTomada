@@ -107,7 +107,7 @@ void nodosRemotosRefreshTask(void *args)
   // Verificar por novos nodos
   for (int nd = 1; nd <= totND; nd++)
   {
-    NodoRemoto *nodoDiscover = discoverGetNodoPorId(nd - 1);
+    NodoRemoto *nodoDiscover = discoverGetNodoPorIndice(nd - 1);
     bool achei = false;
     for (int nr = 1; nr <= totNR; nr++)
     {

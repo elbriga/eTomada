@@ -99,7 +99,11 @@ String eTomadaGetSnapshotJSON()
   doc["mac"] = getMACStr();
 
   doc["api"] = 3; // versão da API
+
   doc["uptime"] = millis();
+  time_t now = 0;
+  time(&now);
+  doc["timestamp"] = (unsigned long)now;
 
   time_t agora;
   struct tm timeinfo;

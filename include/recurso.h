@@ -15,6 +15,7 @@ struct Recurso
   // TODO trazer o "nome" para ca
   int num;
   bool remoto;
+  unsigned long tsAtualizacao;
   union
   {
     Rele *rele;
@@ -32,8 +33,12 @@ Recurso *recursoGetPorIndice(int posicao);
 Rele *recursoGetRele(Recurso *r);
 Sensor *recursoGetSensor(Recurso *r);
 
+// Altera o recurso > acoes
 String recursoSetFromJSON(uint8_t *json, JsonDocument *docOut = nullptr);
 String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut = nullptr);
+
+// Atualiza o recurso > eventos - timestamp para ignorar eventos antigos
+String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long timestamp);
 
 const char *recursoGetTipoStr(TipoRecurso tipo);
 JsonDocument recursoGetJSONDoc(Recurso *r);

@@ -117,14 +117,14 @@ RecursoRemoto *recursoRemotoGet(const char *id)
   return NULL;
 }
 
-RecursoRemoto *recursoRemotoGetPorId(int i)
+RecursoRemoto *recursoRemotoGetPorIndice(int i)
 {
-  if (i < 0 || i >= recursosRemotosGetCount())
+  if (i >= 0 && i < recursosRemotosGetCount())
   {
-    return NULL;
+    return &recursosRemotos[i];
   }
 
-  return &recursosRemotos[i];
+  return NULL;
 }
 
 JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id)
@@ -146,11 +146,18 @@ JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id)
 
 void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
 {
+  Recurso *recurso;
   RecursoRemoto *rr;
-  int totRR = recursosRemotosGetCount();
-  for (int i = 0; i < totRR; i++)
+  time_t tsSnapshot = (*snapshot)["timestamp"].as<unsigned long>();
+
+  int totRecursos = recursosGetCount();
+  for (int i = 0; i < totRecursos; i++)
   {
-    rr = recursoRemotoGetPorId(i);
+    recurso = recursoGetPorIndice(i);
+    if (!recurso->remoto)
+      continue;
+
+    rr = recurso->recursoRemoto;
     if (rr->nodo != nodo)
       continue;
 
@@ -162,33 +169,7 @@ void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
     if (!deviceRemoto)
       continue;
 
-    bool mudou = false;
-    switch (rr->tipo)
-    {
-    case RECURSO_RELE:
-    {
-      Rele *rele = &rr->rele;
-      bool estadoRemoto = deviceRemoto["estado"].as<bool>();
-      mudou = (rele->estado != estadoRemoto);
-      rele->estado = estadoRemoto;
-    }
-    break;
-
-    case RECURSO_SENSOR:
-    {
-      Sensor *sensor = &rr->sensor;
-      int valorRemoto = deviceRemoto["valor"].as<int>();
-      mudou = (sensor->valor != valorRemoto);
-      sensor->valor = valorRemoto;
-    }
-    break;
-    }
-
-    if (mudou)
-    {
-      Recurso *recurso = recursoGet(rr->idLocal);
-      recursoEnviaSSE(recurso);
-    }
+    recursoAtualizaFromJson(recurso, deviceRemoto, tsSnapshot);
   }
 }
 
