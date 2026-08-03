@@ -36,9 +36,9 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
     // TODO ??
   }
 
-  String out;
-  serializeJson(resposta, out);
-  logaMensagem("ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
+  // String out;
+  // serializeJson(resposta, out);
+  // logaMensagem("ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
 
   switch (recurso->tipo)
   {
