@@ -4,6 +4,7 @@
 #include <nvs_flash.h>
 
 #include "eTomada.h"
+#include "mestre.h"
 #include "loga.h"
 #include "wifi.h"
 #include "display.h"
@@ -16,7 +17,8 @@
 // Timestamp da proxima sincronizacao do NTP
 static long ntpSyncTimeTS = 0;
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
 
   delay(500);
@@ -24,18 +26,19 @@ void setup() {
   logaTitulo("eTomada");
 
   // WDT : 5 segundos de timeout
-  esp_task_wdt_init(5, true);  // true = resetar automaticamente
-  esp_task_wdt_add(NULL);      // adiciona a task atual (loop)
+  esp_task_wdt_init(5, true); // true = resetar automaticamente
+  esp_task_wdt_add(NULL);     // adiciona a task atual (loop)
 
   nvs_stats_t stats;
   nvs_get_stats(NULL, &stats);
   logaMensagem("Inicializando Preferences: (used:%d, free:%d)",
-    stats.used_entries, stats.free_entries);
+               stats.used_entries, stats.free_entries);
 
   displayInit();
 
   bool FSOK = !!LittleFS.begin(true);
-  if (!FSOK) {
+  if (!FSOK)
+  {
     logaTitulo("Erro LittleFS - Desativando Servidor Web");
   }
 
@@ -43,71 +46,91 @@ void setup() {
   WiFiConnect();
 
   // NTP somente no modo STA
-  if (!WiFiGetModoAP()) {
+  if (!WiFiGetModoAP())
+  {
     displayMostraString(0, 40, "Buscando Hora...");
     ntpSyncTimeTS = ntpSyncTime();
   }
 
   eTomadaInit();
-  
-  if (FSOK) {
+
+  if (FSOK)
+  {
     httpServerInit();
   }
 
   logaTitulo("Setup OK!");
 }
 
-const char *getDiaSemana(struct tm timeinfo) {
-  switch (timeinfo.tm_wday) {
-    case 0: return "Dom";
-    case 1: return "Seg";
-    case 2: return "Ter";
-    case 3: return "Qua";
-    case 4: return "Qui";
-    case 5: return "Sex";
-    case 6: return "Sab";
-    default: return "---";
+const char *getDiaSemana(struct tm timeinfo)
+{
+  switch (timeinfo.tm_wday)
+  {
+  case 0:
+    return "Dom";
+  case 1:
+    return "Seg";
+  case 2:
+    return "Ter";
+  case 3:
+    return "Qua";
+  case 4:
+    return "Qui";
+  case 5:
+    return "Sex";
+  case 6:
+    return "Sab";
+  default:
+    return "---";
   }
 }
 
 int wifiFora = 0;
 int lastSecond = -1;
 int last10Second = -1;
-void loop() {
+void loop()
+{
   esp_task_wdt_reset(); // alimenta o watchdog
 
   struct tm timeinfo;
   ntpGetTime(&timeinfo);
 
-  if (WiFiGetModoAP()) {
+  if (WiFiGetModoAP())
+  {
     WiFiModoAPLoop();
 
-    if (timeinfo.tm_year < 2026) {
+    if (timeinfo.tm_year < 2026)
+    {
       // Sem data/hora não processa as regras
       vTaskDelay(pdMS_TO_TICKS(100));
       return;
     }
-  } else {
+  }
+  else
+  {
     discoverLoop();
   }
 
   // 1s/1s
-  if (timeinfo.tm_sec != lastSecond) {
+  if (timeinfo.tm_sec != lastSecond)
+  {
     lastSecond = timeinfo.tm_sec;
 
     // TODO : #ifdef TEM_OLED
-    if (displayPodeMostrar()) {
+    if (displayPodeMostrar())
+    {
       // Atualizar o relogio
       char formattedTime[10];
       char msgDataHora[32];
-      //strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
+      // strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
       strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
       snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", getDiaSemana(timeinfo), formattedTime);
       displayMostraMsg(msgDataHora, 0, false);
     }
 
     // 10s/10s
-    if ((int)(timeinfo.tm_sec / 10) != last10Second) {
+    if ((int)(timeinfo.tm_sec / 10) != last10Second)
+    {
       last10Second = timeinfo.tm_sec / 10;
 
       sensoresAtualiza();
@@ -119,26 +142,35 @@ void loop() {
       httpEnviaEvento("{}", "sse_ping");
 
       // Verificar os NÓs remotos (em nova Task):
-      if (eTomadaGetModoOperacao() == MODO_CONTROLADOR) {
+      if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
+      {
         nodosRemotosRefresh();
       }
+
+      mestreLoop();
     }
 
     // Verificar o WiFi
-    if (!WiFiGetModoAP()) {
-      if (WiFi.status() != WL_CONNECTED) {
+    if (!WiFiGetModoAP())
+    {
+      if (WiFi.status() != WL_CONNECTED)
+      {
         wifiFora++;
-        if (wifiFora > 5) {
+        if (wifiFora > 5)
+        {
           logaTitulo("WiFi caiu!! Reconectar...");
           displayMostraMsg("Reconectando...", 6000);
           WiFiConnect();
         }
-      } else {
+      }
+      else
+      {
         wifiFora = 0;
       }
-     
+
       // Sync NTP
-      if (ntpSyncTimeTS > 0 && (long)(millis() - ntpSyncTimeTS) >= 0) {
+      if (ntpSyncTimeTS > 0 && (long)(millis() - ntpSyncTimeTS) >= 0)
+      {
         ntpSyncTimeTS = ntpSyncTime();
       }
     }

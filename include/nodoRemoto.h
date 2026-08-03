@@ -16,7 +16,7 @@ void nodoRemotoInit();
 int nodosRemotosGetCount();
 
 NodoRemoto *nodoRemotoGet(int num);
-JsonObject nodoGetRecursoSnapshot(NodoRemoto *nodo, String id);
+NodoRemoto *nodoRemotoGetPorMAC(const char *mac);
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto);
 

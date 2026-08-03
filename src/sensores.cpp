@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "eTomada.h"
+#include "mestre.h"
 #include "hardwareProfile.h"
 #include "sensores.h"
 #include "tipoSensores.h"
@@ -272,13 +273,15 @@ void sensoresAtualiza()
     }
   }
 
-  // Enviar os SSE sem Lock
+  // Enviar os Eventos e os SSE sem Lock
   for (int rs = 0; rs < totSensoresOK; rs++)
   {
     if (!atual[rs].mudou)
       continue;
 
     recursoEnviaSSE(atual[rs].rec);
+
+    mestreEnviaEvento(atual[rs].rec);
   }
 
   delete[] atual;

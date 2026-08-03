@@ -1,10 +1,16 @@
+#include <ArduinoJson.h>
+
 #include "eTomada.h"
 #include "mestre.h"
 #include "prefs.h"
 #include "loga.h"
 #include "nodoRemoto.h"
+#include "recurso.h"
+#include "apiInterna.h"
 
 Mestre mestre;
+
+#define MESTRE_HEARTBEAT_TIMEOUT 30000
 
 void mestreInit(Preferences &prefs)
 {
@@ -48,4 +54,28 @@ void mestreCheckDiscover(String mac, IPAddress ip)
     }
 
     mestre.ultimoHeartbeat = millis();
+}
+
+void mestreLoop()
+{
+    if (mestre.mac == "") // Sem mestre retorna
+        return;
+
+    if (millis() - mestre.ultimoHeartbeat > MESTRE_HEARTBEAT_TIMEOUT)
+    {
+        logaMensagem("Mestre - OFFLINE!");
+        mestre.online = false;
+    }
+}
+
+void mestreEnviaEvento(Recurso *rec)
+{
+    if (mestre.mac == "") // Sem mestre retorna
+        return;
+    if (!mestre.online) // Mestre offline retorna
+        return;
+
+    JsonDocument payload = recursoGetJSONEvento(rec);
+
+    apiInternaEnviaEvento(mestre.ip, &payload);
 }

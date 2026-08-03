@@ -41,6 +41,7 @@ void nodoRemotoInit()
 
       nodoRemoto->num = nr;
 
+      // TODO :: renomear deviceID para mac
       strncpy(nodoRemoto->deviceID, getPrefsAtr(prefs, nr, "deviceID").c_str(), sizeof(nodoRemoto->deviceID) - 1);
       nodoRemoto->deviceID[sizeof(nodoRemoto->deviceID) - 1] = '\0';
 
@@ -63,6 +64,20 @@ NodoRemoto *nodoRemotoGet(int num)
   if (num > 0 && num <= nodosRemotosGetCount())
   {
     return &nodosRemotos[num - 1];
+  }
+  return NULL;
+}
+
+NodoRemoto *nodoRemotoGetPorMAC(const char *mac)
+{
+  int tot = nodosRemotosGetCount();
+  for (int nr = 1; nr <= tot; nr++)
+  {
+    NodoRemoto *nodo = nodoRemotoGet(nr);
+    if (!strcmp(nodo->deviceID, mac))
+    {
+      return &nodosRemotos[nr - 1];
+    }
   }
   return NULL;
 }

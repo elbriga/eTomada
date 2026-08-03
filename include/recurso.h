@@ -38,6 +38,9 @@ String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut = nullptr
 const char *recursoGetTipoStr(TipoRecurso tipo);
 JsonDocument recursoGetJSONDoc(Recurso *r);
 
+JsonDocument recursoGetJSONEvento(Recurso *r);
+String recursoEventoRecebido(uint8_t *json);
+
 String recursoAtualizaConfigFromJSON(uint8_t *json);
 
 void recursoEnviaSSE(Recurso *recurso, JsonDocument *jsonOut = nullptr);

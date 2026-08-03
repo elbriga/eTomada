@@ -7,11 +7,11 @@
 #include "recurso.h"
 #include "recursoRemoto.h"
 
-int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
+int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
 
 String apiInternaGetSnapshot(NodoRemoto *nodo, JsonDocument &doc)
 {
-  int code = apiInterna(nodo, "getSnapshot", "GET", nullptr, &doc);
+  int code = apiInterna(nodo->ip, "getSnapshot", "GET", nullptr, &doc);
 
   return code == 200 ? "OK" : String(code);
 }
@@ -29,7 +29,7 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
   request["id"] = String(rr->idRemoto);
   request["estado"] = estado;
 
-  int code = apiInterna(rr->nodo, "setRecurso", "PUT", &request, &resposta);
+  int code = apiInterna(rr->nodo->ip, "setRecurso", "PUT", &request, &resposta);
   if (code != 200)
   {
     logaMensagem("Erro API Interna: %d", code);
@@ -53,9 +53,16 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
   return resposta["msg"].as<String>();
 }
 
-int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *request, JsonDocument *response)
+String apiInternaEnviaEvento(IPAddress ip, JsonDocument *body)
 {
-  String url = "http://" + nodo->ip.toString() + "/api/" + endpoint;
+  int code = apiInterna(ip, "evento", "POST", body, nullptr);
+
+  return code == 200 ? "OK" : String(code);
+}
+
+int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *response)
+{
+  String url = "http://" + ip.toString() + "/api/" + endpoint;
 
   logaMensagem("apiInterna: Acionando %s", url.c_str());
 
@@ -63,7 +70,7 @@ int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *r
   http.begin(url);
 
   int code = 0;
-  if (metodo == "PUT")
+  if (metodo == "PUT" || metodo == "POST")
   {
     String body = "{}";
     if (request != nullptr)
@@ -72,7 +79,7 @@ int apiInterna(NodoRemoto *nodo, String endpoint, String metodo, JsonDocument *r
     }
 
     http.addHeader("Content-Type", "application/json");
-    code = http.PUT(body);
+    code = (metodo == "PUT") ? http.PUT(body) : http.POST(body);
   }
   else
   {

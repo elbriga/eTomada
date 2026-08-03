@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <Preferences.h>
 
+#include "recurso.h"
+
 struct Mestre
 {
     String mac;
@@ -11,3 +13,5 @@ struct Mestre
 
 void mestreInit(Preferences &prefs);
 void mestreCheckDiscover(String mac, IPAddress ip);
+void mestreLoop();
+void mestreEnviaEvento(Recurso *rec);

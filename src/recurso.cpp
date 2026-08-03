@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "eTomada.h"
+#include "mestre.h"
 #include "loga.h"
 #include "prefs.h"
 #include "recurso.h"
@@ -133,6 +134,8 @@ String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut)
 
   recursoEnviaSSE(recurso, jsonOut);
 
+  mestreEnviaEvento(recurso);
+
   return msg;
 }
 
@@ -224,6 +227,78 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
   }
 
   return doc;
+}
+
+// REQUIRE recursosMutex locked
+JsonDocument recursoGetJSONEvento(Recurso *r)
+{
+  JsonDocument doc;
+
+  doc["mac"] = getMACStr();
+  doc["id"] = String(r->id);
+
+  JsonDocument device;
+  switch (r->tipo)
+  {
+  case RECURSO_RELE:
+    device["estado"] = r->rele->estado;
+    break;
+  case RECURSO_SENSOR:
+    device["valor"] = r->sensor->valor;
+    break;
+  }
+
+  doc["device"] = device;
+
+  return doc;
+}
+
+String recursoEventoRecebido(uint8_t *json)
+{
+  JsonDocument doc;
+
+  DeserializationError err = deserializeJson(doc, json);
+  if (err)
+  {
+    return "JSON Invalido";
+  }
+
+  NodoRemoto *nr = nodoRemotoGetPorMAC(doc["mac"].as<const char *>());
+  if (!nr)
+  {
+    return "Nodo Invalido!";
+  }
+
+  int tot = recursosGetCount(RECURSO_TODOS);
+  for (int r = 0; r < tot; r++)
+  {
+    Recurso *rec = recursoGetPorIndice(r);
+    if (!rec->remoto)
+      continue;
+    if (rec->recursoRemoto->nodo->num != nr->num)
+      continue;
+
+    if (!strcmp(doc["id"].as<const char *>(), rec->recursoRemoto->idRemoto))
+    {
+      logaMensagem("Evento recebido! Atualizar recurso [%s]", rec->id);
+
+      bool novoEstado = doc["device"]["estado"].as<bool>();
+
+      bool mudou = false;
+      {
+        // TODO :: LOCK!
+        mudou = (rec->recursoRemoto->rele.estado != novoEstado);
+        rec->recursoRemoto->rele.estado = novoEstado;
+      }
+
+      if (mudou)
+        recursoEnviaSSE(rec);
+
+      return "OK";
+    }
+  }
+
+  return "Recurso nao encontrado";
 }
 
 String recursoAtualizaConfigFromJSON(uint8_t *json)
