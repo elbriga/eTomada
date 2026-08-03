@@ -4,6 +4,7 @@
 #include <Preferences.h>
 
 #include "eTomada.h"
+#include "mestre.h"
 #include "reles.h"
 #include "regras.h"
 #include "tipoSensores.h"
@@ -33,9 +34,12 @@ void eTomadaInit()
   modoOperacao =
       (prefs.getUChar("modo") == MODO_CONTROLADOR) ? MODO_CONTROLADOR : MODO_NO;
 
-  prefs.end();
-
   logaMensagem("Modo de Operação: %s", eTomadaGetModoOperacaoStr());
+  logaMensagem("MAC: %s", getMACStr().c_str());
+
+  mestreInit(prefs);
+
+  prefs.end();
 
   logaMensagem("Inicializando Relés Locais:");
   relesInit();
@@ -84,25 +88,15 @@ String eTomadaGetSnapshotJSON()
 {
   JsonDocument doc;
 
-  uint64_t MAC = ESP.getEfuseMac();
-  char deviceID[32];
+  uint64_t MAC = getMAC();
 
+  char deviceID[32];
   sprintf(deviceID, "etomada_%04X", (uint16_t)(MAC & 0xFFFF));
   doc["device_id"] = deviceID;
   doc["device_name"] = "eTomada Sala"; // TODO
   doc["fw_version"] = "1.3.0";
 
-  char macStr[18];
-  sprintf(
-      macStr,
-      "%02X:%02X:%02X:%02X:%02X:%02X",
-      (uint8_t)(MAC >> 40),
-      (uint8_t)(MAC >> 32),
-      (uint8_t)(MAC >> 24),
-      (uint8_t)(MAC >> 16),
-      (uint8_t)(MAC >> 8),
-      (uint8_t)(MAC));
-  doc["mac"] = macStr;
+  doc["mac"] = getMACStr();
 
   doc["api"] = 3; // versão da API
   doc["uptime"] = millis();
@@ -315,4 +309,27 @@ void eTomadaFactoryReset()
 
   logaTitulo("RESET!");
   ESP.restart();
+}
+
+uint64_t getMAC()
+{
+  return ESP.getEfuseMac();
+}
+
+String getMACStr()
+{
+  uint64_t MAC = getMAC();
+
+  char macStr[18];
+  sprintf(
+      macStr,
+      "%02X:%02X:%02X:%02X:%02X:%02X",
+      (uint8_t)(MAC >> 40),
+      (uint8_t)(MAC >> 32),
+      (uint8_t)(MAC >> 24),
+      (uint8_t)(MAC >> 16),
+      (uint8_t)(MAC >> 8),
+      (uint8_t)(MAC));
+
+  return String(macStr);
 }

@@ -6,6 +6,7 @@
 #include "eTomada.h"
 #include "loga.h"
 #include "nodoRemoto.h"
+#include "mestre.h"
 
 #define DISCOVER_PORT 8266
 
@@ -105,6 +106,9 @@ void discoverLoop()
         discoverUdp.remotePort() + 1);
     discoverUdp.print(eTomadaGetSnapshotJSON());
     discoverUdp.endPacket();
+
+    // Verificar se é nosso mestre
+    mestreCheckDiscover(doc["mac"].as<String>(), discoverUdp.remoteIP());
 }
 
 void discoverStart(bool ehTask)
@@ -159,7 +163,10 @@ void discoverTask(void *args)
     if (!ehTask)
         logaMensagem("Enviando cmd discover para o broadcast: %s", broadcast.toString().c_str());
     discoverUdp.beginPacket(broadcast, DISCOVER_PORT);
-    discoverUdp.print("{\"cmd\":\"discover\"}");
+    // TODO :: Usar classes JSON aqui
+    discoverUdp.print("{\"cmd\":\"discover\",\"mac\":\"");
+    discoverUdp.print(getMACStr().c_str());
+    discoverUdp.print("\"}");
     discoverUdp.endPacket();
 
     if (!ehTask)

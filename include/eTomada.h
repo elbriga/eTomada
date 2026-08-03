@@ -20,3 +20,6 @@ void eTomadaSalvaSensor(Recurso *s);
 
 void eTomadaRoleta();
 void eTomadaFactoryReset();
+
+uint64_t getMAC();
+String getMACStr();
