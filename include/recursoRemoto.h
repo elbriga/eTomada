@@ -6,7 +6,7 @@
 #include "eTomada.h"
 #include "nodoRemoto.h"
 #include "tipoRecurso.h"
-#include "reles.h"
+#include "rele.h"
 #include "sensores.h"
 
 struct RecursoRemoto

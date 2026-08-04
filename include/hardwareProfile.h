@@ -1,6 +1,6 @@
 #pragma once
 
-#include "reles.h"
+#include "rele.h"
 #include "sensores.h"
 typedef struct
 {

@@ -5,7 +5,7 @@
 
 #include "eTomada.h"
 #include "mestre.h"
-#include "reles.h"
+#include "rele.h"
 #include "regras.h"
 #include "tipoSensores.h"
 #include "sensores.h"
@@ -114,7 +114,7 @@ String eTomadaGetSnapshotJSON()
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
   doc["datahorastr"] = formattedTime;
 
-  // TODO :: Mover para um endpoint da API
+  // TODO :: Enviar estes dados no RECURSO_SENSOR, mesmo que duplicados, assim o sensor fica auto-suficiente e pode ser mostrado no nodo pai
   {
     TipoSensor *ts;
     int totTS = tipoSensorGetCount();

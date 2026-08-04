@@ -3,7 +3,7 @@
 #include "eTomada.h"
 #include "hardwareProfile.h"
 #include "loga.h"
-#include "reles.h"
+#include "rele.h"
 #include "regras.h"
 #include "mutex.h"
 #include "display.h"

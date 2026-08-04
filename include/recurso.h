@@ -3,7 +3,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
-#include "reles.h"
+#include "rele.h"
 #include "sensores.h"
 #include "recursoRemoto.h"
 #include "tipoRecurso.h"

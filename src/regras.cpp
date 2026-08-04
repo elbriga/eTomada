@@ -4,7 +4,7 @@
 #include "regras.h"
 #include "loga.h"
 #include "display.h"
-#include "reles.h"
+#include "rele.h"
 #include "sensores.h"
 #include "ntp.h"
 #include "mutex.h"

@@ -1,7 +1,7 @@
 #include "eTomada.h"
 #include "http.h"
 #include "loga.h"
-#include "reles.h"
+#include "rele.h"
 #include "regras.h"
 #include "sensor.h"
 #include "wifi.h"
