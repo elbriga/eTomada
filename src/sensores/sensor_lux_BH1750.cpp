@@ -7,17 +7,20 @@
 
 BH1750 lightMeter;
 
-static String sensorLuxBH1750Init() {
+static String sensorLuxBH1750Init()
+{
   Wire.begin();
 
-  if (!lightMeter.begin()) {
+  if (!lightMeter.begin())
+  {
     return "Falha init BH1750";
   }
 
   return "OK";
 }
 
-static int sensorLuxBH1750Ler(Sensor *s) {
+static int sensorLuxBH1750Ler(Sensor *s)
+{
   return lightMeter.readLightLevel() * 100;
 }
 
@@ -26,5 +29,4 @@ TipoSensor sensorLuxBH1750 = {
     "LUX",
     "L",
     sensorLuxBH1750Init,
-    sensorLuxBH1750Ler
-};
+    sensorLuxBH1750Ler};

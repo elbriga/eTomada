@@ -5,11 +5,13 @@
 #include "sensores.h"
 #include "tipoSensores.h"
 
-static String sensorLuxInit() {
+static String sensorLuxInit()
+{
   return "OK";
 }
 
-static int sensorLuxLer(Sensor *s) {
+static int sensorLuxLer(Sensor *s)
+{
   // Ler sensor de LUX
   return s->valor + (esp_random() % 21) - 10; // MOCK
 }
@@ -19,5 +21,4 @@ TipoSensor sensorLux = {
     "LUX",
     "L",
     sensorLuxInit,
-    sensorLuxLer
-};
+    sensorLuxLer};

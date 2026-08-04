@@ -6,9 +6,12 @@ static bool sensorAHT10Inicializado = false;
 static sensors_event_t humidity, temp;
 static long ultimaLeitura = 0;
 
-String sensorAHT10Init() {
-  if (!sensorAHT10Inicializado) {
-    if (!aht.begin()) {
+String sensorAHT10Init()
+{
+  if (!sensorAHT10Inicializado)
+  {
+    if (!aht.begin())
+    {
       return "Falha init AHT10!";
     }
   }
@@ -17,20 +20,24 @@ String sensorAHT10Init() {
   return "OK";
 }
 
-void sensorAHT10Ler() {
-  if (millis() - ultimaLeitura < 8) {
+void sensorAHT10Ler()
+{
+  if (millis() - ultimaLeitura < 8)
+  {
     return;
   }
   ultimaLeitura = millis();
   aht.getEvent(&humidity, &temp);
 }
 
-int sensorAHT10LerTemperatura() {
+int sensorAHT10LerTemperatura()
+{
   sensorAHT10Ler();
   return (int)(temp.temperature);
 }
 
-int sensorAHT10LerUmidade() {
+int sensorAHT10LerUmidade()
+{
   sensorAHT10Ler();
   return (int)(humidity.relative_humidity);
 }

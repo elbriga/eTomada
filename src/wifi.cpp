@@ -23,12 +23,16 @@ static JsonDocument wifiScanDoc;
 
 void WiFiConnect()
 {
+  // Para testes
+  // WiFiSalvaConfig("GLS", "09876543");
+
   wifiPrefs.begin("wifi", true);
   String ssid = wifiPrefs.getString("ssid", "");
   String pass = wifiPrefs.getString("pass", "");
   wifiPrefs.end();
 
-  if (ssid == "") {
+  if (ssid == "")
+  {
     logaMensagem("Sem WiFi configurado");
     WiFiModoAP();
     return;
@@ -47,15 +51,18 @@ void WiFiConnect()
   WiFi.begin(ssid.c_str(), pass.c_str());
 
   unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     esp_task_wdt_reset(); // alimenta o watchdog
 
-    if (WiFi.status() == WL_CONNECT_FAILED) {
+    if (WiFi.status() == WL_CONNECT_FAILED)
+    {
       logaMensagem("Falha!! Cheque a configuracao!!");
       delay(5000);
     }
 
-    if (millis() - start > 20000) {
+    if (millis() - start > 20000)
+    {
       logaMensagem("Timeout WiFi");
 
       WiFi.disconnect(true);
@@ -111,23 +118,27 @@ bool WiFiTemConfig()
 
 void WiFiScanLoop()
 {
-  if (!wifiScanning) {
-    if (millis() - lastWiFiScan > 30000) {
+  if (!wifiScanning)
+  {
+    if (millis() - lastWiFiScan > 30000)
+    {
       WiFiStartScan();
     }
     return;
   }
 
   int numRedes = WiFi.scanComplete();
-  if (numRedes == -1) {
+  if (numRedes == -1)
+  {
     // ainda escaneando
     return;
   }
-  if (numRedes < 0) {
+  if (numRedes < 0)
+  {
     wifiScanning = false;
     wifiScanDoc.clear();
     wifiScanDoc["scanning"] = false;
-    wifiScanDoc["coderro"]  = numRedes;
+    wifiScanDoc["coderro"] = numRedes;
     logaMensagem("Erro scan WiFi [%d]", numRedes);
     return;
   }
@@ -136,9 +147,11 @@ void WiFiScanLoop()
   wifiScanDoc["scanning"] = false;
 
   JsonArray arr = wifiScanDoc["redes"].to<JsonArray>();
-  for (int i = 0; i < numRedes; i++) {
+  for (int i = 0; i < numRedes; i++)
+  {
     String ssid = WiFi.SSID(i);
-    if (!ssid.length()) {
+    if (!ssid.length())
+    {
       continue;
     }
 
@@ -149,8 +162,8 @@ void WiFiScanLoop()
   }
 
   WiFi.scanDelete();
-  
-  //logaMensagem("Scan OK [%d redes]", numRedes);
+
+  // logaMensagem("Scan OK [%d redes]", numRedes);
   wifiScanning = false;
 }
 
@@ -158,7 +171,8 @@ void WiFiModoAPLoop()
 {
   dnsServer.processNextRequest();
 
-  if (millis() - tempoIdleModoAP > MODO_AP_MAX_TEMPO_IDLE) {
+  if (millis() - tempoIdleModoAP > MODO_AP_MAX_TEMPO_IDLE)
+  {
     logaTitulo("RESET!");
     ESP.restart();
   }
@@ -173,7 +187,7 @@ void WiFiModoAP()
   IPAddress apIP(192, 168, 4, 1);
   IPAddress netMsk(255, 255, 255, 0);
   WiFi.softAPConfig(apIP, apIP, netMsk);
-  
+
   uint64_t chipid = ESP.getEfuseMac();
   char nomeAP[32];
   sprintf(nomeAP, "eTomadaSetup-%04X", (uint16_t)(chipid & 0xFFFF));
@@ -194,7 +208,8 @@ void WiFiModoAP()
 
 void WiFiStartScan()
 {
-  if (wifiScanning) {
+  if (wifiScanning)
+  {
     return;
   }
 
@@ -204,14 +219,15 @@ void WiFiStartScan()
 
   WiFi.scanDelete();
   WiFi.scanNetworks(true);
-  
-  //logaMensagem("WiFi scan iniciado");
+
+  // logaMensagem("WiFi scan iniciado");
 
   lastWiFiScan = millis();
   wifiScanning = true;
 }
 
-String WiFiGetScanJSON() {
+String WiFiGetScanJSON()
+{
   tempoIdleModoAP = millis();
   String out;
   serializeJson(wifiScanDoc, out);

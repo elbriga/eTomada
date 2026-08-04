@@ -5,9 +5,9 @@
 #ifdef TEM_OLED
 
 #include <SSD1306Wire.h>
-#define I2C_DISPLAY_ADDR    0x3C
-#define SDA                 5
-#define SCL                 4
+#define I2C_DISPLAY_ADDR 0x3C
+#define SDA 5
+#define SCL 4
 
 SSD1306Wire tft(I2C_DISPLAY_ADDR, SDA, SCL);
 
@@ -33,7 +33,7 @@ void displayMostraString(int x, int y, const char *msg)
     tft.display();
 }
 
-void displayMostraMsg(const char* msg, int timeout, bool loga)
+void displayMostraMsg(const char *msg, int timeout, bool loga)
 {
     tft.clear();
 
@@ -41,18 +41,20 @@ void displayMostraMsg(const char* msg, int timeout, bool loga)
     tft.drawString(0, 20, msg);
 
     IPAddress ip = WiFiGetModoAP()
-        ? WiFi.softAPIP()
-        : WiFi.localIP();
+                       ? WiFi.softAPIP()
+                       : WiFi.localIP();
 
     tft.drawString(0, 40, ip.toString());
 
     tft.display();
 
-    if (timeout > 0) {
+    if (timeout > 0)
+    {
         displayTimeoutMsg = millis() + timeout;
     }
 
-    if (loga) {
+    if (loga)
+    {
         logaMensagem("[DISPLAY][%s]", msg);
     }
 }
@@ -74,9 +76,10 @@ void displayMostraString(int x, int y, const char *msg)
     logaMensagem("[DISPLAY] (%d,%d): %s", x, y, msg);
 }
 
-void displayMostraMsg(const char* msg, int timeout, bool loga)
+void displayMostraMsg(const char *msg, int timeout, bool loga)
 {
-    if (loga) {
+    if (loga)
+    {
         logaMensagem("[DISPLAY] %s", msg);
     }
 }
