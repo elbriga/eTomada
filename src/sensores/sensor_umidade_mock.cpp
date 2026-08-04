@@ -2,7 +2,7 @@
 
 #include "esp_system.h" // MOCK
 
-#include "sensores.h"
+#include "sensor.h"
 #include "tipoSensores.h"
 
 static String sensorUmidadeInit()

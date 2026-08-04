@@ -3,7 +3,7 @@
 #include "eTomada.h"
 #include "mestre.h"
 #include "hardwareProfile.h"
-#include "sensores.h"
+#include "sensor.h"
 #include "tipoSensores.h"
 #include "loga.h"
 #include "http.h"

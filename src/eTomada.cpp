@@ -8,7 +8,7 @@
 #include "rele.h"
 #include "regras.h"
 #include "tipoSensores.h"
-#include "sensores.h"
+#include "sensor.h"
 #include "ntp.h"
 #include "mutex.h"
 #include "loga.h"

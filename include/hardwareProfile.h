@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rele.h"
-#include "sensores.h"
+#include "sensor.h"
 typedef struct
 {
     int pino;

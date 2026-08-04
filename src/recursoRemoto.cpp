@@ -7,7 +7,7 @@
 #include "nodoRemoto.h"
 #include "recursoRemoto.h"
 #include "rele.h"
-#include "sensores.h"
+#include "sensor.h"
 #include "discover.h"
 #include "tipoRecurso.h"
 

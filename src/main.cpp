@@ -11,7 +11,7 @@
 #include "ntp.h"
 #include "http.h"
 #include "regras.h"
-#include "sensores.h"
+#include "sensor.h"
 #include "discover.h"
 
 // Timestamp da proxima sincronizacao do NTP

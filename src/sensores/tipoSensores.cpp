@@ -1,4 +1,4 @@
-#include "sensores.h"
+#include "sensor.h"
 #include "tipoSensores.h"
 #include "hardwareProfile.h"
 #include "loga.h"

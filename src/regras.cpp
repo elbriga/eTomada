@@ -5,7 +5,7 @@
 #include "loga.h"
 #include "display.h"
 #include "rele.h"
-#include "sensores.h"
+#include "sensor.h"
 #include "ntp.h"
 #include "mutex.h"
 

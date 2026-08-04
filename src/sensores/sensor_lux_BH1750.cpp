@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <BH1750.h>
 
-#include "sensores.h"
+#include "sensor.h"
 #include "tipoSensores.h"
 
 BH1750 lightMeter;

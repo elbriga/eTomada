@@ -7,7 +7,7 @@
 #include "nodoRemoto.h"
 #include "tipoRecurso.h"
 #include "rele.h"
-#include "sensores.h"
+#include "sensor.h"
 
 struct RecursoRemoto
 {

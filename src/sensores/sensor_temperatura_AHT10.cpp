@@ -1,5 +1,5 @@
 #include "loga.h"
-#include "sensores.h"
+#include "sensor.h"
 #include "tipoSensores.h"
 #include "tipoSensor_AHT10.h"
 

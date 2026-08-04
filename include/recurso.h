@@ -4,7 +4,7 @@
 #include <Preferences.h>
 
 #include "rele.h"
-#include "sensores.h"
+#include "sensor.h"
 #include "recursoRemoto.h"
 #include "tipoRecurso.h"
 

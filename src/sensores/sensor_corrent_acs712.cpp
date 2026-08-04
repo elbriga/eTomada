@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#include "sensores.h"
+#include "sensor.h"
 #include "tipoSensores.h"
 
 static String sensorCorrenteACS712Init()
