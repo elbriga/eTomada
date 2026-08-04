@@ -59,6 +59,10 @@ footer {
   background: #1e493b;
 }
 
+.cardBotao {
+  background: #3e297b;
+}
+
 .cardSensorInativo {
   opacity: 0.3;
 }

@@ -15,7 +15,6 @@
 #include "prefs.h"
 #include "nodoRemoto.h"
 #include "recurso.h"
-#include "recursoRemoto.h"
 #include "discover.h"
 
 // Modo de Operação
@@ -47,9 +46,8 @@ void eTomadaInit()
   logaMensagem("Inicializando Sensores Locais:");
   sensoresInit();
 
-  // TODO
-  // logaMensagem("Inicializando Botões Locais:");
-  // botoesInit();
+  logaMensagem("Inicializando Botões Locais:");
+  botoesInit();
 
   logaMensagem("Inicializando o Discover:");
   discoverInit();
@@ -157,23 +155,13 @@ void eTomadaSalvaRele(Recurso *recurso)
   }
 
   Preferences prefs;
-
-  int num = 0;
-  Rele *rele;
   if (recurso->remoto)
-  {
-    RecursoRemoto *rr = recurso->recursoRemoto;
-    num = rr->num;
-    rele = &rr->rele;
     prefs.begin("recursosRemotos", false);
-  }
   else
-  {
-    num = recurso->num;
-    rele = recurso->rele;
     prefs.begin("reles", false);
-  }
 
+  int num = recursoGetNum(recurso);
+  Rele *rele = recursoGetRele(recurso);
   setPrefsAtr(prefs, num, "nome", String(rele->nome));
   setPrefsAtr(prefs, num, "regra", String(rele->regra));
   setPrefsAtr(prefs, num, "ativo", String(rele->ativo));
@@ -191,26 +179,45 @@ void eTomadaSalvaSensor(Recurso *recurso)
   }
 
   Preferences prefs;
-
-  int num = 0;
-  Sensor *sensor;
   if (recurso->remoto)
-  {
-    RecursoRemoto *rr = recurso->recursoRemoto;
-    num = rr->num;
-    sensor = &rr->sensor;
     prefs.begin("recursosRemotos", false);
-  }
   else
-  {
-    num = recurso->num;
-    sensor = recurso->sensor;
     prefs.begin("sensores", false);
-  }
 
+  int num = recursoGetNum(recurso);
+  Sensor *sensor = recursoGetSensor(recurso);
   setPrefsAtr(prefs, num, "nome", String(sensor->nome));
   setPrefsAtr(prefs, num, "pino", String(sensor->pino));
   setPrefsAtr(prefs, num, "tipo", String(sensor->tipo));
+
+  prefs.end();
+}
+
+void eTomadaSalvaBotao(Recurso *recurso)
+{
+  if (recurso->tipo != RECURSO_BOTAO)
+  {
+    logaMensagem("eTomadaSalvaBotao: erro de tipo de recurso!");
+    return;
+  }
+
+  MutexLock lock(prefsMutex, pdMS_TO_TICKS(2500));
+  if (!lock)
+  {
+    logaMensagem("eTomadaSalvaBotao: erro de mutex!");
+    return;
+  }
+
+  Preferences prefs;
+  if (recurso->remoto)
+    prefs.begin("recursosRemotos", false);
+  else
+    prefs.begin("botoes", false);
+
+  int num = recursoGetNum(recurso);
+  Botao *botao = recursoGetBotao(recurso);
+  // TODO setPrefsAtr(prefs, num, "nome", String(botao->nome));
+  setPrefsAtr(prefs, num, "ativo", String(botao->ativo));
 
   prefs.end();
 }

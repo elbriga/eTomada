@@ -69,6 +69,9 @@ void recursosRemotosInit()
     case RECURSO_SENSOR:
       recursoRemoto->tipo = RECURSO_SENSOR;
       break;
+    case RECURSO_BOTAO:
+      recursoRemoto->tipo = RECURSO_BOTAO;
+      break;
 
     default:
       logaMensagem(">>> recursoRemoto com tipo [%d] invalido!!", tipo);
@@ -99,6 +102,15 @@ void recursosRemotosInit()
       sensorLoadFromPrefs(sensor, rr, prefs);
       sensor->ativo = true;
       // sensor->valor sera setado em nodosRemotosRefreshTask
+    }
+    break;
+
+    case RECURSO_BOTAO:
+    {
+      Botao *botao = &recursoRemoto->botao;
+      botaoLoadFromPrefs(botao, rr, prefs);
+      botao->ativo = true;
+      // botao->estado sera setado em nodosRemotosRefreshTask
     }
     break;
     }
@@ -154,7 +166,7 @@ JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id)
   return recurso;
 }
 
-void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
+void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
 {
   Recurso *recurso;
   RecursoRemoto *rr;

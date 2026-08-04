@@ -17,6 +17,7 @@ String eTomadaGetSnapshotJSON();
 
 void eTomadaSalvaRele(Recurso *r);
 void eTomadaSalvaSensor(Recurso *s);
+void eTomadaSalvaBotao(Recurso *b);
 
 void eTomadaRoleta();
 void eTomadaFactoryReset();

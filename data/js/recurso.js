@@ -18,6 +18,10 @@ function recursoAtualiza(recurso) {
       newCard = sensorGetCard(recurso);
       break;
 
+    case "BOTAO":
+      newCard = botaoGetCard(recurso);
+      break;
+
     default:
       break;
   }

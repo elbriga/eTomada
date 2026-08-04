@@ -2,6 +2,7 @@
 
 #include "rele.h"
 #include "sensor.h"
+#include "botao.h"
 typedef struct
 {
     int pino;
@@ -16,10 +17,16 @@ typedef struct
 
 typedef struct
 {
+    int pino;
+    // TODO :: bool invertido;
+} BotaoHW;
+
+typedef struct
+{
     const char *modelo;
     ReleHW reles[MAX_RELES];
     SensorHW sensores[MAX_SENSORES];
-    // BotaoHW botoes[MAX_BOTOES];
+    BotaoHW botoes[MAX_BOTOES];
 } HardwareProfile;
 
 #ifdef HW_LOLIN

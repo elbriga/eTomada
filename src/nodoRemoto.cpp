@@ -145,7 +145,7 @@ void nodosRemotosRefreshTask(void *args)
       // Atualizar os RecursoRemoto com o snapshot do discover
       JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->deviceID);
 
-      recursoRemotoSetFromSnapshot(nodoRemoto, snapshot);
+      recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
     }
     else
     {

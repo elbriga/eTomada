@@ -12,6 +12,7 @@
 #include "http.h"
 #include "regras.h"
 #include "sensor.h"
+#include "botao.h"
 #include "discover.h"
 
 // Timestamp da proxima sincronizacao do NTP
@@ -110,6 +111,9 @@ void loop()
   {
     discoverLoop();
   }
+
+  // 10ms/10ms
+  botoesAtualiza();
 
   // 1s/1s
   if (timeinfo.tm_sec != lastSecond)

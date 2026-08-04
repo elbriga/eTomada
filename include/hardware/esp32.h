@@ -10,5 +10,8 @@ const HardwareProfile hardwareProfile = {
         {"UmidXPTO", 2},
         {"", 255}, // FIM
     },
-    //.gpioBotoes = { 20,21, 255 },
+    .botoes = {
+        {3},
+        {255}, // FIM
+    },
 };

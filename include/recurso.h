@@ -5,6 +5,7 @@
 
 #include "rele.h"
 #include "sensor.h"
+#include "botao.h"
 #include "recursoRemoto.h"
 #include "tipoRecurso.h"
 
@@ -20,7 +21,7 @@ struct Recurso
   {
     Rele *rele;
     Sensor *sensor;
-    // Botao *botao;
+    Botao *botao;
     RecursoRemoto *recursoRemoto;
   };
 };
@@ -30,8 +31,10 @@ int recursosGetCount(TipoRecurso tipo = RECURSO_TODOS);
 Recurso *recursoGet(const char *id);
 Recurso *recursoGetPorIndice(int posicao);
 
+int recursoGetNum(Recurso *recurso);
 Rele *recursoGetRele(Recurso *r);
 Sensor *recursoGetSensor(Recurso *r);
+Botao *recursoGetBotao(Recurso *recurso);
 
 // Altera o recurso > acoes
 String recursoSetFromJSON(uint8_t *json, JsonDocument *docOut = nullptr);

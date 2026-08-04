@@ -8,6 +8,7 @@
 #include "tipoRecurso.h"
 #include "rele.h"
 #include "sensor.h"
+#include "botao.h"
 
 struct RecursoRemoto
 {
@@ -20,7 +21,7 @@ struct RecursoRemoto
   {
     Rele rele;
     Sensor sensor;
-    // Botao botao;
+    Botao botao;
   };
 };
 
@@ -29,6 +30,6 @@ int recursosRemotosGetCount();
 RecursoRemoto *recursoRemotoGet(const char *id);
 RecursoRemoto *recursoRemotoGetPorIndice(int i);
 
-void recursoRemotoSetFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot);
+void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot);
 
 void recursoRemotoPrint(RecursoRemoto *r);

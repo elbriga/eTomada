@@ -18,9 +18,10 @@ void recursosInit()
   int recursoAddCount = 0;
   int totRelesLocais = relesGetCount();
   int totSensoresLocais = sensoresGetCount();
+  int totBotoesLocais = botoesGetCount();
   int totRecursosRemotos = recursosRemotosGetCount();
 
-  totRecursos = totRelesLocais + totSensoresLocais + totRecursosRemotos;
+  totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais + totRecursosRemotos;
   recursos = new Recurso[totRecursos]();
   if (!recursos)
   {
@@ -47,6 +48,17 @@ void recursosInit()
     recurso->num = s;
     recurso->remoto = false;
     recurso->sensor = sensorGet(s);
+  }
+
+  for (int b = 1; b <= totBotoesLocais; b++)
+  {
+    Recurso *recurso = &recursos[recursoAddCount++];
+
+    snprintf(recurso->id, 8, "B%d", b);
+    recurso->tipo = RECURSO_BOTAO;
+    recurso->num = b;
+    recurso->remoto = false;
+    recurso->botao = botaoGet(b);
   }
 
   for (int rr = 0; rr < totRecursosRemotos; rr++)
@@ -109,10 +121,11 @@ String recursoSetFromJSON(uint8_t *json, JsonDocument *jsonOut)
 
   String recursoID = jsonIN["id"];
   Recurso *recurso = recursoGet(recursoID.c_str());
-  if (!recurso || recurso->tipo != RECURSO_RELE)
-  {
+  if (!recurso)
     return "Recurso invalido";
-  }
+
+  if (recurso->tipo != RECURSO_RELE)
+    return "Recurso nao eh RELE";
 
   bool estado = (jsonIN["estado"].as<String>() == "1");
 
@@ -121,6 +134,9 @@ String recursoSetFromJSON(uint8_t *json, JsonDocument *jsonOut)
 
 String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut)
 {
+  if (recurso->tipo != RECURSO_RELE)
+    return "Recurso nao eh RELE";
+
   String msg;
   if (recurso->remoto)
   {
@@ -177,6 +193,11 @@ Recurso *recursoGet(const char *id)
   return NULL;
 }
 
+int recursoGetNum(Recurso *recurso)
+{
+  return recurso->remoto ? recurso->recursoRemoto->num : recurso->num;
+}
+
 Rele *recursoGetRele(Recurso *recurso)
 {
   return recurso->remoto ? &recurso->recursoRemoto->rele : recurso->rele;
@@ -185,6 +206,11 @@ Rele *recursoGetRele(Recurso *recurso)
 Sensor *recursoGetSensor(Recurso *recurso)
 {
   return recurso->remoto ? &recurso->recursoRemoto->sensor : recurso->sensor;
+}
+
+Botao *recursoGetBotao(Recurso *recurso)
+{
+  return recurso->remoto ? &recurso->recursoRemoto->botao : recurso->botao;
 }
 
 const char *recursoGetTipoStr(TipoRecurso tipo)
@@ -221,6 +247,10 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
     doc["device"] = sensorGetJSONDoc(recursoGetSensor(r), true);
     break;
 
+  case RECURSO_BOTAO:
+    doc["device"] = botaoGetJSONDoc(recursoGetBotao(r), true);
+    break;
+
   default:
     doc["device"] = "???";
     break;
@@ -249,6 +279,9 @@ JsonDocument recursoGetJSONEvento(Recurso *r)
     break;
   case RECURSO_SENSOR:
     device["valor"] = r->sensor->valor;
+    break;
+  case RECURSO_BOTAO:
+    device["estado"] = r->botao->estado;
     break;
   }
 
@@ -331,6 +364,15 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
     sensor->valor = novoValor;
   }
   break;
+
+  case RECURSO_BOTAO:
+  {
+    Botao *botao = recursoGetBotao(recurso);
+    bool novoEstado = doc["estado"].as<bool>();
+    mudou = (botao->estado != novoEstado);
+    botao->estado = novoEstado;
+  }
+  break;
   }
 
   if (mudou)
@@ -366,6 +408,9 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   case RECURSO_SENSOR:
     msg = sensorAtualizaConfigFromJSON(recurso, doc);
     break;
+  case RECURSO_BOTAO:
+    msg = botaoAtualizaConfigFromJSON(recurso, doc);
+    break;
   default:
     msg = "Recurso Desconhecido";
   }
@@ -382,7 +427,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
 
 void recursoPrint(Recurso *recurso)
 {
-  logaMensagem("Recurso%s %d: %s",
-               recurso->remoto ? " Remoto" : "", recurso->num,
-               recurso->tipo == RECURSO_RELE ? "RELE" : (recurso->tipo == RECURSO_SENSOR ? "SENSOR" : "BOTAO"));
+  logaMensagem("Recurso%s %s %d: %s",
+               recurso->remoto ? " Remoto" : "", recurso->id, recurso->num,
+               recursoGetTipoStr(recurso->tipo));
 }

@@ -10,5 +10,7 @@ const HardwareProfile hardwareProfile = {
     .sensores = {
         {"", 255}, // Indicar Vazio
     },
-    //.gpioBotoes = { 20,21, 255 },
+    .botoes = {
+        {255}, // FIM
+    },
 };

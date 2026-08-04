@@ -47,6 +47,7 @@ async function eTomadaRender(snapshot) {
 
     sensoresRenderFromRecursos();
     relesRenderFromRecursos();
+    botoesRenderFromRecursos();
   }
 
   _eTomadaLoading = false;

@@ -207,8 +207,11 @@ String sensorAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
 
 void sensoresAtualiza()
 {
+  int maxSensores = sensoresGetCount();
+  if (!maxSensores)
+    return;
+
   int totRecursos = recursosGetCount(RECURSO_TODOS);
-  int maxSensores = recursosGetCount(RECURSO_SENSOR);
 
   AtualizacaoSensor *atual = new AtualizacaoSensor[maxSensores]();
 
@@ -218,6 +221,8 @@ void sensoresAtualiza()
   {
     Recurso *rec = recursoGetPorIndice(r);
     if (rec->tipo != RECURSO_SENSOR)
+      continue;
+    if (rec->remoto)
       continue;
 
     Sensor *sensor = rec->sensor;
