@@ -10,7 +10,7 @@ function sensorGetCard(recurso) {
   if (!tipoSensor) {
     tipoSensor = { status: "TipoSensor Invalido" };
   }
-  const tsOK = tipoSensor.status == "OK";
+  const tsOK = recurso.remoto || tipoSensor.status == "OK";
   const valor = !tsOK ? tipoSensor.status : `${sensor.valor} ${sensor.unidade}`;
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;

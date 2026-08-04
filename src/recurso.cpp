@@ -319,6 +319,13 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
   case RECURSO_SENSOR:
   {
     Sensor *sensor = recursoGetSensor(recurso);
+
+    // Inicializar sensor?
+    if (!strlen(sensor->tipo) && doc["tipo"] != "")
+    {
+      strcpy(sensor->tipo, doc["tipo"].as<const char *>());
+    }
+
     int novoValor = doc["valor"].as<int>();
     mudou = (sensor->valor != novoValor);
     sensor->valor = novoValor;
