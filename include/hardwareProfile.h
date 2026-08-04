@@ -26,6 +26,8 @@ typedef struct
 #include "hardware/lolin.h"
 #elif defined(HW_C3MINI)
 #include "hardware/c3mini.h"
+#elif defined(HW_ESP32)
+#include "hardware/esp32.h"
 #else
 #error "Nenhum Hardware Profile definido."
 #endif
