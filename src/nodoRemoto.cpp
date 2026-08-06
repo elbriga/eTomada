@@ -41,6 +41,7 @@ void nodoRemotoInit()
       NodoRemoto *nodoRemoto = &nodosRemotos[nr - 1];
 
       nodoRemoto->num = nr;
+      nodoRemoto->online = false;
 
       // TODO :: renomear deviceID para mac
       strncpy(nodoRemoto->deviceID, getPrefsAtr(prefs, nr, "deviceID").c_str(), sizeof(nodoRemoto->deviceID) - 1);
@@ -135,6 +136,10 @@ void nodosRemotosRefreshTask(void *args)
     NodoRemoto *nodoDescoberto = discoverGetNodo(nodoRemoto->deviceID);
     if (nodoDescoberto)
     {
+      if (!nodoRemoto->online)
+        logaMensagem("Nodo Remoto %d - ONLINE", nr);
+      nodoRemoto->online = true;
+
       if (nodoRemoto->ip != nodoDescoberto->ip)
       {
         nodoRemoto->ip = nodoDescoberto->ip;
@@ -150,7 +155,9 @@ void nodosRemotosRefreshTask(void *args)
     else
     {
       nodoRemoto->ip = (uint32_t)0;
-      logaMensagem("Nodo Remoto %d OFFLINE", nr);
+      if (nodoRemoto->online)
+        logaMensagem("Nodo Remoto %d OFFLINE", nr);
+      nodoRemoto->online = false;
     }
   }
 

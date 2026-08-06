@@ -197,7 +197,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
 
 void recursoRemotoPrint(RecursoRemoto *recursoRemoto)
 {
-  logaMensagem("RecursoRemoto %s[%d] em %s",
-               recursoGetTipoStr(recursoRemoto->tipo), recursoRemoto->num,
+  logaMensagem("RecursoRemoto[%d] %s em %s",
+               recursoRemoto->num, recursoGetTipoStr(recursoRemoto->tipo),
                recursoRemoto->nodo->ip.toString().c_str());
 }

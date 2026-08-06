@@ -10,6 +10,7 @@ struct NodoRemoto
   int num;
   char deviceID[32];
   IPAddress ip;
+  bool online;
 };
 
 void nodoRemotoInit();
