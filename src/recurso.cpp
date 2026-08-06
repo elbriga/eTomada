@@ -9,6 +9,7 @@
 #include "recursoRemoto.h"
 #include "http.h"
 #include "apiInterna.h"
+#include "anunciador.h"
 
 static Recurso *recursos;
 static int totRecursos = 0;
@@ -110,29 +111,29 @@ String recursoGetJSONString(Recurso *r)
   return out;
 }
 
-String recursoSetFromJSON(uint8_t *json, JsonDocument *jsonOut)
+String recursoSetFromJSON(uint8_t *json, Recurso *recursoOut)
 {
+  recursoOut = nullptr;
+
   JsonDocument jsonIN;
   DeserializationError err = deserializeJson(jsonIN, json);
   if (err)
-  {
     return "JSON Invalido";
-  }
 
-  String recursoID = jsonIN["id"];
-  Recurso *recurso = recursoGet(recursoID.c_str());
+  Recurso *recurso = recursoGet(jsonIN["id"].as<const char *>());
   if (!recurso)
     return "Recurso invalido";
 
   if (recurso->tipo != RECURSO_RELE)
     return "Recurso nao eh RELE";
 
-  bool estado = (jsonIN["estado"].as<String>() == "1");
+  recursoOut = recurso;
 
-  return recursoSet(recurso, estado, jsonOut);
+  bool estado = (jsonIN["estado"].as<String>() == "1");
+  return recursoSet(recurso, estado);
 }
 
-String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut)
+String recursoSet(Recurso *recurso, bool estado)
 {
   if (recurso->tipo != RECURSO_RELE)
     return "Recurso nao eh RELE";
@@ -148,26 +149,16 @@ String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut)
     msg = releControla(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   }
 
-  recursoEnviaSSE(recurso, jsonOut);
-
-  mestreEnviaEvento(recurso);
+  // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);
+  anunciadorPost(ANUNCIO_RECURSO, recurso);
 
   return msg;
 }
 
-void recursoEnviaSSE(Recurso *recurso, JsonDocument *jsonOut)
+void recursoEnviaSSE(Recurso *recurso)
 {
   String recursoStr;
-  if (jsonOut)
-  {
-    *jsonOut = recursoGetJSONDoc(recurso);
-    serializeJson(*jsonOut, recursoStr);
-  }
-  else
-  {
-    JsonDocument js = recursoGetJSONDoc(recurso);
-    serializeJson(js, recursoStr);
-  }
+  serializeJson(recursoGetJSONDoc(recurso), recursoStr);
   httpEnviaEvento(recursoStr, "sse_recurso");
 }
 
@@ -427,7 +418,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
 
 void recursoPrint(Recurso *recurso)
 {
-  logaMensagem("Recurso%s %s %d: %s",
-               recurso->remoto ? " Remoto" : "", recurso->id, recurso->num,
+  logaMensagem("Recurso%s %s: %s",
+               recurso->remoto ? " Remoto" : "", recurso->id,
                recursoGetTipoStr(recurso->tipo));
 }

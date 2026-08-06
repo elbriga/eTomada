@@ -37,8 +37,8 @@ Sensor *recursoGetSensor(Recurso *r);
 Botao *recursoGetBotao(Recurso *recurso);
 
 // Altera o recurso > acoes
-String recursoSetFromJSON(uint8_t *json, JsonDocument *docOut = nullptr);
-String recursoSet(Recurso *recurso, bool estado, JsonDocument *jsonOut = nullptr);
+String recursoSetFromJSON(uint8_t *json, Recurso *recursoOut);
+String recursoSet(Recurso *recurso, bool estado);
 
 // Atualiza o recurso > eventos - timestamp para ignorar eventos antigos
 String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long timestamp);
@@ -51,6 +51,6 @@ String recursoEventoRecebido(uint8_t *json);
 
 String recursoAtualizaConfigFromJSON(uint8_t *json);
 
-void recursoEnviaSSE(Recurso *recurso, JsonDocument *jsonOut = nullptr);
+void recursoEnviaSSE(Recurso *recurso);
 
 void recursoPrint(Recurso *recurso);

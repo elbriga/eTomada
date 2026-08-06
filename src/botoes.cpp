@@ -218,7 +218,7 @@ void botoesAtualiza()
     }
   }
 
-  // Atualizar os recrusos BOTAO COM LOCK
+  // Atualizar os recursos BOTAO COM LOCK
   {
     MutexLock lock(recursosMutex);
     if (!lock)
