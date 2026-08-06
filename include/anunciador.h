@@ -9,7 +9,8 @@ typedef struct
 {
     TipoAnuncio tipo;
     Recurso *recurso;
+    bool comMestre;
 } Anuncio;
 
 void anunciadorInit();
-void anunciadorPost(TipoAnuncio tipo, Recurso *recurso);
+void anunciadorPost(Anuncio anuncio);

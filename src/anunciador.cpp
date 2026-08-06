@@ -30,29 +30,26 @@ void anunciadorInit()
         1);
 }
 
-void anunciadorPost(TipoAnuncio tipo, Recurso *recurso)
+void anunciadorPost(Anuncio anuncio)
 {
-    Anuncio a = {
-        .tipo = tipo,
-        .recurso = recurso};
-
-    xQueueSend(filaAnuncios, &a, 0);
+    xQueueSend(filaAnuncios, &anuncio, 0);
 }
 
 void anunciadorTask(void *)
 {
-    Anuncio a;
+    Anuncio anuncio;
 
     while (true)
     {
-        if (xQueueReceive(filaAnuncios, &a, portMAX_DELAY))
+        if (xQueueReceive(filaAnuncios, &anuncio, portMAX_DELAY))
         {
-            switch (a.tipo)
+            switch (anuncio.tipo)
             {
             case ANUNCIO_RECURSO:
                 logaMensagem("ANUNCIO_RECURSO <<<<<<<<<<<<<<<<");
-                recursoEnviaSSE(a.recurso);
-                mestreEnviaEvento(a.recurso);
+                recursoEnviaSSE(anuncio.recurso);
+                if (anuncio.comMestre)
+                    mestreEnviaEvento(anuncio.recurso);
                 break;
             }
         }

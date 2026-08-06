@@ -150,7 +150,7 @@ String recursoSet(Recurso *recurso, bool estado)
   }
 
   // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);
-  anunciadorPost(ANUNCIO_RECURSO, recurso);
+  anunciadorPost({ANUNCIO_RECURSO, recurso, true});
 
   return msg;
 }
@@ -368,7 +368,8 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
 
   if (mudou)
   {
-    recursoEnviaSSE(recurso);
+    // recursoEnviaSSE(recurso); em outra thread
+    anunciadorPost({ANUNCIO_RECURSO, recurso, false});
   }
 
   return "OK";
@@ -411,7 +412,8 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
     return msg;
   }
 
-  recursoEnviaSSE(recurso);
+  // recursoEnviaSSE(recurso) e mestreEnviaEvento(recurso) em outra thread
+  anunciadorPost({ANUNCIO_RECURSO, recurso, true});
 
   return "OK";
 }

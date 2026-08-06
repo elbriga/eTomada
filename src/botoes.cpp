@@ -9,6 +9,7 @@
 #include "mutex.h"
 #include "prefs.h"
 #include "recurso.h"
+#include "anunciador.h"
 
 #define BOTAO_DEBOUCE_TIME_MS 50
 
@@ -240,9 +241,8 @@ void botoesAtualiza()
   // Enviar os Eventos e os SSE sem Lock
   for (int rb = 0; rb < totBotoesParaAtualizar; rb++)
   {
-    recursoEnviaSSE(atual[rb].rec);
-
-    mestreEnviaEvento(atual[rb].rec);
+    // recursoEnviaSSE(atual[rb].rec) e mestreEnviaEvento(atual[rb].rec) em outra thread
+    anunciadorPost({ANUNCIO_RECURSO, atual[rb].rec, true});
   }
 
   delete[] atual;

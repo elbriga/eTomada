@@ -10,6 +10,7 @@
 #include "mutex.h"
 #include "prefs.h"
 #include "recurso.h"
+#include "anunciador.h"
 
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
@@ -284,9 +285,8 @@ void sensoresAtualiza()
     if (!atual[rs].mudou)
       continue;
 
-    recursoEnviaSSE(atual[rs].rec);
-
-    mestreEnviaEvento(atual[rs].rec);
+    // recursoEnviaSSE(atual[rb].rec) e mestreEnviaEvento(atual[rb].rec) em outra thread
+    anunciadorPost({ANUNCIO_RECURSO, atual[rs].rec, true});
   }
 
   delete[] atual;
