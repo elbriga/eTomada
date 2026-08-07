@@ -5,6 +5,7 @@
 #include "eventos.h"
 #include "recurso.h"
 #include "mestre.h"
+#include "regras.h"
 #include "loga.h"
 
 #define EVENTOS_TAMNHO_FILA 20
@@ -46,12 +47,23 @@ void eventosProcessaTask(void *)
         if (xQueueReceive(filaEventos, &evento, portMAX_DELAY))
         {
             Recurso *rec = evento.recurso;
+            bool processaRegras = true;
+            bool atualiza = true;
+
             switch (evento.tipo)
             {
             case EVENTO_VALOR_MUDOU:
+
+                break;
+            }
+
+            if (processaRegras)
+                regrasProcessaEvento(evento);
+
+            if (atualiza)
+            {
                 recursoEnviaSSE(rec);
                 mestreEnviaEvento(rec);
-                break;
             }
         }
     }
