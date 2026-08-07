@@ -159,7 +159,7 @@ String recursoGetJSONString(Recurso *r)
   return out;
 }
 
-String recursoSetFromJSON(uint8_t *json, Recurso *recursoOut)
+String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut)
 {
   recursoOut = nullptr;
 

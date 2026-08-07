@@ -37,7 +37,7 @@ Sensor *recursoGetSensor(Recurso *r);
 Botao *recursoGetBotao(Recurso *recurso);
 
 // Altera o recurso > acoes
-String recursoSetFromJSON(uint8_t *json, Recurso *recursoOut);
+String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut);
 String recursoSet(Recurso *recurso, bool estado);
 
 // Atualiza o recurso > eventos - timestamp para ignorar eventos antigos
