@@ -1,5 +1,4 @@
 #pragma once
-
 #include "hardwareProfile.h"
 
 const HardwareProfile hardwareProfile = {

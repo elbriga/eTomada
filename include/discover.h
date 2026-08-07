@@ -1,3 +1,4 @@
+#pragma once
 #include <ArduinoJson.h>
 #include "nodoRemoto.h"
 
