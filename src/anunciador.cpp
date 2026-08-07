@@ -46,7 +46,6 @@ void anunciadorTask(void *)
             switch (anuncio.tipo)
             {
             case ANUNCIO_RECURSO:
-                logaMensagem("ANUNCIO_RECURSO <<<<<<<<<<<<<<<<");
                 recursoEnviaSSE(anuncio.recurso);
                 if (anuncio.comMestre)
                     mestreEnviaEvento(anuncio.recurso);
