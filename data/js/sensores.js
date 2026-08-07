@@ -21,7 +21,7 @@ function sensorGetCard(recurso) {
 <div class="headerTop">
   <div>
     <div class="medio">Sensor ${sensor.num} - ${tipoSensor.nome} - ${tipoSensor.tipo}</div>
-    <div class="title">${escapeHtml(sensor.nome || "")}</div>
+    <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
   <button class="editBtn" onclick="sensorOpenEditModal('${recurso.id}')">✏️</button>
 </div>
@@ -40,7 +40,6 @@ function sensoresRenderFromRecursos() {
 
     let sensor = recurso.device;
     if (sensor.pino == -1) return;
-    if (!sensor.nome) sensor.nome = "---";
 
     const card = sensorGetCard(recurso);
     container.appendChild(card);
@@ -56,7 +55,7 @@ function sensorOpenEditModal(recursoID) {
 
   document.getElementById("modalTitle").innerHTML =
     "Editar Sensor " + recursoID;
-  document.getElementById("modalNome").value = sensor.nome || "";
+  document.getElementById("modalNome").value = recurso.nome || "";
   document.getElementById("modalDivRegra").style.display = "none";
   document.getElementById("modalSalvarBtn").onclick = function () {
     sensorSalvarFromModal();

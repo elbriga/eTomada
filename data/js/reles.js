@@ -13,7 +13,7 @@ function releGetCard(recurso) {
 <div class="headerTop">
   <div class="minHeight">
     <div class="medio">Tomada ${recurso.id}</div>
-    <div class="title">${escapeHtml(rele.nome || "")}</div>
+    <div class="title">${escapeHtml(recurso.nome || "")}</div>
     <div class="medio">${releGetRegraTXT(rele.regra)}</div>
   </div>
   <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
@@ -70,7 +70,7 @@ function releOpenEditModal(recursoID) {
 
   document.getElementById("modalTitle").innerHTML =
     "Editar Tomada " + recursoID;
-  document.getElementById("modalNome").value = rele.nome || "";
+  document.getElementById("modalNome").value = recurso.nome || "";
 
   document.getElementById("modalDivRegra").style.display = "block";
   document.getElementById("modalRegra").value = rele.regra || "";

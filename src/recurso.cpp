@@ -271,9 +271,9 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
 {
   JsonDocument doc;
 
-  // doc["nome"] = r->nome;
   doc["id"] = r->id;
   doc["tipo"] = recursoGetTipoStr(r->tipo);
+  doc["nome"] = r->nome;
   doc["remoto"] = r->remoto;
 
   switch (r->tipo)

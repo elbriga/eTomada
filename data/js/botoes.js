@@ -4,7 +4,6 @@ function botaoGetCard(recurso) {
   if (recurso.tipo != "BOTAO") return null;
 
   let botao = recurso.device;
-  if (!botao.nome) botao.nome = "ToDo";
 
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;
@@ -13,7 +12,7 @@ function botaoGetCard(recurso) {
 <div class="headerTop">
   <div class="minHeight">
     <div class="medio">Botao ${recurso.id}</div>
-    <div class="title">${escapeHtml(botao.nome || "")}</div>
+    <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
   <button class="editBtn" onclick="botaoOpenEditModal('${recurso.id}')">✏️</button>
 </div>
@@ -51,8 +50,8 @@ function botaoOpenEditModal(recursoID) {
   botaoEditando = recursoID;
 
   document.getElementById("modalTitle").innerHTML = "Editar Botão " + recursoID;
-  document.getElementById("modalNome").value = botao.nome || "";
-
+  document.getElementById("modalNome").value = recurso.nome || "";
+  document.getElementById("modalDivRegra").style.display = "none";
   document.getElementById("modalSalvarBtn").onclick = function () {
     botaoSalvarFromModal();
   };
