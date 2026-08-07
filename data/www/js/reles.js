@@ -16,14 +16,13 @@ function releGetCard(recurso) {
   </div>
   <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
 </div>
-<br>
 <div class="status ${rele.estado ? "on" : "off"}">
   ${rele.estado ? "● Ligado" : "● Desligado"}
   ${rele.override > Date.now() / 1000 ? ` (até ${getHoraFromTS(rele.override)})` : ""}
 </div>
 
 <button onclick="releOverride('${recurso.id}', ${rele.estado ? "false" : "true"}, this)">
-  ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}${rele.regra == "" ? "" : " por 30 minutos"}
+  ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}
 </button>
 `;
   return card;

@@ -153,7 +153,7 @@ void httpServerInitModoAPI()
 
   httpServer.addHandler(&sse);
 
-  httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+  httpServer.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html");
 }
 
 void httpServerInitModoAP()
@@ -206,7 +206,7 @@ void httpServerInitModoAP()
     delay(1000);
     ESP.restart(); });
 
-  httpServer.serveStatic("/", LittleFS, "/").setDefaultFile("portal.html");
+  httpServer.serveStatic("/", LittleFS, "/www/").setDefaultFile("portal.html");
 }
 
 void logaRequest(AsyncWebServerRequest *request, String resultado)
