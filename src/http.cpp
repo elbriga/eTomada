@@ -18,7 +18,7 @@ void httpServerInitModoAP();
 void httpServerInitModoAPI();
 void logaRequest(AsyncWebServerRequest *request, String resultado);
 
-void httpEnviaEvento(String msg, String tipo)
+void httpEnviaSSE(String msg, String tipo)
 {
   sse.send(msg, tipo);
 }
@@ -96,12 +96,13 @@ void httpServerInitModoAPI()
 
   httpServer.on("/api/setRecursoConfig", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {
-    String atzCfgOK = recursoAtualizaConfigFromJSON(data);
+                  String atzCfgOK = recursoAtualizaConfigFromJSON(data);
 
-    request->send(200, "application/json", "{\"msg\": \""+atzCfgOK+"\"}");
-    logaRequest(request, "200 " + atzCfgOK);
+                  request->send(200, "application/json", "{\"msg\": \"" + atzCfgOK + "\"}");
+                  logaRequest(request, "200 " + atzCfgOK);
 
-    processaRegras(); });
+                  // regrasProcessa();
+                });
 
   httpServer.on("/api/evento", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {

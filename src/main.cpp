@@ -140,10 +140,10 @@ void loop()
       sensoresAtualiza();
 
       // Se estivermos no modo MODO_NO essa funcao retorna sem fazer nada
-      processaRegras();
+      // regrasProcessa();
 
       // Keepalive para a interface web
-      httpEnviaEvento("{}", "sse_ping");
+      httpEnviaSSE("{}", "sse_ping");
 
       // Verificar os NÓs remotos (em nova Task):
       if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
