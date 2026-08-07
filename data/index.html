@@ -70,44 +70,6 @@
       <div class="modalContent">
         <label>Nome</label>
         <input id="modalNome" maxlength="31" />
-        <div id="modalDivRegra">
-          <label>Regra</label>
-          <span>
-            Ação:
-            <select id="modalRegraAcao" onchange="releOCModalAcao()">
-              <option value="">Manual</option>
-              <option value="ON">Horário Ligado</option>
-              <option value="OF">Horário Desligado</option>
-              <option value="SE">Condicional por Sensores</option>
-            </select>
-          </span>
-          <br /><br />
-          <div id="divRegraHorario">
-            Faixa de Horário:
-            <input id="modalHorario" maxlength="11" placeholder="08:00-18:00" />
-          </div>
-          <div id="divRegraCondicional">
-            Ligar SE:
-            <div class="formCondicional">
-              <select id="modalCondSensorLiga"></select>
-              <select id="modalCondOpLiga">
-                <option value="+">&gt;</option>
-                <option value="-">&lt;</option>
-              </select>
-              <input id="modalCondValTesteLiga" maxlength="5" />
-            </div>
-            Desligar SE:
-            <div class="formCondicional">
-              <select id="modalCondSensorDesliga"></select>
-              <select id="modalCondOpDesliga">
-                <option value="+">&gt;</option>
-                <option value="-">&lt;</option>
-              </select>
-              <input id="modalCondValTesteDesliga" maxlength="5" />
-            </div>
-          </div>
-          <input id="modalRegra" type="hidden" />
-        </div>
         <br /><br />
         <button id="modalSalvarBtn">💾 Salvar</button>
       </div>

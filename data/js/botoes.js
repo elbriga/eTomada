@@ -51,7 +51,6 @@ function botaoOpenEditModal(recursoID) {
 
   document.getElementById("modalTitle").innerHTML = "Editar Botão " + recursoID;
   document.getElementById("modalNome").value = recurso.nome || "";
-  document.getElementById("modalDivRegra").style.display = "none";
   document.getElementById("modalSalvarBtn").onclick = function () {
     botaoSalvarFromModal();
   };

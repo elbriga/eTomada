@@ -4,7 +4,6 @@
 #include "hardwareProfile.h"
 #include "loga.h"
 #include "rele.h"
-#include "regras.h"
 #include "mutex.h"
 #include "display.h"
 #include "http.h"
@@ -32,13 +31,6 @@ void relesInit()
     boardReleCount++;
   }
 
-  Preferences prefs;
-  prefs.begin("reles", false);
-
-  // Para testes
-  // prefs.putString("nome1", "Luz");
-  // prefs.putString("regra1", "OF|02:00|07:59");
-
   int totReles = relesGetCount();
   for (int r = 1; r <= totReles; r++)
   {
@@ -62,8 +54,6 @@ void relesInit()
 
     relePrint(rele);
   }
-
-  prefs.end();
 }
 
 int relesGetCount()
@@ -83,9 +73,9 @@ Rele *releGet(int numRele)
 
 void relePrint(Rele *rele)
 {
-  logaMensagem("Rele %d:%d (%s) > [%s]",
+  logaMensagem("Rele %d:%d (%s)",
                rele->num, rele->pino, // TODO :: nome
-               (rele->ativo ? "on" : "off"), rele->regra);
+               (rele->ativo ? "on" : "off"));
 }
 
 // REQUIRE releMutex locked
@@ -98,7 +88,6 @@ JsonDocument releGetJSONDoc(Rele *r, bool full)
   if (full)
   {
     doc["pino"] = r->pino;
-    doc["regra"] = r->regra;
     doc["ativo"] = r->ativo;
     doc["estado"] = r->estado;
     doc["override"] = r->override;

@@ -4,7 +4,6 @@ function releGetCard(recurso) {
   if (recurso.tipo != "RELE") return null;
 
   let rele = recurso.device;
-  if (!rele.nome) rele.nome = "---";
 
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;
@@ -14,14 +13,13 @@ function releGetCard(recurso) {
   <div class="minHeight">
     <div class="medio">Tomada ${recurso.id}</div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
-    <div class="medio">${releGetRegraTXT(rele.regra)}</div>
   </div>
   <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
 </div>
 <br>
 <div class="status ${rele.estado ? "on" : "off"}">
   ${rele.estado ? "● Ligado" : "● Desligado"}
-  ${rele.override > Date.now() / 1000 && rele.regra != "" ? ` (até ${getHoraFromTS(rele.override)})` : ""}
+  ${rele.override > Date.now() / 1000 ? ` (até ${getHoraFromTS(rele.override)})` : ""}
 </div>
 
 <button onclick="releOverride('${recurso.id}', ${rele.estado ? "false" : "true"}, this)">
@@ -63,45 +61,14 @@ function releOpenEditModal(recursoID) {
   const rele = recurso.device;
   releEditando = recursoID;
 
-  let [acao, param1, param2] = rele.regra.split("|");
-
-  if (!param1) param1 = "";
-  if (!param2) param2 = "";
-
   document.getElementById("modalTitle").innerHTML =
     "Editar Tomada " + recursoID;
   document.getElementById("modalNome").value = recurso.nome || "";
-
-  document.getElementById("modalDivRegra").style.display = "block";
-  document.getElementById("modalRegra").value = rele.regra || "";
-  document.getElementById("modalRegraAcao").value = acao;
-
-  document.getElementById("modalHorario").value =
-    param1 != "" && param2 != "" ? `${param1}-${param2}` : "";
-
-  let optionsSensores = releGetOptionsSensores();
-
-  let sensorON = param1.substring(0, 2);
-  let opON = param1.substring(2, 3);
-  let valTesteON = param1.substring(3);
-  document.getElementById("modalCondSensorLiga").innerHTML = optionsSensores;
-  document.getElementById("modalCondSensorLiga").value = sensorON;
-  document.getElementById("modalCondOpLiga").value = opON == ">" ? "+" : "-";
-  document.getElementById("modalCondValTesteLiga").value = valTesteON;
-
-  let sensorOF = param2.substring(0, 2);
-  let opOF = param2.substring(2, 3);
-  let valTesteOF = param2.substring(3);
-  document.getElementById("modalCondSensorDesliga").innerHTML = optionsSensores;
-  document.getElementById("modalCondSensorDesliga").value = sensorOF;
-  document.getElementById("modalCondOpDesliga").value = opOF == ">" ? "+" : "-";
-  document.getElementById("modalCondValTesteDesliga").value = valTesteOF;
 
   document.getElementById("modalSalvarBtn").onclick = function () {
     releSalvarFromModal();
   };
 
-  releOCModalAcao();
   editModalOpen();
 }
 
@@ -114,35 +81,11 @@ async function releSalvarFromModal() {
   btn.innerText = "Salvando...";
 
   try {
-    let regra = "";
-    const acao = document.getElementById("modalRegraAcao").value;
-    if (acao == "") {
-      regra = "";
-    } else if (acao == "SE") {
-      const condON =
-        document.getElementById("modalCondSensorLiga").value +
-        (document.getElementById("modalCondOpLiga").value == "+" ? ">" : "<") +
-        document.getElementById("modalCondValTesteLiga").value;
-      const condOF =
-        document.getElementById("modalCondSensorDesliga").value +
-        (document.getElementById("modalCondOpDesliga").value == "+"
-          ? ">"
-          : "<") +
-        document.getElementById("modalCondValTesteDesliga").value;
-      regra = `SE|${condON}|${condOF}`;
-    } else if (acao == "ON" || acao == "OF") {
-      let horario = document.getElementById("modalHorario").value + "";
-      regra = `${acao}|${horario.replace("-", "|")}`;
-    } else {
-      throw Error("Acao invalida!");
-    }
-
     await eTomadaAPI(
       "setRecursoConfig",
       {
         id: releEditando,
         nome: document.getElementById("modalNome").value,
-        regra: regra,
       },
       "PUT",
     );
@@ -172,59 +115,4 @@ async function releOverride(recursoID, novoEstado, btn) {
   } catch (e) {
     statusMsg("Erro ao setar: " + e);
   }
-}
-
-function releOCModalAcao() {
-  const acao = document.getElementById("modalRegraAcao").value;
-  document.getElementById("divRegraHorario").style.display =
-    acao == "" || acao == "SE" ? "none" : "block";
-  document.getElementById("divRegraCondicional").style.display =
-    acao == "" || acao != "SE" ? "none" : "block";
-}
-
-function releGetRegraTXT(regra) {
-  if (!regra || regra.trim() === "") {
-    return "Modo Manual";
-  }
-
-  regra = regra.trim();
-
-  let [acao, param1, param2] = regra.split("|");
-
-  if (acao === "ON" || acao === "OF") {
-    return (
-      (acao === "ON" ? "Ligado" : "Desligado") +
-      " das " +
-      param1 +
-      " às " +
-      param2
-    );
-  }
-
-  if (acao === "SE") {
-    if (param1 != "") {
-      let sensor = recursoGet(param1);
-      if (sensor) {
-        // TODO : melhorar o parser para IDs com dois digitos
-        let op = param1[2];
-        let val = param1.substring(3);
-        param1 = `${sensor.nome} ${op} ${val}`;
-      }
-    }
-    if (param2 != "") {
-      let sensor = recursoGet(param2);
-      if (sensor) {
-        let op = param2[2];
-        let val = param2.substring(3);
-        param2 = `${sensor.nome} ${op} ${val}`;
-      }
-    }
-    return (
-      (param1 !== "" ? `Ligar SE ${param1}` : "") +
-      (param1 !== "" && param2 != "" ? "<br>\n" : "") +
-      (param2 !== "" ? `Desligar SE ${param2}` : "")
-    );
-  }
-
-  return "??" + regra;
 }
