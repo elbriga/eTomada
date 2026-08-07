@@ -21,9 +21,9 @@ void mestreInit(Preferences &prefs)
         return;
 
     // Para testes
-    // prefs.putString("mestre0", "04:D3:08:A4:AE:30"); // MAC lolin
+    // prefs.putString("mestre1", "04:D3:08:A4:AE:30"); // MAC lolin
 
-    mestre.mac = getPrefsAtr(prefs, 0, "mestre");
+    mestre.mac = getPrefsAtr(prefs, "1", "mestre");
     if (mestre.mac != "")
         logaMensagem("Nodo Mestre: %s", mestre.mac.c_str());
 

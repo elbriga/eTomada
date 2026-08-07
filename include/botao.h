@@ -23,9 +23,6 @@ int botoesGetCount();
 Botao *botaoGet(int numBotao);
 void botaoPrint(Botao *botao);
 
-void botaoLoadFromPrefs(Botao *b, int num, Preferences &prefs);
 JsonDocument botaoGetJSONDoc(Botao *s, bool full);
 
 void botoesAtualiza();
-
-String botaoAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc);

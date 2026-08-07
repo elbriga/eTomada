@@ -10,13 +10,16 @@
 #include "http.h"
 #include "apiInterna.h"
 #include "anunciador.h"
+#include "mutex.h"
 
 static Recurso *recursos;
 static int totRecursos = 0;
+int recursoAddCount = 0;
+
+Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, int num, const char *idParaRecursoRemoto = nullptr);
 
 void recursosInit()
 {
-  int recursoAddCount = 0;
   int totRelesLocais = relesGetCount();
   int totSensoresLocais = sensoresGetCount();
   int totBotoesLocais = botoesGetCount();
@@ -29,50 +32,39 @@ void recursosInit()
     // TODO :: DIE!
   }
 
+  Preferences prefs;
+  prefs.begin("recursos", false);
+
+  // Para testes
+  // prefs.putString("nomeR1", "Luz");
+  // prefs.putString("nomeR2", "Humidificador");
+
   for (int r = 1; r <= totRelesLocais; r++)
   {
-    Recurso *recurso = &recursos[recursoAddCount++];
-
-    snprintf(recurso->id, 8, "R%d", r);
-    recurso->tipo = RECURSO_RELE;
-    recurso->num = r;
-    recurso->remoto = false;
+    Recurso *recurso = recursoAdd(prefs, RECURSO_RELE, r);
     recurso->rele = releGet(r);
   }
 
   for (int s = 1; s <= totSensoresLocais; s++)
   {
-    Recurso *recurso = &recursos[recursoAddCount++];
-
-    snprintf(recurso->id, 8, "S%d", s);
-    recurso->tipo = RECURSO_SENSOR;
-    recurso->num = s;
-    recurso->remoto = false;
+    Recurso *recurso = recursoAdd(prefs, RECURSO_SENSOR, s);
     recurso->sensor = sensorGet(s);
   }
 
   for (int b = 1; b <= totBotoesLocais; b++)
   {
-    Recurso *recurso = &recursos[recursoAddCount++];
-
-    snprintf(recurso->id, 8, "B%d", b);
-    recurso->tipo = RECURSO_BOTAO;
-    recurso->num = b;
-    recurso->remoto = false;
+    Recurso *recurso = recursoAdd(prefs, RECURSO_BOTAO, b);
     recurso->botao = botaoGet(b);
   }
 
-  for (int rr = 0; rr < totRecursosRemotos; rr++)
+  for (int r = 0; r < totRecursosRemotos; r++)
   {
-    Recurso *recurso = &recursos[recursoAddCount++];
-
-    recurso->recursoRemoto = recursoRemotoGetPorIndice(rr);
-
-    strcpy(recurso->id, recurso->recursoRemoto->idLocal);
-    recurso->tipo = recurso->recursoRemoto->tipo;
-    recurso->num = recurso->recursoRemoto->num;
-    recurso->remoto = true;
+    RecursoRemoto *rr = recursoRemotoGetPorIndice(r);
+    Recurso *recurso = recursoAdd(prefs, rr->tipo, rr->num, rr->idLocal);
+    recurso->recursoRemoto = rr;
   }
+
+  prefs.end();
 
   int tot = recursosGetCount(RECURSO_TODOS);
   for (int r = 0; r < tot; r++)
@@ -80,6 +72,63 @@ void recursosInit()
     Recurso *recurso = &recursos[r];
     recursoPrint(recurso);
   }
+}
+
+static void recursoGeraID(Recurso *r)
+{
+  char prefixo = '?';
+  switch (r->tipo)
+  {
+  case RECURSO_RELE:
+    prefixo = 'R';
+    break;
+  case RECURSO_SENSOR:
+    prefixo = 'S';
+    break;
+  case RECURSO_BOTAO:
+    prefixo = 'B';
+    break;
+  default:
+    prefixo = 'X';
+  }
+  snprintf(r->id, sizeof(r->id), "%c%d", prefixo, r->num);
+}
+
+void recursoLoadFromPrefs(Recurso *r, Preferences &prefs)
+{
+  String nome = getPrefsAtr(prefs, r->id, "nome");
+
+  strlcpy(r->nome, nome.c_str(), sizeof(r->nome));
+}
+
+Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, int num, const char *idParaRecursoRemoto)
+{
+  if (recursoAddCount >= totRecursos)
+  {
+    logaMensagem("ERRO!!!!! recursoAdd(%d)!! DIE!!", recursoAddCount);
+    // TODO : DIE!
+    return nullptr;
+  }
+
+  Recurso *r = &recursos[recursoAddCount++];
+
+  memset(r, 0, sizeof(Recurso));
+
+  r->tipo = tipo;
+  r->num = num;
+  r->remoto = !!idParaRecursoRemoto;
+  r->tsAtualizacao = millis();
+
+  if (!r->remoto)
+    // Para recursos locais > gerar o ID
+    recursoGeraID(r);
+  else
+    // Para recursos remotos > ID vem do prefs recursosRemotos
+    strlcpy(r->id, idParaRecursoRemoto, sizeof(r->id));
+
+  recursoLoadFromPrefs(r, prefs);
+
+  return r;
 }
 
 int recursosGetCount(TipoRecurso tipo)
@@ -391,36 +440,32 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
     return "Recurso Invalido";
   }
 
-  String msg;
-  switch (recurso->tipo)
+  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
+  if (!lock)
   {
-  case RECURSO_RELE:
-    msg = releAtualizaConfigFromJSON(recurso, doc);
-    break;
-  case RECURSO_SENSOR:
-    msg = sensorAtualizaConfigFromJSON(recurso, doc);
-    break;
-  case RECURSO_BOTAO:
-    msg = botaoAtualizaConfigFromJSON(recurso, doc);
-    break;
-  default:
-    msg = "Recurso Desconhecido";
+    return "mutex timeout";
   }
 
-  if (msg != "OK")
+  bool mudou = false;
+
+  if (!doc["nome"].isNull())
   {
-    return msg;
+    mudou = true;
+    strlcpy(recurso->nome, doc["nome"].as<String>().c_str(), sizeof(recurso->nome));
   }
 
-  // recursoEnviaSSE(recurso) e mestreEnviaEvento(recurso) em outra thread
-  anunciadorPost({ANUNCIO_RECURSO, recurso, true});
+  if (mudou)
+  {
+    // recursoEnviaSSE(recurso) e mestreEnviaEvento(recurso) em outra thread
+    anunciadorPost({ANUNCIO_RECURSO, recurso, true});
+  }
 
   return "OK";
 }
 
 void recursoPrint(Recurso *recurso)
 {
-  logaMensagem("Recurso%s %s: %s",
+  logaMensagem("Recurso%s %s: %s [%s]",
                recurso->remoto ? " Remoto" : "", recurso->id,
-               recursoGetTipoStr(recurso->tipo));
+               recursoGetTipoStr(recurso->tipo), recurso->nome);
 }

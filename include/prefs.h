@@ -2,5 +2,5 @@
 #include <Preferences.h>
 
 // Salvar as configuracoes na memoria FLASH
-String getPrefsAtr(Preferences &prefs, int num, String nomeAtr);
-String setPrefsAtr(Preferences &prefs, int num, String nomeAtr, String val);
+String getPrefsAtr(Preferences &prefs, const char *id, const char *nomeAtr);
+String setPrefsAtr(Preferences &prefs, const char *id, const char *nomeAtr, String val);

@@ -8,7 +8,6 @@
 #include "mutex.h"
 #include "display.h"
 #include "http.h"
-#include "prefs.h"
 #include "recurso.h"
 
 // Hardware Profile - um para cada placa
@@ -44,11 +43,15 @@ void relesInit()
   for (int r = 1; r <= totReles; r++)
   {
     Rele *rele = releGet(r);
-    releLoadFromPrefs(rele, r, prefs);
+    rele->num = r;
+
+    // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
+    rele->estado = 0;
+    rele->override = 0;
 
     ReleHW rHW = hardwareProfile.reles[r - 1];
     rele->pino = rHW.pino;
-    rele->ativo = (rele->pino >= 0);
+    rele->ativo = (rele->pino >= 0); // TODO > != 255 ?
     rele->invertido = rHW.invertido;
 
     if (rele->ativo)
@@ -80,33 +83,9 @@ Rele *releGet(int numRele)
 
 void relePrint(Rele *rele)
 {
-  logaMensagem("Rele %d:%d:%s (%s) > [%s]",
-               rele->num, rele->pino, rele->nome,
+  logaMensagem("Rele %d:%d (%s) > [%s]",
+               rele->num, rele->pino, // TODO :: nome
                (rele->ativo ? "on" : "off"), rele->regra);
-}
-
-void releLoadFromPrefs(Rele *rele, int num, Preferences &prefs)
-{
-  String nome = getPrefsAtr(prefs, num, "nome");
-  String regra = getPrefsAtr(prefs, num, "regra");
-
-  rele->num = num;
-  strncpy(rele->nome, nome.c_str(), sizeof(rele->nome) - 1);
-  rele->nome[sizeof(rele->nome) - 1] = '\0';
-
-  strncpy(rele->regra, regra.c_str(), sizeof(rele->regra) - 1);
-  rele->regra[sizeof(rele->regra) - 1] = '\0';
-
-  String regraOK = validaRegra(rele->regra);
-  if (regraOK != "OK")
-  {
-    logaMensagem("Regra [%s] INVALIDA! [%s] Convertendo Rele[%d] para manual", rele->regra, regraOK.c_str(), num);
-    rele->regra[0] = '\0';
-  }
-
-  // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
-  rele->estado = 0;
-  rele->override = 0;
 }
 
 // REQUIRE releMutex locked
@@ -115,7 +94,6 @@ JsonDocument releGetJSONDoc(Rele *r, bool full)
   JsonDocument doc;
 
   doc["num"] = r->num;
-  doc["nome"] = r->nome;
 
   if (full)
   {
@@ -137,43 +115,6 @@ String releGetJSONString(Rele *r)
 
   serializeJson(doc, out);
   return out;
-}
-
-String releAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
-{
-  if (recurso->tipo != RECURSO_RELE)
-  {
-    return "Recurso nao é RELE!";
-  }
-
-  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
-  if (!lock)
-  {
-    return "mutex timeout";
-  }
-
-  Rele *rele = recursoGetRele(recurso);
-
-  String novaRegra = doc["regra"].isNull() ? String(rele->regra) : doc["regra"].as<String>();
-  String regraOK = validaRegra(novaRegra);
-  if (regraOK != "OK")
-  {
-    return "Regra Invalida :: " + regraOK;
-  }
-  strncpy(rele->regra, novaRegra.c_str(), sizeof(rele->regra) - 1);
-  rele->regra[sizeof(rele->regra) - 1] = '\0';
-
-  if (!doc["nome"].isNull())
-  {
-    strncpy(rele->nome, doc["nome"].as<String>().c_str(), sizeof(rele->nome) - 1);
-    rele->nome[sizeof(rele->nome) - 1] = '\0';
-  }
-
-  eTomadaSalvaRele(recurso);
-
-  relePrint(rele);
-
-  return "OK";
 }
 
 String releControla(int numRele, bool estado, int override)
@@ -217,8 +158,8 @@ String releControlaUnsafe(Rele *rele, bool estado, int override)
     rele->override = (override > 0) ? time(nullptr) + override : 0;
 
     char msg[128];
-    snprintf(msg, sizeof(msg), "%s %s (rele %d, pino %d)",
-             (estado ? "Ligando" : "Desligando"), rele->nome, rele->num, rele->pino);
+    snprintf(msg, sizeof(msg), "%s (rele %d, pino %d)", // TODO :: nome
+             (estado ? "Ligando" : "Desligando"), rele->num, rele->pino);
     ret = msg;
   }
 

@@ -56,7 +56,9 @@ void sensoresInit()
   for (int s = 1; s <= totSensores; s++)
   {
     Sensor *sensor = sensorGet(s);
-    sensorLoadFromPrefs(sensor, s, prefs);
+
+    sensor->num = s;
+    sensor->valor = 0;
 
     SensorHW sHW = hardwareProfile.sensores[s - 1];
     TipoSensor *tipoSensor = NULL;
@@ -114,28 +116,15 @@ Sensor *sensorGet(int numSensor)
   return &sensores[numSensor - 1];
 }
 
-void sensorPrint(Sensor *sensor)
+void sensorPrint(Sensor *sensor) // TODO :: substituir por recursoPrint
 {
   TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
 
-  logaMensagem("Sensor %d:%d:%s (%s) > [%s - %s]",
-               sensor->num, sensor->pino, sensor->nome,
+  logaMensagem("Sensor %d:%d (%s) > [%s - %s]",
+               sensor->num, sensor->pino,
                (sensor->ativo ? "on" : "off"),
                tipoSensor ? tipoSensor->tipo : "",
                tipoSensor ? tipoSensor->nome : "");
-}
-
-void sensorLoadFromPrefs(Sensor *sensor, int num, Preferences &prefs)
-{
-  sensor->num = num;
-
-  strncpy(sensor->nome, getPrefsAtr(prefs, num, "nome").c_str(), sizeof(sensor->nome) - 1);
-  sensor->nome[sizeof(sensor->nome) - 1] = '\0';
-
-  sensor->valor = 0;
-
-  // Falta verificar se o TipoSensor inicializou OK
-  sensor->ativo = false;
 }
 
 // REQUIRE sensorMutex locked
@@ -144,7 +133,6 @@ JsonDocument sensorGetJSONDoc(Sensor *s, bool full)
   JsonDocument doc;
 
   doc["num"] = s->num;
-  doc["nome"] = s->nome;
   doc["tipo"] = s->tipo;
 
   if (full)
@@ -169,41 +157,6 @@ String sensorGetJSONString(Sensor *s)
 
   serializeJson(doc, out);
   return out;
-}
-
-String sensorAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
-{
-  if (recurso->tipo != RECURSO_SENSOR)
-  {
-    return "Recurso nao é SENSOR!";
-  }
-
-  // TODO : Precisa do Lock aqui?
-  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
-  if (!lock)
-  {
-    return "mutex timeout";
-  }
-
-  Sensor *sensor = recursoGetSensor(recurso);
-
-  if (!doc["nome"].isNull())
-  {
-    String nome = doc["nome"].as<String>();
-    if (nome == "")
-    {
-      nome = "??";
-    }
-    strncpy(sensor->nome, nome.c_str(), sizeof(sensor->nome) - 1);
-    sensor->nome[sizeof(sensor->nome) - 1] = '\0';
-  }
-
-  // Setar no prefs
-  eTomadaSalvaSensor(recurso);
-
-  sensorPrint(sensor);
-
-  return "OK";
 }
 
 void sensoresAtualiza()

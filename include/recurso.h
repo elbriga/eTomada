@@ -13,7 +13,7 @@ struct Recurso
 {
   char id[9];
   TipoRecurso tipo;
-  // TODO trazer o "nome" para ca
+  char nome[32];
   int num;
   bool remoto;
   unsigned long tsAtualizacao;

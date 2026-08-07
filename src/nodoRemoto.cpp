@@ -19,11 +19,11 @@ void nodoRemotoInit()
   prefs.begin("nodosRemotos", false);
 
   // Para testes
-  // prefs.putString("total0", "2");
+  // prefs.putString("total", "2");
   // prefs.putString("deviceID1", "20:07:69:75:06:DC");
   // prefs.putString("deviceID2", "CC:AE:54:DA:F3:80");
 
-  totNodosRemotos = getPrefsAtr(prefs, 0, "total").toInt();
+  totNodosRemotos = getPrefsAtr(prefs, "", "total").toInt();
   logaMensagem("Nodos Remotos: %d", totNodosRemotos);
 
   if (totNodosRemotos > 0)
@@ -43,8 +43,10 @@ void nodoRemotoInit()
       nodoRemoto->num = nr;
       nodoRemoto->online = false;
 
+      char num[8];
+      snprintf(num, sizeof(num), "%d", nr);
       // TODO :: renomear deviceID para mac
-      strncpy(nodoRemoto->deviceID, getPrefsAtr(prefs, nr, "deviceID").c_str(), sizeof(nodoRemoto->deviceID) - 1);
+      strncpy(nodoRemoto->deviceID, getPrefsAtr(prefs, num, "deviceID").c_str(), sizeof(nodoRemoto->deviceID) - 1);
       nodoRemoto->deviceID[sizeof(nodoRemoto->deviceID) - 1] = '\0';
 
       nodoRemotoPrint(nodoRemoto);

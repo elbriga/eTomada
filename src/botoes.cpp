@@ -52,7 +52,7 @@ void botoesInit()
   for (int b = 1; b <= totBotoes; b++)
   {
     Botao *botao = botaoGet(b);
-    botaoLoadFromPrefs(botao, b, prefs);
+    botao->num = b;
 
     BotaoHW bHW = hardwareProfile.botoes[b - 1];
 
@@ -92,19 +92,6 @@ void botaoPrint(Botao *botao)
                (botao->ativo ? "on" : "off"));
 }
 
-void botaoLoadFromPrefs(Botao *botao, int num, Preferences &prefs)
-{
-  botao->num = num;
-
-  // TODO :: nome botao
-  // strncpy(sensor->nome, getPrefsAtr(prefs, num, "nome").c_str(), sizeof(sensor->nome) - 1);
-  // sensor->nome[sizeof(sensor->nome) - 1] = '\0';
-
-  botao->estado = false;
-
-  // botao->ativo = true;
-}
-
 // REQUIRE recursosMutex locked
 JsonDocument botaoGetJSONDoc(Botao *b, bool full)
 {
@@ -133,41 +120,6 @@ String botaoGetJSONString(Botao *b)
 
   serializeJson(doc, out);
   return out;
-}
-
-String botaoAtualizaConfigFromJSON(Recurso *recurso, JsonDocument doc)
-{
-  if (recurso->tipo != RECURSO_BOTAO)
-  {
-    return "Recurso nao é BOTAO!";
-  }
-
-  // TODO : Precisa do Lock aqui?
-  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
-  if (!lock)
-  {
-    return "mutex timeout";
-  }
-
-  Botao *botao = recursoGetBotao(recurso);
-  /* TODO
-    if (!doc["nome"].isNull())
-    {
-      String nome = doc["nome"].as<String>();
-      if (nome == "")
-      {
-        nome = "??";
-      }
-      strncpy(botao->nome, nome.c_str(), sizeof(botao->nome) - 1);
-      sensor->nome[sizeof(botao->nome) - 1] = '\0';
-    }
-  */
-  // Setar no prefs
-  eTomadaSalvaBotao(recurso);
-
-  botaoPrint(botao);
-
-  return "OK";
 }
 
 void botoesAtualiza()

@@ -20,7 +20,7 @@ void recursosRemotosInit()
   prefs.begin("recursosRemotos", false);
 
   // Para testes
-  // prefs.putString("total0", "4");
+  // prefs.putString("total", "4");
   // prefs.putString("idLocal1", "R9");
   // prefs.putString("tipo1", "1");
   // prefs.putString("nodo1", "1");
@@ -44,7 +44,7 @@ void recursosRemotosInit()
   // prefs.putString("idRemoto4", "S2");
   // prefs.putString("nome4", "SREMOTO2");
 
-  totRecursosRemotos = getPrefsAtr(prefs, 0, "total").toInt();
+  totRecursosRemotos = getPrefsAtr(prefs, "", "total").toInt();
   recursosRemotos = new RecursoRemoto[totRecursosRemotos]();
   if (!recursosRemotos)
   {
@@ -56,10 +56,12 @@ void recursosRemotosInit()
   {
     RecursoRemoto *recursoRemoto = &recursosRemotos[rr - 1];
 
-    String idLocal = getPrefsAtr(prefs, rr, "idLocal");
-    String idRemoto = getPrefsAtr(prefs, rr, "idRemoto");
-    int tipo = getPrefsAtr(prefs, rr, "tipo").toInt();
-    int nodo = getPrefsAtr(prefs, rr, "nodo").toInt();
+    char num[8];
+    snprintf(num, sizeof(num), "%d", rr);
+    String idLocal = getPrefsAtr(prefs, num, "idLocal");
+    String idRemoto = getPrefsAtr(prefs, num, "idRemoto");
+    int tipo = getPrefsAtr(prefs, num, "tipo").toInt();
+    int nodo = getPrefsAtr(prefs, num, "nodo").toInt();
 
     switch (tipo)
     {
@@ -90,7 +92,7 @@ void recursosRemotosInit()
     case RECURSO_RELE:
     {
       Rele *rele = &recursoRemoto->rele;
-      releLoadFromPrefs(rele, rr, prefs);
+      rele->num = rr;
       rele->ativo = true;
       // rele->estado sera setado em nodosRemotosRefreshTask
     }
@@ -99,7 +101,7 @@ void recursosRemotosInit()
     case RECURSO_SENSOR:
     {
       Sensor *sensor = &recursoRemoto->sensor;
-      sensorLoadFromPrefs(sensor, rr, prefs);
+      sensor->num = rr;
       sensor->ativo = true;
       // sensor->valor sera setado em nodosRemotosRefreshTask
     }
@@ -108,7 +110,7 @@ void recursosRemotosInit()
     case RECURSO_BOTAO:
     {
       Botao *botao = &recursoRemoto->botao;
-      botaoLoadFromPrefs(botao, rr, prefs);
+      botao->num = rr;
       botao->ativo = true;
       // botao->estado sera setado em nodosRemotosRefreshTask
     }
