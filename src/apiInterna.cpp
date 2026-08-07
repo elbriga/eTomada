@@ -76,6 +76,7 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
     if (request != nullptr)
     {
       serializeJson(*request, body);
+      logaMensagem(">> BODY: %s", body.c_str());
     }
 
     http.addHeader("Content-Type", "application/json");
@@ -86,10 +87,12 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
     code = http.GET();
   }
 
-  if (response && code == HTTP_CODE_OK)
-  {
-    deserializeJson(*response, http.getStream());
-  }
+  // TODO http.getString() é perigoso !!! usar o stream
+  String respBody = http.getString();
+  logaMensagem(" >> RESP: %s", respBody.c_str());
+
+  if (response)
+    deserializeJson(*response, respBody);
 
   http.end();
 
