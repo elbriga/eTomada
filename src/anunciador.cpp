@@ -47,8 +47,7 @@ void anunciadorTask(void *)
             {
             case ANUNCIO_RECURSO:
                 recursoEnviaSSE(anuncio.recurso);
-                if (anuncio.comMestre)
-                    mestreEnviaEvento(anuncio.recurso);
+                mestreEnviaEvento(anuncio.recurso);
                 break;
             }
         }

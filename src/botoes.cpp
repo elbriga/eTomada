@@ -196,7 +196,7 @@ void botoesAtualiza()
   for (int rb = 0; rb < totBotoesParaAtualizar; rb++)
   {
     // recursoEnviaSSE(atual[rb].rec) e mestreEnviaEvento(atual[rb].rec) em outra thread
-    anunciadorPost({ANUNCIO_RECURSO, atual[rb].rec, true});
+    anunciadorPost({ANUNCIO_RECURSO, atual[rb].rec});
   }
 
   delete[] atual;

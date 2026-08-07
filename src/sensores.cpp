@@ -239,7 +239,7 @@ void sensoresAtualiza()
       continue;
 
     // recursoEnviaSSE(atual[rb].rec) e mestreEnviaEvento(atual[rb].rec) em outra thread
-    anunciadorPost({ANUNCIO_RECURSO, atual[rs].rec, true});
+    anunciadorPost({ANUNCIO_RECURSO, atual[rs].rec});
   }
 
   delete[] atual;
