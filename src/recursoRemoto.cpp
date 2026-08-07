@@ -26,13 +26,11 @@ void recursosRemotosInit()
   // prefs.putString("nodo1", "1");
   // prefs.putString("idRemoto1", "R1");
   // prefs.putString("nome1", "RREMOTO1");
-  // prefs.putString("regra1", "");
   // prefs.putString("idLocal2", "R10");
   // prefs.putString("tipo2", "1");
   // prefs.putString("nodo2", "1");
   // prefs.putString("idRemoto2", "R2");
   // prefs.putString("nome2", "RREMOTO2");
-  // prefs.putString("regra2", "");
   // prefs.putString("idLocal3", "S5");
   // prefs.putString("tipo3", "2");
   // prefs.putString("nodo3", "2");
