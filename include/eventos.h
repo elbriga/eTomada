@@ -1,3 +1,4 @@
+#pragma once
 #include "recurso.h"
 
 enum TipoEvento
