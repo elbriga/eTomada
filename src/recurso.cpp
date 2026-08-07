@@ -97,7 +97,8 @@ static void recursoGeraID(Recurso *r)
 void recursoLoadFromPrefs(Recurso *r, Preferences &prefs)
 {
   String nome = getPrefsAtr(prefs, r->id, "nome");
-
+  if (nome.isEmpty())
+    nome = r->id;
   strlcpy(r->nome, nome.c_str(), sizeof(r->nome));
 }
 
@@ -111,8 +112,6 @@ Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, int num, const char *i
   }
 
   Recurso *r = &recursos[recursoAddCount++];
-
-  memset(r, 0, sizeof(Recurso));
 
   r->tipo = tipo;
   r->num = num;
