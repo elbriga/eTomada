@@ -9,7 +9,7 @@
 #include "recursoRemoto.h"
 #include "http.h"
 #include "apiInterna.h"
-#include "anunciador.h"
+#include "eventos.h"
 #include "mutex.h"
 
 static Recurso *recursos;
@@ -198,7 +198,7 @@ String recursoSet(Recurso *recurso, bool estado)
   }
 
   // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);
-  anunciadorPost({ANUNCIO_RECURSO, recurso});
+  eventoPost({EVENTO_VALOR_MUDOU, recurso});
 
   return msg;
 }
@@ -207,7 +207,7 @@ void recursoEnviaSSE(Recurso *recurso)
 {
   String recursoStr;
   serializeJson(recursoGetJSONDoc(recurso), recursoStr);
-  httpEnviaEvento(recursoStr, "sse_recurso");
+  httpEnviaSSE(recursoStr, "sse_recurso");
 }
 
 Recurso *recursoGetPorIndice(int posicao)
@@ -417,7 +417,7 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
   if (mudou)
   {
     // recursoEnviaSSE(recurso); em outra thread
-    anunciadorPost({ANUNCIO_RECURSO, recurso});
+    eventoPost({EVENTO_VALOR_MUDOU, recurso});
   }
 
   return "OK";
@@ -456,7 +456,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   if (mudou)
   {
     // recursoEnviaSSE(recurso) e mestreEnviaEvento(recurso) em outra thread
-    anunciadorPost({ANUNCIO_RECURSO, recurso});
+    eventoPost({EVENTO_VALOR_MUDOU, recurso});
   }
 
   return "OK";

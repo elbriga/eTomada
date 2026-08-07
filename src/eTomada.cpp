@@ -16,7 +16,7 @@
 #include "nodoRemoto.h"
 #include "recurso.h"
 #include "discover.h"
-#include "anunciador.h"
+#include "eventos.h"
 
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
@@ -41,7 +41,7 @@ void eTomadaInit()
 
   prefs.end();
 
-  anunciadorInit();
+  eventosInit();
 
   logaMensagem("Inicializando Relés Locais:");
   relesInit();
