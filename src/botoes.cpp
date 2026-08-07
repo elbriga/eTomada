@@ -64,6 +64,8 @@ void botoesInit()
       pinMode(botao->pino, INPUT);
     }
 
+    botao->estado = digitalRead(botao->pino);
+
     botaoPrint(botao);
   }
 
