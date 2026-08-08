@@ -186,6 +186,11 @@ String recursoSet(Recurso *recurso, bool estado, bool enviaMestre)
   if (recurso->tipo != RECURSO_RELE)
     return "Recurso nao eh RELE";
 
+  time_t now = 0;
+  time(&now);
+  // TODO :: Alterando recurso sem LOCK!!
+  recurso->tsAtualizacao = now;
+
   String msg;
   if (recurso->remoto)
   {
