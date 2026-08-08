@@ -24,7 +24,7 @@ void mestreInit(Preferences &prefs)
     // prefs.putString("mestre1", "04:D3:08:A4:AE:30"); // MAC lolin
 
     mestre.mac = getPrefsAtr(prefs, "1", "mestre");
-    if (mestre.mac != "")
+    if (mestreAtivo())
         logaMensagem("Nodo Mestre: %s", mestre.mac.c_str());
 
     mestre.online = false;
@@ -33,7 +33,7 @@ void mestreInit(Preferences &prefs)
 // chamado pelo modulo discover em discoverLoop()
 void mestreCheckDiscover(String mac, IPAddress ip)
 {
-    if (mestre.mac == "") // Sem mestre retorna
+    if (!mestreAtivo()) // Sem mestre retorna
         return;
 
     // logaMensagem("mestreCheckDiscover > %s == %s ??", mestre.mac.c_str(), mac.c_str());
@@ -44,7 +44,7 @@ void mestreCheckDiscover(String mac, IPAddress ip)
     if (!mestre.online)
     {
         mestre.online = true;
-        logaMensagem("Mestre - ONLINE [%s] [%s]", mestre.ip.toString().c_str(), ip.toString().c_str());
+        logaMensagem("Mestre - ONLINE");
     }
 
     if (mestre.ip != ip)
@@ -58,7 +58,7 @@ void mestreCheckDiscover(String mac, IPAddress ip)
 
 void mestreLoop()
 {
-    if (mestre.mac == "") // Sem mestre retorna
+    if (!mestreAtivo()) // Sem mestre retorna
         return;
 
     if (millis() - mestre.ultimoHeartbeat > MESTRE_HEARTBEAT_TIMEOUT)
@@ -70,7 +70,7 @@ void mestreLoop()
 
 void mestreEnviaEvento(Recurso *rec)
 {
-    if (mestre.mac == "") // Sem mestre retorna
+    if (!mestreAtivo()) // Sem mestre retorna
         return;
     if (!mestre.online) // Mestre offline retorna
         return;
