@@ -7,6 +7,8 @@
 #include "recurso.h"
 #include "recursoRemoto.h"
 
+#define API_INTERNA_TIMEOUT 1000
+
 int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
 
 String apiInternaGetSnapshot(NodoRemoto *nodo, JsonDocument &doc)
@@ -68,6 +70,7 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
 
   HTTPClient http;
   http.begin(url);
+  http.setTimeout(API_INTERNA_TIMEOUT);
 
   int code = 0;
   if (metodo == "PUT" || metodo == "POST")
@@ -87,12 +90,15 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
     code = http.GET();
   }
 
-  // TODO http.getString() é perigoso !!! usar o stream
-  String respBody = http.getString();
-  logaMensagem(" >> RESP: %s", respBody.c_str());
+  if (code == 200)
+  {
+    // TODO http.getString() é perigoso !!! usar o stream
+    String respBody = http.getString();
+    logaMensagem(" >> RESP: %s", respBody.c_str());
 
-  if (response)
-    deserializeJson(*response, respBody);
+    if (response)
+      deserializeJson(*response, respBody);
+  }
 
   http.end();
 
