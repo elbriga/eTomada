@@ -22,7 +22,12 @@ typedef struct
 {
     TipoEvento tipo;
     Recurso *recurso;
+    bool enviaSSE;
+    bool enviaMestre;
 } Evento;
 
 void eventosInit();
-void eventoPost(Evento e);
+void eventoPost(TipoEvento tipo,
+                Recurso *recurso,
+                bool enviaSSE,
+                bool enviaMestre);

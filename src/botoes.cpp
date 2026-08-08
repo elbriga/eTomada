@@ -198,8 +198,8 @@ void botoesAtualiza()
     Recurso *rec = atual[rb].rec;
     Botao *botao = rec->botao;
     // recursoEnviaSSE(atual[rb].rec) e mestreEnviaEvento(atual[rb].rec) em outra thread
-    eventoPost({botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, atual[rb].rec});
-    eventoPost({EVENTO_TOGGLE, atual[rb].rec});
+    eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, atual[rb].rec, true, true);
+    eventoPost(EVENTO_TOGGLE, atual[rb].rec, true, true);
   }
 
   delete[] atual;

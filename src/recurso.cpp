@@ -159,7 +159,7 @@ String recursoGetJSONString(Recurso *r)
   return out;
 }
 
-String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut)
+String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
 {
   recursoOut = nullptr;
 
@@ -178,10 +178,10 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut)
   recursoOut = recurso;
 
   bool estado = (jsonIN["estado"].as<String>() == "1");
-  return recursoSet(recurso, estado);
+  return recursoSet(recurso, estado, enviaMestre);
 }
 
-String recursoSet(Recurso *recurso, bool estado)
+String recursoSet(Recurso *recurso, bool estado, bool enviaMestre)
 {
   if (recurso->tipo != RECURSO_RELE)
     return "Recurso nao eh RELE";
@@ -198,7 +198,7 @@ String recursoSet(Recurso *recurso, bool estado)
   }
 
   // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);
-  eventoPost({EVENTO_VALOR_MUDOU, recurso});
+  eventoPost(EVENTO_VALOR_MUDOU, recurso, true, enviaMestre);
 
   return msg;
 }
@@ -417,7 +417,7 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
   if (mudou)
   {
     // recursoEnviaSSE(recurso); em outra thread
-    eventoPost({EVENTO_VALOR_MUDOU, recurso});
+    eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
   }
 
   return "OK";
@@ -456,7 +456,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   if (mudou)
   {
     // recursoEnviaSSE(recurso) e mestreEnviaEvento(recurso) em outra thread
-    eventoPost({EVENTO_VALOR_MUDOU, recurso});
+    eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
   }
 
   return "OK";
