@@ -109,7 +109,7 @@ void httpServerInitModoAPI()
   httpServer.on("/api/evento", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {
     // TODO :: Enviar 404 se nao achar o recurso do evento
-    String atzEventoOK = "OFF";//recursoEventoRecebido(data);
+    String atzEventoOK = recursoEventoRecebido(data);
 
     request->send(200, "application/json", "{\"msg\": \""+atzEventoOK+"\"}");
     logaRequest(request, "200 " + atzEventoOK); });
