@@ -21,6 +21,10 @@ void regraDisparaAcao(Regra *regra)
 {
     Acao *acao = &regra->acao;
 
+    logaMensagem(">> Regra[%d] acionada!", regra->id);
+
+    // TODO loga regraGetTxt()
+
     switch (acao->tipo)
     {
     case ACAO_RECURSO:
@@ -29,9 +33,12 @@ void regraDisparaAcao(Regra *regra)
         switch (acao->comando)
         {
         case ACAO_TOGGLE:
+        {
             // TODO : e se nao for RELE??
-            recursoSet(rec, !rec->rele->estado);
-            break;
+            Rele *rele = recursoGetRele(rec);
+            recursoSet(rec, !rele->estado);
+        }
+        break;
 
         default:
             logaMensagem("TODO :: regraDispara[%d] acao (%d)", regra->id, acao->comando);

@@ -7,6 +7,7 @@
 #include "wifi.h"
 #include "discover.h"
 #include "recurso.h"
+#include "mestre.h"
 
 #define DEV // TODO :: remover
 
@@ -81,11 +82,12 @@ void httpServerInitModoAPI()
 
   httpServer.on("/api/setRecurso", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {
+    bool fromMestre = mestreAtivo() ? (request->client()->remoteIP() == mestreGetIP()) : false;
     Recurso *rec = nullptr;
-    String msg = recursoSetFromJSON(data, rec);
+    String msg = recursoSetFromJSON(data, rec, !fromMestre);
 
     JsonDocument resposta;
-    resposta["msg"] = msg;
+    resposta["msg"] = (fromMestre ? "SIM MESTRE:": "") + msg;
     if (rec)
       resposta["recurso"] = recursoGetJSONDoc(rec);
     String payload;
@@ -107,7 +109,7 @@ void httpServerInitModoAPI()
   httpServer.on("/api/evento", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {
     // TODO :: Enviar 404 se nao achar o recurso do evento
-    String atzEventoOK = recursoEventoRecebido(data);
+    String atzEventoOK = "OFF";//recursoEventoRecebido(data);
 
     request->send(200, "application/json", "{\"msg\": \""+atzEventoOK+"\"}");
     logaRequest(request, "200 " + atzEventoOK); });

@@ -16,3 +16,5 @@ void mestreInit(Preferences &prefs);
 void mestreCheckDiscover(String mac, IPAddress ip);
 void mestreLoop();
 void mestreEnviaEvento(Recurso *rec);
+bool mestreAtivo();
+IPAddress mestreGetIP();

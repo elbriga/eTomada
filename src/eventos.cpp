@@ -33,8 +33,17 @@ void eventosInit()
         1);
 }
 
-void eventoPost(Evento evento)
+void eventoPost(TipoEvento tipo,
+                Recurso *recurso,
+                bool enviaSSE,
+                bool enviaMestre)
 {
+    Evento evento = {
+        .tipo = tipo,
+        .recurso = recurso,
+        .enviaSSE = enviaSSE,
+        .enviaMestre = enviaMestre,
+    };
     xQueueSend(filaEventos, &evento, 0);
 }
 
@@ -62,8 +71,10 @@ void eventosProcessaTask(void *)
 
             if (atualiza)
             {
-                recursoEnviaSSE(rec);
-                mestreEnviaEvento(rec);
+                if (evento.enviaSSE)
+                    recursoEnviaSSE(rec);
+                if (evento.enviaMestre)
+                    mestreEnviaEvento(rec);
             }
         }
     }

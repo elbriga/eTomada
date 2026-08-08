@@ -44,7 +44,7 @@ void mestreCheckDiscover(String mac, IPAddress ip)
     if (!mestre.online)
     {
         mestre.online = true;
-        logaMensagem("Mestre - ONLINE!");
+        logaMensagem("Mestre - ONLINE [%s] [%s]", mestre.ip.toString().c_str(), ip.toString().c_str());
     }
 
     if (mestre.ip != ip)
@@ -78,4 +78,14 @@ void mestreEnviaEvento(Recurso *rec)
     JsonDocument payload = recursoGetJSONEvento(rec);
 
     apiInternaEnviaEvento(mestre.ip, &payload);
+}
+
+bool mestreAtivo()
+{
+    return (mestre.mac != "");
+}
+
+IPAddress mestreGetIP()
+{
+    return mestre.ip;
 }
