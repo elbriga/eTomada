@@ -107,7 +107,7 @@ async function releOverride(recursoID, novoEstado, btn) {
       "setRecurso",
       {
         id: recursoID,
-        estado: novoEstado ? "1" : "0",
+        estado: novoEstado ? "ON" : "OFF",
       },
       "PUT",
     );

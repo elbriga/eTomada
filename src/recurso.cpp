@@ -177,21 +177,21 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
 
   recursoOut = recurso;
 
-  bool estado = (jsonIN["estado"].as<String>() == "1");
+  String estado = jsonIN["estado"].as<String>();
   return recursoSet(recurso, estado, enviaMestre);
 }
 
-String recursoSet(Recurso *recurso, bool estado, bool enviaMestre)
+String recursoSetUnsafe(Recurso *recurso, bool estado, bool enviaMestre)
 {
   if (recurso->tipo != RECURSO_RELE)
-    return "Recurso nao eh RELE";
+    return "recursoSetUnsafe: Recurso nao eh RELE";
 
   time_t now = 0;
   time(&now);
-  // TODO :: Alterando recurso sem LOCK!!
   recurso->tsAtualizacao = now;
 
   String msg;
+  // TODO colocar ponteiros de funcoes em Recurso para ler e escrever, ao inves desses ifs:
   if (recurso->remoto)
   {
     // API
@@ -199,13 +199,40 @@ String recursoSet(Recurso *recurso, bool estado, bool enviaMestre)
   }
   else
   {
-    msg = releControla(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
+    msg = releControlaUnsafe(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   }
 
   // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);
   eventoPost(EVENTO_VALOR_MUDOU, recurso, true, enviaMestre);
 
   return msg;
+}
+
+String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
+{
+  if (recurso->tipo != RECURSO_RELE)
+    return "recursoSet: Recurso nao eh RELE";
+
+  MutexLock lock(recursosMutex);
+  if (!lock)
+  {
+    return "recursoSet: mutex timeout";
+  }
+
+  bool estado;
+  if (estadoStr == "TOGGLE")
+  {
+    Rele *r = recursoGetRele(recurso);
+    if (!r)
+      return "recursoToggle : RELE invalido";
+    estado = !r->estado;
+  }
+  else
+  {
+    estado = (estadoStr == "ON");
+  }
+
+  return recursoSetUnsafe(recurso, estado, enviaMestre);
 }
 
 void recursoEnviaSSE(Recurso *recurso)
