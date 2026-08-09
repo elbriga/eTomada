@@ -12,6 +12,7 @@ const HardwareProfile hardwareProfile = {
         {"", 255}, // Indicar Vazio
     },
     .botoes = {
+        {0},
         {255}, // FIM
     },
 };
