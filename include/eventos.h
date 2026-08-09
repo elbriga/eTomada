@@ -15,7 +15,9 @@ enum TipoEvento
     EVENTO_DOUBLE_CLICK,
     EVENTO_LONG_PRESS,
 
-    EVENTO_VALOR_MUDOU
+    EVENTO_VALOR_MUDOU,
+
+    EVENTO_HORARIO,
 };
 
 typedef struct

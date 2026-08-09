@@ -89,6 +89,7 @@ const char *getDiaSemana(struct tm timeinfo)
 int wifiFora = 0;
 int lastSecond = -1;
 int last10Second = -1;
+int lastMinute = -1;
 void loop()
 {
   esp_task_wdt_reset(); // alimenta o watchdog
@@ -152,6 +153,13 @@ void loop()
       }
 
       mestreLoop();
+
+      // 1m/1m
+      if (timeinfo.tm_min != lastMinute)
+      {
+        lastMinute = timeinfo.tm_min;
+        eventoPost(EVENTO_HORARIO, nullptr, false, false);
+      }
     }
 
     // Verificar o WiFi

@@ -6,7 +6,7 @@
 enum TipoCondicao
 {
     COND_EVENTO,
-    COND_HORARIO,  // TODO
+    COND_HORARIO,
     COND_ESTADO,   // TODO
     COND_EXPRESSAO // TODO
 };

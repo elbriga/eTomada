@@ -69,7 +69,7 @@ void eventosProcessaTask(void *)
             if (processaRegras)
                 regrasProcessaEvento(evento);
 
-            if (atualiza)
+            if (rec && atualiza)
             {
                 if (evento.enviaSSE)
                     recursoEnviaSSE(rec);

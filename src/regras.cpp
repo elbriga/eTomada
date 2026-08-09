@@ -5,44 +5,42 @@
 #include "loga.h"
 #include "display.h"
 #include "mutex.h"
+#include "ntp.h"
 
 int regrasTotal = 3;
 Regra regras[] = {
     regraCriaEvento(1, "B1", EVENTO_TOGGLE, "R10", ACAO_TOGGLE),
-    regraCriaHorario(2, 8, 0, "R3", ACAO_ON),
-    regraCriaHorario(3, 18, 30, "R3", ACAO_OFF),
+    regraCriaHorario(2, 17, 1, "R2", ACAO_ON),
+    regraCriaHorario(3, 17, 2, "R2", ACAO_OFF),
 };
 
 void regrasInit()
 {
 }
 
-void regraDisparaAcao(Regra *regra)
+String regraGetTxt(Regra *r);
+String regraDisparaAcao(Regra *regra)
 {
     Acao *acao = &regra->acao;
 
-    logaMensagem(">> Regra[%d] acionada!", regra->id);
-
-    // TODO loga regraGetTxt()
+    logaMensagem(">> [%s]", regraGetTxt(regra).c_str());
 
     switch (acao->tipo)
     {
     case ACAO_RECURSO:
     {
         Recurso *rec = recursoGet(acao->recursoID);
+        if (rec->tipo != RECURSO_RELE)
+            return "dispAcaoRECURSO : Nao eh RELE!";
+
         switch (acao->comando)
         {
+        case ACAO_ON:
+            return recursoSet(rec, "ON");
+        case ACAO_OFF:
+            return recursoSet(rec, "OFF");
         case ACAO_TOGGLE:
-        {
-            // TODO : e se nao for RELE??
-            Rele *rele = recursoGetRele(rec);
-            recursoSet(rec, !rele->estado);
-        }
-        break;
-
-        default:
-            logaMensagem("TODO :: regraDispara[%d] acao (%d)", regra->id, acao->comando);
-            break;
+            return recursoSet(rec, "TOGGLE");
         }
     }
     break;
@@ -51,6 +49,8 @@ void regraDisparaAcao(Regra *regra)
         logaMensagem("TODO :: regraDispara[%d] tipo (%d)", regra->id, acao->tipo);
         break;
     }
+
+    return "ToDo!";
 }
 
 void regrasProcessaEvento(Evento e)
@@ -61,41 +61,42 @@ void regrasProcessaEvento(Evento e)
     }
 
     String msgDisplay = "";
+    // Iterar pelas regras
+    for (int r = 0; r < regrasTotal; r++)
     {
-        MutexLock lockRecursos(recursosMutex);
-        if (!lockRecursos)
+        Regra *regra = &regras[r];
+
+        // Verificar se foi o recurso da regra que gerou o evento
+        if (e.recurso && strcmp(regra->condicao.recursoID, e.recurso->id))
+            continue;
+
+        bool disparaAcao = false;
+        switch (regra->condicao.tipo)
         {
-            logaMensagem("processaRegras: erro mutex");
-            return;
-        }
+        case COND_EVENTO:
+            if (e.tipo == regra->condicao.evento)
+                disparaAcao = true;
+            break;
 
-        // Iterar pelas regras
-        for (int r = 0; r < regrasTotal; r++)
-        {
-            Regra *regra = &regras[r];
-
-            // Verificar se foi o recurso da regra que gerou o evento
-            if (strcmp(regra->condicao.recursoID, e.recurso->id))
-                continue;
-
-            bool disparaAcao = false;
-            switch (regra->condicao.tipo)
+        case COND_HORARIO:
+            if (e.tipo == EVENTO_HORARIO)
             {
-            case COND_EVENTO:
-                if (e.tipo == regra->condicao.evento)
-                {
+                // Obter horario
+                struct tm timeinfo;
+                ntpGetTime(&timeinfo);
+                if (timeinfo.tm_hour == regra->condicao.horario.hora && timeinfo.tm_min == regra->condicao.horario.minuto)
                     disparaAcao = true;
-                }
-                break;
-
-            default:
-                break;
             }
+            break;
 
-            if (disparaAcao)
-                // Executar!
-                regraDisparaAcao(regra);
+        default:
+            logaMensagem("TODO :: regrasProcessaEvento[%d] condicao.tipo (%d)", regra->id, regra->condicao.tipo);
+            break;
         }
+
+        if (disparaAcao)
+            // Executar!
+            msgDisplay = regraDisparaAcao(regra);
     }
 
     if (msgDisplay != "")
@@ -158,4 +159,128 @@ Regra regraCriaHorario(
     r.acao.comando = comando;
 
     return r;
+}
+
+static const char *regraTipoEventoTxt(TipoEvento evento)
+{
+    switch (evento)
+    {
+    case EVENTO_NENHUM:
+        return "NENHUM";
+    case EVENTO_LIGOU:
+        return "LIGOU";
+    case EVENTO_DESLIGOU:
+        return "DESLIGOU";
+    case EVENTO_TOGGLE:
+        return "TOGGLE";
+    case EVENTO_PRESSIONOU:
+        return "PRESSIONOU";
+    case EVENTO_SOLTOU:
+        return "SOLTOU";
+    case EVENTO_CLICK:
+        return "CLICK";
+    case EVENTO_DOUBLE_CLICK:
+        return "DOUBLE_CLICK";
+    case EVENTO_LONG_PRESS:
+        return "LONG_PRESS";
+    case EVENTO_VALOR_MUDOU:
+        return "VALOR_MUDOU";
+    case EVENTO_HORARIO:
+        return "HORARIO";
+    default:
+        return "?";
+    }
+}
+
+static const char *regraAcaoRecursoTxt(AcaoRecurso comando)
+{
+    switch (comando)
+    {
+    case ACAO_ON:
+        return "ON";
+    case ACAO_OFF:
+        return "OFF";
+    case ACAO_TOGGLE:
+        return "TOGGLE";
+    default:
+        return "?";
+    }
+}
+
+String regraGetTxt(Regra *r)
+{
+    String ret;
+
+    ret.reserve(96);
+
+    ret += "Regra[";
+    ret += r->id;
+    ret += "] ";
+
+    if (!r->ativa)
+        ret += "(INATIVA) ";
+
+    // Condição
+    switch (r->condicao.tipo)
+    {
+    case COND_EVENTO:
+        ret += "SE ";
+        ret += r->condicao.recursoID;
+        ret += ":";
+        ret += regraTipoEventoTxt(r->condicao.evento);
+        break;
+
+    case COND_HORARIO:
+        ret += "AS ";
+        if (r->condicao.horario.hora < 10)
+            ret += "0";
+        ret += r->condicao.horario.hora;
+        ret += ":";
+        if (r->condicao.horario.minuto < 10)
+            ret += "0";
+        ret += r->condicao.horario.minuto;
+        break;
+
+    case COND_ESTADO:
+        ret += "ESTADO ";
+        ret += r->condicao.recursoID;
+        ret += " ";
+        ret += r->condicao.estado.valor;
+        break;
+
+    case COND_EXPRESSAO:
+        ret += "EXPRESSAO";
+        break;
+
+    default:
+        ret += "CONDICAO?";
+        break;
+    }
+
+    ret += " -> ";
+
+    // Ação
+    switch (r->acao.tipo)
+    {
+    case ACAO_RECURSO:
+        ret += r->acao.recursoID;
+        ret += ":";
+        ret += regraAcaoRecursoTxt(r->acao.comando);
+        break;
+
+    case ACAO_DELAY:
+        ret += "DELAY:";
+        ret += r->acao.delay;
+        break;
+
+    case ACAO_SCRIPT:
+        ret += "SCRIPT";
+        break;
+
+    default:
+        ret += "ACAO?";
+        break;
+    }
+
+    return ret;
 }
