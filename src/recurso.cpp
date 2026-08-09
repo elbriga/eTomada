@@ -181,10 +181,10 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
   return recursoSet(recurso, estado, enviaMestre);
 }
 
-String recursoSetUnsafe(Recurso *recurso, bool estado, bool enviaMestre)
+String recursoSetLocked(Recurso *recurso, bool estado, bool enviaMestre)
 {
   if (recurso->tipo != RECURSO_RELE)
-    return "recursoSetUnsafe: Recurso nao eh RELE";
+    return "recursoSetLocked: Recurso nao eh RELE";
 
   time_t now = 0;
   time(&now);
@@ -199,7 +199,7 @@ String recursoSetUnsafe(Recurso *recurso, bool estado, bool enviaMestre)
   }
   else
   {
-    msg = releControlaUnsafe(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
+    msg = releControlaLocked(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   }
 
   // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);
@@ -232,7 +232,7 @@ String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
     estado = (estadoStr == "ON");
   }
 
-  return recursoSetUnsafe(recurso, estado, enviaMestre);
+  return recursoSetLocked(recurso, estado, enviaMestre);
 }
 
 void recursoEnviaSSE(Recurso *recurso)

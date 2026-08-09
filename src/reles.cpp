@@ -114,27 +114,25 @@ String releControla(int numRele, bool estado, int override)
     return "releControla: mutex timeout";
   }
 
-  return releControlaUnsafe(numRele, estado, override);
+  return releControlaLocked(numRele, estado, override);
 }
 
 // REQUIRE recursosMutex locked
-String releControlaUnsafe(int numRele, bool estado, int override)
+String releControlaLocked(int numRele, bool estado, int override)
 {
   Rele *rele = releGet(numRele);
   if (!rele)
   {
-    logaMensagem("releControlaUnsafe: Rele invalido!!!\n");
+    logaMensagem("releControlaLocked: Rele invalido!!!\n");
     // TODO :: um metodo retorna erro e outro vazio! REVER
     return "";
   }
 
   if (rele->pino == -1)
   {
-    logaMensagem("releControlaUnsafe[%d]: pino invalido!\n", rele->num);
+    logaMensagem("releControlaLocked[%d]: pino invalido!\n", rele->num);
     return "";
   }
-
-  logaMensagem("releControlaUnsafe");
 
   String ret = "";
   if (estado != rele->estado)

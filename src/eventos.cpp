@@ -55,7 +55,7 @@ void eventosProcessaTask(void *)
     {
         if (xQueueReceive(filaEventos, &evento, portMAX_DELAY))
         {
-            Recurso *rec = evento.recurso;
+            Recurso *recurso = evento.recurso;
             bool processaRegras = true;
             bool atualiza = true;
 
@@ -69,12 +69,12 @@ void eventosProcessaTask(void *)
             if (processaRegras)
                 regrasProcessaEvento(evento);
 
-            if (rec && atualiza)
+            if (recurso && atualiza)
             {
                 if (evento.enviaSSE)
-                    recursoEnviaSSE(rec);
+                    recursoEnviaSSE(recurso);
                 if (evento.enviaMestre)
-                    mestreEnviaEvento(rec);
+                    mestreEnviaEvento(recurso);
             }
         }
     }
