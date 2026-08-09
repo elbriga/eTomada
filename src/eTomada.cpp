@@ -106,11 +106,11 @@ String eTomadaGetSnapshotJSON()
   time(&now);
   doc["timestamp"] = (unsigned long)now;
 
-  time_t agora;
-  struct tm timeinfo;
-  ntpGetTime(&timeinfo, &agora);
-
+  time_t agora = time(nullptr);
   doc["datahora"] = (unsigned long)agora;
+
+  struct tm timeinfo;
+  ntpGetTime(&timeinfo);
   char formattedTime[32];
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
   doc["datahorastr"] = formattedTime;
@@ -183,7 +183,7 @@ void eTomadaRoleta()
   for (int r = 0; r < totRelesLocais; r++)
   {
     Recurso *recurso = relesLocais[r];
-    recursoSet(recurso, false);
+    recursoSet(recurso, "OFF");
   }
 
   int delay = 25, delta = 2;
@@ -201,8 +201,8 @@ void eTomadaRoleta()
     {
       num = 0;
     }
-    recursoSet(relesLocais[oldNum], false);
-    recursoSet(relesLocais[num], true);
+    recursoSet(relesLocais[oldNum], "OFF");
+    recursoSet(relesLocais[num], "ON");
 
     loop++;
     if (loop > 40)

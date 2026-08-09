@@ -41,12 +41,8 @@ long ntpSyncTime()
   return millis() + 24 * 60 * 60 * 1000; // sync de novo em 24h
 }
 
-void ntpGetTime(struct tm *out, time_t *agora)
+void ntpGetTime(struct tm *out)
 {
   time_t now = time(nullptr);
-  if (agora != NULL)
-  {
-    *agora = now;
-  }
   localtime_r(&now, out);
 }
