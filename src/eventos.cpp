@@ -61,8 +61,8 @@ void eventosProcessaTask(void *)
 
             switch (evento.tipo)
             {
-            case EVENTO_VALOR_MUDOU:
-
+            case EVENTO_TOGGLE:
+                atualiza = false; // Já será atualizado no EVENTO_ON / EVENTO_OFF, nao duplicar
                 break;
             }
 
