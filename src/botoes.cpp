@@ -32,11 +32,11 @@ void botoesInit()
   // Zerar tudo
   memset(botoes, 0, sizeof(botoes));
 
-  // Verificar quantos sensores temos
+  // Verificar quantos botoes temos
   boardBotaoCount = 0;
-  for (int s = 0; s < MAX_SENSORES; s++)
+  for (int b = 0; b < MAX_BOTOES; b++)
   {
-    BotaoHW bHW = hardwareProfile.botoes[s];
+    BotaoHW bHW = hardwareProfile.botoes[b];
     if (bHW.pino == 255)
       break;
     boardBotaoCount++;
@@ -44,9 +44,6 @@ void botoesInit()
 
   Preferences prefs;
   prefs.begin("botoes", false);
-
-  // Para testes
-  // prefs.putString("nome1", "Temp de Fora");
 
   int totBotoes = botoesGetCount();
   for (int b = 1; b <= totBotoes; b++)
@@ -79,7 +76,7 @@ int botoesGetCount()
 
 Botao *botaoGet(int num)
 {
-  if (num > 0 && num <= sensoresGetCount())
+  if (num > 0 && num <= botoesGetCount())
   {
     return &botoes[num - 1];
   }
