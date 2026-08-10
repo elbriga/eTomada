@@ -8,6 +8,8 @@
 #include "mutex.h"
 #include "ntp.h"
 
+#define MAX_REGRAS 64
+
 /*
 int regrasTotal = 4;
 Regra regras[] = {
@@ -25,7 +27,8 @@ String regrasLoad();
 
 void regrasInit()
 {
-    regrasLoad();
+    String msg = regrasLoad();
+    logaMensagem(">> [%s]", msg.c_str());
 }
 
 Regra *regraGet(int i)
@@ -425,24 +428,98 @@ String regrasLoad()
         return "ERRO: regrasLoad > lendo regras";
 
     JsonArray regrasJson = doc["regras"].as<JsonArray>();
-    regrasJson.size();
-    /*
-        for (JsonObject r : regrasJson)
+    int totRegras = regrasJson.size();
+
+    if (totRegras > MAX_REGRAS)
+    {
+        logaMensagem("MUITAS (%d) REGRAS NO ARQUIVO, LENDO SOMENTE %d PRIMEIRAS!!!", totRegras, MAX_REGRAS);
+        totRegras = MAX_REGRAS;
+    }
+
+    if (regras)
+        delete[] regras;
+
+    regras = new Regra[totRegras]();
+    if (!regras)
+    {
+        logaMensagem("NO new Regras! DIE!!!!!!!");
+        // TODO die!!!
+    }
+
+    for (JsonObject r : regrasJson)
+    {
+        if (regrasTotal >= totRegras)
+            break;
+
+        Regra *regra = &regras[regrasTotal];
+
+        regra->id = r["id"].as<int>() | (regrasTotal + 1);
+        regra->ativa = r["ativa"].as<bool>();
+
+        // preencher condicao
+        String tipoCondicaoStr = r["quando"]["tipo"].as<String>();
+        if (tipoCondicaoStr == "EVENTO")
         {
-            if (regrasTotal >= MAX_REGRAS)
-                break;
-
-            Regra *regra = &regras[totalRegras];
-
-            regra->id = r["id"] | 0;
-
-            // preencher condicao
-            // preencher acao
-
-            totalRegras++;
+            regra->condicao.tipo = COND_EVENTO;
+            strlcpy(regra->condicao.recursoID,
+                    r["quando"]["recurso"].as<const char *>(),
+                    sizeof(regra->condicao.recursoID));
+            String eventoStr = r["quando"]["evento"].as<String>();
+            if (eventoStr == "TOGGLE")
+                regra->condicao.evento = EVENTO_TOGGLE;
+            else
+            {
+                logaMensagem("TipoEvento %s ??? Inativando regra", eventoStr.c_str());
+                regra->ativa = false;
+            }
         }
-    */
+        else if (tipoCondicaoStr == "HORARIO")
+        {
+            regra->condicao.tipo = COND_HORARIO;
+            regra->condicao.horario.hora = r["quando"]["hora"].as<int>();
+            regra->condicao.horario.minuto = r["quando"]["minuto"].as<int>();
+        }
+        else
+        {
+            logaMensagem("TipoCondicao %s ??? Inativando regra", tipoCondicaoStr.c_str());
+            regra->ativa = false;
+        }
+
+        // preencher acao
+        String tipoAcaoStr = r["acao"]["tipo"];
+        if (tipoAcaoStr == "RECURSO")
+        {
+            regra->acao.tipo = ACAO_RECURSO;
+            strlcpy(regra->acao.recursoID,
+                    r["acao"]["recurso"].as<const char *>(),
+                    sizeof(regra->acao.recursoID));
+            String acaoStr = r["acao"]["comando"];
+            if (acaoStr == "ON")
+                regra->acao.comando = ACAO_ON;
+            else if (acaoStr == "OFF")
+                regra->acao.comando = ACAO_OFF;
+            else if (acaoStr == "TOGGLE")
+                regra->acao.comando = ACAO_TOGGLE;
+            else if (acaoStr == "PULSE")
+                regra->acao.comando = ACAO_PULSE;
+            else
+            {
+                logaMensagem("AcaoRecurso %s ??? Inativando regra", acaoStr.c_str());
+                regra->ativa = false;
+            }
+        }
+        else
+        {
+            logaMensagem("TipoAcao %s ??? Inativando regra", tipoAcaoStr.c_str());
+            regra->ativa = false;
+        }
+
+        regraPrint(regra);
+        regrasTotal++;
+    }
+
     logaMensagem("Regras carregadas: %d", regrasTotal);
+
     return "OK";
 }
 
@@ -494,5 +571,7 @@ Regra regraCriaHorario(
 
 void regraPrint(Regra *r)
 {
-    logaMensagem("Regra[%d] > [%s]", r->id, regraGetTxt(r).c_str());
+    logaMensagem("Regra[%d][%s] > [%s]", r->id,
+                 r->ativa ? "ON" : "OFF",
+                 regraGetTxt(r).c_str());
 }
