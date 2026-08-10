@@ -178,9 +178,6 @@ void discoverTask(void *args)
         int len = replyUdp.parsePacket();
         if (len > 0)
         {
-            if (!ehTask)
-                logaMensagem("Achei!");
-
             JsonDocument doc;
             DeserializationError err = deserializeJson(doc, replyUdp);
             if (err)
@@ -191,16 +188,6 @@ void discoverTask(void *args)
 
             totDiscoverNodos++;
 
-            if (!ehTask)
-            {
-                Serial.printf("Resposta[%d] de %s:\n",
-                              totDiscoverNodos, replyUdp.remoteIP().toString().c_str());
-                String s;
-                serializeJson(doc, s);
-                Serial.write(s.c_str(), s.length());
-                Serial.println();
-            }
-
             if (totDiscoverNodos > MAX_NODOS_REMOTOS)
             {
                 logaMensagem("IGNORANDO NODO %d!!!", totDiscoverNodos);
@@ -209,11 +196,26 @@ void discoverTask(void *args)
             {
                 NodoRemoto *nr = &discoverNodos[totDiscoverNodos - 1];
                 nr->ip = replyUdp.remoteIP();
+                nr->ping = millis() - inicio;
                 String mac = doc["mac"];
-                strncpy(nr->deviceID, mac.c_str(), sizeof(nr->deviceID) - 1);
-                nr->deviceID[sizeof(nr->deviceID) - 1] = '\0';
+                strlcpy(nr->deviceID, mac.c_str(), sizeof(nr->deviceID));
 
                 discoverSnapshotBuffer[totDiscoverNodos - 1] = doc;
+
+                if (!ehTask)
+                {
+                    logaMensagem("Achei [%s] (%d ms)!",
+                                 replyUdp.remoteIP().toString().c_str(),
+                                 nr->ping);
+                    /*
+                    Serial.printf("Resposta[%d] de %s:\n",
+                                  totDiscoverNodos, replyUdp.remoteIP().toString().c_str());
+                    String s;
+                    serializeJson(doc, s);
+                    Serial.write(s.c_str(), s.length());
+                    Serial.println();
+                    */
+                }
             }
         }
 

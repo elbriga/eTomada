@@ -30,7 +30,7 @@ void nodoRemotoInit()
   if (totNodosRemotos > 0)
   {
     // nodosRemotos = (NodoRemoto *)calloc(sizeof(NodoRemoto), totNodosRemotos);
-    nodosRemotos = new NodoRemoto[totNodosRemotos];
+    nodosRemotos = new NodoRemoto[totNodosRemotos]();
     if (!nodosRemotos)
       utilDIE("NODOS REMOTOS");
 
@@ -47,11 +47,15 @@ void nodoRemotoInit()
       // TODO :: renomear deviceID para mac
       strncpy(nodoRemoto->deviceID, getPrefsAtr(prefs, num, "deviceID").c_str(), sizeof(nodoRemoto->deviceID) - 1);
       nodoRemoto->deviceID[sizeof(nodoRemoto->deviceID) - 1] = '\0';
-
-      nodoRemotoPrint(nodoRemoto);
     }
 
     nodosRemotosRefreshTask(nullptr);
+
+    for (int nr = 1; nr <= totNodosRemotos; nr++)
+    {
+      NodoRemoto *nodoRemoto = &nodosRemotos[nr - 1];
+      nodoRemotoPrint(nodoRemoto);
+    }
   }
 
   prefs.end();
@@ -148,6 +152,8 @@ void nodosRemotosRefreshTask(void *args)
                      nr, nodoRemoto->ip.toString().c_str());
       }
 
+      nodoRemoto->ping = nodoDescoberto->ping;
+
       // Atualizar os RecursoRemoto com o snapshot do discover
       JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->deviceID);
 
@@ -170,7 +176,8 @@ void nodosRemotosRefreshTask(void *args)
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto)
 {
-  logaMensagem("NodoRemoto %d > %s > [%s]",
+  logaMensagem("NodoRemoto %d > %s > [%s] (%d ms)",
                nodoRemoto->num, nodoRemoto->deviceID,
-               nodoRemoto->ip.toString().c_str());
+               nodoRemoto->ip.toString().c_str(),
+               nodoRemoto->ping);
 }
