@@ -37,7 +37,7 @@ void setup()
 
   displayInit();
 
-  bool FSOK = !!LittleFS.begin(true);
+  bool FSOK = !!LittleFS.begin();
   if (!FSOK)
   {
     logaTitulo("Erro LittleFS - Desativando Servidor Web");
