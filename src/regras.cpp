@@ -423,7 +423,7 @@ String regrasPersiste()
 
 void regraLoadFromJSON(Regra *regra, JsonObject &doc)
 {
-    regra->id = doc["id"].as<int>() | (regrasTotal + 1);
+    regra->id = doc["id"].as<int>() | (regrasTotal + 1); // TODO rever esse ID ao chamar fora de regrasLoad()
     regra->ativa = doc["ativa"].as<bool>();
 
     // preencher condicao
