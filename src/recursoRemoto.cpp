@@ -98,14 +98,9 @@ void recursosRemotosInit()
       JsonDocument *snapshot = discoverGetNodoSnapshot(recursoRemoto->nodo->deviceID);
       if (snapshot)
       {
-        logaMensagem("rrInit[%d]: snapshot ok", rr);
         JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, String(recursoRemoto->idRemoto));
         if (cacheRR)
-        {
-          logaMensagem("rrInit[%d]: cacheRR ok", rr);
           deviceRemoto = cacheRR["device"];
-          logaMensagem("rrInit[%d]: device->estado: %s", rr, deviceRemoto["estado"].as<bool>() ? "ON" : "OFF");
-        }
       }
     }
 

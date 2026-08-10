@@ -61,8 +61,6 @@ void agendamentosProcessaTask(void *)
 
             if ((int32_t)(millis() - acao->quando) >= 0)
             {
-                logaMensagem("agendamentOOOOOOOOO");
-
                 Recurso *r = recursoGet(acao->recursoID);
                 if (r)
                     recursoSet(r, acao->estado ? "ON" : "OFF");
