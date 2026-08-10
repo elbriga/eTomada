@@ -15,6 +15,8 @@
 #include "botao.h"
 #include "discover.h"
 
+#define FS_LIMITE_LIVRE 100 * 1024 // Para LOG de aviso de FS cheio
+
 // Timestamp da proxima sincronizacao do NTP
 static long ntpSyncTimeTS = 0;
 
@@ -37,10 +39,24 @@ void setup()
 
   displayInit();
 
+  logaMensagem("Inicializando FS:");
   bool FSOK = !!LittleFS.begin();
   if (!FSOK)
   {
     logaTitulo("Erro LittleFS - Desativando Servidor Web");
+  }
+  else
+  {
+    size_t total = LittleFS.totalBytes();
+    size_t usado = LittleFS.usedBytes();
+    size_t livre = total - usado;
+    logaMensagem("  Total : %u bytes (%u KB)", total, total / 1024);
+    logaMensagem("  Usado : %u bytes (%u KB)", usado, usado / 1024);
+    logaMensagem("  Livre : %u bytes (%u KB)", livre, livre / 1024);
+    if (livre < FS_LIMITE_LIVRE)
+    {
+      logaMensagem(">>> POUCO ESPAÇO NO FILE SYSTEM!!!");
+    }
   }
 
   displayMostraString(0, 20, "Conectando...");
