@@ -14,13 +14,15 @@
 static RecursoRemoto *recursosRemotos;
 static int totRecursosRemotos = 0;
 
+JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id);
+
 void recursosRemotosInit()
 {
   Preferences prefs;
   prefs.begin("recursosRemotos", false);
 
   // Para testes
-  // prefs.putString("total", "4");
+  // prefs.putString("total", "5");
   // prefs.putString("idLocal1", "R9");
   // prefs.putString("tipo1", "1");
   // prefs.putString("nodo1", "1");
@@ -41,6 +43,11 @@ void recursosRemotosInit()
   // prefs.putString("nodo4", "2");
   // prefs.putString("idRemoto4", "S2");
   // prefs.putString("nome4", "SREMOTO2");
+  // prefs.putString("idLocal5", "B2");
+  // prefs.putString("tipo5", "3");
+  // prefs.putString("nodo5", "1");
+  // prefs.putString("idRemoto5", "B1");
+  // prefs.putString("nome5", "BREMOTO1");
 
   totRecursosRemotos = getPrefsAtr(prefs, "", "total").toInt();
   recursosRemotos = new RecursoRemoto[totRecursosRemotos]();
@@ -85,6 +92,23 @@ void recursosRemotosInit()
     recursoRemoto->num = rr;
     recursoRemoto->nodo = nodoRemotoGet(nodo);
 
+    // Buscar o estado remoto do recurso com o snapshot do nodosRemotosInit()
+    JsonObject deviceRemoto;
+    {
+      JsonDocument *snapshot = discoverGetNodoSnapshot(recursoRemoto->nodo->deviceID);
+      if (snapshot)
+      {
+        logaMensagem("rrInit[%d]: snapshot ok", rr);
+        JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, String(recursoRemoto->idRemoto));
+        if (cacheRR)
+        {
+          logaMensagem("rrInit[%d]: cacheRR ok", rr);
+          deviceRemoto = cacheRR["device"];
+          logaMensagem("rrInit[%d]: device->estado: %s", rr, deviceRemoto["estado"].as<bool>() ? "ON" : "OFF");
+        }
+      }
+    }
+
     switch (tipo)
     {
     case RECURSO_RELE:
@@ -92,7 +116,8 @@ void recursosRemotosInit()
       Rele *rele = &recursoRemoto->rele;
       rele->num = rr;
       rele->ativo = true;
-      // rele->estado sera setado em nodosRemotosRefreshTask
+      if (deviceRemoto)
+        rele->estado = deviceRemoto["estado"].as<bool>();
     }
     break;
 
@@ -101,7 +126,11 @@ void recursosRemotosInit()
       Sensor *sensor = &recursoRemoto->sensor;
       sensor->num = rr;
       sensor->ativo = true;
-      // sensor->valor sera setado em nodosRemotosRefreshTask
+      if (deviceRemoto)
+      {
+        strcpy(sensor->tipo, deviceRemoto["tipo"].as<const char *>());
+        sensor->valor = deviceRemoto["valor"].as<int>();
+      }
     }
     break;
 
@@ -110,7 +139,8 @@ void recursosRemotosInit()
       Botao *botao = &recursoRemoto->botao;
       botao->num = rr;
       botao->ativo = true;
-      // botao->estado sera setado em nodosRemotosRefreshTask
+      if (deviceRemoto)
+        botao->estado = deviceRemoto["estado"].as<bool>();
     }
     break;
     }
