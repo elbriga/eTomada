@@ -75,8 +75,7 @@ void httpServerInitModoAPI()
 
   httpServer.on("/api/discover", HTTP_GET, [](AsyncWebServerRequest *request)
                 {
-    String body = "{\"scantime\":3,\"msg\":\"Escaneando...\"}";
-    request->send(200, "application/json", body);
+    request->send(200, "application/json", R"({"scantime":3,"msg":"Escaneando..."})");
     logaRequest(request, "200 OK");
 
     discoverStart(false); });
@@ -123,16 +122,36 @@ void httpServerInitModoAPI()
     request->send(200, "application/json", "{\"msg\": \""+mockOK+"\"}");
     logaRequest(request, "200 " + mockOK); });
 
+  httpServer.on("/api/regras", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
+    if (!LittleFS.exists("/automacoes.json"))
+    {
+      request->send(404, "application/json", R"({"msg":"FNF"})");
+      logaRequest(request, "404 FNF");
+      return;
+    }
+
+    AsyncWebServerResponse *response =
+      request->beginResponse(
+        LittleFS,
+        "/automacoes.json",
+        "application/json"
+      );
+
+    request->send(response);
+
+    logaRequest(request, "200 OK"); });
+
   httpServer.on("/api/factoryReset", HTTP_POST, [](AsyncWebServerRequest *request)
                 {
     eTomadaFactoryReset();
-    request->send(200, "application/json", "{\"msg\": \"OK\"}");
+    request->send(200, "application/json", R"({"msg":"OK"})");
     logaRequest(request, "200 OK"); });
 
   httpServer.on("/api/resetWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request)
                 {
     WiFiResetConfig();
-    request->send(200, "application/json", "{\"msg\":\"OK\"}");
+    request->send(200, "application/json", R"({"msg":"OK"})");
     logaRequest(request, "200 OK");
 
     delay(1000);
@@ -198,21 +217,21 @@ void httpServerInitModoAP()
     DeserializationError err = deserializeJson(doc, data);
     if (err) {
       logaRequest(request, "400 JSON Invalido");
-      request->send(400, "application/json", "{\"msg\":\"json invalido\"}");
+      request->send(400, "application/json", R"({"msg":"JSON Invalido"})");
       return;
     }
 
     String ssid = doc["ssid"] | "";
     if (ssid == "") {
       logaRequest(request, "400 SSID Invalido");
-      request->send(400, "application/json", "{\"msg\":\"ssid invalido\"}");
+      request->send(400, "application/json", R"({"msg":"SSID Invalido"})");
       return;
     }
     String pass = doc["pass"] | "";
 
     WiFiSalvaConfig(ssid, pass);
 
-    request->send(200, "application/json", "{\"msg\":\"OK\"}");
+    request->send(200, "application/json", R"({"msg":"OK"})");
     logaRequest(request, "200 OK");
 
     delay(1000);
