@@ -11,6 +11,7 @@
 #include "apiInterna.h"
 #include "eventos.h"
 #include "mutex.h"
+#include "agendamentos.h"
 
 static Recurso *recursos;
 static int totRecursos = 0;
@@ -195,7 +196,7 @@ String recursoSetLocked(Recurso *recurso, bool estado, bool enviaMestre)
   if (recurso->remoto)
   {
     // API
-    msg = apiInternaSetRecurso(recurso, estado ? "1" : "0");
+    msg = apiInternaSetRecurso(recurso, estado ? "ON" : "OFF");
   }
   else
   {
@@ -227,12 +228,25 @@ String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
       return "recursoToggle : RELE invalido";
     estado = !r->estado;
   }
+  else if (estadoStr == "PULSE")
+  {
+    estado = true;
+  }
   else
   {
     estado = (estadoStr == "ON");
   }
 
-  return recursoSetLocked(recurso, estado, enviaMestre);
+  String msg = recursoSetLocked(recurso, estado, enviaMestre);
+  // TODO :: como saber se setou ok?
+
+  if (estadoStr == "PULSE")
+  {
+    // Agendar o OFF
+    agendamentosAdd(recurso->id, false, 1000);
+  }
+
+  return msg;
 }
 
 void recursoEnviaSSE(Recurso *recurso)
@@ -408,15 +422,18 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
   // TODO :: LOCK!
   recurso->tsAtualizacao = timestamp;
 
-  bool mudou = false;
   switch (recurso->tipo)
   {
   case RECURSO_RELE:
   {
     Rele *rele = recursoGetRele(recurso);
     bool novoEstado = doc["estado"].as<bool>();
-    mudou = (rele->estado != novoEstado);
+    bool mudou = (rele->estado != novoEstado);
     rele->estado = novoEstado;
+    if (mudou)
+    {
+      eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
+    }
   }
   break;
 
@@ -431,8 +448,12 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
     }
 
     int novoValor = doc["valor"].as<int>();
-    mudou = (sensor->valor != novoValor);
+    bool mudou = (sensor->valor != novoValor);
     sensor->valor = novoValor;
+    if (mudou)
+    {
+      eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
+    }
   }
   break;
 
@@ -440,16 +461,15 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
   {
     Botao *botao = recursoGetBotao(recurso);
     bool novoEstado = doc["estado"].as<bool>();
-    mudou = (botao->estado != novoEstado);
+    bool mudou = (botao->estado != novoEstado);
     botao->estado = novoEstado;
+    if (mudou)
+    {
+      eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso, true, true);
+      eventoPost(EVENTO_TOGGLE, recurso, true, true);
+    }
   }
   break;
-  }
-
-  if (mudou)
-  {
-    // recursoEnviaSSE(recurso); em outra thread
-    eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
   }
 
   return "OK";

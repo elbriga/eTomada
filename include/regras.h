@@ -22,7 +22,8 @@ enum AcaoRecurso
 {
     ACAO_ON,
     ACAO_OFF,
-    ACAO_TOGGLE
+    ACAO_TOGGLE,
+    ACAO_PULSE
 };
 
 enum Operador // TODO

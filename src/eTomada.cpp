@@ -17,6 +17,7 @@
 #include "recurso.h"
 #include "discover.h"
 #include "eventos.h"
+#include "agendamentos.h"
 
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
@@ -42,6 +43,7 @@ void eTomadaInit()
   prefs.end();
 
   eventosInit();
+  agendamentosInit();
 
   logaMensagem("Inicializando Relés Locais:");
   relesInit();
