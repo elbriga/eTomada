@@ -84,7 +84,13 @@ struct Regra
 };
 
 void regrasInit();
+
+Regra *regraGet(int i);
+int regrasCount();
+
 void regrasProcessaEvento(Evento e);
+
+String regrasPersiste();
 
 String regraValida(String regra);
 
@@ -101,3 +107,5 @@ Regra regraCriaHorario(
     uint8_t minuto,
     const char *recursoID,
     AcaoRecurso comando);
+
+void regraPrint(Regra *r);

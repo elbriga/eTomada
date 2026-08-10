@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <LittleFS.h>
 
 #include "eTomada.h"
 #include "regras.h"
@@ -7,6 +8,7 @@
 #include "mutex.h"
 #include "ntp.h"
 
+/*
 int regrasTotal = 4;
 Regra regras[] = {
     regraCriaEvento(1, "B1", EVENTO_TOGGLE, "R10", ACAO_TOGGLE),
@@ -14,9 +16,29 @@ Regra regras[] = {
     regraCriaHorario(3, 18, 45, "R2", ACAO_ON),
     regraCriaHorario(4, 18, 55, "R2", ACAO_OFF),
 };
+*/
+
+int regrasTotal = 0;
+Regra *regras = nullptr;
+
+String regrasLoad();
 
 void regrasInit()
 {
+    regrasLoad();
+}
+
+Regra *regraGet(int i)
+{
+    if (i >= 0 && i < regrasCount())
+        return &regras[i];
+
+    return NULL;
+}
+
+int regrasCount()
+{
+    return regrasTotal;
 }
 
 String regraGetTxt(Regra *r);
@@ -127,52 +149,6 @@ String regraValida(String regra)
     return "TODO";
 }
 
-Regra regraCriaEvento(
-    uint16_t id,
-    const char *recursoID,
-    TipoEvento evento,
-    const char *acaoRecurso,
-    AcaoRecurso comando)
-{
-    Regra r{};
-
-    r.id = id;
-    r.ativa = true;
-
-    r.condicao.tipo = COND_EVENTO;
-    strlcpy(r.condicao.recursoID, recursoID, sizeof(r.condicao.recursoID));
-    r.condicao.evento = evento;
-
-    r.acao.tipo = ACAO_RECURSO;
-    strlcpy(r.acao.recursoID, acaoRecurso, sizeof(r.acao.recursoID));
-    r.acao.comando = comando;
-
-    return r;
-}
-
-Regra regraCriaHorario(
-    uint16_t id,
-    uint8_t hora,
-    uint8_t minuto,
-    const char *recursoID,
-    AcaoRecurso comando)
-{
-    Regra r{};
-
-    r.id = id;
-    r.ativa = true;
-
-    r.condicao.tipo = COND_HORARIO;
-    r.condicao.horario.hora = hora;
-    r.condicao.horario.minuto = minuto;
-
-    r.acao.tipo = ACAO_RECURSO;
-    strlcpy(r.acao.recursoID, recursoID, sizeof(r.acao.recursoID));
-    r.acao.comando = comando;
-
-    return r;
-}
-
 static const char *regraTipoEventoTxt(TipoEvento evento)
 {
     switch (evento)
@@ -201,6 +177,30 @@ static const char *regraTipoEventoTxt(TipoEvento evento)
         return "HORARIO";
     default:
         return "?";
+    }
+}
+
+static const char *regraTipoCondicaoTxt(TipoCondicao condicao)
+{
+    switch (condicao)
+    {
+    case COND_EVENTO:
+        return "EVENTO";
+    case COND_HORARIO:
+        return "HORARIO";
+    default:
+        return "COND??";
+    }
+}
+
+static const char *regraTipoAcaoTxt(TipoAcao acao)
+{
+    switch (acao)
+    {
+    case ACAO_RECURSO:
+        return "RECURSO";
+    default:
+        return "ACAO??";
     }
 }
 
@@ -297,4 +297,202 @@ String regraGetTxt(Regra *r)
     }
 
     return ret;
+}
+
+JsonDocument regraGetCondicaoJSONDoc(Regra *r)
+{
+    JsonDocument doc;
+    Condicao *c = &r->condicao;
+
+    doc["tipo"] = regraTipoCondicaoTxt(c->tipo);
+
+    switch (c->tipo)
+    {
+    case COND_EVENTO:
+        doc["recurso"] = c->recursoID;
+        doc["evento"] = regraTipoEventoTxt(c->evento);
+        break;
+
+    case COND_HORARIO:
+        doc["hora"] = c->horario.hora;
+        doc["minuto"] = c->horario.minuto;
+        break;
+    }
+
+    return doc;
+}
+
+JsonDocument regraGetAcaoJSONDoc(Regra *r)
+{
+    JsonDocument doc;
+    Acao *a = &r->acao;
+
+    doc["tipo"] = regraTipoAcaoTxt(a->tipo);
+
+    switch (a->tipo)
+    {
+    case ACAO_RECURSO:
+        doc["comando"] = regraAcaoRecursoTxt(a->comando);
+        doc["recurso"] = a->recursoID;
+        break;
+    }
+
+    return doc;
+}
+
+JsonDocument regraGetJSONDoc(Regra *r)
+{
+    JsonDocument doc;
+
+    doc["id"] = r->id;
+    doc["ativa"] = r->ativa;
+
+    // doc["descricao"] = regraGetTxt(r);
+
+    doc["quando"] = regraGetCondicaoJSONDoc(r);
+    doc["acao"] = regraGetAcaoJSONDoc(r);
+
+    return doc;
+}
+
+String regrasPersiste()
+{
+    File file = LittleFS.open("/automacoes.json.tmp", "w");
+    if (!file)
+    {
+        return "ERRO: ao abrir automacoes.json.tmp para escrita";
+    }
+
+    JsonDocument doc;
+    JsonArray regrasOut = doc["regras"].to<JsonArray>();
+
+    int totRegras = regrasCount();
+    for (int r = 0; r < totRegras; r++)
+    {
+        Regra *regra = regraGet(r);
+        regrasOut.add(regraGetJSONDoc(regra));
+    }
+
+    String out;
+    if (!serializeJson(doc, out))
+    {
+        file.close();
+        return "ERRO: regrasPersiste:serializeJson";
+    }
+
+    logaMensagem("regrasPersiste: [%s]", out.c_str());
+
+    if (!serializeJson(doc, file))
+    {
+        file.close();
+        return "ERRO: regrasPersiste:serializeJson FILE";
+    }
+
+    file.close();
+
+    LittleFS.rename("/automacoes.json.tmp", "/automacoes.json");
+
+    logaMensagem("Regras Salvas!");
+
+    return out;
+}
+
+String regrasLoad()
+{
+    regrasTotal = 0;
+
+    if (!LittleFS.exists("/automacoes.json"))
+    {
+        if (LittleFS.exists("/config/automacoes.json"))
+        {
+            // TODO !! Copiar o arquivo de exemplo
+            // utilCopiaArquivo("/config/automacoes.json", "/automacoes.json");
+        }
+        else
+        {
+            return "ERRO: regrasLoad > Arquivo /automacoes.json nao existe!";
+        }
+    }
+
+    File file = LittleFS.open("/automacoes.json", "r");
+    if (!file)
+        return "ERRO: regrasLoad > nao abriu /automacoes.json";
+
+    JsonDocument doc;
+    DeserializationError erro = deserializeJson(doc, file);
+    file.close();
+    if (erro)
+        return "ERRO: regrasLoad > lendo regras";
+
+    JsonArray regrasJson = doc["regras"].as<JsonArray>();
+    regrasJson.size();
+    /*
+        for (JsonObject r : regrasJson)
+        {
+            if (regrasTotal >= MAX_REGRAS)
+                break;
+
+            Regra *regra = &regras[totalRegras];
+
+            regra->id = r["id"] | 0;
+
+            // preencher condicao
+            // preencher acao
+
+            totalRegras++;
+        }
+    */
+    logaMensagem("Regras carregadas: %d", regrasTotal);
+    return "OK";
+}
+
+Regra regraCriaEvento(
+    uint16_t id,
+    const char *recursoID,
+    TipoEvento evento,
+    const char *acaoRecurso,
+    AcaoRecurso comando)
+{
+    Regra r{};
+
+    r.id = id;
+    r.ativa = true;
+
+    r.condicao.tipo = COND_EVENTO;
+    strlcpy(r.condicao.recursoID, recursoID, sizeof(r.condicao.recursoID));
+    r.condicao.evento = evento;
+
+    r.acao.tipo = ACAO_RECURSO;
+    strlcpy(r.acao.recursoID, acaoRecurso, sizeof(r.acao.recursoID));
+    r.acao.comando = comando;
+
+    return r;
+}
+
+Regra regraCriaHorario(
+    uint16_t id,
+    uint8_t hora,
+    uint8_t minuto,
+    const char *recursoID,
+    AcaoRecurso comando)
+{
+    Regra r{};
+
+    r.id = id;
+    r.ativa = true;
+
+    r.condicao.tipo = COND_HORARIO;
+    r.condicao.horario.hora = hora;
+    r.condicao.horario.minuto = minuto;
+
+    r.acao.tipo = ACAO_RECURSO;
+    strlcpy(r.acao.recursoID, recursoID, sizeof(r.acao.recursoID));
+    r.acao.comando = comando;
+
+    return r;
+}
+
+void regraPrint(Regra *r)
+{
+    logaMensagem("Regra[%d] > [%s]", r->id, regraGetTxt(r).c_str());
 }

@@ -6,7 +6,6 @@
 #include "eTomada.h"
 #include "mestre.h"
 #include "rele.h"
-#include "regras.h"
 #include "tipoSensores.h"
 #include "sensor.h"
 #include "ntp.h"
@@ -18,6 +17,7 @@
 #include "discover.h"
 #include "eventos.h"
 #include "agendamentos.h"
+#include "regras.h"
 
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
@@ -65,6 +65,9 @@ void eTomadaInit()
 
   logaMensagem("Inicializando Recursos:");
   recursosInit();
+
+  logaMensagem("Inicializando Regras:");
+  regrasInit();
 
   Serial.println("");
 }
