@@ -94,27 +94,16 @@ void loop()
 {
   esp_task_wdt_reset(); // alimenta o watchdog
 
-  struct tm timeinfo;
-  ntpGetTime(&timeinfo);
-
   if (WiFiGetModoAP())
-  {
     WiFiModoAPLoop();
-
-    if (timeinfo.tm_year < 2026)
-    {
-      // Sem data/hora não processa as regras
-      vTaskDelay(pdMS_TO_TICKS(100));
-      return;
-    }
-  }
   else
-  {
     discoverLoop();
-  }
 
   // 10ms/10ms
   botoesAtualiza();
+
+  struct tm timeinfo;
+  ntpGetTime(&timeinfo);
 
   // 1s/1s
   if (timeinfo.tm_sec != lastSecond)

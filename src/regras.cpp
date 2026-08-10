@@ -7,11 +7,12 @@
 #include "mutex.h"
 #include "ntp.h"
 
-int regrasTotal = 3;
+int regrasTotal = 4;
 Regra regras[] = {
     regraCriaEvento(1, "B1", EVENTO_TOGGLE, "R10", ACAO_TOGGLE),
-    regraCriaHorario(2, 17, 1, "R2", ACAO_ON),
-    regraCriaHorario(3, 17, 2, "R2", ACAO_OFF),
+    regraCriaEvento(2, "B2", EVENTO_TOGGLE, "R9", ACAO_PULSE),
+    regraCriaHorario(3, 18, 45, "R2", ACAO_ON),
+    regraCriaHorario(4, 18, 55, "R2", ACAO_OFF),
 };
 
 void regrasInit()
@@ -41,6 +42,8 @@ String regraDisparaAcao(Regra *regra)
             return recursoSet(rec, "OFF");
         case ACAO_TOGGLE:
             return recursoSet(rec, "TOGGLE");
+        case ACAO_PULSE:
+            return recursoSet(rec, "PULSE");
         }
     }
     break;
@@ -84,8 +87,17 @@ void regrasProcessaEvento(Evento e)
                 // Obter horario
                 struct tm timeinfo;
                 ntpGetTime(&timeinfo);
+
                 if (timeinfo.tm_hour == regra->condicao.horario.hora && timeinfo.tm_min == regra->condicao.horario.minuto)
+                {
+                    if (timeinfo.tm_year < 2026)
+                    {
+                        // Sem data/hora não processa regras de HORARIO
+                        logaMensagem("Pulando regra[%d] : estamos sem HORA!", r);
+                        break;
+                    }
                     disparaAcao = true;
+                }
             }
             break;
 
@@ -202,6 +214,8 @@ static const char *regraAcaoRecursoTxt(AcaoRecurso comando)
         return "OFF";
     case ACAO_TOGGLE:
         return "TOGGLE";
+    case ACAO_PULSE:
+        return "PULSE";
     default:
         return "?";
     }
