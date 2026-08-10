@@ -7,6 +7,7 @@
 #include "mestre.h"
 #include "regras.h"
 #include "loga.h"
+#include "util.h"
 
 #define EVENTOS_TAMNHO_FILA 20
 
@@ -17,11 +18,7 @@ void eventosInit()
 {
     filaEventos = xQueueCreate(EVENTOS_TAMNHO_FILA, sizeof(Evento));
     if (!filaEventos)
-    {
-        logaMensagem(">>>>>> ERRO filaEventos!!!!");
-        // TODO :: DIE!
-        return;
-    }
+        utilDIE(">>>>>> ERRO filaEventos!!!!");
 
     xTaskCreatePinnedToCore(
         eventosProcessaTask,

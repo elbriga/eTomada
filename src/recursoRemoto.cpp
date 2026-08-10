@@ -10,6 +10,7 @@
 #include "sensor.h"
 #include "discover.h"
 #include "tipoRecurso.h"
+#include "util.h"
 
 static RecursoRemoto *recursosRemotos;
 static int totRecursosRemotos = 0;
@@ -52,10 +53,7 @@ void recursosRemotosInit()
   totRecursosRemotos = getPrefsAtr(prefs, "", "total").toInt();
   recursosRemotos = new RecursoRemoto[totRecursosRemotos]();
   if (!recursosRemotos)
-  {
-    logaMensagem("DIE!! ERRO!!!!!! new RecursoRemoto[%d]", totRecursosRemotos);
-    // TODO :: DIE!
-  }
+    utilDIE("new RecursoRemoto");
 
   for (int rr = 1; rr <= totRecursosRemotos; rr++)
   {

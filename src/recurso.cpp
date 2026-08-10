@@ -12,6 +12,7 @@
 #include "eventos.h"
 #include "mutex.h"
 #include "agendamentos.h"
+#include "util.h"
 
 static Recurso *recursos;
 static int totRecursos = 0;
@@ -29,9 +30,7 @@ void recursosInit()
   totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais + totRecursosRemotos;
   recursos = new Recurso[totRecursos]();
   if (!recursos)
-  {
-    // TODO :: DIE!
-  }
+    utilDIE("RECURSOS");
 
   Preferences prefs;
   prefs.begin("recursos", false);
@@ -106,11 +105,7 @@ void recursoLoadFromPrefs(Recurso *r, Preferences &prefs)
 Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, int num, const char *idParaRecursoRemoto)
 {
   if (recursoAddCount >= totRecursos)
-  {
-    logaMensagem("ERRO!!!!! recursoAdd(%d)!! DIE!!", recursoAddCount);
-    // TODO : DIE!
-    return nullptr;
-  }
+    utilDIE("recursoAdd!! DIE!!");
 
   Recurso *r = &recursos[recursoAddCount++];
 

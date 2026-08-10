@@ -7,6 +7,7 @@
 #include "nodoRemoto.h"
 #include "discover.h"
 #include "recursoRemoto.h"
+#include "util.h"
 
 NodoRemoto *nodosRemotos = 0;
 static int totNodosRemotos = 0;
@@ -31,9 +32,7 @@ void nodoRemotoInit()
     // nodosRemotos = (NodoRemoto *)calloc(sizeof(NodoRemoto), totNodosRemotos);
     nodosRemotos = new NodoRemoto[totNodosRemotos];
     if (!nodosRemotos)
-    {
-      // TODO :: DIE!
-    }
+      utilDIE("NODOS REMOTOS");
 
     // Inicializar
     for (int nr = 1; nr <= totNodosRemotos; nr++)
