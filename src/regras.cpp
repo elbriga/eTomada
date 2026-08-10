@@ -7,8 +7,11 @@
 #include "display.h"
 #include "mutex.h"
 #include "ntp.h"
+#include "util.h"
 
 #define MAX_REGRAS 64
+#define REGRAS_PATH "/automacoes.json"
+#define REGRAS_PATH_DEFAULT "/config/automacoesDefault.json"
 
 /*
 int regrasTotal = 4;
@@ -23,12 +26,27 @@ Regra regras[] = {
 int regrasTotal = 0;
 Regra *regras = nullptr;
 
-String regrasLoad();
+String regrasLoad(const char *path);
 
 void regrasInit()
 {
-    String msg = regrasLoad();
-    logaMensagem(">> [%s]", msg.c_str());
+    if (!LittleFS.exists(REGRAS_PATH))
+    {
+        if (LittleFS.exists(REGRAS_PATH_DEFAULT))
+        {
+            // TODO !! Copiar o arquivo de exemplo
+            utilCopiaArquivo(REGRAS_PATH_DEFAULT, REGRAS_PATH);
+        }
+        else
+        {
+            logaMensagem("ERRO: regrasLoad > Arquivo [%s] nao existe!", REGRAS_PATH);
+            return;
+        }
+    }
+
+    String msg = regrasLoad(REGRAS_PATH);
+    if (msg != "OK")
+        logaMensagem(">> [%s]", msg.c_str());
 }
 
 Regra *regraGet(int i)
@@ -403,26 +421,75 @@ String regrasPersiste()
     return out;
 }
 
-String regrasLoad()
+void regraLoadFromJSON(Regra *regra, JsonObject &doc)
 {
-    regrasTotal = 0;
+    regra->id = doc["id"].as<int>() | (regrasTotal + 1);
+    regra->ativa = doc["ativa"].as<bool>();
 
-    if (!LittleFS.exists("/automacoes.json"))
+    // preencher condicao
+    String tipoCondicaoStr = doc["quando"]["tipo"].as<String>();
+    if (tipoCondicaoStr == "EVENTO")
     {
-        if (LittleFS.exists("/config/automacoes.json"))
-        {
-            // TODO !! Copiar o arquivo de exemplo
-            // utilCopiaArquivo("/config/automacoes.json", "/automacoes.json");
-        }
+        regra->condicao.tipo = COND_EVENTO;
+        strlcpy(regra->condicao.recursoID,
+                doc["quando"]["recurso"].as<const char *>(),
+                sizeof(regra->condicao.recursoID));
+        String eventoStr = doc["quando"]["evento"].as<String>();
+        if (eventoStr == "TOGGLE")
+            regra->condicao.evento = EVENTO_TOGGLE;
         else
         {
-            return "ERRO: regrasLoad > Arquivo /automacoes.json nao existe!";
+            logaMensagem("TipoEvento %s ??? Inativando regra", eventoStr.c_str());
+            regra->ativa = false;
         }
     }
+    else if (tipoCondicaoStr == "HORARIO")
+    {
+        regra->condicao.tipo = COND_HORARIO;
+        regra->condicao.horario.hora = doc["quando"]["hora"].as<int>();
+        regra->condicao.horario.minuto = doc["quando"]["minuto"].as<int>();
+    }
+    else
+    {
+        logaMensagem("TipoCondicao %s ??? Inativando regra", tipoCondicaoStr.c_str());
+        regra->ativa = false;
+    }
 
-    File file = LittleFS.open("/automacoes.json", "r");
+    // preencher acao
+    String tipoAcaoStr = doc["acao"]["tipo"];
+    if (tipoAcaoStr == "RECURSO")
+    {
+        regra->acao.tipo = ACAO_RECURSO;
+        strlcpy(regra->acao.recursoID,
+                doc["acao"]["recurso"].as<const char *>(),
+                sizeof(regra->acao.recursoID));
+        String acaoStr = doc["acao"]["comando"];
+        if (acaoStr == "ON")
+            regra->acao.comando = ACAO_ON;
+        else if (acaoStr == "OFF")
+            regra->acao.comando = ACAO_OFF;
+        else if (acaoStr == "TOGGLE")
+            regra->acao.comando = ACAO_TOGGLE;
+        else if (acaoStr == "PULSE")
+            regra->acao.comando = ACAO_PULSE;
+        else
+        {
+            logaMensagem("AcaoRecurso %s ??? Inativando regra", acaoStr.c_str());
+            regra->ativa = false;
+        }
+    }
+    else
+    {
+        logaMensagem("TipoAcao %s ??? Inativando regra", tipoAcaoStr.c_str());
+        regra->ativa = false;
+    }
+}
+
+String regrasLoad(const char *path)
+{
+    File file = LittleFS.open(path, "r");
     if (!file)
-        return "ERRO: regrasLoad > nao abriu /automacoes.json";
+        return "ERRO: regrasLoad > nao abriu";
 
     JsonDocument doc;
     DeserializationError erro = deserializeJson(doc, file);
@@ -444,80 +511,19 @@ String regrasLoad()
 
     regras = new Regra[totRegras]();
     if (!regras)
-    {
-        logaMensagem("NO new Regras! DIE!!!!!!!");
-        // TODO die!!!
-    }
+        utilDIE("NO new Regras! DIE!!!!!!!");
 
-    for (JsonObject r : regrasJson)
+    regrasTotal = 0;
+    for (JsonObject regraJson : regrasJson)
     {
         if (regrasTotal >= totRegras)
             break;
 
         Regra *regra = &regras[regrasTotal];
 
-        regra->id = r["id"].as<int>() | (regrasTotal + 1);
-        regra->ativa = r["ativa"].as<bool>();
-
-        // preencher condicao
-        String tipoCondicaoStr = r["quando"]["tipo"].as<String>();
-        if (tipoCondicaoStr == "EVENTO")
-        {
-            regra->condicao.tipo = COND_EVENTO;
-            strlcpy(regra->condicao.recursoID,
-                    r["quando"]["recurso"].as<const char *>(),
-                    sizeof(regra->condicao.recursoID));
-            String eventoStr = r["quando"]["evento"].as<String>();
-            if (eventoStr == "TOGGLE")
-                regra->condicao.evento = EVENTO_TOGGLE;
-            else
-            {
-                logaMensagem("TipoEvento %s ??? Inativando regra", eventoStr.c_str());
-                regra->ativa = false;
-            }
-        }
-        else if (tipoCondicaoStr == "HORARIO")
-        {
-            regra->condicao.tipo = COND_HORARIO;
-            regra->condicao.horario.hora = r["quando"]["hora"].as<int>();
-            regra->condicao.horario.minuto = r["quando"]["minuto"].as<int>();
-        }
-        else
-        {
-            logaMensagem("TipoCondicao %s ??? Inativando regra", tipoCondicaoStr.c_str());
-            regra->ativa = false;
-        }
-
-        // preencher acao
-        String tipoAcaoStr = r["acao"]["tipo"];
-        if (tipoAcaoStr == "RECURSO")
-        {
-            regra->acao.tipo = ACAO_RECURSO;
-            strlcpy(regra->acao.recursoID,
-                    r["acao"]["recurso"].as<const char *>(),
-                    sizeof(regra->acao.recursoID));
-            String acaoStr = r["acao"]["comando"];
-            if (acaoStr == "ON")
-                regra->acao.comando = ACAO_ON;
-            else if (acaoStr == "OFF")
-                regra->acao.comando = ACAO_OFF;
-            else if (acaoStr == "TOGGLE")
-                regra->acao.comando = ACAO_TOGGLE;
-            else if (acaoStr == "PULSE")
-                regra->acao.comando = ACAO_PULSE;
-            else
-            {
-                logaMensagem("AcaoRecurso %s ??? Inativando regra", acaoStr.c_str());
-                regra->ativa = false;
-            }
-        }
-        else
-        {
-            logaMensagem("TipoAcao %s ??? Inativando regra", tipoAcaoStr.c_str());
-            regra->ativa = false;
-        }
-
+        regraLoadFromJSON(regra, regraJson);
         regraPrint(regra);
+
         regrasTotal++;
     }
 
