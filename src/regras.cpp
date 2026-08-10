@@ -94,6 +94,9 @@ void regrasProcessaEvento(Evento e)
     {
         Regra *regra = &regras[r];
 
+        if (!regra->ativa)
+            continue;
+
         // Verificar se foi o recurso da regra que gerou o evento
         if (e.recurso && strcmp(regra->condicao.recursoID, e.recurso->id))
             continue;
