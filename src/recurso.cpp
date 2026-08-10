@@ -419,7 +419,12 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
     return "ignorando atualização antiga";
   }
 
-  // TODO :: LOCK!
+  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
+  if (!lock)
+  {
+    return "mutex timeout";
+  }
+
   recurso->tsAtualizacao = timestamp;
 
   switch (recurso->tipo)
