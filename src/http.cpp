@@ -8,6 +8,7 @@
 #include "discover.h"
 #include "recurso.h"
 #include "mestre.h"
+#include "eventos.h"
 
 #define DEV // TODO :: remover
 
@@ -82,7 +83,7 @@ void httpServerInitModoAPI()
 
   httpServer.on("/api/setRecurso", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {
-    bool fromMestre = mestreAtivo() ? (request->client()->remoteIP() == mestreGetIP()) : false;
+    bool fromMestre = mestreAtivo() && (request->client()->remoteIP() == mestreGetIP());
     Recurso *rec = nullptr;
     String msg = recursoSetFromJSON(data, rec, !fromMestre);
 
@@ -113,6 +114,14 @@ void httpServerInitModoAPI()
 
     request->send(200, "application/json", "{\"msg\": \""+atzEventoOK+"\"}");
     logaRequest(request, "200 " + atzEventoOK); });
+
+  httpServer.on("/api/mock", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+                {
+    // TODO :: Enviar 404 se nao achar o recurso do evento
+    String mockOK = eventoMockFromJson(data);
+
+    request->send(200, "application/json", "{\"msg\": \""+mockOK+"\"}");
+    logaRequest(request, "200 " + mockOK); });
 
   httpServer.on("/api/factoryReset", HTTP_POST, [](AsyncWebServerRequest *request)
                 {

@@ -47,6 +47,27 @@ void eventoPost(TipoEvento tipo,
     xQueueSend(filaEventos, &evento, 0);
 }
 
+String eventoMockFromJson(uint8_t *json)
+{
+    JsonDocument doc;
+
+    DeserializationError err = deserializeJson(doc, json);
+    if (err)
+        return "JSON Invalido";
+
+    String acao = doc["acao"];
+    if (acao != "TOGGLE")
+        return "Acao invalida";
+
+    Recurso *recurso = recursoGet(doc["recursoID"].as<const char *>());
+    if (!recurso)
+        return "Recurso Invalido";
+
+    eventoPost(EVENTO_TOGGLE, recurso, false, false);
+
+    return "OK";
+}
+
 void eventosProcessaTask(void *)
 {
     Evento evento;

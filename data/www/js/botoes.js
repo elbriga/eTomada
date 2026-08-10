@@ -84,3 +84,21 @@ async function botaoSalvarFromModal() {
     btn.innerText = "💾 Salvar";
   }
 }
+
+async function botaoToggle(recursoID, btn) {
+  //btn.innerText = "Processando...";
+  //btn.disabled = true;
+
+  try {
+    await eTomadaAPI(
+      "mock",
+      {
+        recursoID: recursoID,
+        acao: "TOGGLE",
+      },
+      "POST",
+    );
+  } catch (e) {
+    statusMsg("Erro no mock! : " + e);
+  }
+}

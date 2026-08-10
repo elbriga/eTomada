@@ -33,3 +33,5 @@ void eventoPost(TipoEvento tipo,
                 Recurso *recurso,
                 bool enviaSSE,
                 bool enviaMestre);
+
+String eventoMockFromJson(uint8_t *json);
