@@ -1,0 +1,56 @@
+{
+  "regras": [
+    {
+      "ativa": true,
+      "quando": {
+        "tipo": "EVENTO",
+        "recurso": "B1",
+        "evento": "TOGGLE"
+      },
+      "acao": {
+        "tipo": "RECURSO",
+        "comando": "PULSE",
+        "recurso": "R10"
+      }
+    },
+    {
+      "ativa": true,
+      "quando": {
+        "tipo": "EVENTO",
+        "recurso": "B2",
+        "evento": "TOGGLE"
+      },
+      "acao": {
+        "tipo": "RECURSO",
+        "comando": "TOGGLE",
+        "recurso": "R9"
+      }
+    },
+    {
+      "ativa": true,
+      "quando": {
+        "tipo": "HORARIO",
+        "hora": 8,
+        "minuto": 0
+      },
+      "acao": {
+        "tipo": "RECURSO",
+        "comando": "ON",
+        "recurso": "R2"
+      }
+    },
+    {
+      "ativa": true,
+      "quando": {
+        "tipo": "HORARIO",
+        "hora": 18,
+        "minuto": 30
+      },
+      "acao": {
+        "tipo": "RECURSO",
+        "comando": "OFF",
+        "recurso": "R2"
+      }
+    }
+  ]
+}

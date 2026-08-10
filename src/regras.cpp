@@ -30,11 +30,15 @@ String regrasLoad(const char *path);
 
 void regrasInit()
 {
+    // Para Testes!
+    // logaMensagem("INICIALIZANDO REGRAS FROM TESTES!!!");
+    // utilCopiaArquivo("/config/automacoesTeste.json", REGRAS_PATH);
+
     if (!LittleFS.exists(REGRAS_PATH))
     {
         if (LittleFS.exists(REGRAS_PATH_DEFAULT))
         {
-            // TODO !! Copiar o arquivo de exemplo
+            logaMensagem("INICIALIZANDO REGRAS FROM DEFAULT");
             utilCopiaArquivo(REGRAS_PATH_DEFAULT, REGRAS_PATH);
         }
         else
