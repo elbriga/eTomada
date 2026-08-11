@@ -25,8 +25,8 @@ void nodoRemotoInit()
   nodosRemotos = nullptr;
 
   // Para Testes!
-  // logaMensagem("INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
-  // utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
+  logaMensagem("INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
+  utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
 
   if (!LittleFS.exists(NODOS_PATH))
   {
@@ -133,14 +133,15 @@ void nodosRemotosRefreshTask(void *args)
     if (nodoDescoberto)
     {
       if (!nodoRemoto->online)
-        logaMensagem("Nodo Remoto %s - ONLINE", nodoRemoto->id);
+        logaMensagem("Nodo Remoto[%s] %s - ONLINE", nodoRemoto->id, nodoRemoto->nome);
       nodoRemoto->online = true;
 
       if (nodoRemoto->ip != nodoDescoberto->ip)
       {
         nodoRemoto->ip = nodoDescoberto->ip;
-        logaMensagem("Nodo Remoto %s - Novo IP: %s",
-                     nodoRemoto->id, nodoRemoto->ip.toString().c_str());
+        logaMensagem("Nodo Remoto[%s] %s - Novo IP: %s",
+                     nodoRemoto->id, nodoRemoto->nome,
+                     nodoRemoto->ip.toString().c_str());
       }
 
       nodoRemoto->ping = nodoDescoberto->ping;
@@ -154,7 +155,7 @@ void nodosRemotosRefreshTask(void *args)
     {
       nodoRemoto->ip = (uint32_t)0;
       if (nodoRemoto->online)
-        logaMensagem("Nodo Remoto %d OFFLINE", nr);
+        logaMensagem("Nodo Remoto[%s] %s OFFLINE", nodoRemoto->id, nodoRemoto->nome);
       nodoRemoto->online = false;
     }
   }
