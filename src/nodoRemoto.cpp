@@ -153,7 +153,6 @@ void nodosRemotosRefreshTask(void *args)
     }
     else
     {
-      nodoRemoto->ip = (uint32_t)0;
       if (nodoRemoto->online)
         logaMensagem("Nodo Remoto[%s] %s OFFLINE", nodoRemoto->id, nodoRemoto->nome);
       nodoRemoto->online = false;
