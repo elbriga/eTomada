@@ -13,8 +13,6 @@
 NodoRemoto *nodosRemotos = nullptr;
 static int totNodosRemotos = 0;
 
-#define NODOS_PATH "/nodosRemotos.json"
-
 NodoRemoto *nodoRemotoGetPorIndice(int i);
 void nodosRemotosRefreshTask(void *args);
 String nodosRemotosLoad(const char *path);
@@ -23,10 +21,6 @@ void nodoRemotoInit()
 {
   totNodosRemotos = 0;
   nodosRemotos = nullptr;
-
-  // Para Testes!
-  // logaMensagem("INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
-  // utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
 
   if (!LittleFS.exists(NODOS_PATH))
   {

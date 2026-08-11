@@ -3,6 +3,9 @@
 
 #include "eventos.h"
 
+#define REGRAS_PATH "/automacoes.json"
+#define REGRAS_PATH_DEFAULT "/config/automacoesDefault.json"
+
 enum TipoCondicao
 {
     COND_EVENTO,

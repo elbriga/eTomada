@@ -4,6 +4,7 @@
 #include <Preferences.h>
 
 #define MAX_NODOS_REMOTOS 8
+#define NODOS_PATH "/nodosRemotos.json"
 
 struct NodoRemoto
 {

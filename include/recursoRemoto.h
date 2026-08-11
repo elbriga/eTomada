@@ -10,6 +10,8 @@
 #include "sensor.h"
 #include "botao.h"
 
+#define RECURSOS_REMOTOS_PATH "/recursosRemotos.json"
+
 struct RecursoRemoto
 {
   TipoRecurso tipo;

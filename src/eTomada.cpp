@@ -18,6 +18,8 @@
 #include "eventos.h"
 #include "agendamentos.h"
 #include "regras.h"
+#include "util.h"
+#include "recursoRemoto.h"
 
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
@@ -37,6 +39,19 @@ void eTomadaInit()
 
   logaMensagem("Modo de Operação: %s", eTomadaGetModoOperacaoStr());
   logaMensagem("MAC: %s", getMACStr().c_str());
+
+  bool carregaTestes = true;
+  if (carregaTestes && modoOperacao == MODO_CONTROLADOR)
+  {
+    logaMensagem("INICIALIZANDO REGRAS FROM TESTES!!!");
+    utilCopiaArquivo("/config/automacoesTeste.json", REGRAS_PATH);
+
+    logaMensagem("INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
+    utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
+
+    logaMensagem("INICIALIZANDO RECURSOS REMOTOS FROM TESTES!!!");
+    utilCopiaArquivo("/config/recursosRemotosTeste.json", RECURSOS_REMOTOS_PATH);
+  }
 
   mestreInit(prefs);
 

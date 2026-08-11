@@ -16,8 +16,6 @@
 static RecursoRemoto *recursosRemotos;
 static int totRecursosRemotos = 0;
 
-#define RECURSOS_REMOTOS_PATH "/recursosRemotos.json"
-
 String recursosRemotosLoad(const char *path);
 JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id);
 
@@ -25,10 +23,6 @@ void recursosRemotosInit()
 {
   totRecursosRemotos = 0;
   recursosRemotos = nullptr;
-
-  // Para testes
-  // logaMensagem("INICIALIZANDO RECURSOS REMOTOS FROM TESTES!!!");
-  // utilCopiaArquivo("/config/recursosRemotosTeste.json", RECURSOS_REMOTOS_PATH);
 
   if (!LittleFS.exists(RECURSOS_REMOTOS_PATH))
   {
