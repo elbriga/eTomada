@@ -1,0 +1,39 @@
+{
+  "recursosRemotos": [
+    {
+      "nome": "RREMOTO1",
+      "tipo": "RELE",
+      "nodo": "NR1",
+      "idLocal": "R9",
+      "idRemoto": "R1"
+    },
+    {
+      "nome": "RREMOTO2",
+      "tipo": "RELE",
+      "nodo": "NR1",
+      "idLocal": "R10",
+      "idRemoto": "R2"
+    },
+    {
+      "nome": "SREMOTO1",
+      "tipo": "SENSOR",
+      "nodo": "NR2",
+      "idLocal": "S5",
+      "idRemoto": "S1"
+    },
+    {
+      "nome": "SREMOTO2",
+      "tipo": "SENSOR",
+      "nodo": "NR2",
+      "idLocal": "S6",
+      "idRemoto": "S2"
+    },
+    {
+      "nome": "BREMOTO1",
+      "tipo": "BOTAO",
+      "nodo": "NR1",
+      "idLocal": "B2",
+      "idRemoto": "B1"
+    }
+  ]
+}

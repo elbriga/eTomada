@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <LittleFS.h>
 
 #include "eTomada.h"
 #include "loga.h"
@@ -15,86 +16,96 @@
 static RecursoRemoto *recursosRemotos;
 static int totRecursosRemotos = 0;
 
+#define RECURSOS_REMOTOS_PATH "/recursosRemotos.json"
+
+String recursosRemotosLoad(const char *path);
 JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id);
 
 void recursosRemotosInit()
 {
-  Preferences prefs;
-  prefs.begin("recursosRemotos", false);
+  totRecursosRemotos = 0;
+  recursosRemotos = nullptr;
 
   // Para testes
-  // prefs.putString("total", "5");
-  // prefs.putString("idLocal1", "R9");
-  // prefs.putString("tipo1", "1");
-  // prefs.putString("nodo1", "NR1");
-  // prefs.putString("idRemoto1", "R1");
-  // prefs.putString("nome1", "RREMOTO1");
-  // prefs.putString("idLocal2", "R10");
-  // prefs.putString("tipo2", "1");
-  // prefs.putString("nodo2", "NR1");
-  // prefs.putString("idRemoto2", "R2");
-  // prefs.putString("nome2", "RREMOTO2");
-  // prefs.putString("idLocal3", "S5");
-  // prefs.putString("tipo3", "2");
-  // prefs.putString("nodo3", "NR2");
-  // prefs.putString("idRemoto3", "S1");
-  // prefs.putString("nome3", "SREMOTO1");
-  // prefs.putString("idLocal4", "S6");
-  // prefs.putString("tipo4", "2");
-  // prefs.putString("nodo4", "NR2");
-  // prefs.putString("idRemoto4", "S2");
-  // prefs.putString("nome4", "SREMOTO2");
-  // prefs.putString("idLocal5", "B2");
-  // prefs.putString("tipo5", "3");
-  // prefs.putString("nodo5", "NR1");
-  // prefs.putString("idRemoto5", "B1");
-  // prefs.putString("nome5", "BREMOTO1");
+  // logaMensagem("INICIALIZANDO RECURSOS REMOTOS FROM TESTES!!!");
+  // utilCopiaArquivo("/config/recursosRemotosTeste.json", RECURSOS_REMOTOS_PATH);
 
-  totRecursosRemotos = getPrefsAtr(prefs, "", "total").toInt();
-  recursosRemotos = new RecursoRemoto[totRecursosRemotos]();
-  if (!recursosRemotos)
-    utilDIE("new RecursoRemoto");
-
-  for (int rr = 1; rr <= totRecursosRemotos; rr++)
+  if (!LittleFS.exists(RECURSOS_REMOTOS_PATH))
   {
-    RecursoRemoto *recursoRemoto = &recursosRemotos[rr - 1];
+    logaMensagem("ERRO: recursosRemotosInit > Arquivo [%s] nao existe!", RECURSOS_REMOTOS_PATH);
+    return;
+  }
 
-    char num[8];
-    snprintf(num, sizeof(num), "%d", rr);
-    String idLocal = getPrefsAtr(prefs, num, "idLocal");
-    String idRemoto = getPrefsAtr(prefs, num, "idRemoto");
-    int tipo = getPrefsAtr(prefs, num, "tipo").toInt();
-    String nodo = getPrefsAtr(prefs, num, "nodo");
+  String msg = recursosRemotosLoad(RECURSOS_REMOTOS_PATH);
+  if (msg != "OK")
+    logaMensagem("ERRO: recursosRemotosLoad: [%s]", msg.c_str());
+}
 
-    switch (tipo)
+String recursosRemotosLoad(const char *path)
+{
+  File file = LittleFS.open(path, "r");
+  if (!file)
+    return "ERRO: recursosRemotosLoad > nao abriu";
+
+  JsonDocument doc;
+  DeserializationError erro = deserializeJson(doc, file);
+  file.close();
+  if (erro)
+    return "ERRO: recursosRemotosLoad > lendo recursos";
+
+  JsonArray recursosJson = doc["recursosRemotos"].as<JsonArray>();
+  int totRR = recursosJson.size();
+
+  if (recursosRemotos)
+    delete[] recursosRemotos;
+
+  recursosRemotos = new RecursoRemoto[totRR]();
+  if (!recursosRemotos)
+    utilDIE("NO new RecursoRemoto! DIE!!!!!!!");
+
+  totRecursosRemotos = 0;
+  for (JsonObject rrJson : recursosJson)
+  {
+    if (totRecursosRemotos >= totRR)
     {
-    case RECURSO_RELE:
-      recursoRemoto->tipo = RECURSO_RELE;
-      break;
-    case RECURSO_SENSOR:
-      recursoRemoto->tipo = RECURSO_SENSOR;
-      break;
-    case RECURSO_BOTAO:
-      recursoRemoto->tipo = RECURSO_BOTAO;
-      break;
-
-    default:
-      logaMensagem(">>> recursoRemoto com tipo [%d] invalido!!", tipo);
-      recursoRemoto->tipo = RECURSO_INVALIDO;
+      logaMensagem("ERRO! recursosRemotosLoad > TOT > TOT ??");
       break;
     }
 
-    strcpy(recursoRemoto->idLocal, idLocal.c_str());
-    strcpy(recursoRemoto->idRemoto, idRemoto.c_str());
+    RecursoRemoto *recursoRemoto = &recursosRemotos[totRecursosRemotos];
+    if (!recursoRemoto)
+    {
+      logaMensagem("ERRO! recursosRemotosLoad > !REC ??");
+      continue;
+    }
 
-    recursoRemoto->num = rr;
+    String idLocal = rrJson["idLocal"].as<String>();
+    String idRemoto = rrJson["idRemoto"].as<String>();
+    String tipo = rrJson["tipo"].as<String>();
+    String nodo = rrJson["nodo"].as<String>();
+
+    if (tipo == "RELE")
+      recursoRemoto->tipo = RECURSO_RELE;
+    else if (tipo == "SENSOR")
+      recursoRemoto->tipo = RECURSO_SENSOR;
+    else if (tipo == "BOTAO")
+      recursoRemoto->tipo = RECURSO_BOTAO;
+    else
+    {
+      logaMensagem(">>> recursoRemoto com tipo [%s] invalido!!", tipo.c_str());
+      recursoRemoto->tipo = RECURSO_INVALIDO;
+    }
+
+    strlcpy(recursoRemoto->idLocal, idLocal.c_str(), sizeof(recursoRemoto->idLocal));
+    strlcpy(recursoRemoto->idRemoto, idRemoto.c_str(), sizeof(recursoRemoto->idRemoto));
+
     recursoRemoto->nodo = nodoRemotoGet(nodo.c_str());
 
     // Buscar o estado remoto do recurso com o snapshot do nodosRemotosInit()
     JsonObject deviceRemoto;
     if (!recursoRemoto->nodo)
     {
-      logaMensagem("ERRO: recursosRemotosInit()[%d] sem nodo!", rr);
+      logaMensagem("ERRO: recursosRemotosInit()[%d] sem nodo!", totRecursosRemotos);
     }
     else
     {
@@ -107,46 +118,40 @@ void recursosRemotosInit()
       }
     }
 
-    switch (tipo)
-    {
-    case RECURSO_RELE:
+    if (tipo == "RELE")
     {
       Rele *rele = &recursoRemoto->rele;
-      rele->num = rr;
+      rele->num = totRecursosRemotos;
       rele->ativo = true;
       if (deviceRemoto)
         rele->estado = deviceRemoto["estado"].as<bool>();
     }
-    break;
-
-    case RECURSO_SENSOR:
+    else if (tipo == "SENSOR")
     {
       Sensor *sensor = &recursoRemoto->sensor;
-      sensor->num = rr;
+      sensor->num = totRecursosRemotos;
       sensor->ativo = true;
       if (deviceRemoto)
       {
-        strcpy(sensor->tipo, deviceRemoto["tipo"].as<const char *>());
+        strlcpy(sensor->tipo, deviceRemoto["tipo"].as<const char *>(), sizeof(sensor->tipo));
         sensor->valor = deviceRemoto["valor"].as<int>();
       }
     }
-    break;
-
-    case RECURSO_BOTAO:
+    else if (tipo == "BOTAO")
     {
       Botao *botao = &recursoRemoto->botao;
-      botao->num = rr;
+      botao->num = totRecursosRemotos;
       botao->ativo = true;
       if (deviceRemoto)
         botao->estado = deviceRemoto["estado"].as<bool>();
     }
-    break;
-    }
 
     recursoRemotoPrint(recursoRemoto);
+
+    totRecursosRemotos++;
   }
 
-  prefs.end();
+  return "OK";
 }
 
 int recursosRemotosGetCount()
@@ -225,7 +230,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
 
 void recursoRemotoPrint(RecursoRemoto *recursoRemoto)
 {
-  logaMensagem("RecursoRemoto[%d] %s em %s",
-               recursoRemoto->num, recursoGetTipoStr(recursoRemoto->tipo),
+  logaMensagem("RecursoRemoto[%s] %s em %s",
+               recursoRemoto->idLocal, recursoGetTipoStr(recursoRemoto->tipo),
                recursoRemoto->nodo->ip.toString().c_str());
 }
