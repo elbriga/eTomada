@@ -147,6 +147,10 @@ String eTomadaGetSnapshotJSON()
     recursos.add(recursoGetJSONDoc(recurso));
   }
 
+  JsonDocument regrasJS;
+  regrasGetJSONDoc(regrasJS);
+  doc["regras"] = regrasJS;
+
   String out;
   serializeJson(doc, out);
 

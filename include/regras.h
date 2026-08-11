@@ -88,6 +88,8 @@ void regrasInit();
 Regra *regraGet(int i);
 int regrasCount();
 
+void regrasGetJSONDoc(JsonDocument &doc);
+
 void regrasProcessaEvento(Evento e);
 
 String regrasPersiste();

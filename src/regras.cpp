@@ -383,6 +383,18 @@ JsonDocument regraGetJSONDoc(Regra *r)
     return doc;
 }
 
+void regrasGetJSONDoc(JsonDocument &doc)
+{
+    JsonArray regrasOut = doc.to<JsonArray>();
+
+    int totRegras = regrasCount();
+    for (int r = 0; r < totRegras; r++)
+    {
+        Regra *regra = regraGet(r);
+        regrasOut.add(regraGetJSONDoc(regra));
+    }
+}
+
 String regrasPersiste()
 {
     File file = LittleFS.open("/automacoes.json.tmp", "w");
@@ -391,15 +403,11 @@ String regrasPersiste()
         return "ERRO: ao abrir automacoes.json.tmp para escrita";
     }
 
-    JsonDocument doc;
-    JsonArray regrasOut = doc["regras"].to<JsonArray>();
+    JsonDocument regras;
+    regrasGetJSONDoc(regras);
 
-    int totRegras = regrasCount();
-    for (int r = 0; r < totRegras; r++)
-    {
-        Regra *regra = regraGet(r);
-        regrasOut.add(regraGetJSONDoc(regra));
-    }
+    JsonDocument doc;
+    doc["regras"] = regras;
 
     String out;
     if (!serializeJson(doc, out))
