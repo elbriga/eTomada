@@ -106,7 +106,7 @@ String releGetJSONString(Rele *r)
   return out;
 }
 
-String releControla(int numRele, bool estado, int override)
+String releControla(Rele *rele, bool estado, int override)
 {
   MutexLock lock(recursosMutex);
   if (!lock)
@@ -114,13 +114,12 @@ String releControla(int numRele, bool estado, int override)
     return "releControla: mutex timeout";
   }
 
-  return releControlaLocked(numRele, estado, override);
+  return releControlaLocked(rele, estado, override);
 }
 
 // REQUIRE recursosMutex locked
-String releControlaLocked(int numRele, bool estado, int override)
+String releControlaLocked(Rele *rele, bool estado, int override)
 {
-  Rele *rele = releGet(numRele);
   if (!rele)
   {
     logaMensagem("releControlaLocked: Rele invalido!!!\n");

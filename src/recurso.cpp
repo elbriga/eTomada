@@ -18,7 +18,7 @@ static Recurso *recursos;
 static int totRecursos = 0;
 int recursoAddCount = 0;
 
-Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, int num, const char *idParaRecursoRemoto = nullptr);
+Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id, bool remoto = false);
 
 void recursosInit()
 {
@@ -41,26 +41,29 @@ void recursosInit()
 
   for (int r = 1; r <= totRelesLocais; r++)
   {
-    Recurso *recurso = recursoAdd(prefs, RECURSO_RELE, r);
+    String id = "R" + String(r);
+    Recurso *recurso = recursoAdd(prefs, RECURSO_RELE, id.c_str());
     recurso->rele = releGet(r);
   }
 
   for (int s = 1; s <= totSensoresLocais; s++)
   {
-    Recurso *recurso = recursoAdd(prefs, RECURSO_SENSOR, s);
+    String id = "S" + String(s);
+    Recurso *recurso = recursoAdd(prefs, RECURSO_SENSOR, id.c_str());
     recurso->sensor = sensorGet(s);
   }
 
   for (int b = 1; b <= totBotoesLocais; b++)
   {
-    Recurso *recurso = recursoAdd(prefs, RECURSO_BOTAO, b);
+    String id = "B" + String(b);
+    Recurso *recurso = recursoAdd(prefs, RECURSO_BOTAO, id.c_str());
     recurso->botao = botaoGet(b);
   }
 
   for (int r = 0; r < totRecursosRemotos; r++)
   {
     RecursoRemoto *rr = recursoRemotoGetPorIndice(r);
-    Recurso *recurso = recursoAdd(prefs, rr->tipo, rr->num, rr->idLocal);
+    Recurso *recurso = recursoAdd(prefs, rr->tipo, rr->idLocal, true);
     recurso->recursoRemoto = rr;
   }
 
@@ -74,26 +77,6 @@ void recursosInit()
   }
 }
 
-static void recursoGeraID(Recurso *r)
-{
-  char prefixo = '?';
-  switch (r->tipo)
-  {
-  case RECURSO_RELE:
-    prefixo = 'R';
-    break;
-  case RECURSO_SENSOR:
-    prefixo = 'S';
-    break;
-  case RECURSO_BOTAO:
-    prefixo = 'B';
-    break;
-  default:
-    prefixo = 'X';
-  }
-  snprintf(r->id, sizeof(r->id), "%c%d", prefixo, r->num);
-}
-
 void recursoLoadFromPrefs(Recurso *r, Preferences &prefs)
 {
   String nome = getPrefsAtr(prefs, r->id, "nome");
@@ -102,7 +85,7 @@ void recursoLoadFromPrefs(Recurso *r, Preferences &prefs)
   strlcpy(r->nome, nome.c_str(), sizeof(r->nome));
 }
 
-Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, int num, const char *idParaRecursoRemoto)
+Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id, bool remoto)
 {
   if (recursoAddCount >= totRecursos)
     utilDIE("recursoAdd!! DIE!!");
@@ -110,16 +93,10 @@ Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, int num, const char *i
   Recurso *r = &recursos[recursoAddCount++];
 
   r->tipo = tipo;
-  r->num = num;
-  r->remoto = !!idParaRecursoRemoto;
+  r->remoto = remoto;
   r->tsAtualizacao = millis();
 
-  if (!r->remoto)
-    // Para recursos locais > gerar o ID
-    recursoGeraID(r);
-  else
-    // Para recursos remotos > ID vem do prefs recursosRemotos
-    strlcpy(r->id, idParaRecursoRemoto, sizeof(r->id));
+  strlcpy(r->id, id, sizeof(r->id));
 
   recursoLoadFromPrefs(r, prefs);
 
@@ -195,7 +172,7 @@ String recursoSetLocked(Recurso *recurso, bool estado, bool enviaMestre)
   }
   else
   {
-    msg = releControlaLocked(recurso->num, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
+    msg = releControlaLocked(recurso->rele, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
   }
 
   // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);
@@ -271,11 +248,6 @@ Recurso *recursoGet(const char *id)
     }
   }
   return NULL;
-}
-
-int recursoGetNum(Recurso *recurso)
-{
-  return recurso->remoto ? recurso->recursoRemoto->num : recurso->num;
 }
 
 Rele *recursoGetRele(Recurso *recurso)

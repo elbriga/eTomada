@@ -12,7 +12,6 @@
 
 struct RecursoRemoto
 {
-  int num; // Numero LOCAL dentro de prefs[recursoRemoto]
   TipoRecurso tipo;
   char idLocal[8];  // ID Local do recurso dentro do tipo. ex.: R10
   char idRemoto[8]; // ID Remoto do recurso dentro do tipo. ex.: R2

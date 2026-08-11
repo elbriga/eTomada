@@ -24,5 +24,5 @@ void relePrint(Rele *rele);
 
 JsonDocument releGetJSONDoc(Rele *r, bool full);
 
-String releControlaLocked(int numRele, bool estado, int override = 0);
-String releControla(int numRele, bool estado, int override = 0);
+String releControlaLocked(Rele *r, bool estado, int override = 0);
+String releControla(Rele *r, bool estado, int override = 0);

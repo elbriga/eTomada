@@ -14,7 +14,6 @@ struct Recurso
   char id[9];
   TipoRecurso tipo;
   char nome[32];
-  int num;
   bool remoto;
   unsigned long tsAtualizacao;
   union
@@ -31,7 +30,6 @@ int recursosGetCount(TipoRecurso tipo = RECURSO_TODOS);
 Recurso *recursoGet(const char *id);
 Recurso *recursoGetPorIndice(int posicao);
 
-int recursoGetNum(Recurso *recurso);
 Rele *recursoGetRele(Recurso *r);
 Sensor *recursoGetSensor(Recurso *r);
 Botao *recursoGetBotao(Recurso *recurso);
