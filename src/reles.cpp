@@ -141,7 +141,7 @@ String releControlaLocked(Rele *rele, bool estado, int override)
 
     rele->override = (override > 0) ? time(nullptr) + override : 0;
 
-    char msg[128];
+    char msg[40];
     snprintf(msg, sizeof(msg), "%s (rele %d, pino %d)", // TODO :: nome
              (estado ? "Ligando" : "Desligando"), rele->num, rele->pino);
     ret = msg;
