@@ -10,8 +10,6 @@
 #include "util.h"
 
 #define MAX_REGRAS 64
-#define REGRAS_PATH "/automacoes.json"
-#define REGRAS_PATH_DEFAULT "/config/automacoesDefault.json"
 
 /*
 int regrasTotal = 4;
@@ -26,13 +24,14 @@ Regra regras[] = {
 int regrasTotal = 0;
 Regra *regras = nullptr;
 
+void regrasBoot();
 String regrasLoad(const char *path);
+String regraGetTxt(Regra *r);
 
 void regrasInit()
 {
-    // Para Testes!
-    // logaMensagem("INICIALIZANDO REGRAS FROM TESTES!!!");
-    // utilCopiaArquivo("/config/automacoesTeste.json", REGRAS_PATH);
+    if (eTomadaGetModoOperacao() != MODO_CONTROLADOR)
+        return;
 
     if (!LittleFS.exists(REGRAS_PATH))
     {
@@ -50,7 +49,87 @@ void regrasInit()
 
     String msg = regrasLoad(REGRAS_PATH);
     if (msg != "OK")
-        logaMensagem(">> [%s]", msg.c_str());
+        logaMensagem(">> regrasLoad: [%s]", msg.c_str());
+
+    regrasBoot();
+}
+
+Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
+{
+    // Tratando somente reles por enquanto
+    if (recursoIn->tipo != RECURSO_RELE)
+        return nullptr;
+
+    struct tm timeinfo;
+    ntpGetTime(&timeinfo);
+    int minutoAtual = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+    int minutoUltimo = -1;
+
+    Regra *regraAtivadaOut = nullptr;
+    for (int r = 0; r < regrasTotal; r++)
+    {
+        Regra *regra = &regras[r];
+
+        // Descartar acao TOGGLE
+        if (regra->acao.comando == ACAO_TOGGLE)
+            continue;
+
+        // Verificar se esta regra age em cima do recurso
+        if (strcmp(regra->acao.recursoID, recursoIn->id))
+            continue;
+
+        if (regra->condicao.tipo == COND_HORARIO)
+        {
+            // Verificar se ja passou esse HORARIO
+            int minutoRegra = regra->condicao.horario.hora * 60 + regra->condicao.horario.minuto;
+            if (minutoRegra < minutoAtual)
+            {
+                // Salvar o estado da ultima regra aplicavel
+                if (minutoRegra > minutoUltimo)
+                {
+                    minutoUltimo = minutoRegra;
+                    regraAtivadaOut = regra;
+                    *estadoAtualOut = (regra->acao.comando == ACAO_ON);
+                }
+            }
+        }
+    }
+
+    return regraAtivadaOut;
+}
+
+// TODO : chamar regrasBoot quando ficar sem HORA e dai pegar a HORA
+void regrasBoot()
+{
+    // Obter horario
+    struct tm timeinfo;
+    ntpGetTime(&timeinfo);
+    if (timeinfo.tm_year + 1900 < 2026)
+    {
+        // Sem data/hora não processa regras de HORARIO
+        logaMensagem("Pulando Boot das regras!!! estamos sem HORA!!");
+        return;
+    }
+
+    // Ajustar o estado dos RELEs conforme as regras de HORARIO para agora
+    int totRecursos = recursosGetCount();
+    for (int r = 0; r < totRecursos; r++)
+    {
+        Recurso *recurso = recursoGetPorIndice(r);
+        if (recurso->tipo != RECURSO_RELE)
+            continue;
+
+        bool estadoAtual;
+        Regra *regraAtivada = regrasCalculaEstadoAtual(recurso, &estadoAtual);
+        if (regraAtivada)
+        {
+            logaMensagem("Conferir estado do recurso [%s][%s] para %d pela regra [%s]",
+                         recurso->id, recurso->nome, estadoAtual, regraGetTxt(regraAtivada).c_str());
+            String msg = recursoCheck(recurso, estadoAtual);
+            if (msg != "")
+                logaMensagem(">> [%s]", msg.c_str());
+        }
+    }
 }
 
 Regra *regraGet(int i)
@@ -71,7 +150,7 @@ String regraDisparaAcao(Regra *regra)
 {
     Acao *acao = &regra->acao;
 
-    logaMensagem(">> [%s]", regraGetTxt(regra).c_str());
+    logaMensagem(">> Ativando [%s]", regraGetTxt(regra).c_str());
 
     switch (acao->tipo)
     {
@@ -111,7 +190,6 @@ void regrasProcessaEvento(Evento e)
     }
 
     String msgDisplay = "";
-    // Iterar pelas regras
     for (int r = 0; r < regrasTotal; r++)
     {
         Regra *regra = &regras[r];
@@ -140,7 +218,7 @@ void regrasProcessaEvento(Evento e)
 
                 if (timeinfo.tm_hour == regra->condicao.horario.hora && timeinfo.tm_min == regra->condicao.horario.minuto)
                 {
-                    if (timeinfo.tm_year < 2026)
+                    if (timeinfo.tm_year + 1900 < 2026)
                     {
                         // Sem data/hora não processa regras de HORARIO
                         logaMensagem("Pulando regra[%d] : estamos sem HORA!", r);
@@ -368,19 +446,15 @@ JsonDocument regraGetAcaoJSONDoc(Regra *r)
     return doc;
 }
 
-JsonDocument regraGetJSONDoc(Regra *r)
+void regraGetJS(Regra *r, JsonObject &doc)
 {
-    JsonDocument doc;
-
     doc["id"] = r->id;
     doc["ativa"] = r->ativa;
 
-    // doc["descricao"] = regraGetTxt(r);
+    doc["descricao"] = regraGetTxt(r);
 
     doc["quando"] = regraGetCondicaoJSONDoc(r);
     doc["acao"] = regraGetAcaoJSONDoc(r);
-
-    return doc;
 }
 
 void regrasGetJSONDoc(JsonDocument &doc)
@@ -391,7 +465,8 @@ void regrasGetJSONDoc(JsonDocument &doc)
     for (int r = 0; r < totRegras; r++)
     {
         Regra *regra = regraGet(r);
-        regrasOut.add(regraGetJSONDoc(regra));
+        JsonObject obj = regrasOut.add<JsonObject>();
+        regraGetJS(regra, obj);
     }
 }
 
@@ -538,8 +613,6 @@ String regrasLoad(const char *path)
 
         regrasTotal++;
     }
-
-    logaMensagem("Regras carregadas: %d", regrasTotal);
 
     return "OK";
 }

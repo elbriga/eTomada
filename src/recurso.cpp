@@ -221,6 +221,24 @@ String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
   return msg;
 }
 
+String recursoCheck(Recurso *recurso, bool estadoDesejado)
+{
+  if (recurso->tipo != RECURSO_RELE)
+    return "recursoCheck: Recurso nao eh RELE";
+
+  MutexLock lock(recursosMutex);
+  if (!lock)
+  {
+    return "recursoCheck: mutex timeout";
+  }
+
+  Rele *r = recursoGetRele(recurso);
+  if (r->estado != estadoDesejado)
+    return recursoSetLocked(recurso, estadoDesejado, false);
+
+  return "";
+}
+
 void recursoEnviaSSE(Recurso *recurso)
 {
   String recursoStr;
