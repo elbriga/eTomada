@@ -162,7 +162,8 @@ void botoesAtualiza()
     {
       if (botao->estado != leitura)
       {
-        logaMensagem("BOTAO MUDOU!!!!!!! [%s]", leitura ? "ON" : "OFF");
+        logaMensagem("BOTAO [%s][%s] MUDOU [%s]",
+                     rec->id, rec->nome, leitura ? "ON" : "OFF");
         int idx = totBotoesParaAtualizar++;
         atual[idx].rec = rec;
         atual[idx].novoEstado = leitura;
