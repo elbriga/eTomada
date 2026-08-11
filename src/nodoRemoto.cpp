@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <LittleFS.h>
 
 #include "eTomada.h"
 #include "loga.h"
@@ -9,56 +10,38 @@
 #include "recursoRemoto.h"
 #include "util.h"
 
-NodoRemoto *nodosRemotos = 0;
+NodoRemoto *nodosRemotos = nullptr;
 static int totNodosRemotos = 0;
 
+#define NODOS_PATH "/nodosRemotos.json"
+
+NodoRemoto *nodoRemotoGetPorIndice(int i);
 void nodosRemotosRefreshTask(void *args);
+String nodosRemotosLoad(const char *path);
 
 void nodoRemotoInit()
 {
-  Preferences prefs;
-  prefs.begin("nodosRemotos", false);
+  totNodosRemotos = 0;
+  nodosRemotos = nullptr;
 
-  // Para testes
-  // prefs.putString("total", "2");
-  // prefs.putString("deviceID1", "20:07:69:75:06:DC");
-  // prefs.putString("deviceID2", "CC:AE:54:DA:F3:80");
+  // Para Testes!
+  // logaMensagem("INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
+  // utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
 
-  totNodosRemotos = getPrefsAtr(prefs, "", "total").toInt();
-  logaMensagem("Nodos Remotos: %d", totNodosRemotos);
-
-  if (totNodosRemotos > 0)
+  if (!LittleFS.exists(NODOS_PATH))
   {
-    // nodosRemotos = (NodoRemoto *)calloc(sizeof(NodoRemoto), totNodosRemotos);
-    nodosRemotos = new NodoRemoto[totNodosRemotos]();
-    if (!nodosRemotos)
-      utilDIE("NODOS REMOTOS");
-
-    // Inicializar
-    for (int nr = 1; nr <= totNodosRemotos; nr++)
-    {
-      NodoRemoto *nodoRemoto = &nodosRemotos[nr - 1];
-
-      nodoRemoto->num = nr;
-      nodoRemoto->online = false;
-
-      char num[8];
-      snprintf(num, sizeof(num), "%d", nr);
-      // TODO :: renomear deviceID para mac
-      strncpy(nodoRemoto->deviceID, getPrefsAtr(prefs, num, "deviceID").c_str(), sizeof(nodoRemoto->deviceID) - 1);
-      nodoRemoto->deviceID[sizeof(nodoRemoto->deviceID) - 1] = '\0';
-    }
-
-    nodosRemotosRefreshTask(nullptr);
-
-    for (int nr = 1; nr <= totNodosRemotos; nr++)
-    {
-      NodoRemoto *nodoRemoto = &nodosRemotos[nr - 1];
-      nodoRemotoPrint(nodoRemoto);
-    }
+    logaMensagem("ERRO: nodoRemotoInit > Arquivo [%s] nao existe!", NODOS_PATH);
+    return;
   }
 
-  prefs.end();
+  String msgLoad = nodosRemotosLoad(NODOS_PATH);
+  if (msgLoad != "OK")
+    logaMensagem(">> nodosRemotosLoad: [%s]", msgLoad.c_str());
+
+  nodosRemotosRefreshTask(nullptr);
+
+  for (int nr = 0; nr < totNodosRemotos; nr++)
+    nodoRemotoPrint(nodoRemotoGetPorIndice(nr));
 }
 
 int nodosRemotosGetCount()
@@ -66,25 +49,33 @@ int nodosRemotosGetCount()
   return totNodosRemotos;
 }
 
-NodoRemoto *nodoRemotoGet(int num)
+NodoRemoto *nodoRemotoGet(const char *id)
 {
-  if (num > 0 && num <= nodosRemotosGetCount())
+  int tot = nodosRemotosGetCount();
+  for (int nr = 0; nr < tot; nr++)
   {
-    return &nodosRemotos[num - 1];
+    NodoRemoto *nodo = nodoRemotoGetPorIndice(nr);
+    if (!strcmp(nodo->id, id))
+      return &nodosRemotos[nr];
   }
+  return NULL;
+}
+
+NodoRemoto *nodoRemotoGetPorIndice(int i)
+{
+  if (i >= 0 && i < nodosRemotosGetCount())
+    return &nodosRemotos[i];
   return NULL;
 }
 
 NodoRemoto *nodoRemotoGetPorMAC(const char *mac)
 {
   int tot = nodosRemotosGetCount();
-  for (int nr = 1; nr <= tot; nr++)
+  for (int nr = 0; nr < tot; nr++)
   {
-    NodoRemoto *nodo = nodoRemotoGet(nr);
+    NodoRemoto *nodo = nodoRemotoGetPorIndice(nr);
     if (!strcmp(nodo->deviceID, mac))
-    {
-      return &nodosRemotos[nr - 1];
-    }
+      return &nodosRemotos[nr];
   }
   return NULL;
 }
@@ -116,9 +107,9 @@ void nodosRemotosRefreshTask(void *args)
   {
     NodoRemoto *nodoDiscover = discoverGetNodoPorIndice(nd - 1);
     bool achei = false;
-    for (int nr = 1; nr <= totNR; nr++)
+    for (int nr = 0; nr < totNR; nr++)
     {
-      NodoRemoto *nodoRemoto = nodoRemotoGet(nr);
+      NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
       if (!strcmp(nodoDiscover->deviceID, nodoRemoto->deviceID))
       {
         achei = true;
@@ -133,23 +124,23 @@ void nodosRemotosRefreshTask(void *args)
     }
   }
 
-  for (int nr = 1; nr <= totNR; nr++)
+  for (int nr = 0; nr < totNR; nr++)
   {
-    NodoRemoto *nodoRemoto = nodoRemotoGet(nr);
+    NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
 
     // Buscar este deviceID nos nodos escaneados
     NodoRemoto *nodoDescoberto = discoverGetNodo(nodoRemoto->deviceID);
     if (nodoDescoberto)
     {
       if (!nodoRemoto->online)
-        logaMensagem("Nodo Remoto %d - ONLINE", nr);
+        logaMensagem("Nodo Remoto %s - ONLINE", nodoRemoto->id);
       nodoRemoto->online = true;
 
       if (nodoRemoto->ip != nodoDescoberto->ip)
       {
         nodoRemoto->ip = nodoDescoberto->ip;
-        logaMensagem("Nodo Remoto %d - Novo IP: %s",
-                     nr, nodoRemoto->ip.toString().c_str());
+        logaMensagem("Nodo Remoto %s - Novo IP: %s",
+                     nodoRemoto->id, nodoRemoto->ip.toString().c_str());
       }
 
       nodoRemoto->ping = nodoDescoberto->ping;
@@ -174,10 +165,59 @@ void nodosRemotosRefreshTask(void *args)
   }
 }
 
+String nodosRemotosLoad(const char *path)
+{
+  File file = LittleFS.open(path, "r");
+  if (!file)
+    return "ERRO: nodosRemotosLoad > nao abriu";
+
+  JsonDocument doc;
+  DeserializationError erro = deserializeJson(doc, file);
+  file.close();
+  if (erro)
+    return "ERRO: nodosRemotosLoad > lendo nodos";
+
+  JsonArray nodosJson = doc["nodos"].as<JsonArray>();
+  int totNodos = nodosJson.size();
+
+  if (nodosRemotos)
+    delete[] nodosRemotos;
+
+  nodosRemotos = new NodoRemoto[totNodos]();
+  if (!nodosRemotos)
+    utilDIE("NO new NodoRemoto! DIE!!!!!!!");
+
+  totNodosRemotos = 0;
+  for (JsonObject nodoJson : nodosJson)
+  {
+    if (totNodosRemotos >= totNodos)
+    {
+      logaMensagem("ERRO! nodosRemotosLoad > TOT > TOT ??");
+      break;
+    }
+
+    NodoRemoto *nodo = &nodosRemotos[totNodosRemotos];
+    if (!nodo)
+    {
+      logaMensagem("ERRO! nodosRemotosLoad > !NODO ??");
+      continue;
+    }
+
+    strlcpy(nodo->id, nodoJson["id"].as<const char *>(), sizeof(nodo->id));
+    strlcpy(nodo->nome, nodoJson["nome"].as<const char *>(), sizeof(nodo->nome));
+    strlcpy(nodo->deviceID, nodoJson["mac"].as<const char *>(), sizeof(nodo->deviceID));
+    nodo->online = false;
+
+    totNodosRemotos++;
+  }
+
+  return "OK";
+}
+
 void nodoRemotoPrint(NodoRemoto *nodoRemoto)
 {
-  logaMensagem("NodoRemoto %d > %s > [%s] (%d ms)",
-               nodoRemoto->num, nodoRemoto->deviceID,
+  logaMensagem("NodoRemoto %s [%s] > %s > [%s] (%d ms)",
+               nodoRemoto->id, nodoRemoto->nome, nodoRemoto->deviceID,
                nodoRemoto->ip.toString().c_str(),
                nodoRemoto->ping);
 }

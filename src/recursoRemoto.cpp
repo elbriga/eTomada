@@ -26,27 +26,27 @@ void recursosRemotosInit()
   // prefs.putString("total", "5");
   // prefs.putString("idLocal1", "R9");
   // prefs.putString("tipo1", "1");
-  // prefs.putString("nodo1", "1");
+  // prefs.putString("nodo1", "NR1");
   // prefs.putString("idRemoto1", "R1");
   // prefs.putString("nome1", "RREMOTO1");
   // prefs.putString("idLocal2", "R10");
   // prefs.putString("tipo2", "1");
-  // prefs.putString("nodo2", "1");
+  // prefs.putString("nodo2", "NR1");
   // prefs.putString("idRemoto2", "R2");
   // prefs.putString("nome2", "RREMOTO2");
   // prefs.putString("idLocal3", "S5");
   // prefs.putString("tipo3", "2");
-  // prefs.putString("nodo3", "2");
+  // prefs.putString("nodo3", "NR2");
   // prefs.putString("idRemoto3", "S1");
   // prefs.putString("nome3", "SREMOTO1");
   // prefs.putString("idLocal4", "S6");
   // prefs.putString("tipo4", "2");
-  // prefs.putString("nodo4", "2");
+  // prefs.putString("nodo4", "NR2");
   // prefs.putString("idRemoto4", "S2");
   // prefs.putString("nome4", "SREMOTO2");
   // prefs.putString("idLocal5", "B2");
   // prefs.putString("tipo5", "3");
-  // prefs.putString("nodo5", "1");
+  // prefs.putString("nodo5", "NR1");
   // prefs.putString("idRemoto5", "B1");
   // prefs.putString("nome5", "BREMOTO1");
 
@@ -64,7 +64,7 @@ void recursosRemotosInit()
     String idLocal = getPrefsAtr(prefs, num, "idLocal");
     String idRemoto = getPrefsAtr(prefs, num, "idRemoto");
     int tipo = getPrefsAtr(prefs, num, "tipo").toInt();
-    int nodo = getPrefsAtr(prefs, num, "nodo").toInt();
+    String nodo = getPrefsAtr(prefs, num, "nodo");
 
     switch (tipo)
     {
@@ -88,10 +88,15 @@ void recursosRemotosInit()
     strcpy(recursoRemoto->idRemoto, idRemoto.c_str());
 
     recursoRemoto->num = rr;
-    recursoRemoto->nodo = nodoRemotoGet(nodo);
+    recursoRemoto->nodo = nodoRemotoGet(nodo.c_str());
 
     // Buscar o estado remoto do recurso com o snapshot do nodosRemotosInit()
     JsonObject deviceRemoto;
+    if (!recursoRemoto->nodo)
+    {
+      logaMensagem("ERRO: recursosRemotosInit()[%d] sem nodo!", rr);
+    }
+    else
     {
       JsonDocument *snapshot = discoverGetNodoSnapshot(recursoRemoto->nodo->deviceID);
       if (snapshot)

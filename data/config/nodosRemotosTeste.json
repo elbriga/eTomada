@@ -1,0 +1,14 @@
+{
+  "nodos": [
+    {
+      "id": "NR1",
+      "nome": "Escada",
+      "mac": "20:07:69:75:06:DC"
+    },
+    {
+      "id": "NR2",
+      "nome": "Ático",
+      "mac": "CC:AE:54:DA:F3:80"
+    }
+  ]
+}

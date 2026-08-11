@@ -392,7 +392,7 @@ String recursoEventoRecebido(uint8_t *json)
     Recurso *rec = recursoGetPorIndice(r);
     if (!rec->remoto)
       continue;
-    if (rec->recursoRemoto->nodo->num != nr->num)
+    if (rec->recursoRemoto->nodo != nr) // TODO :: Melhor testar por ID?
       continue;
 
     if (!strcmp(doc["id"].as<const char *>(), rec->recursoRemoto->idRemoto))

@@ -18,7 +18,7 @@ int utilCopiaArquivo(const char *pathOrigem, const char *pathDestino)
     return 1;
   }
 
-  File destino = LittleFS.open("/automacoes.json", "w");
+  File destino = LittleFS.open(pathDestino, "w");
 
   if (!destino)
   {
