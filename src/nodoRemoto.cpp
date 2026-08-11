@@ -25,8 +25,8 @@ void nodoRemotoInit()
   nodosRemotos = nullptr;
 
   // Para Testes!
-  logaMensagem("INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
-  utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
+  // logaMensagem("INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
+  // utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
 
   if (!LittleFS.exists(NODOS_PATH))
   {
