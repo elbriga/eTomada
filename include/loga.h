@@ -1,4 +1,5 @@
 #pragma once
 
-void logaMensagem(const char* fmt, ...);
+void logaInit();
+void logaMensagem(const char *fmt, ...);
 void logaTitulo(const char *msg);

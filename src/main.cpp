@@ -26,6 +26,9 @@ void setup()
 
   delay(500);
 
+  // Inicializa a Task de logs remotos, ela ira descartar logs enquanto sem wifi
+  logaInit();
+
   logaTitulo("eTomada");
 
   // WDT : 5 segundos de timeout

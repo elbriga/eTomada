@@ -105,6 +105,11 @@ const char *eTomadaGetModoOperacaoStr()
   }
 }
 
+String eTomadaDeviceID()
+{
+  return getMACStr();
+}
+
 String eTomadaGetSnapshotJSON()
 {
   JsonDocument doc;

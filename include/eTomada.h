@@ -13,6 +13,8 @@ void eTomadaInit();
 ModoOperacao eTomadaGetModoOperacao();
 const char *eTomadaGetModoOperacaoStr();
 
+String eTomadaDeviceID();
+
 String eTomadaGetSnapshotJSON();
 
 void eTomadaRoleta();
