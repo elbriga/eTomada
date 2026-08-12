@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 #include <stdarg.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -76,41 +77,33 @@ void loga(const char *modulo, LogLevel nivel, const char *fmt, ...)
   va_end(args);
 }
 
-// Atalho legado
-void logaMensagem(const char *fmt, ...)
-{
-  va_list args;
-
-  va_start(args, fmt);
-
-  logaV("eTomada", LOG_NORMAL, fmt, args);
-
-  va_end(args);
-}
-
 const char *logaGetNivelTxt(LogLevel nivel)
 {
   switch (nivel)
   {
   case LOG_DESATIVADO:
-    return "!OFF!!!";
+    return "!OFF!!";
   case LOG_CRITICO:
-    return "!CRIT!!";
+    return "!CRIT!";
   case LOG_AVISO:
-    return "AVISO";
+    return "AVISO!";
   case LOG_NORMAL:
     return "NORMAL";
-  case LOG_TESTE:
-    return "TESTE";
+  case LOG_DEBUG0:
+    return "DEBUG0";
   case LOG_DEBUG:
-    return "DEBUG";
+    return "DEBUG!";
+  case LOG_TESTE:
+    return "TESTE!";
   default:
-    return "???";
+    return "??????";
   }
 }
 
 void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args)
 {
+  esp_task_wdt_reset(); // alimenta o watchdog
+
   // Gerar o log
   char msg[LOG_MESSAGE_SIZE];
   vsnprintf(msg, sizeof(msg), fmt, args);
