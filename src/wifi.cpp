@@ -9,6 +9,9 @@
 #include "wifi.h"
 #include "loga.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("WIFI", nivel, fmt, ##__VA_ARGS__)
+
 static Preferences wifiPrefs;
 static DNSServer dnsServer;
 
@@ -33,13 +36,13 @@ void WiFiConnect()
 
   if (ssid == "")
   {
-    logaMensagem("Sem WiFi configurado");
+    logaM(LOG_AVISO, "Sem WiFi configurado");
     WiFiModoAP();
     return;
   }
 
   // Connect to Wifi.
-  logaMensagem("Conectando a rede [%s]", ssid.c_str());
+  logaM(LOG_NORMAL, "Conectando a rede [%s]", ssid.c_str());
 
   // Set WiFi to station mode and disconnect from an AP if it was previously connected
   WiFi.mode(WIFI_STA);
@@ -57,13 +60,13 @@ void WiFiConnect()
 
     if (WiFi.status() == WL_CONNECT_FAILED)
     {
-      logaMensagem("Falha!! Cheque a configuracao!!");
+      logaM(LOG_AVISO, "Falha!! Cheque a configuracao!!");
       delay(5000);
     }
 
     if (millis() - start > 20000)
     {
-      logaMensagem("Timeout WiFi");
+      logaM(LOG_AVISO, "Timeout WiFi");
 
       WiFi.disconnect(true);
 
@@ -74,7 +77,7 @@ void WiFiConnect()
     delay(500);
   }
 
-  logaMensagem("Endereço IP: [%s]", WiFi.localIP().toString().c_str());
+  logaM(LOG_NORMAL, "Endereço IP: [%s]", WiFi.localIP().toString().c_str());
 }
 
 bool WiFiGetModoAP()
@@ -139,7 +142,7 @@ void WiFiScanLoop()
     wifiScanDoc.clear();
     wifiScanDoc["scanning"] = false;
     wifiScanDoc["coderro"] = numRedes;
-    logaMensagem("Erro scan WiFi [%d]", numRedes);
+    logaM(LOG_AVISO, "Erro scan WiFi [%d]", numRedes);
     return;
   }
 
@@ -163,7 +166,8 @@ void WiFiScanLoop()
 
   WiFi.scanDelete();
 
-  // logaMensagem("Scan OK [%d redes]", numRedes);
+  logaM(LOG_DEBUG0, "Scan OK [%d redes]", numRedes);
+
   wifiScanning = false;
 }
 
@@ -173,6 +177,7 @@ void WiFiModoAPLoop()
 
   if (millis() - tempoIdleModoAP > MODO_AP_MAX_TEMPO_IDLE)
   {
+    // Resetar para caso seja uma falha temporária no wifi
     logaTitulo("RESET!");
     ESP.restart();
   }
@@ -196,8 +201,8 @@ void WiFiModoAP()
   dnsServer.start(53, "*", apIP);
 
   IPAddress ip = WiFi.softAPIP();
-  logaMensagem("=== MODO AP ===");
-  logaMensagem("IP: [%s]", ip.toString().c_str());
+  logaM(LOG_AVISO, "=== MODO AP ===");
+  logaM(LOG_AVISO, "IP: [%s]", ip.toString().c_str());
 
   WiFiStartScan();
 
@@ -220,7 +225,7 @@ void WiFiStartScan()
   WiFi.scanDelete();
   WiFi.scanNetworks(true);
 
-  // logaMensagem("WiFi scan iniciado");
+  logaM(LOG_DEBUG0, "WiFi scan iniciado");
 
   lastWiFiScan = millis();
   wifiScanning = true;

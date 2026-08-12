@@ -3,6 +3,9 @@
 #include "hardwareProfile.h"
 #include "loga.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("TIPOSEN", nivel, fmt, ##__VA_ARGS__)
+
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
@@ -46,7 +49,7 @@ void tipoSensorInit()
 
     if (temos)
     {
-      logaMensagem("Inicializando sensor [%s]", ts->nome);
+      logaM(LOG_NORMAL, "Inicializando sensor [%s]", ts->nome);
       ts->status = ts->inicializaSensor();
     }
     else

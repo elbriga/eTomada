@@ -2,6 +2,9 @@
 #include "wifi.h"
 #include "loga.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("DISPLAY", nivel, fmt, ##__VA_ARGS__)
+
 #ifdef TEM_OLED
 
 #include <SSD1306Wire.h>
@@ -33,7 +36,7 @@ void displayMostraString(int x, int y, const char *msg)
     tft.display();
 }
 
-void displayMostraMsg(const char *msg, int timeout, bool loga)
+void displayMostraMsg(const char *msg, int timeout, bool logar)
 {
     tft.clear();
 
@@ -49,21 +52,17 @@ void displayMostraMsg(const char *msg, int timeout, bool loga)
     tft.display();
 
     if (timeout > 0)
-    {
         displayTimeoutMsg = millis() + timeout;
-    }
 
-    if (loga)
-    {
-        logaMensagem("[DISPLAY][%s]", msg);
-    }
+    if (logar)
+        logaM(LOG_NORMAL, "[%s]", msg);
 }
 
 #else
 
 void displayInit()
 {
-    logaMensagem("[DISPLAY] OLED desabilitado");
+    logaM(LOG_NORMAL, "OLED desabilitado");
 }
 
 bool displayPodeMostrar()
@@ -73,14 +72,14 @@ bool displayPodeMostrar()
 
 void displayMostraString(int x, int y, const char *msg)
 {
-    logaMensagem("[DISPLAY] (%d,%d): %s", x, y, msg);
+    logaM(LOG_NORMAL, "(%d,%d): %s", x, y, msg);
 }
 
 void displayMostraMsg(const char *msg, int timeout, bool loga)
 {
     if (loga)
     {
-        logaMensagem("[DISPLAY] %s", msg);
+        logaM(LOG_NORMAL, "> %s", msg);
     }
 }
 

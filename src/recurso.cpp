@@ -14,6 +14,9 @@
 #include "agendamentos.h"
 #include "util.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("RECURSO", nivel, fmt, ##__VA_ARGS__)
+
 static Recurso *recursos;
 static int totRecursos = 0;
 int recursoAddCount = 0;
@@ -387,7 +390,7 @@ String recursoEventoRecebido(uint8_t *json)
 
     if (!strcmp(doc["id"].as<const char *>(), rec->recursoRemoto->idRemoto))
     {
-      logaMensagem("Evento recebido! Atualizar recurso [%s]", rec->id);
+      logaM(LOG_NORMAL, "Evento recebido! Atualizar recurso [%s]", rec->id);
 
       return recursoAtualizaFromJson(rec, doc["device"], doc["timestamp"].as<unsigned long>());
     }
@@ -506,7 +509,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
 
 void recursoPrint(Recurso *recurso)
 {
-  logaMensagem("Recurso%s %s: %s [%s]",
-               recurso->remoto ? " Remoto" : "", recurso->id,
-               recursoGetTipoStr(recurso->tipo), recurso->nome);
+  logaM(LOG_NORMAL, "Recurso%s %s: %s [%s]",
+        recurso->remoto ? " Remoto" : "", recurso->id,
+        recursoGetTipoStr(recurso->tipo), recurso->nome);
 }

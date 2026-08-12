@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 
+#include "loga.h"
+
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("UTIL", nivel, fmt, ##__VA_ARGS__)
-
-#include "loga.h"
 
 void utilDIE(const char *msg)
 {

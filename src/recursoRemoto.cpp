@@ -13,6 +13,9 @@
 #include "tipoRecurso.h"
 #include "util.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("RECRMT", nivel, fmt, ##__VA_ARGS__)
+
 static RecursoRemoto *recursosRemotos;
 static int totRecursosRemotos = 0;
 
@@ -26,13 +29,13 @@ void recursosRemotosInit()
 
   if (!LittleFS.exists(RECURSOS_REMOTOS_PATH))
   {
-    logaMensagem("ERRO: recursosRemotosInit > Arquivo [%s] nao existe!", RECURSOS_REMOTOS_PATH);
+    logaM(LOG_CRITICO, "ERRO: recursosRemotosInit > Arquivo [%s] nao existe!", RECURSOS_REMOTOS_PATH);
     return;
   }
 
   String msg = recursosRemotosLoad(RECURSOS_REMOTOS_PATH);
   if (msg != "OK")
-    logaMensagem("ERRO: recursosRemotosLoad: [%s]", msg.c_str());
+    logaM(LOG_CRITICO, "ERRO: recursosRemotosLoad: [%s]", msg.c_str());
 }
 
 String recursosRemotosLoad(const char *path)
@@ -62,14 +65,14 @@ String recursosRemotosLoad(const char *path)
   {
     if (totRecursosRemotos >= totRR)
     {
-      logaMensagem("ERRO! recursosRemotosLoad > TOT > TOT ??");
+      logaM(LOG_CRITICO, "ERRO! recursosRemotosLoad > TOT > TOT ??");
       break;
     }
 
     RecursoRemoto *recursoRemoto = &recursosRemotos[totRecursosRemotos];
     if (!recursoRemoto)
     {
-      logaMensagem("ERRO! recursosRemotosLoad > !REC ??");
+      logaM(LOG_CRITICO, "ERRO! recursosRemotosLoad > !REC ??");
       continue;
     }
 
@@ -86,7 +89,7 @@ String recursosRemotosLoad(const char *path)
       recursoRemoto->tipo = RECURSO_BOTAO;
     else
     {
-      logaMensagem(">>> recursoRemoto com tipo [%s] invalido!!", tipo.c_str());
+      logaM(LOG_CRITICO, ">>> recursoRemoto com tipo [%s] invalido!!", tipo.c_str());
       recursoRemoto->tipo = RECURSO_INVALIDO;
     }
 
@@ -99,7 +102,7 @@ String recursosRemotosLoad(const char *path)
     JsonObject deviceRemoto;
     if (!recursoRemoto->nodo)
     {
-      logaMensagem("ERRO: recursosRemotosInit()[%d] sem nodo!", totRecursosRemotos);
+      logaM(LOG_CRITICO, "ERRO: recursosRemotosInit()[%d] sem nodo!", totRecursosRemotos);
     }
     else
     {
@@ -224,7 +227,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
 
 void recursoRemotoPrint(RecursoRemoto *recursoRemoto)
 {
-  logaMensagem("RecursoRemoto[%s] %s em %s",
-               recursoRemoto->idLocal, recursoGetTipoStr(recursoRemoto->tipo),
-               recursoRemoto->nodo->ip.toString().c_str());
+  logaM(LOG_NORMAL, "RecursoRemoto[%s] %s em %s",
+        recursoRemoto->idLocal, recursoGetTipoStr(recursoRemoto->tipo),
+        recursoRemoto->nodo->ip.toString().c_str());
 }

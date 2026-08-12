@@ -9,6 +9,9 @@
 #include "ntp.h"
 #include "util.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("REGRA", nivel, fmt, ##__VA_ARGS__)
+
 #define MAX_REGRAS 64
 
 /*
@@ -37,19 +40,19 @@ void regrasInit()
     {
         if (LittleFS.exists(REGRAS_PATH_DEFAULT))
         {
-            logaMensagem("INICIALIZANDO REGRAS FROM DEFAULT");
+            logaM(LOG_AVISO, "INICIALIZANDO REGRAS FROM DEFAULT");
             utilCopiaArquivo(REGRAS_PATH_DEFAULT, REGRAS_PATH);
         }
         else
         {
-            logaMensagem("ERRO: regrasLoad > Arquivo [%s] nao existe!", REGRAS_PATH);
+            logaM(LOG_CRITICO, "ERRO: regrasLoad > Arquivo [%s] nao existe!", REGRAS_PATH);
             return;
         }
     }
 
     String msg = regrasLoad(REGRAS_PATH);
     if (msg != "OK")
-        logaMensagem(">> regrasLoad: [%s]", msg.c_str());
+        logaM(LOG_AVISO, ">> regrasLoad: [%s]", msg.c_str());
 
     regrasBoot();
 }
@@ -107,7 +110,7 @@ void regrasBoot()
     if (timeinfo.tm_year + 1900 < 2026)
     {
         // Sem data/hora não processa regras de HORARIO
-        logaMensagem("Pulando Boot das regras!!! estamos sem HORA!!");
+        logaM(LOG_AVISO, "Pulando Boot das regras!!! estamos sem HORA!!");
         return;
     }
 
@@ -123,11 +126,11 @@ void regrasBoot()
         Regra *regraAtivada = regrasCalculaEstadoAtual(recurso, &estadoAtual);
         if (regraAtivada)
         {
-            logaMensagem("Conferir estado do recurso [%s][%s] para %d pela regra [%s]",
-                         recurso->id, recurso->nome, estadoAtual, regraGetTxt(regraAtivada).c_str());
+            logaM(LOG_NORMAL, "Conferir estado do recurso [%s][%s] para %d pela regra [%s]",
+                  recurso->id, recurso->nome, estadoAtual, regraGetTxt(regraAtivada).c_str());
             String msg = recursoCheck(recurso, estadoAtual);
             if (msg != "")
-                logaMensagem(">> [%s]", msg.c_str());
+                logaM(LOG_AVISO, ">> recursoCheck :: [%s]", msg.c_str());
         }
     }
 }
@@ -150,7 +153,7 @@ String regraDisparaAcao(Regra *regra)
 {
     Acao *acao = &regra->acao;
 
-    logaMensagem(">> Ativando [%s]", regraGetTxt(regra).c_str());
+    logaM(LOG_NORMAL, ">> Ativando [%s]", regraGetTxt(regra).c_str());
 
     switch (acao->tipo)
     {
@@ -175,7 +178,7 @@ String regraDisparaAcao(Regra *regra)
     break;
 
     default:
-        logaMensagem("TODO :: regraDispara[%d] tipo (%d)", regra->id, acao->tipo);
+        logaM(LOG_CRITICO, "TODO :: regraDispara[%d] tipo (%d)", regra->id, acao->tipo);
         break;
     }
 
@@ -221,7 +224,7 @@ void regrasProcessaEvento(Evento e)
                     if (timeinfo.tm_year + 1900 < 2026)
                     {
                         // Sem data/hora não processa regras de HORARIO
-                        logaMensagem("Pulando regra[%d] : estamos sem HORA!", r);
+                        logaM(LOG_AVISO, "Pulando regra[%d] : estamos sem HORA!", r);
                         break;
                     }
                     disparaAcao = true;
@@ -230,7 +233,7 @@ void regrasProcessaEvento(Evento e)
             break;
 
         default:
-            logaMensagem("TODO :: regrasProcessaEvento[%d] condicao.tipo (%d)", regra->id, regra->condicao.tipo);
+            logaM(LOG_CRITICO, "TODO :: regrasProcessaEvento[%d] condicao.tipo (%d)", regra->id, regra->condicao.tipo);
             break;
         }
 
@@ -491,7 +494,7 @@ String regrasPersiste()
         return "ERRO: regrasPersiste:serializeJson";
     }
 
-    logaMensagem("regrasPersiste: [%s]", out.c_str());
+    logaM(LOG_DEBUG, "regrasPersiste: [%s]", out.c_str());
 
     if (!serializeJson(doc, file))
     {
@@ -503,7 +506,7 @@ String regrasPersiste()
 
     LittleFS.rename("/automacoes.json.tmp", "/automacoes.json");
 
-    logaMensagem("Regras Salvas!");
+    logaM(LOG_NORMAL, "Regras Salvas!");
 
     return out;
 }
@@ -525,8 +528,9 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
         if (eventoStr == "TOGGLE")
             regra->condicao.evento = EVENTO_TOGGLE;
         else
+        // TODO :: outros eventos
         {
-            logaMensagem("TipoEvento %s ??? Inativando regra", eventoStr.c_str());
+            logaM(LOG_CRITICO, "TipoEvento %s ??? Inativando regra", eventoStr.c_str());
             regra->ativa = false;
         }
     }
@@ -538,7 +542,7 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
     }
     else
     {
-        logaMensagem("TipoCondicao %s ??? Inativando regra", tipoCondicaoStr.c_str());
+        logaM(LOG_CRITICO, "TipoCondicao %s ??? Inativando regra", tipoCondicaoStr.c_str());
         regra->ativa = false;
     }
 
@@ -561,13 +565,13 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
             regra->acao.comando = ACAO_PULSE;
         else
         {
-            logaMensagem("AcaoRecurso %s ??? Inativando regra", acaoStr.c_str());
+            logaM(LOG_CRITICO, "AcaoRecurso %s ??? Inativando regra", acaoStr.c_str());
             regra->ativa = false;
         }
     }
     else
     {
-        logaMensagem("TipoAcao %s ??? Inativando regra", tipoAcaoStr.c_str());
+        logaM(LOG_CRITICO, "TipoAcao %s ??? Inativando regra", tipoAcaoStr.c_str());
         regra->ativa = false;
     }
 }
@@ -589,7 +593,7 @@ String regrasLoad(const char *path)
 
     if (totRegras > MAX_REGRAS)
     {
-        logaMensagem("MUITAS (%d) REGRAS NO ARQUIVO, LENDO SOMENTE %d PRIMEIRAS!!!", totRegras, MAX_REGRAS);
+        logaM(LOG_CRITICO, "MUITAS (%d) REGRAS NO ARQUIVO, LENDO SOMENTE %d PRIMEIRAS!!!", totRegras, MAX_REGRAS);
         totRegras = MAX_REGRAS;
     }
 
@@ -665,7 +669,7 @@ Regra regraCriaHorario(
 
 void regraPrint(Regra *r)
 {
-    logaMensagem("Regra[%d][%s] > [%s]", r->id,
-                 r->ativa ? "ON" : "OFF",
-                 regraGetTxt(r).c_str());
+    logaM(LOG_NORMAL, "Regra[%d][%s] > [%s]", r->id,
+          r->ativa ? "ON" : "OFF",
+          regraGetTxt(r).c_str());
 }

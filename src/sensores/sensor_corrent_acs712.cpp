@@ -21,7 +21,6 @@ static int sensorCorrenteACS712Ler(Sensor *s)
     if (val < min)
       min = val;
   }
-  // logaMensagem("read(%d): %d a %d", s->pino, min, max);
   return max - min;
 }
 

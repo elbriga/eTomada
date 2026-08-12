@@ -10,6 +10,9 @@
 #include "mestre.h"
 #include "eventos.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("HTTP", nivel, fmt, ##__VA_ARGS__)
+
 #define DEV // TODO :: remover
 
 // Web Server
@@ -176,7 +179,7 @@ void httpServerInitModoAPI()
   // Eventos de conexão/desconexão
   sse.onConnect([](AsyncEventSourceClient *client)
                 {
-    logaMensagem("Cliente SSE conectado de [%s]", client->client()->remoteIP().toString().c_str());
+    logaM(LOG_NORMAL, "Cliente SSE conectado de [%s]", client->client()->remoteIP().toString().c_str());
 
     // Snapshot ao conectar
     String body = eTomadaGetSnapshotJSON();
@@ -242,9 +245,9 @@ void httpServerInitModoAP()
 
 void logaRequest(AsyncWebServerRequest *request, String resultado)
 {
-  logaMensagem("[org:%s] %s %s => [%s]",
-               request->client()->remoteIP().toString(),
-               request->methodToString(),
-               request->url().c_str(),
-               resultado.c_str());
+  logaM(LOG_NORMAL, "[org:%s] %s %s => [%s]",
+        request->client()->remoteIP().toString(),
+        request->methodToString(),
+        request->url().c_str(),
+        resultado.c_str());
 }

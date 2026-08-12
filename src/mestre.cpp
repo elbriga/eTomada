@@ -39,8 +39,6 @@ void mestreCheckDiscover(String mac, IPAddress ip)
     if (!mestreAtivo()) // Sem mestre retorna
         return;
 
-    // logaMensagem("mestreCheckDiscover > %s == %s ??", mestre.mac.c_str(), mac.c_str());
-
     if (mestre.mac != mac) // Nao eh o mestre
         return;
 

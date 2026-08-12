@@ -1,5 +1,5 @@
 #include "prefs.h"
-#include "loga.h"
+// #include "loga.h"
 
 String getPrefsAtr(Preferences &prefs, const char *id, const char *nomeAtr)
 {

@@ -7,6 +7,9 @@
 #include "recurso.h"
 #include "recursoRemoto.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("APIINT", nivel, fmt, ##__VA_ARGS__)
+
 #define API_INTERNA_TIMEOUT 1000
 
 int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
@@ -34,13 +37,13 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
   int code = apiInterna(rr->nodo->ip, "setRecurso", "PUT", &request, &resposta);
   if (code != 200)
   {
-    logaMensagem("Erro API Interna: %d", code);
+    logaM(LOG_CRITICO, "Erro API Interna: %d", code);
     // TODO ??
   }
 
   // String out;
   // serializeJson(resposta, out);
-  // logaMensagem("ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
+  // logaM("ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
 
   switch (recurso->tipo)
   {
@@ -66,7 +69,7 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
 {
   String url = "http://" + ip.toString() + "/api/" + endpoint;
 
-  logaMensagem("apiInterna: Acionando %s", url.c_str());
+  logaM(LOG_NORMAL, "apiInterna: Acionando %s", url.c_str());
 
   HTTPClient http;
   http.begin(url);
@@ -79,7 +82,7 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
     if (request != nullptr)
     {
       serializeJson(*request, body);
-      logaMensagem(">> BODY: %s", body.c_str());
+      logaM(LOG_DEBUG0, ">> BODY: %s", body.c_str());
     }
 
     http.addHeader("Content-Type", "application/json");
@@ -94,7 +97,7 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
   {
     // TODO http.getString() é perigoso !!! usar o stream
     String respBody = http.getString();
-    logaMensagem(" >> RESP: %s", respBody.c_str());
+    logaM(LOG_DEBUG0, " >> RESP: %s", respBody.c_str());
 
     if (response)
       deserializeJson(*response, respBody);

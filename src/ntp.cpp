@@ -3,6 +3,9 @@
 
 #include "loga.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("NTP", nivel, fmt, ##__VA_ARGS__)
+
 // NTP
 const char *ntpServer1 = "pool.ntp.org";
 const char *ntpServer2 = "a.ntp.br";
@@ -19,7 +22,7 @@ long ntpSyncTime()
   setenv("TZ", tzInfo, 1);
   tzset();
 
-  logaMensagem("Buscando Data/Hora");
+  logaM(LOG_NORMAL, "Buscando Data/Hora");
 
   // Wait until a valid time is received from the NTP server
   // 1577836800 is the Unix time for Jan 1, 2020
@@ -32,8 +35,7 @@ long ntpSyncTime()
 
     if (count++ > 60)
     {
-      logaMensagem("Falha ao sincronizar hora");
-      logaMensagem("Tentar novamente em 1 minuto");
+      logaM(LOG_AVISO, "Falha ao sincronizar hora > Tentar novamente em 1 minuto");
       return millis() + 60 * 1000; // sync de novo em 1 minuto
     }
   }
