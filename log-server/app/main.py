@@ -6,11 +6,16 @@ from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
 
 DB_PATH = Path("/app/data/logs.db")
 
 app = FastAPI(title="eTomada Log Server")
 
+templates = Jinja2Templates(
+    directory="/app/app/templates"
+)
 
 class LogEntry(BaseModel):
     deviceID: str
@@ -64,21 +69,12 @@ def startup():
 
 
 @app.get("/", response_class=HTMLResponse)
-def index():
-    return """
-    <html>
-        <head>
-            <title>eTomada Logs</title>
-        </head>
-        <body>
-            <h1>eTomada Log Server</h1>
-            <p>Servidor funcionando.</p>
-            <p>
-                <a href="/docs">API</a>
-            </p>
-        </body>
-    </html>
-    """
+def index(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={}
+    )
 
 
 @app.post("/api/log")
@@ -122,7 +118,8 @@ def get_logs(
     deviceID: str | None = None,
     level: str | None = None,
     module: str | None = None,
-    limit: int = Query(100, ge=1, le=1000)
+    search: str | None = None,
+    limit: int = Query(5000, ge=1, le=10000)
 ):
 
     conn = get_db()
@@ -153,6 +150,10 @@ def get_logs(
     if module:
         query += " AND module = ?"
         params.append(module)
+
+    if search:
+        query += " AND message LIKE ?"
+        params.append(f"%{search}%")
 
     query += " ORDER BY id DESC LIMIT ?"
     params.append(limit)
