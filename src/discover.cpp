@@ -99,7 +99,7 @@ void discoverLoop()
 
     vTaskDelay(pdMS_TO_TICKS(20));
 
-    logaM(LOG_DEBUG, "Respondendo ao DISCOVER para %s:%d",
+    logaM(LOG_DESATIVADO, "Respondendo ao DISCOVER para %s:%d",
           discoverUdp.remoteIP().toString().c_str(),
           discoverUdp.remotePort() + 1);
 

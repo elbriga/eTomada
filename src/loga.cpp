@@ -10,11 +10,15 @@
 #include "eTomada.h"
 #include "loga.h"
 #include "ntp.h"
+#include "prefs.h"
+
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("LOGS", nivel, fmt, ##__VA_ARGS__)
 
 #define LOG_QUEUE_SIZE 32
 #define LOG_MESSAGE_SIZE 512
 
-#define LOG_SERVER_URL "http://192.168.1.220:8080/api/log"
+String ipPortaLogServer = "";
 
 struct LogRemoto
 {
@@ -30,13 +34,9 @@ static QueueHandle_t logQueue = nullptr;
 static void logRemotoTask(void *param);
 void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args);
 
-// Função de log para esta modulo
-void logaM(LogLevel nivel, const char *fmt, ...)
+bool logRemotoAtivo()
 {
-  va_list args;
-  va_start(args, fmt);
-  logaV("LOGS", nivel, fmt, args);
-  va_end(args);
+  return (ipPortaLogServer != "");
 }
 
 void logaInit()
@@ -46,6 +46,28 @@ void logaInit()
     logaM(LOG_CRITICO, "ERRO: logaInit() chamado duas vezes?");
     return;
   }
+
+  Preferences prefs;
+  prefs.begin("eTomada", false); // usando o mesmo namespace de eTomada.cpp
+
+  // Para testes
+  // prefs.putString("logServer", "192.168.1.220:8080");
+
+  ipPortaLogServer = getPrefsAtr(prefs, "", "logServer");
+
+  prefs.end();
+
+  if (!logRemotoAtivo())
+  {
+    logaM(LOG_AVISO, "Sem logServer configurado!");
+    logaM(LOG_AVISO, "Sem logServer configurado!");
+    logaM(LOG_AVISO, "Sem logServer configurado!");
+    return;
+  }
+
+  // TODO validar ipPortaLogServer se tem a porta tbm
+
+  logaM(LOG_NORMAL, "Log Server: [%s]", ipPortaLogServer.c_str());
 
   logQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(LogRemoto));
   if (!logQueue)
@@ -62,10 +84,9 @@ void logaInit()
       1,
       nullptr);
 
-  logaM(LOG_NORMAL, "Log remoto inicializado");
+  logaM(LOG_NORMAL, "Log remoto inicializado em %s", ipPortaLogServer.c_str());
 }
 
-// Nova função de logs
 void loga(const char *modulo, LogLevel nivel, const char *fmt, ...)
 {
   va_list args;
@@ -103,6 +124,10 @@ const char *logaGetNivelTxt(LogLevel nivel)
 void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args)
 {
   esp_task_wdt_reset(); // alimenta o watchdog
+
+  if (nivel == LOG_DESATIVADO)
+    // ignorar
+    return;
 
   // Gerar o log
   char msg[LOG_MESSAGE_SIZE];
@@ -143,7 +168,7 @@ void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args)
                 msg);
 
   // Enviar para fila de log remoto
-  if (logQueue)
+  if (logRemotoAtivo() && logQueue)
   {
     LogRemoto log;
 
@@ -173,6 +198,13 @@ static void logRemotoTask(void *param)
     if (xQueueReceive(logQueue, &log, portMAX_DELAY) != pdTRUE)
       continue;
 
+    if (!logRemotoAtivo())
+    {
+      // Nao deve entrar aqui, essa task nao roda se nao estiver ativo
+      // Serial.println("Descartando log remoto!!??????");
+      continue;
+    }
+
     // Sem WiFi: simplesmente descarta este log
     if (WiFi.status() != WL_CONNECTED)
     {
@@ -183,7 +215,8 @@ static void logRemotoTask(void *param)
     HTTPClient http;
     http.setTimeout(1000);
 
-    if (!http.begin(LOG_SERVER_URL))
+    String serverURL = "http://" + ipPortaLogServer + "/api/log";
+    if (!http.begin(serverURL))
       continue;
 
     http.addHeader("Content-Type", "application/json");
@@ -201,7 +234,18 @@ static void logRemotoTask(void *param)
     String body;
     serializeJson(doc, body);
 
+    esp_task_wdt_reset(); // alimenta o watchdog
     int status = http.POST(body);
+    esp_task_wdt_reset(); // alimenta o watchdog
+
+    if (status != 200)
+    {
+      Serial.printf(">>>> POST de log remoto FALHOU! [%d]\n", status);
+
+      String respBody = http.getString(); // TODO :: perigoso!
+
+      Serial.printf("\n +++++>> RESP: %s\n\n", respBody.c_str());
+    }
 
     http.end();
 

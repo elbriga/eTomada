@@ -75,9 +75,9 @@ void displayMostraString(int x, int y, const char *msg)
     logaM(LOG_NORMAL, "(%d,%d): %s", x, y, msg);
 }
 
-void displayMostraMsg(const char *msg, int timeout, bool loga)
+void displayMostraMsg(const char *msg, int timeout, bool logar)
 {
-    if (loga)
+    if (logar)
     {
         logaM(LOG_NORMAL, "> %s", msg);
     }

@@ -18,7 +18,7 @@ class LogEntry(BaseModel):
     module: str = ""
     message: str
     uptime: int | None = None
-    timestamp: str | None = None
+    timestamp: int | None = None
 
 
 def get_db():
@@ -35,7 +35,7 @@ def init_db():
     conn.execute("""
         CREATE TABLE IF NOT EXISTS logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT NOT NULL,
+            timestamp INTEGER,
             device_id TEXT NOT NULL,
             level TEXT NOT NULL,
             module TEXT,
@@ -84,11 +84,6 @@ def index():
 @app.post("/api/log")
 def receive_log(log: LogEntry):
 
-    timestamp = log.timestamp
-
-    if not timestamp:
-        timestamp = datetime.now(timezone.utc).isoformat()
-
     conn = get_db()
 
     cursor = conn.execute("""
@@ -102,7 +97,7 @@ def receive_log(log: LogEntry):
         )
         VALUES (?, ?, ?, ?, ?, ?)
     """, (
-        timestamp,
+        log.timestamp,
         log.deviceID,
         log.level,
         log.module,
