@@ -59,15 +59,13 @@ void logaInit()
 
   if (!logRemotoAtivo())
   {
+    logaM(LOG_AVISO, "==========================");
     logaM(LOG_AVISO, "Sem logServer configurado!");
-    logaM(LOG_AVISO, "Sem logServer configurado!");
-    logaM(LOG_AVISO, "Sem logServer configurado!");
+    logaM(LOG_AVISO, "==========================");
     return;
   }
 
   // TODO validar ipPortaLogServer se tem a porta tbm
-
-  logaM(LOG_NORMAL, "Log Server: [%s]", ipPortaLogServer.c_str());
 
   logQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(LogRemoto));
   if (!logQueue)
