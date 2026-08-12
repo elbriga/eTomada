@@ -35,6 +35,8 @@ void setup()
 
   logaTitulo("eTomada");
 
+  eTomadaInit0();
+
   // WDT : 5 segundos de timeout
   esp_task_wdt_init(5, true); // true = resetar automaticamente
   esp_task_wdt_add(NULL);     // adiciona a task atual (loop)

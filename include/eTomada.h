@@ -9,7 +9,9 @@ typedef enum
     MODO_CONTROLADOR = 1
 } ModoOperacao;
 
+void eTomadaInit0();
 void eTomadaInit();
+
 ModoOperacao eTomadaGetModoOperacao();
 const char *eTomadaGetModoOperacaoStr();
 

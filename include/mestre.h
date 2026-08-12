@@ -12,7 +12,7 @@ struct Mestre
     uint32_t ultimoHeartbeat;
 };
 
-void mestreInit(Preferences &prefs);
+void mestreInit();
 void mestreCheckDiscover(String mac, IPAddress ip);
 void mestreLoop();
 void mestreEnviaEvento(Recurso *rec);

@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
-#include <Preferences.h>
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -27,23 +26,38 @@
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
 
-void eTomadaInit()
+String deviceID;
+String eTomadaDeviceIDPadrao();
+
+void eTomadaInit0()
 {
   mutexInit();
 
   Preferences prefs;
   prefs.begin("eTomada", false);
 
+  // Para testes
+  prefs.putString("deviceID", "ESCADA");
+
   if (!prefs.isKey("modo"))
     prefs.putUChar("modo", MODO_NO);
-
   modoOperacao =
       (prefs.getUChar("modo") == MODO_CONTROLADOR) ? MODO_CONTROLADOR : MODO_NO;
 
+  if (!prefs.isKey("deviceID"))
+    prefs.putString("deviceID", eTomadaDeviceIDPadrao());
+  deviceID = prefs.getString("deviceID");
+
+  logaM(LOG_NORMAL, "DeviceID: %s", deviceID.c_str());
   logaM(LOG_NORMAL, "Modo de Operação: %s", eTomadaGetModoOperacaoStr());
   logaM(LOG_NORMAL, "MAC: %s", getMACStr().c_str());
 
-  bool carregaTestes = true;
+  prefs.end();
+}
+
+void eTomadaInit()
+{
+  bool carregaTestes = false;
   if (carregaTestes && modoOperacao == MODO_CONTROLADOR)
   {
     logaM(LOG_AVISO, "INICIALIZANDO REGRAS FROM TESTES!!!");
@@ -56,9 +70,7 @@ void eTomadaInit()
     utilCopiaArquivo("/config/recursosRemotosTeste.json", RECURSOS_REMOTOS_PATH);
   }
 
-  mestreInit(prefs);
-
-  prefs.end();
+  mestreInit();
 
   eventosInit();
   agendamentosInit();
@@ -108,18 +120,24 @@ const char *eTomadaGetModoOperacaoStr()
 
 String eTomadaDeviceID()
 {
-  return getMACStr();
+  return deviceID;
+}
+
+String eTomadaDeviceIDPadrao()
+{
+  uint64_t MAC = getMAC();
+
+  char deviceID[32];
+  snprintf(deviceID, sizeof(deviceID), "etomada_%04X", (uint16_t)(MAC & 0xFFFF));
+
+  return String(deviceID);
 }
 
 String eTomadaGetSnapshotJSON()
 {
   JsonDocument doc;
 
-  uint64_t MAC = getMAC();
-
-  char deviceID[32];
-  sprintf(deviceID, "etomada_%04X", (uint16_t)(MAC & 0xFFFF));
-  doc["device_id"] = deviceID;
+  doc["device_id"] = eTomadaDeviceID();
   doc["device_name"] = "eTomada Sala"; // TODO
   doc["fw_version"] = "1.3.0";
 

@@ -15,13 +15,16 @@ Mestre mestre;
 
 #define MESTRE_HEARTBEAT_TIMEOUT 30000
 
-void mestreInit(Preferences &prefs)
+void mestreInit()
 {
     // Zerar tudo
     memset(&mestre, 0, sizeof(Mestre));
 
     if (eTomadaGetModoOperacao() != MODO_NO) // TODO : Mestre no MODO_CONTROLADOR tambem?
         return;
+
+    Preferences prefs;
+    prefs.begin("eTomada", false);
 
     // Para testes
     // prefs.putString("mestre1", "04:D3:08:A4:AE:30"); // MAC lolin
@@ -31,6 +34,8 @@ void mestreInit(Preferences &prefs)
         logaM(LOG_AVISO, "Nodo Mestre: %s", mestre.mac.c_str());
 
     mestre.online = false;
+
+    prefs.end();
 }
 
 // chamado pelo modulo discover em discoverLoop()
