@@ -2,6 +2,9 @@
 #include "recurso.h"
 #include "loga.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("AGENDS", nivel, fmt, ##__VA_ARGS__)
+
 #define MAX_ACOES_AGENDADAS 16
 AcaoAgendada acoes[MAX_ACOES_AGENDADAS];
 
@@ -37,7 +40,7 @@ void agendamentosAdd(const char *recursoID, bool estado, int timeoutMs)
 
     if (!acao)
     {
-        logaMensagem("agendamentosAdd: IMPOSSIVEL ACHAR SLOT!");
+        logaM(LOG_CRITICO, "agendamentosAdd: IMPOSSIVEL ACHAR SLOT!");
         return;
     }
 
@@ -65,7 +68,7 @@ void agendamentosProcessaTask(void *)
                 if (r)
                     recursoSet(r, acao->estado ? "ON" : "OFF");
                 else
-                    logaMensagem("agendamentosProcessaTask :: recurso invalido!");
+                    logaM(LOG_CRITICO, "agendamentosProcessaTask :: recurso invalido!");
 
                 // remove do slot
                 acao->ativa = false;

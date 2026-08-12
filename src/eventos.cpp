@@ -6,8 +6,10 @@
 #include "recurso.h"
 #include "mestre.h"
 #include "regras.h"
-#include "loga.h"
 #include "util.h"
+
+// Função de log para esta modulo
+// #define logaM(nivel, fmt, ...) loga("EVENTOS", nivel, fmt, ##__VA_ARGS__)
 
 #define EVENTOS_TAMNHO_FILA 20
 

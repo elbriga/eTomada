@@ -8,6 +8,9 @@
 #include "recurso.h"
 #include "apiInterna.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("MESTRE", nivel, fmt, ##__VA_ARGS__)
+
 Mestre mestre;
 
 #define MESTRE_HEARTBEAT_TIMEOUT 30000
@@ -25,7 +28,7 @@ void mestreInit(Preferences &prefs)
 
     mestre.mac = getPrefsAtr(prefs, "1", "mestre");
     if (mestreAtivo())
-        logaMensagem("Nodo Mestre: %s", mestre.mac.c_str());
+        logaM(LOG_AVISO, "Nodo Mestre: %s", mestre.mac.c_str());
 
     mestre.online = false;
 }
@@ -44,13 +47,13 @@ void mestreCheckDiscover(String mac, IPAddress ip)
     if (!mestre.online)
     {
         mestre.online = true;
-        logaMensagem("Mestre - ONLINE");
+        logaM(LOG_AVISO, "Mestre - ONLINE");
     }
 
     if (mestre.ip != ip)
     {
         mestre.ip = ip;
-        logaMensagem("Mestre - Novo IP: %s", mestre.ip.toString().c_str());
+        logaM(LOG_AVISO, "Mestre - Novo IP: %s", mestre.ip.toString().c_str());
     }
 
     mestre.ultimoHeartbeat = millis();
@@ -63,7 +66,7 @@ void mestreLoop()
 
     if (millis() - mestre.ultimoHeartbeat > MESTRE_HEARTBEAT_TIMEOUT)
     {
-        logaMensagem("Mestre - OFFLINE!");
+        logaM(LOG_AVISO, "Mestre - OFFLINE!");
         mestre.online = false;
     }
 }

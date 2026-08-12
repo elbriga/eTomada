@@ -9,6 +9,9 @@
 #include "http.h"
 #include "recurso.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("RELE", nivel, fmt, ##__VA_ARGS__)
+
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
@@ -73,9 +76,9 @@ Rele *releGet(int numRele)
 
 void relePrint(Rele *rele)
 {
-  logaMensagem("Rele %d:%d (%s)",
-               rele->num, rele->pino, // TODO :: nome
-               (rele->ativo ? "on" : "off"));
+  logaM(LOG_NORMAL, "Rele %d:%d (%s)",
+        rele->num, rele->pino, // TODO :: nome
+        (rele->ativo ? "on" : "off"));
 }
 
 // REQUIRE releMutex locked
@@ -122,14 +125,14 @@ String releControlaLocked(Rele *rele, bool estado, int override)
 {
   if (!rele)
   {
-    logaMensagem("releControlaLocked: Rele invalido!!!\n");
+    logaM(LOG_CRITICO, "releControlaLocked: Rele invalido!!!\n");
     // TODO :: um metodo retorna erro e outro vazio! REVER
     return "";
   }
 
   if (rele->pino == -1)
   {
-    logaMensagem("releControlaLocked[%d]: pino invalido!\n", rele->num);
+    logaM(LOG_AVISO, "releControlaLocked[%d]: pino invalido!\n", rele->num);
     return "";
   }
 

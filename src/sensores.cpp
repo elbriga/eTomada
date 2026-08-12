@@ -12,6 +12,9 @@
 #include "recurso.h"
 #include "eventos.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("SENSOR", nivel, fmt, ##__VA_ARGS__)
+
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
@@ -75,7 +78,7 @@ void sensoresInit()
     {
       if (tipoSensor->status != "OK")
       {
-        logaMensagem("Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
+        logaM(LOG_CRITICO, "Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
         sensor->ativo = false;
       }
       else
@@ -91,7 +94,7 @@ void sensoresInit()
     {
       if (strlen(sensor->tipo) > 0)
       {
-        logaMensagem("TipoSensor [%s] INVALIDO! Desativando Sensor[%d]", sensor->tipo, s);
+        logaM(LOG_AVISO, "TipoSensor [%s] INVALIDO! Desativando Sensor[%d]", sensor->tipo, s);
       }
     }
 
@@ -120,11 +123,11 @@ void sensorPrint(Sensor *sensor) // TODO :: substituir por recursoPrint
 {
   TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
 
-  logaMensagem("Sensor %d:%d (%s) > [%s - %s]",
-               sensor->num, sensor->pino,
-               (sensor->ativo ? "on" : "off"),
-               tipoSensor ? tipoSensor->tipo : "",
-               tipoSensor ? tipoSensor->nome : "");
+  logaM(LOG_NORMAL, "Sensor %d:%d (%s) > [%s - %s]",
+        sensor->num, sensor->pino,
+        (sensor->ativo ? "on" : "off"),
+        tipoSensor ? tipoSensor->tipo : "",
+        tipoSensor ? tipoSensor->nome : "");
 }
 
 // REQUIRE sensorMutex locked
@@ -189,7 +192,7 @@ void sensoresAtualiza()
     TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
     if (!tipoSensor)
     {
-      logaMensagem("Sensor[%s] tipo invalido [%p]", rec->id, sensor->tipo);
+      logaM(LOG_CRITICO, "Sensor[%s] tipo invalido [%p]", rec->id, sensor->tipo);
       continue;
     }
 
@@ -198,7 +201,7 @@ void sensoresAtualiza()
 
     if (tipoSensor->status != "OK")
     {
-      logaMensagem("Sensor[%s] tipo inativo [%s]. Inativando sensor", rec->id, tipoSensor->nome);
+      logaM(LOG_AVISO, "Sensor[%s] tipo inativo [%s]. Inativando sensor", rec->id, tipoSensor->nome);
       atual[idx].desativar = true;
       continue;
     }
@@ -212,7 +215,7 @@ void sensoresAtualiza()
     if (!lock)
     {
       delete[] atual;
-      logaMensagem("sensorAtualiza: mutex timeout");
+      logaM(LOG_CRITICO, "sensorAtualiza: mutex timeout");
       return;
     }
 

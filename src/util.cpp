@@ -1,11 +1,14 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("UTIL", nivel, fmt, ##__VA_ARGS__)
+
 #include "loga.h"
 
 void utilDIE(const char *msg)
 {
-  logaMensagem(">>> DIE!!! [%s]", msg);
+  logaM(LOG_CRITICO, ">>> DIE!!! [%s]", msg);
   ESP.restart();
 }
 
@@ -14,7 +17,7 @@ int utilCopiaArquivo(const char *pathOrigem, const char *pathDestino)
   File origem = LittleFS.open(pathOrigem, "r");
   if (!origem)
   {
-    logaMensagem("ERRO: utilCopiaArquivo [%s] nao encontrado", pathOrigem);
+    logaM(LOG_AVISO, "ERRO: utilCopiaArquivo [%s] nao encontrado", pathOrigem);
     return 1;
   }
 
@@ -23,7 +26,7 @@ int utilCopiaArquivo(const char *pathOrigem, const char *pathDestino)
   if (!destino)
   {
     origem.close();
-    logaMensagem("ERRO: utilCopiaArquivo impossivel criar [%s]", pathDestino);
+    logaM(LOG_CRITICO, "ERRO: utilCopiaArquivo impossivel criar [%s]", pathDestino);
     return 2;
   }
 
@@ -42,7 +45,7 @@ int utilCopiaArquivo(const char *pathOrigem, const char *pathDestino)
   origem.close();
   destino.close();
 
-  logaMensagem("Arquivo [%s] copiado para [%s] - %d bytes", pathOrigem, pathDestino, bytesCopiados);
+  logaM(LOG_NORMAL, "Arquivo [%s] copiado para [%s] - %d bytes", pathOrigem, pathDestino, bytesCopiados);
 
   return 0;
 }
