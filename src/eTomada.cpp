@@ -37,7 +37,7 @@ void eTomadaInit0()
   prefs.begin("eTomada", false);
 
   // Para testes
-  prefs.putString("deviceID", "ESCADA");
+  // prefs.putString("deviceID", "QUARTO");
 
   if (!prefs.isKey("modo"))
     prefs.putUChar("modo", MODO_NO);
