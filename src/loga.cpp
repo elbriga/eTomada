@@ -17,27 +17,39 @@
 
 struct LogRemoto
 {
-  char timestamp[32];
+  time_t timestamp;
+  uint32_t uptime; // em segundos -> TODO :: mudar para ms?
+  char level[8];
+  char modulo[16];
   char message[LOG_MESSAGE_SIZE];
-  uint32_t uptime;
 };
 
 static QueueHandle_t logQueue = nullptr;
 
 static void logRemotoTask(void *param);
+void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args);
+
+// Função de log para esta modulo
+void logaM(LogLevel nivel, const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  logaV("LOGS", nivel, fmt, args);
+  va_end(args);
+}
 
 void logaInit()
 {
   if (logQueue)
   {
-    logaMensagem("ERRO: logaInit() chamado duas vezes?");
+    logaM(LOG_CRITICO, "ERRO: logaInit() chamado duas vezes?");
     return;
   }
 
   logQueue = xQueueCreate(LOG_QUEUE_SIZE, sizeof(LogRemoto));
   if (!logQueue)
   {
-    logaMensagem("ERRO: nao foi possivel criar fila de logs");
+    logaM(LOG_CRITICO, "ERRO: nao foi possivel criar fila de logs");
     return;
   }
 
@@ -49,17 +61,59 @@ void logaInit()
       1,
       nullptr);
 
-  logaMensagem("Log remoto inicializado");
+  logaM(LOG_NORMAL, "Log remoto inicializado");
 }
 
+// Nova função de logs
+void loga(const char *modulo, LogLevel nivel, const char *fmt, ...)
+{
+  va_list args;
+
+  va_start(args, fmt);
+
+  logaV(modulo, nivel, fmt, args);
+
+  va_end(args);
+}
+
+// Atalho legado
 void logaMensagem(const char *fmt, ...)
 {
-  char msg[LOG_MESSAGE_SIZE];
-
   va_list args;
+
   va_start(args, fmt);
-  vsnprintf(msg, sizeof(msg), fmt, args);
+
+  logaV("eTomada", LOG_NORMAL, fmt, args);
+
   va_end(args);
+}
+
+const char *logaGetNivelTxt(LogLevel nivel)
+{
+  switch (nivel)
+  {
+  case LOG_DESATIVADO:
+    return "!OFF!!!";
+  case LOG_CRITICO:
+    return "!CRIT!!";
+  case LOG_AVISO:
+    return "AVISO";
+  case LOG_NORMAL:
+    return "NORMAL";
+  case LOG_TESTE:
+    return "TESTE";
+  case LOG_DEBUG:
+    return "DEBUG";
+  default:
+    return "???";
+  }
+}
+
+void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args)
+{
+  // Gerar o log
+  char msg[LOG_MESSAGE_SIZE];
+  vsnprintf(msg, sizeof(msg), fmt, args);
 
   // Obter horario
   struct tm timeinfo;
@@ -90,16 +144,22 @@ void logaMensagem(const char *fmt, ...)
              (segundos < 10 ? "0" : ""), segundos);
   }
 
-  Serial.printf("[%s][%s] %s\n", formattedTime, formattedUptime, msg);
+  Serial.printf("[%s][%s][%s][%s] %s\n",
+                formattedTime, formattedUptime,
+                logaGetNivelTxt(nivel), modulo,
+                msg);
 
   // Enviar para fila de log remoto
   if (logQueue)
   {
     LogRemoto log;
 
-    strlcpy(log.timestamp, formattedTime, sizeof(log.timestamp));
-    strlcpy(log.message, msg, sizeof(log.message));
+    log.timestamp = mktime(&timeinfo);
     log.uptime = uptime;
+
+    strlcpy(log.modulo, modulo, sizeof(log.modulo));
+    strlcpy(log.level, logaGetNivelTxt(nivel), sizeof(log.level));
+    strlcpy(log.message, msg, sizeof(log.message));
 
     // NÃO bloquear caso a fila esteja cheia
     xQueueSend(logQueue, &log, 0);
@@ -108,7 +168,7 @@ void logaMensagem(const char *fmt, ...)
 
 void logaTitulo(const char *msg)
 {
-  logaMensagem("\n====\n== %s ==\n====\n", msg);
+  loga("eTomada", LOG_AVISO, "\n====\n== %s ==\n====\n", msg);
 }
 
 static void logRemotoTask(void *param)
@@ -123,7 +183,7 @@ static void logRemotoTask(void *param)
     // Sem WiFi: simplesmente descarta este log
     if (WiFi.status() != WL_CONNECTED)
     {
-      // Serial.println("......>>>>> Descartando log remoto!!");
+      // Serial.println("Descartando log remoto!!");
       continue;
     }
 
@@ -137,16 +197,17 @@ static void logRemotoTask(void *param)
 
     JsonDocument doc;
     doc["deviceID"] = eTomadaDeviceID();
-    doc["level"] = "INFO";
-    doc["module"] = "etomada";
-    doc["message"] = log.message;
+
     doc["timestamp"] = log.timestamp;
     doc["uptime"] = log.uptime;
+
+    doc["level"] = log.level;
+    doc["module"] = log.modulo;
+    doc["message"] = log.message;
 
     String body;
     serializeJson(doc, body);
 
-    // Serial.printf("......>>>>>..... [%s]\n", body.c_str());
     int status = http.POST(body);
 
     http.end();

@@ -14,6 +14,10 @@
 #include "sensor.h"
 #include "botao.h"
 #include "discover.h"
+#include "util.h"
+
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
 
 #define FS_LIMITE_LIVRE 100 * 1024 // Para LOG de aviso de FS cheio
 
@@ -37,30 +41,14 @@ void setup()
 
   nvs_stats_t stats;
   nvs_get_stats(NULL, &stats);
-  logaMensagem("Inicializando Preferences: (used:%d, free:%d)",
-               stats.used_entries, stats.free_entries);
+  logaM(LOG_NORMAL, "Inicializando Preferences: (used:%d, free:%d)",
+        stats.used_entries, stats.free_entries);
 
   displayInit();
 
-  logaMensagem("Inicializando FS:");
-  bool FSOK = !!LittleFS.begin();
-  if (!FSOK)
-  {
-    logaTitulo("Erro LittleFS - Desativando Servidor Web");
-  }
-  else
-  {
-    size_t total = LittleFS.totalBytes();
-    size_t usado = LittleFS.usedBytes();
-    size_t livre = total - usado;
-    logaMensagem("  Total : %u bytes (%u KB)", total, total / 1024);
-    logaMensagem("  Usado : %u bytes (%u KB)", usado, usado / 1024);
-    logaMensagem("  Livre : %u bytes (%u KB)", livre, livre / 1024);
-    if (livre < FS_LIMITE_LIVRE)
-    {
-      logaMensagem(">>> POUCO ESPAÇO NO FILE SYSTEM!!!");
-    }
-  }
+  logaM(LOG_NORMAL, "Inicializando FS:");
+  if (!LittleFS.begin())
+    utilDIE("ERRO LITTLEFS!!!");
 
   displayMostraString(0, 20, "Conectando...");
   WiFiConnect();
@@ -72,12 +60,25 @@ void setup()
     ntpSyncTimeTS = ntpSyncTime();
   }
 
+  // Mostrar o status do FS
+  {
+    size_t total = LittleFS.totalBytes();
+    size_t usado = LittleFS.usedBytes();
+    size_t livre = total - usado;
+    logaM(LOG_NORMAL, "  Total : %u bytes (%u KB)", total, total / 1024);
+    logaM(LOG_NORMAL, "  Usado : %u bytes (%u KB)", usado, usado / 1024);
+    logaM(LOG_NORMAL, "  Livre : %u bytes (%u KB)", livre, livre / 1024);
+    if (livre < FS_LIMITE_LIVRE)
+    {
+      logaM(LOG_CRITICO, ">>> POUCO ESPAÇO NO FILE SYSTEM!!!");
+      logaM(LOG_CRITICO, ">>> POUCO ESPAÇO NO FILE SYSTEM!!!");
+    }
+  }
+
   eTomadaInit();
 
-  if (FSOK)
-  {
-    httpServerInit();
-  }
+  logaM(LOG_NORMAL, "Inicializando o servidor http:");
+  httpServerInit();
 
   logaTitulo("Setup OK!");
 }

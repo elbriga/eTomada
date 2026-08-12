@@ -21,6 +21,9 @@
 #include "util.h"
 #include "recursoRemoto.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("eTOMADA", nivel, fmt, ##__VA_ARGS__)
+
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
 
@@ -37,19 +40,19 @@ void eTomadaInit()
   modoOperacao =
       (prefs.getUChar("modo") == MODO_CONTROLADOR) ? MODO_CONTROLADOR : MODO_NO;
 
-  logaMensagem("Modo de Operação: %s", eTomadaGetModoOperacaoStr());
-  logaMensagem("MAC: %s", getMACStr().c_str());
+  logaM(LOG_NORMAL, "Modo de Operação: %s", eTomadaGetModoOperacaoStr());
+  logaM(LOG_NORMAL, "MAC: %s", getMACStr().c_str());
 
   bool carregaTestes = true;
   if (carregaTestes && modoOperacao == MODO_CONTROLADOR)
   {
-    logaMensagem("INICIALIZANDO REGRAS FROM TESTES!!!");
+    logaM(LOG_AVISO, "INICIALIZANDO REGRAS FROM TESTES!!!");
     utilCopiaArquivo("/config/automacoesTeste.json", REGRAS_PATH);
 
-    logaMensagem("INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
+    logaM(LOG_AVISO, "INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
     utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
 
-    logaMensagem("INICIALIZANDO RECURSOS REMOTOS FROM TESTES!!!");
+    logaM(LOG_AVISO, "INICIALIZANDO RECURSOS REMOTOS FROM TESTES!!!");
     utilCopiaArquivo("/config/recursosRemotosTeste.json", RECURSOS_REMOTOS_PATH);
   }
 
@@ -60,31 +63,29 @@ void eTomadaInit()
   eventosInit();
   agendamentosInit();
 
-  logaMensagem("Inicializando Relés Locais:");
+  logaM(LOG_NORMAL, "Inicializando Relés Locais:");
   relesInit();
 
-  logaMensagem("Inicializando Sensores Locais:");
+  logaM(LOG_NORMAL, "Inicializando Sensores Locais:");
   sensoresInit();
 
-  logaMensagem("Inicializando Botões Locais:");
+  logaM(LOG_NORMAL, "Inicializando Botões Locais:");
   botoesInit();
 
-  logaMensagem("Inicializando o Discover:");
+  logaM(LOG_NORMAL, "Inicializando o Discover:");
   discoverInit();
 
-  logaMensagem("Carregando Nodos Remotos:");
+  logaM(LOG_NORMAL, "Carregando Nodos Remotos:");
   nodoRemotoInit();
 
-  logaMensagem("Inicializando Recursos Remotos:");
+  logaM(LOG_NORMAL, "Inicializando Recursos Remotos:");
   recursosRemotosInit();
 
-  logaMensagem("Inicializando Recursos:");
+  logaM(LOG_NORMAL, "Inicializando Recursos:");
   recursosInit();
 
-  logaMensagem("Inicializando Regras:");
+  logaM(LOG_NORMAL, "Inicializando Regras:");
   regrasInit();
-
-  Serial.println("");
 }
 
 ModoOperacao eTomadaGetModoOperacao()
@@ -247,7 +248,7 @@ void eTomadaRoleta()
 
   free(relesLocais);
 
-  logaMensagem("** Numero Sorteado: %d **", num + 1);
+  logaM(LOG_AVISO, "** Numero Sorteado: %d **", num + 1);
 }
 
 void eTomadaFactoryReset()
@@ -255,7 +256,7 @@ void eTomadaFactoryReset()
   MutexLock lockPrefs(prefsMutex, pdMS_TO_TICKS(2500));
   if (!lockPrefs)
   {
-    logaMensagem("Erro de mutex no factory reset!");
+    logaM(LOG_CRITICO, "Erro de mutex no factory reset!");
     return;
   }
 
