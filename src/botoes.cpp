@@ -11,6 +11,9 @@
 #include "recurso.h"
 #include "eventos.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("BOTAO", nivel, fmt, ##__VA_ARGS__)
+
 #define BOTAO_DEBOUCE_TIME_MS 50
 
 // Hardware Profile - um para cada placa
@@ -86,9 +89,9 @@ Botao *botaoGet(int num)
 
 void botaoPrint(Botao *botao)
 {
-  logaMensagem("Botao %d:%d (%s)",
-               botao->num, botao->pino,
-               (botao->ativo ? "on" : "off"));
+  logaM(LOG_NORMAL, "Botao %d:%d (%s)",
+        botao->num, botao->pino,
+        (botao->ativo ? "on" : "off"));
 }
 
 // REQUIRE recursosMutex locked
@@ -162,8 +165,8 @@ void botoesAtualiza()
     {
       if (botao->estado != leitura)
       {
-        logaMensagem("BOTAO [%s][%s] MUDOU [%s]",
-                     rec->id, rec->nome, leitura ? "ON" : "OFF");
+        logaM(LOG_NORMAL, "BOTAO [%s][%s] MUDOU [%s]",
+              rec->id, rec->nome, leitura ? "ON" : "OFF");
         int idx = totBotoesParaAtualizar++;
         atual[idx].rec = rec;
         atual[idx].novoEstado = leitura;
@@ -177,7 +180,7 @@ void botoesAtualiza()
     if (!lock)
     {
       delete[] atual;
-      logaMensagem("botoesAtualiza: mutex timeout");
+      logaM(LOG_CRITICO, "botoesAtualiza: mutex timeout");
       return;
     }
 

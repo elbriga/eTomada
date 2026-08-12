@@ -10,6 +10,9 @@
 #include "recursoRemoto.h"
 #include "util.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("NODORMT", nivel, fmt, ##__VA_ARGS__)
+
 NodoRemoto *nodosRemotos = nullptr;
 static int totNodosRemotos = 0;
 
@@ -24,13 +27,13 @@ void nodoRemotoInit()
 
   if (!LittleFS.exists(NODOS_PATH))
   {
-    logaMensagem("ERRO: nodoRemotoInit > Arquivo [%s] nao existe!", NODOS_PATH);
+    logaM(LOG_CRITICO, "ERRO: nodoRemotoInit > Arquivo [%s] nao existe!", NODOS_PATH);
     return;
   }
 
   String msgLoad = nodosRemotosLoad(NODOS_PATH);
   if (msgLoad != "OK")
-    logaMensagem(">> nodosRemotosLoad: [%s]", msgLoad.c_str());
+    logaM(LOG_AVISO, ">> nodosRemotosLoad: [%s]", msgLoad.c_str());
 
   nodosRemotosRefreshTask(nullptr);
 
@@ -112,8 +115,8 @@ void nodosRemotosRefreshTask(void *args)
     }
     if (!achei)
     {
-      logaMensagem(">>> Nodo [%s] encontrado em %s. Avisar na interface",
-                   nodoDiscover->deviceID, nodoDiscover->ip.toString().c_str());
+      logaM(LOG_AVISO, ">>> Nodo [%s] encontrado em %s. Avisar na interface",
+            nodoDiscover->deviceID, nodoDiscover->ip.toString().c_str());
       // TODO
     }
   }
@@ -127,15 +130,15 @@ void nodosRemotosRefreshTask(void *args)
     if (nodoDescoberto)
     {
       if (!nodoRemoto->online)
-        logaMensagem("Nodo Remoto[%s] %s - ONLINE", nodoRemoto->id, nodoRemoto->nome);
+        logaM(LOG_AVISO, "Nodo Remoto[%s] %s - ONLINE", nodoRemoto->id, nodoRemoto->nome);
       nodoRemoto->online = true;
 
       if (nodoRemoto->ip != nodoDescoberto->ip)
       {
         nodoRemoto->ip = nodoDescoberto->ip;
-        logaMensagem("Nodo Remoto[%s] %s - Novo IP: %s",
-                     nodoRemoto->id, nodoRemoto->nome,
-                     nodoRemoto->ip.toString().c_str());
+        logaM(LOG_AVISO, "Nodo Remoto[%s] %s - Novo IP: %s",
+              nodoRemoto->id, nodoRemoto->nome,
+              nodoRemoto->ip.toString().c_str());
       }
 
       nodoRemoto->ping = nodoDescoberto->ping;
@@ -148,7 +151,7 @@ void nodosRemotosRefreshTask(void *args)
     else
     {
       if (nodoRemoto->online)
-        logaMensagem("Nodo Remoto[%s] %s OFFLINE", nodoRemoto->id, nodoRemoto->nome);
+        logaM(LOG_AVISO, "Nodo Remoto[%s] %s OFFLINE", nodoRemoto->id, nodoRemoto->nome);
       nodoRemoto->online = false;
     }
   }
@@ -186,14 +189,14 @@ String nodosRemotosLoad(const char *path)
   {
     if (totNodosRemotos >= totNodos)
     {
-      logaMensagem("ERRO! nodosRemotosLoad > TOT > TOT ??");
+      logaM(LOG_CRITICO, "ERRO! nodosRemotosLoad > TOT > TOT ??");
       break;
     }
 
     NodoRemoto *nodo = &nodosRemotos[totNodosRemotos];
     if (!nodo)
     {
-      logaMensagem("ERRO! nodosRemotosLoad > !NODO ??");
+      logaM(LOG_CRITICO, "ERRO! nodosRemotosLoad > !NODO ??");
       continue;
     }
 
@@ -210,8 +213,8 @@ String nodosRemotosLoad(const char *path)
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto)
 {
-  logaMensagem("NodoRemoto %s [%s] > %s > [%s] (%d ms)",
-               nodoRemoto->id, nodoRemoto->nome, nodoRemoto->deviceID,
-               nodoRemoto->ip.toString().c_str(),
-               nodoRemoto->ping);
+  logaM(LOG_NORMAL, "NodoRemoto %s [%s] > %s > [%s] (%d ms)",
+        nodoRemoto->id, nodoRemoto->nome, nodoRemoto->deviceID,
+        nodoRemoto->ip.toString().c_str(),
+        nodoRemoto->ping);
 }

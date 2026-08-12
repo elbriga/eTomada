@@ -8,6 +8,9 @@
 #include "nodoRemoto.h"
 #include "mestre.h"
 
+// Função de log para esta modulo
+#define logaM(nivel, fmt, ...) loga("DISCOVR", nivel, fmt, ##__VA_ARGS__)
+
 #define DISCOVER_PORT 8266
 
 static WiFiUDP discoverUdp;
@@ -161,7 +164,7 @@ void discoverTask(void *args)
     replyUdp.begin(DISCOVER_PORT + 1);
 
     if (!ehTask)
-        logaMensagem("Enviando cmd discover para o broadcast: %s", broadcast.toString().c_str());
+        logaM(LOG_NORMAL, "Enviando cmd discover para o broadcast: %s", broadcast.toString().c_str());
     discoverUdp.beginPacket(broadcast, DISCOVER_PORT);
     // TODO :: Usar classes JSON aqui
     discoverUdp.print("{\"cmd\":\"discover\",\"mac\":\"");
@@ -170,7 +173,7 @@ void discoverTask(void *args)
     discoverUdp.endPacket();
 
     if (!ehTask)
-        logaMensagem("Aguardar por 3 segundos");
+        logaM(LOG_NORMAL, "Aguardar por 3 segundos");
     totDiscoverNodos = 0;
     uint32_t inicio = millis();
     while (millis() - inicio < 3000)
@@ -182,7 +185,7 @@ void discoverTask(void *args)
             DeserializationError err = deserializeJson(doc, replyUdp);
             if (err)
             {
-                Serial.printf("discoverTask : Erro JSON: %s\n", err.c_str());
+                logaM(LOG_AVISO, "discoverTask : Erro JSON: %s\n", err.c_str());
                 continue;
             }
 
@@ -190,7 +193,7 @@ void discoverTask(void *args)
 
             if (totDiscoverNodos > MAX_NODOS_REMOTOS)
             {
-                logaMensagem("IGNORANDO NODO %d!!!", totDiscoverNodos);
+                logaM(LOG_AVISO, "IGNORANDO NODO %d!!!", totDiscoverNodos);
             }
             else
             {
@@ -204,9 +207,9 @@ void discoverTask(void *args)
 
                 if (!ehTask)
                 {
-                    logaMensagem("Achei [%s] (%d ms)!",
-                                 replyUdp.remoteIP().toString().c_str(),
-                                 nr->ping);
+                    logaM(LOG_NORMAL, "Achei [%s] (%d ms)!",
+                          replyUdp.remoteIP().toString().c_str(),
+                          nr->ping);
                     /*
                     Serial.printf("Resposta[%d] de %s:\n",
                                   totDiscoverNodos, replyUdp.remoteIP().toString().c_str());
@@ -225,7 +228,7 @@ void discoverTask(void *args)
     replyUdp.stop();
 
     if (!ehTask)
-        logaMensagem("Scanner completo");
+        logaM(LOG_NORMAL, "Scanner completo");
 
     discoverTaskRunning = false;
     vTaskDelete(NULL);
