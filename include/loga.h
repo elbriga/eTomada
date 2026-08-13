@@ -1,4 +1,5 @@
 #pragma once
+#include <Arduino.h>
 #include <stdarg.h>
 
 enum LogLevel
@@ -13,6 +14,8 @@ enum LogLevel
 };
 
 void logaInit();
+bool logaRemotoAtivo();
+String logaGetLogServer();
 
 // Funções novas
 void loga(const char *modulo, LogLevel nivel, const char *fmt, ...);

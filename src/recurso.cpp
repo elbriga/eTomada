@@ -390,7 +390,7 @@ String recursoEventoRecebido(uint8_t *json)
 
     if (!strcmp(doc["id"].as<const char *>(), rec->recursoRemoto->idRemoto))
     {
-      logaM(LOG_NORMAL, "Evento recebido! Atualizar recurso [%s]", rec->id);
+      logaM(LOG_TESTE, "Evento recebido! Atualizar recurso [%s]", rec->id);
 
       return recursoAtualizaFromJson(rec, doc["device"], doc["timestamp"].as<unsigned long>());
     }

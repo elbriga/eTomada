@@ -124,6 +124,8 @@ void discoverStart(bool ehTask)
     discoverTaskRunning = true;
 
     const char *args = ehTask ? "TASK" : "BOOT";
+    // logaM(LOG_DEBUG0, "discoverStart [%s]", args);
+
     xTaskCreate(
         discoverTask,
         "discover",
@@ -157,22 +159,32 @@ void discoverWaitRun(bool ehTask)
 void discoverTask(void *args)
 {
     bool ehTask = args && !strncmp((char *)args, "TASK", 4);
+    bool logs = !ehTask;
 
     WiFiUDP replyUdp;
     IPAddress broadcast = ~WiFi.subnetMask() | WiFi.localIP();
 
     replyUdp.begin(DISCOVER_PORT + 1);
 
-    if (!ehTask)
+    if (logs)
         logaM(LOG_NORMAL, "Enviando cmd discover para o broadcast: %s", broadcast.toString().c_str());
+
+    JsonDocument doc;
+    doc["app"] = "eTomada";
+    doc["device"] = eTomadaDeviceID();
+    doc["cmd"] = "discover";
+    doc["mac"] = getMACStr();
+    if (logaRemotoAtivo())
+        doc["logServer"] = logaGetLogServer(); // TODO :: tratar nos NODO_NO
+
+    String out;
+    serializeJson(doc, out);
+
     discoverUdp.beginPacket(broadcast, DISCOVER_PORT);
-    // TODO :: Usar classes JSON aqui
-    discoverUdp.print("{\"cmd\":\"discover\",\"mac\":\"");
-    discoverUdp.print(getMACStr().c_str());
-    discoverUdp.print("\"}");
+    discoverUdp.print(out.c_str());
     discoverUdp.endPacket();
 
-    if (!ehTask)
+    if (logs)
         logaM(LOG_NORMAL, "Aguardar por 3 segundos");
     totDiscoverNodos = 0;
     uint32_t inicio = millis();
@@ -205,7 +217,7 @@ void discoverTask(void *args)
 
                 discoverSnapshotBuffer[totDiscoverNodos - 1] = doc;
 
-                if (!ehTask)
+                if (logs)
                 {
                     logaM(LOG_NORMAL, "Achei [%s] (%d ms)!",
                           replyUdp.remoteIP().toString().c_str(),
@@ -227,7 +239,7 @@ void discoverTask(void *args)
 
     replyUdp.stop();
 
-    if (!ehTask)
+    if (logs)
         logaM(LOG_NORMAL, "Scanner completo");
 
     discoverTaskRunning = false;

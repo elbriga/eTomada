@@ -69,7 +69,7 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
 {
   String url = "http://" + ip.toString() + "/api/" + endpoint;
 
-  logaM(LOG_NORMAL, "apiInterna: Acionando %s", url.c_str());
+  logaM(LOG_DEBUG0, "apiInterna: Acionando %s", url.c_str());
 
   HTTPClient http;
   http.begin(url);
@@ -82,7 +82,7 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
     if (request != nullptr)
     {
       serializeJson(*request, body);
-      logaM(LOG_DEBUG0, ">> BODY: %s", body.c_str());
+      logaM(LOG_DEBUG, ">> BODY: %s", body.c_str());
     }
 
     http.addHeader("Content-Type", "application/json");
@@ -97,7 +97,7 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
   {
     // TODO http.getString() é perigoso !!! usar o stream
     String respBody = http.getString();
-    logaM(LOG_DEBUG0, " >> RESP: %s", respBody.c_str());
+    logaM(LOG_DEBUG, " >> RESP: %s", respBody.c_str());
 
     if (response)
       deserializeJson(*response, respBody);
