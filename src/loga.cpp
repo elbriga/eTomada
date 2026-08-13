@@ -24,7 +24,7 @@ struct LogRemoto
 {
   time_t timestamp;
   uint32_t uptime; // em segundos -> TODO :: mudar para ms?
-  char level[8];
+  int level;
   char modulo[16];
   char message[LOG_MESSAGE_SIZE];
 };
@@ -172,9 +172,9 @@ void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args)
 
     log.timestamp = mktime(&timeinfo);
     log.uptime = uptime;
+    log.level = nivel;
 
     strlcpy(log.modulo, modulo, sizeof(log.modulo));
-    strlcpy(log.level, logaGetNivelTxt(nivel), sizeof(log.level));
     strlcpy(log.message, msg, sizeof(log.message));
 
     // NÃO bloquear caso a fila esteja cheia
