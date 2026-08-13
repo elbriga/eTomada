@@ -33,6 +33,7 @@ void mestreInit()
     if (mestreAtivo())
         logaM(LOG_AVISO, "Nodo Mestre: %s", mestre.mac.c_str());
 
+    // TODO :: mestreCheckOnline()
     mestre.online = false;
 
     prefs.end();
@@ -69,7 +70,8 @@ void mestreLoop()
 
     if (millis() - mestre.ultimoHeartbeat > MESTRE_HEARTBEAT_TIMEOUT)
     {
-        logaM(LOG_AVISO, "Mestre - OFFLINE!");
+        if (mestre.online)
+            logaM(LOG_AVISO, "Mestre - OFFLINE!");
         mestre.online = false;
     }
 }
