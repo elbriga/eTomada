@@ -351,13 +351,13 @@ JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
   switch (r->tipo)
   {
   case RECURSO_RELE:
-    device["estado"] = r->rele->estado;
+    device["estado"] = recursoGetRele(r)->estado;
     break;
   case RECURSO_SENSOR:
-    device["valor"] = r->sensor->valor;
+    device["valor"] = recursoGetSensor(r)->valor;
     break;
   case RECURSO_BOTAO:
-    device["estado"] = r->botao->estado;
+    device["estado"] = recursoGetBotao(r)->estado;
     break;
   }
 
