@@ -16,9 +16,13 @@
 #include "discover.h"
 #include "util.h"
 #include "rtc-hw.h"
+#include "hardwareProfile.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
+
+// Hardware Profile - um para cada placa
+extern const HardwareProfile hardwareProfile;
 
 #define FS_LIMITE_LIVRE 100 * 1024 // Para LOG de aviso de FS cheio
 
@@ -31,6 +35,11 @@ static int last10Second = -1;
 static int lastMinute = -1;
 static int wifiFora = 0;
 static int lastMsgDBM = -(60 * 60 * 1000); // MSG a cada 1h
+
+bool ledAtivo()
+{
+  return hardwareProfile.ledPin != 255;
+}
 
 void setup()
 {
@@ -47,8 +56,13 @@ void setup()
 
   logaTitulo("eTomada");
 
+  // Para testar o RTC:
+  // rtcForceResetSystemTime();
+
   // Verificar se temos RTC
   rtcInit();
+
+  ntpInit();
 
   // Inicializar MODO DE OPERAÇÃO e o deviceID
   eTomadaInit0();
@@ -80,6 +94,11 @@ void setup()
       displayMostraString(0, 40, "Buscando Hora...");
       ntpSyncTimeTS = ntpSyncTime();
     }
+    else
+    {
+      // conferir o NTP em 10 segundos
+      ntpSyncTimeTS = millis() + 10 * 1000;
+    }
   }
 
   // Mostrar o status do FS
@@ -102,6 +121,12 @@ void setup()
   logaM(LOG_NORMAL, "Inicializando o servidor http:");
   httpServerInit();
 
+  if (ledAtivo())
+  {
+    pinMode(hardwareProfile.ledPin, OUTPUT);
+    digitalWrite(hardwareProfile.ledPin, LOW);
+  }
+
   logaTitulo("Setup OK!");
 
   // Inicializar controles do loop principal
@@ -112,6 +137,7 @@ void setup()
   lastMinute = timeinfo.tm_min; // TODO :: Esse impede que dispare um EVENTO_HORARIO para o minuto atual do boot
 }
 
+static bool ledState = false;
 void loop()
 {
   esp_task_wdt_reset(); // alimenta o watchdog
@@ -132,7 +158,14 @@ void loop()
   {
     lastSecond = timeinfo.tm_sec;
 
-    // TODO : #ifdef TEM_OLED
+    // Heartbeat
+    if (ledAtivo())
+    {
+      ledState = !ledState;
+      digitalWrite(hardwareProfile.ledPin, ledState);
+    }
+
+#ifdef TEM_OLED
     if (displayPodeMostrar())
     {
       // Atualizar o relogio
@@ -143,6 +176,7 @@ void loop()
       snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", utilGetDiaSemana(timeinfo), formattedTime);
       displayMostraMsg(msgDataHora, 0, false);
     }
+#endif
 
     // 10s/10s
     if ((int)(timeinfo.tm_sec / 10) != last10Second)
@@ -157,7 +191,7 @@ void loop()
       // Keepalive para a interface web
       httpEnviaSSE("{}", "sse_ping");
 
-      // Verificar os NÓs remotos (em nova Task):
+      // Verificar os NÓs remotos (em nova Task) a cada 10s:
       if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
       {
         nodosRemotosRefresh();
