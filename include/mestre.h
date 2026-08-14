@@ -13,8 +13,10 @@ struct Mestre
 };
 
 void mestreInit();
-void mestreCheckDiscover(String mac, IPAddress ip);
 void mestreLoop();
-void mestreEnviaEvento(Recurso *rec);
 bool mestreAtivo();
 IPAddress mestreGetIP();
+
+void mestreCheckDiscover(String mac, IPAddress ip);
+
+void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento);
