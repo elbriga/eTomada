@@ -15,6 +15,7 @@
 #include "botao.h"
 #include "discover.h"
 #include "util.h"
+#include "rtc-hw.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
@@ -24,22 +25,33 @@
 // Timestamp da proxima sincronizacao do NTP
 static long ntpSyncTimeTS = 0;
 
+// Controles do loop principal
+static int lastSecond = -1;
+static int last10Second = -1;
+static int lastMinute = -1;
+static int wifiFora = 0;
+static int lastMsgDBM = -(60 * 60 * 1000); // MSG a cada 1h
+
 void setup()
 {
   Serial.begin(115200);
 
   delay(500);
 
-  // Inicializa a Task de logs remotos, ela ira descartar logs enquanto sem wifi
+  // WDT : 5 segundos de timeout
+  esp_task_wdt_init(5, true); // true = resetar automaticamente
+  esp_task_wdt_add(NULL);     // adiciona a task atual (loop)
+
+  // Inicializa o nivel de LOG e a Task de logs remotos, ela ira descartar logs enquanto sem wifi
   logaInit();
 
   logaTitulo("eTomada");
 
-  eTomadaInit0();
+  // Verificar se temos RTC
+  rtcInit();
 
-  // WDT : 5 segundos de timeout
-  esp_task_wdt_init(5, true); // true = resetar automaticamente
-  esp_task_wdt_add(NULL);     // adiciona a task atual (loop)
+  // Inicializar MODO DE OPERAÇÃO e o deviceID
+  eTomadaInit0();
 
   nvs_stats_t stats;
   nvs_get_stats(NULL, &stats);
@@ -58,8 +70,16 @@ void setup()
   // NTP somente no modo STA
   if (!WiFiGetModoAP())
   {
-    displayMostraString(0, 40, "Buscando Hora...");
-    ntpSyncTimeTS = ntpSyncTime();
+    // Verificar se ja temos hora do RTC
+    struct tm timeinfo;
+    sysGetTime(&timeinfo);
+
+    if (timeinfo.tm_year + 1900 < 2026)
+    {
+      // Nao temos RTC ou ele falhou!
+      displayMostraString(0, 40, "Buscando Hora...");
+      ntpSyncTimeTS = ntpSyncTime();
+    }
   }
 
   // Mostrar o status do FS
@@ -83,35 +103,15 @@ void setup()
   httpServerInit();
 
   logaTitulo("Setup OK!");
+
+  // Inicializar controles do loop principal
+  struct tm timeinfo;
+  sysGetTime(&timeinfo);
+  lastSecond = timeinfo.tm_sec;
+  last10Second = timeinfo.tm_sec / 10;
+  lastMinute = timeinfo.tm_min; // TODO :: Esse impede que dispare um EVENTO_HORARIO para o minuto atual do boot
 }
 
-const char *getDiaSemana(struct tm timeinfo)
-{
-  switch (timeinfo.tm_wday)
-  {
-  case 0:
-    return "Dom";
-  case 1:
-    return "Seg";
-  case 2:
-    return "Ter";
-  case 3:
-    return "Qua";
-  case 4:
-    return "Qui";
-  case 5:
-    return "Sex";
-  case 6:
-    return "Sab";
-  default:
-    return "---";
-  }
-}
-
-int wifiFora = 0;
-int lastSecond = -1;
-int last10Second = -1;
-int lastMinute = -1;
 void loop()
 {
   esp_task_wdt_reset(); // alimenta o watchdog
@@ -125,7 +125,7 @@ void loop()
   botoesAtualiza();
 
   struct tm timeinfo;
-  ntpGetTime(&timeinfo);
+  sysGetTime(&timeinfo);
 
   // 1s/1s
   if (timeinfo.tm_sec != lastSecond)
@@ -140,7 +140,7 @@ void loop()
       char msgDataHora[32];
       // strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
       strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
-      snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", getDiaSemana(timeinfo), formattedTime);
+      snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", utilGetDiaSemana(timeinfo), formattedTime);
       displayMostraMsg(msgDataHora, 0, false);
     }
 
@@ -163,6 +163,7 @@ void loop()
         nodosRemotosRefresh();
       }
 
+      // Usado no NODO_NO para verificar se o mestre ficou offline
       mestreLoop();
 
       // 1m/1m
@@ -170,6 +171,16 @@ void loop()
       {
         lastMinute = timeinfo.tm_min;
         eventoPost(EVENTO_HORARIO, nullptr, false, false);
+
+        int dbm = WiFi.RSSI();
+        if (dbm < -70)
+        {
+          if (millis() - lastMsgDBM > 60 * 60 * 1000)
+          {
+            logaM(LOG_AVISO, "Sinal do WiFi muito baixo! [%d]", dbm);
+            lastMsgDBM = millis();
+          }
+        }
       }
     }
 

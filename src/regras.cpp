@@ -66,7 +66,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
         return nullptr;
 
     struct tm timeinfo;
-    ntpGetTime(&timeinfo);
+    sysGetTime(&timeinfo);
     int minutoAtual = timeinfo.tm_hour * 60 + timeinfo.tm_min;
     int minutoUltimo = -1;
 
@@ -108,7 +108,7 @@ void regrasBoot()
 {
     // Obter horario
     struct tm timeinfo;
-    ntpGetTime(&timeinfo);
+    sysGetTime(&timeinfo);
     if (timeinfo.tm_year + 1900 < 2026)
     {
         // Sem data/hora não processa regras de HORARIO
@@ -219,7 +219,7 @@ void regrasProcessaEvento(Evento e)
             {
                 // Obter horario
                 struct tm timeinfo;
-                ntpGetTime(&timeinfo);
+                sysGetTime(&timeinfo);
 
                 if (timeinfo.tm_hour == regra->condicao.horario.hora && timeinfo.tm_min == regra->condicao.horario.minuto)
                 {
