@@ -3,6 +3,7 @@
 #include <RTClib.h>
 
 #include "loga.h"
+#include "ntp.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RTC", nivel, fmt, ##__VA_ARGS__)
@@ -43,8 +44,12 @@ bool rtcAtivo()
     return rtcOK;
 }
 
+// Pega o relogio do RTC e seta no relogio do sistema
 void rtcSetSystemClock()
 {
+    if (!rtcAtivo())
+        return;
+
     DateTime now = rtc.now();
 
     struct tm tm_time;
@@ -65,4 +70,37 @@ void rtcSetSystemClock()
     settimeofday(&tv, NULL);
 
     logaM(LOG_NORMAL, "Data/Hora atualizada com RTC");
+}
+
+// Pega o relogio atual do sistema e grava no RTC
+void rtcStoreSystemClock()
+{
+    if (!rtcAtivo())
+        return;
+
+    // Obter a hora
+    struct tm timeinfo;
+    sysGetTime(&timeinfo);
+
+    // Convert 'tm' structure to RTClib 'DateTime' structure
+    // tm_year starts from 1900, tm_mon is 0-11
+    DateTime ntpTime(
+        timeinfo.tm_year + 1900,
+        timeinfo.tm_mon + 1,
+        timeinfo.tm_mday,
+        timeinfo.tm_hour,
+        timeinfo.tm_min,
+        timeinfo.tm_sec);
+
+    rtc.adjust(ntpTime);
+
+    logaM(LOG_AVISO, "A hora do RTC DS3231 foi atualizada");
+}
+
+// Force-resets the internal ESP32 system clock back to 1970
+void rtcForceResetSystemTime()
+{
+    struct timeval tv = {.tv_sec = 0, .tv_usec = 0};
+    settimeofday(&tv, NULL);
+    logaM(LOG_AVISO, "System time has been force-reset to 01/01/1970");
 }

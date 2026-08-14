@@ -2,4 +2,8 @@
 
 void rtcInit();
 bool rtcAtivo();
-// void rtcSetSystemClock();
+
+void rtcSetSystemClock();
+void rtcStoreSystemClock();
+
+void rtcForceResetSystemTime();
