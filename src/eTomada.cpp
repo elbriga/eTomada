@@ -156,7 +156,7 @@ String eTomadaGetSnapshotJSON()
   doc["datahora"] = (unsigned long)agora;
 
   struct tm timeinfo;
-  ntpGetTime(&timeinfo);
+  sysGetTime(&timeinfo);
   char formattedTime[32];
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
   doc["datahorastr"] = formattedTime;
