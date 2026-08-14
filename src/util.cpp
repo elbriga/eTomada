@@ -49,3 +49,26 @@ int utilCopiaArquivo(const char *pathOrigem, const char *pathDestino)
 
   return 0;
 }
+
+const char *utilGetDiaSemana(struct tm timeinfo)
+{
+  switch (timeinfo.tm_wday)
+  {
+  case 0:
+    return "Dom";
+  case 1:
+    return "Seg";
+  case 2:
+    return "Ter";
+  case 3:
+    return "Qua";
+  case 4:
+    return "Qui";
+  case 5:
+    return "Sex";
+  case 6:
+    return "Sab";
+  default:
+    return "---";
+  }
+}
