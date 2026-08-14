@@ -198,6 +198,14 @@ JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id)
 
 void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
 {
+  if (!snapshot)
+  {
+    logaM(LOG_CRITICO,
+          "recursoRemotoAtualizaFromSnapshot: snapshot NULL para [%s]",
+          nodo ? nodo->deviceID : "(null)");
+    return;
+  }
+
   Recurso *recurso;
   RecursoRemoto *rr;
   time_t tsSnapshot = (*snapshot)["timestamp"].as<unsigned long>();
