@@ -148,7 +148,7 @@ def get_logs(
     level: str | None = None,
     module: str | None = None,
     search: str | None = None,
-    limit: int = Query(5000, ge=1, le=10000)
+    limit: int = Query(250, ge=1, le=10000)
 ):
 
     conn = get_db()

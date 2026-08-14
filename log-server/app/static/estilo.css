@@ -95,9 +95,8 @@ th {
 }
 
 td {
-  padding: 8px 10px;
+  padding-right: 10px;
   border-bottom: 1px solid #eee;
-  vertical-align: top;
 }
 
 tr:hover {
@@ -125,7 +124,6 @@ tr:hover {
 }
 
 .message {
-  white-space: pre-wrap;
   font-family: monospace;
 }
 
