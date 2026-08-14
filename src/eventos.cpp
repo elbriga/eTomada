@@ -61,8 +61,10 @@ String eventoMockFromJson(uint8_t *json)
     Recurso *recurso = recursoGet(doc["recursoID"].as<const char *>());
     if (!recurso)
         return "Recurso Invalido";
+    if (recurso->tipo != RECURSO_BOTAO)
+        return "Recurso nao eh botao!";
 
-    eventoPost(EVENTO_TOGGLE, recurso, false, false);
+    eventoPost(EVENTO_TOGGLE, recurso, false, true);
 
     return "OK";
 }
@@ -82,7 +84,8 @@ void eventosProcessaTask(void *)
             switch (evento.tipo)
             {
             case EVENTO_TOGGLE:
-                atualiza = false; // Já será atualizado no EVENTO_ON / EVENTO_OFF, nao duplicar
+                // TODO :: agora o TOGGLE pode vir sozinho da interface: achar outra forma de nao duplicar
+                // atualiza = false; // Já será atualizado no EVENTO_ON / EVENTO_OFF, nao duplicar
                 break;
             }
 
@@ -94,7 +97,7 @@ void eventosProcessaTask(void *)
                 if (evento.enviaSSE)
                     recursoEnviaSSE(recurso);
                 if (evento.enviaMestre)
-                    mestreEnviaEvento(recurso);
+                    mestreEnviaEvento(recurso, evento.tipo);
             }
         }
     }

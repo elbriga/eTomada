@@ -221,7 +221,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
     if (!deviceRemoto)
       continue;
 
-    recursoAtualizaFromJson(recurso, deviceRemoto, tsSnapshot);
+    recursoAtualizaFromJson(recurso, deviceRemoto, tsSnapshot, "");
   }
 }
 

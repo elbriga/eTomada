@@ -8,6 +8,7 @@
 #include "botao.h"
 #include "recursoRemoto.h"
 #include "tipoRecurso.h"
+#include "eventos.h"
 
 struct Recurso
 {
@@ -40,12 +41,12 @@ String recursoSet(Recurso *recurso, String estadoStr = "ON", bool enviaMestre = 
 String recursoCheck(Recurso *recurso, bool estadoDesejado);
 
 // Atualiza o recurso > eventos - timestamp para ignorar eventos antigos
-String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long timestamp);
+String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long timestamp, String evento);
 
 const char *recursoGetTipoStr(TipoRecurso tipo);
 JsonDocument recursoGetJSONDoc(Recurso *r);
 
-JsonDocument recursoGetJSONEvento(Recurso *r);
+JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento);
 String recursoEventoRecebido(uint8_t *json);
 
 String recursoAtualizaConfigFromJSON(uint8_t *json);

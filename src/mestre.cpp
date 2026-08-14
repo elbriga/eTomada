@@ -7,6 +7,7 @@
 #include "nodoRemoto.h"
 #include "recurso.h"
 #include "apiInterna.h"
+#include "eventos.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MESTRE", nivel, fmt, ##__VA_ARGS__)
@@ -76,14 +77,14 @@ void mestreLoop()
     }
 }
 
-void mestreEnviaEvento(Recurso *rec)
+void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento)
 {
     if (!mestreAtivo()) // Sem mestre retorna
         return;
     if (!mestre.online) // Mestre offline retorna
         return;
 
-    JsonDocument payload = recursoGetJSONEvento(rec);
+    JsonDocument payload = recursoGetJSONEvento(rec, tipoEvento);
 
     apiInternaEnviaEvento(mestre.ip, &payload);
 }

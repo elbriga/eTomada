@@ -1,5 +1,7 @@
 #pragma once
-#include "recurso.h"
+#include <Arduino.h>
+
+struct Recurso; // Forward declaration
 
 enum TipoEvento
 {

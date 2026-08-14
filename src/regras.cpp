@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <LittleFS.h>
 
 #include "eTomada.h"
@@ -8,6 +9,7 @@
 #include "mutex.h"
 #include "ntp.h"
 #include "util.h"
+#include "recurso.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("REGRA", nivel, fmt, ##__VA_ARGS__)

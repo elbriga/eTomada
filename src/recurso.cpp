@@ -333,7 +333,7 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
 }
 
 // REQUIRE recursosMutex locked
-JsonDocument recursoGetJSONEvento(Recurso *r)
+JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
 {
   JsonDocument doc;
 
@@ -343,6 +343,9 @@ JsonDocument recursoGetJSONEvento(Recurso *r)
   time_t now = 0;
   time(&now);
   doc["timestamp"] = (unsigned long)now;
+
+  // TODO :: revisar :: mascarando os eventos. enviar a string de cada um
+  doc["evento"] = tipoEvento == EVENTO_TOGGLE ? "TOGGLE" : "";
 
   JsonDocument device;
   switch (r->tipo)
@@ -392,14 +395,14 @@ String recursoEventoRecebido(uint8_t *json)
     {
       logaM(LOG_TESTE, "Evento recebido! Atualizar recurso [%s]", rec->id);
 
-      return recursoAtualizaFromJson(rec, doc["device"], doc["timestamp"].as<unsigned long>());
+      return recursoAtualizaFromJson(rec, doc["device"], doc["timestamp"].as<unsigned long>(), doc["evento"].as<String>());
     }
   }
 
   return "Recurso nao encontrado";
 }
 
-String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long timestamp)
+String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long timestamp, String evento)
 {
   // Verificar a "idade" da atualizacao
   if (timestamp <= recurso->tsAtualizacao)
@@ -456,7 +459,7 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
     bool novoEstado = doc["estado"].as<bool>();
     bool mudou = (botao->estado != novoEstado);
     botao->estado = novoEstado;
-    if (mudou)
+    if (mudou || evento == "TOGGLE")
     {
       eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso, true, true);
       eventoPost(EVENTO_TOGGLE, recurso, true, true);
