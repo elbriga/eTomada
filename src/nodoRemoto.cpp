@@ -97,6 +97,8 @@ void nodosRemotosRefreshTask(void *args)
   if (!discoverWaitRun(ehTask))
   {
     logaM(LOG_AVISO, "++ nodosRemotosRefreshTask >> abortando por falha no discover!");
+    if (ehTask)
+      vTaskDelete(NULL);
     return;
   }
 
@@ -161,9 +163,7 @@ void nodosRemotosRefreshTask(void *args)
   }
 
   if (ehTask)
-  {
     vTaskDelete(NULL);
-  }
 }
 
 String nodosRemotosLoad(const char *path)
