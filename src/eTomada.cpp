@@ -4,6 +4,7 @@
 
 #include "eTomada.h"
 #include "mestre.h"
+#include "wifi.h"
 #include "rele.h"
 #include "tipoSensores.h"
 #include "sensor.h"
@@ -142,6 +143,7 @@ String eTomadaGetSnapshotJSON()
   doc["fw_version"] = "1.3.0";
 
   doc["mac"] = getMACStr();
+  doc["wifiPower"] = WiFiGetPower(); // TODO :: mostar na interface
 
   doc["api"] = 3; // versão da API
 
