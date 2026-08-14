@@ -24,6 +24,7 @@ typedef struct
 typedef struct
 {
     const char *modelo;
+    int ledPin;
     ReleHW reles[MAX_RELES];
     SensorHW sensores[MAX_SENSORES];
     BotaoHW botoes[MAX_BOTOES];

@@ -3,6 +3,7 @@
 
 const HardwareProfile hardwareProfile = {
     .modelo = "LOLIN-OLED",
+    .ledPin = 255, // SEM LED
     .reles = {
         {16, false},
         {13, false},

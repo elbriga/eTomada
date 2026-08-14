@@ -3,6 +3,7 @@
 
 const HardwareProfile hardwareProfile = {
     .modelo = "C3MINI",
+    .ledPin = 4,
     .reles = {
         {3, true},
         {2, true},
@@ -13,6 +14,7 @@ const HardwareProfile hardwareProfile = {
     },
     .botoes = {
         {0},
+        {1},
         {255}, // FIM
     },
 };
