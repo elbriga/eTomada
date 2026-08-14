@@ -80,7 +80,7 @@ void logaInit()
     break;
   }
 
-  logServer = getPrefsAtr(prefs, "", "logServer");
+  logServer = ""; // getPrefsAtr(prefs, "", "logServer");
 
   prefs.end();
 
@@ -165,7 +165,7 @@ void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args)
 
   // Obter horario
   struct tm timeinfo;
-  ntpGetTime(&timeinfo);
+  sysGetTime(&timeinfo);
 
   char formattedTime[32] = {0};
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
@@ -286,8 +286,5 @@ static void logRemotoTask(void *param)
     }
 
     http.end();
-
-    // Por enquanto não fazemos nada com o status.
-    //(void)status;
   }
 }
