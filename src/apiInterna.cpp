@@ -1,4 +1,5 @@
 #include <ArduinoJson.h>
+#include <esp_task_wdt.h>
 #include <HTTPClient.h>
 
 #include "eTomada.h"
@@ -75,6 +76,8 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
   http.begin(url);
   http.setTimeout(API_INTERNA_TIMEOUT);
 
+  esp_task_wdt_reset(); // alimenta o watchdog
+
   int code = 0;
   if (metodo == "PUT" || metodo == "POST")
   {
@@ -92,6 +95,8 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
   {
     code = http.GET();
   }
+
+  esp_task_wdt_reset(); // alimenta o watchdog
 
   if (code == 200)
   {
