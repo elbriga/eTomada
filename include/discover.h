@@ -6,7 +6,7 @@ void discoverInit();
 void discoverLoop();
 
 void discoverStart(bool ehTask);
-void discoverWaitRun(bool ehTask);
+bool discoverWaitRun(bool ehTask);
 
 bool discoverGetTaskRunning();
 int discoverGetNodosCount();

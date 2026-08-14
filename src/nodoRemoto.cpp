@@ -94,7 +94,11 @@ void nodosRemotosRefreshTask(void *args)
   bool ehTask = args && !strncmp((char *)args, "TASK", 4);
 
   // Escanear
-  discoverWaitRun(ehTask);
+  if (!discoverWaitRun(ehTask))
+  {
+    logaM(LOG_AVISO, "++ nodosRemotosRefreshTask >> abortando por falha no discover!");
+    return;
+  }
 
   int totNR = nodosRemotosGetCount();
   int totND = discoverGetNodosCount();

@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
@@ -7,14 +8,18 @@
 #include "loga.h"
 #include "nodoRemoto.h"
 #include "mestre.h"
+#include "ntp.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("DISCOVR", nivel, fmt, ##__VA_ARGS__)
 
 #define DISCOVER_PORT 8266
+#define DISCOVER_TEMPO_SCAN_MS 1000
+#define DISCOVER_MAX_RETRIES 3
 
 static WiFiUDP discoverUdp;
 static int totDiscoverNodos = 0;
+static int discoverScanID = 0;
 
 static NodoRemoto discoverNodos[MAX_NODOS_REMOTOS];
 // Buffer para transportar o JSON da resposta do discover para o nodosRemotosRefreshTask
@@ -103,6 +108,7 @@ void discoverLoop()
           discoverUdp.remoteIP().toString().c_str(),
           discoverUdp.remotePort() + 1);
 
+    // TODO :: Responder somente para o mestre ou quando ainda nao temos mestre?
     // RESPONDER ==
     discoverUdp.beginPacket(
         discoverUdp.remoteIP(),
@@ -135,39 +141,36 @@ void discoverStart(bool ehTask)
         NULL);
 }
 
-void discoverWaitRun(bool ehTask)
+bool discoverWaitRun(bool ehTask)
 {
+    int maxDelay = DISCOVER_TEMPO_SCAN_MS * DISCOVER_MAX_RETRIES + 200;
+
     discoverStart(ehTask);
 
     long start = millis();
-    while (millis() - start < 5000)
+    while (millis() - start < maxDelay)
     {
         if (!discoverGetTaskRunning())
             break;
-        vTaskDelay(pdMS_TO_TICKS(250));
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
     if (discoverGetTaskRunning())
     {
-        // TODO :: Erro!!
+        logaM(LOG_CRITICO, ">> discoverWaitRun >> TASK RODANDO MESMO DEPOIS DE maxDelay[%d]", maxDelay);
+        return false;
     }
+    return true;
 }
 
 /**
- * Task de 3 segundos:
+ * Task de DISCOVER_TEMPO_SCAN_MS ms * 3(max):
  * Envia um broadcast e espera por resposta dos nodos filho
  */
+static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar);
 void discoverTask(void *args)
 {
     bool ehTask = args && !strncmp((char *)args, "TASK", 4);
-    bool logs = !ehTask;
-
-    WiFiUDP replyUdp;
-    IPAddress broadcast = ~WiFi.subnetMask() | WiFi.localIP();
-
-    replyUdp.begin(DISCOVER_PORT + 1);
-
-    if (logs)
-        logaM(LOG_NORMAL, "Enviando cmd discover para o broadcast: %s", broadcast.toString().c_str());
+    bool logar = !ehTask;
 
     JsonDocument doc;
     doc["app"] = "eTomada";
@@ -177,71 +180,130 @@ void discoverTask(void *args)
     if (logaRemotoAtivo())
         doc["logServer"] = logaGetLogServer(); // TODO :: tratar nos NODO_NO
 
+    discoverScanID++;
+
+    int totNR = nodosRemotosGetCount();
+
+    // Tentar achar os nodos remotos ate 3 vezes
+    totDiscoverNodos = 0;
+    discoverTaskScan(discoverScanID, doc, logar);
+    if (totDiscoverNodos < totNR)
+    {
+        // Tentar mais uma vez!
+        discoverTaskScan(discoverScanID, doc, logar);
+        if (totDiscoverNodos < totNR)
+        {
+            // Tentar mais uma vez!
+            discoverTaskScan(discoverScanID, doc, logar);
+        }
+    }
+
+    if (logar)
+        logaM(LOG_NORMAL, ">> Scan completo - Nodos encontrados: [%d]", totDiscoverNodos);
+
+    discoverTaskRunning = false;
+    vTaskDelete(NULL);
+}
+
+static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
+{
+    IPAddress broadcast = ~WiFi.subnetMask() | WiFi.localIP();
+
+    if (logar)
+        logaM(LOG_DEBUG0, "Enviando cmd discover[%d] para o broadcast: %s", scanID, broadcast.toString().c_str());
+
+    // Obter horario
+    struct tm timeinfo;
+    ntpGetTime(&timeinfo);
+
+    doc["time"] = mktime(&timeinfo); // TODO tratar nos nodos, se precisarem da hora
+    doc["scanID"] = scanID;
+
     String out;
     serializeJson(doc, out);
+
+    // Abrir a porta +1 para receber as respoastas
+    WiFiUDP replyUdp;
+    replyUdp.begin(DISCOVER_PORT + 1);
 
     discoverUdp.beginPacket(broadcast, DISCOVER_PORT);
     discoverUdp.print(out.c_str());
     discoverUdp.endPacket();
 
-    if (logs)
-        logaM(LOG_NORMAL, "Aguardar por 3 segundos");
-    totDiscoverNodos = 0;
+    // if (logar)
+    //     logaM(LOG_DEBUG, ">> Aguardar por %d ms", DISCOVER_TEMPO_SCAN_MS);
+
+    esp_task_wdt_reset(); // alimenta o watchdog
+
     uint32_t inicio = millis();
-    while (millis() - inicio < 3000)
+    while (millis() - inicio < DISCOVER_TEMPO_SCAN_MS)
     {
-        int len = replyUdp.parsePacket();
-        if (len > 0)
+        if (!replyUdp.parsePacket())
         {
-            JsonDocument doc;
-            DeserializationError err = deserializeJson(doc, replyUdp);
-            if (err)
-            {
-                logaM(LOG_AVISO, "discoverTask : Erro JSON: %s\n", err.c_str());
-                continue;
-            }
-
-            totDiscoverNodos++;
-
-            if (totDiscoverNodos > MAX_NODOS_REMOTOS)
-            {
-                logaM(LOG_AVISO, "IGNORANDO NODO %d!!!", totDiscoverNodos);
-            }
-            else
-            {
-                NodoRemoto *nr = &discoverNodos[totDiscoverNodos - 1];
-                nr->ip = replyUdp.remoteIP();
-                nr->ping = millis() - inicio;
-                String mac = doc["mac"];
-                strlcpy(nr->deviceID, mac.c_str(), sizeof(nr->deviceID));
-
-                discoverSnapshotBuffer[totDiscoverNodos - 1] = doc;
-
-                if (logs)
-                {
-                    logaM(LOG_NORMAL, "Achei [%s] (%d ms)!",
-                          replyUdp.remoteIP().toString().c_str(),
-                          nr->ping);
-                    /*
-                    Serial.printf("Resposta[%d] de %s:\n",
-                                  totDiscoverNodos, replyUdp.remoteIP().toString().c_str());
-                    String s;
-                    serializeJson(doc, s);
-                    Serial.write(s.c_str(), s.length());
-                    Serial.println();
-                    */
-                }
-            }
+            vTaskDelay(pdMS_TO_TICKS(10));
+            continue;
         }
 
-        vTaskDelay(pdMS_TO_TICKS(20));
+        if (totDiscoverNodos >= MAX_NODOS_REMOTOS)
+        {
+            logaM(LOG_AVISO, ">> discoverTask IGNORANDO NODO!!! MAX_NODOS_REMOTOS");
+            continue;
+        }
+
+        JsonDocument doc;
+        DeserializationError err = deserializeJson(doc, replyUdp);
+        if (err)
+        {
+            logaM(LOG_AVISO, ">> discoverTask : Erro JSON: %s\n", err.c_str());
+            continue;
+        }
+
+        const char *novoMAC = doc["mac"].as<const char *>();
+
+        // Verificar se já não temos resposta deste nodo no buffer
+        if (totDiscoverNodos)
+        {
+            bool respostaDuplicada = false;
+            for (int i = 0; i < totDiscoverNodos; i++)
+            {
+                NodoRemoto *nodoTeste = &discoverNodos[i];
+                if (!strcmp(nodoTeste->deviceID, novoMAC))
+                {
+                    // Resposta duplicada!
+                    // logaM(LOG_AVISO, "<< Resposta ao discover duplicada do nodo [%s]", nodoTeste->nome);
+                    respostaDuplicada = true;
+                    break;
+                }
+            }
+            if (respostaDuplicada)
+                continue;
+        }
+
+        // Adicionar esse nodo no nosso array
+        NodoRemoto *nr = &discoverNodos[totDiscoverNodos];
+        nr->ip = replyUdp.remoteIP();
+        nr->ping = millis() - inicio;
+        strlcpy(nr->deviceID, novoMAC, sizeof(nr->deviceID));
+
+        discoverSnapshotBuffer[totDiscoverNodos] = doc;
+
+        totDiscoverNodos++;
+
+        if (logar)
+        {
+            logaM(LOG_NORMAL, ">> Achei [%s] (%d ms)!",
+                  replyUdp.remoteIP().toString().c_str(),
+                  nr->ping);
+            /*
+            Serial.printf("Resposta[%d] de %s:\n",
+                          totDiscoverNodos, replyUdp.remoteIP().toString().c_str());
+            String s;
+            serializeJson(doc, s);
+            Serial.write(s.c_str(), s.length());
+            Serial.println();
+            */
+        }
     }
 
     replyUdp.stop();
-
-    if (logs)
-        logaM(LOG_NORMAL, "Scanner completo");
-
-    discoverTaskRunning = false;
-    vTaskDelete(NULL);
 }
