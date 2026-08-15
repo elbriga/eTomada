@@ -67,6 +67,8 @@ void setup()
   // Inicializar MODO DE OPERAÇÃO e o deviceID
   eTomadaInit0();
 
+  logaM(LOG_NORMAL, "Flash: %u MB", ESP.getFlashChipSize() / (1024 * 1024));
+
   nvs_stats_t stats;
   nvs_get_stats(NULL, &stats);
   logaM(LOG_NORMAL, "Inicializando Preferences: (used:%d, free:%d)",
@@ -184,9 +186,6 @@ void loop()
       last10Second = timeinfo.tm_sec / 10;
 
       sensoresAtualiza();
-
-      // Se estivermos no modo MODO_NO essa funcao retorna sem fazer nada
-      // regrasProcessa();
 
       // Keepalive para a interface web
       httpEnviaSSE("{}", "sse_ping");
