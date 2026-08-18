@@ -17,7 +17,10 @@
 #define DISCOVER_TEMPO_SCAN_MS 1000
 #define DISCOVER_MAX_RETRIES 3
 
-static WiFiUDP discoverUdp;
+static WiFiUDP discoverSendUdp;  // Porta que o CONTROLADOR envia o discover
+static WiFiUDP discoverReplyUdp; // Porta que o CONTROLADOR recebe os reply dos NÓ
+static WiFiUDP discoverRecvUdp;  // Porta que o NÓ recebe o discover
+
 static int totDiscoverNodos = 0;
 static int discoverScanID = 0;
 
@@ -30,7 +33,18 @@ static bool discoverTaskRunning = false;
 
 void discoverInit()
 {
-    discoverUdp.begin(DISCOVER_PORT);
+    if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
+    {
+        // Porta efemera para enviar o broadcast
+        discoverSendUdp.begin(0);
+        // Abrir a porta +1 para receber as respostas
+        discoverReplyUdp.begin(DISCOVER_PORT + 1);
+    }
+    else
+    {
+        // Porta do NÓ que escuta por discover
+        discoverRecvUdp.begin(DISCOVER_PORT);
+    }
 }
 
 bool discoverGetTaskRunning()
@@ -84,40 +98,48 @@ JsonDocument *discoverGetNodoSnapshot(const char *deviceID)
  * Função importante dentro do nodo filho:
  * Responsável por responder ao broadcast do Controlador
  */
-void discoverLoop()
+void discoverLoopNo()
 {
     if (discoverTaskRunning)
     {
         return;
     }
 
-    int len = discoverUdp.parsePacket();
+    int len = discoverRecvUdp.parsePacket();
 
     if (len <= 0)
         return;
 
     // Protocolo
     JsonDocument doc;
-    deserializeJson(doc, discoverUdp);
+    deserializeJson(doc, discoverRecvUdp);
     if (doc["cmd"] != "discover")
+    {
+        logaM(LOG_AVISO, "discoverLoop :: cmd nao discover!");
         return;
+    }
 
-    vTaskDelay(pdMS_TO_TICKS(20));
+    int porta = doc["replyTo"].as<int>();
+    if (porta < 1024)
+    {
+        logaM(LOG_AVISO, "discoverLoop :: Sem porta para reply!");
+        return;
+    }
 
     logaM(LOG_DESATIVADO, "Respondendo ao DISCOVER para %s:%d",
-          discoverUdp.remoteIP().toString().c_str(),
-          discoverUdp.remotePort() + 1);
+          discoverRecvUdp.remoteIP().toString().c_str(),
+          porta);
 
     // TODO :: Responder somente para o mestre ou quando ainda nao temos mestre?
     // RESPONDER ==
-    discoverUdp.beginPacket(
-        discoverUdp.remoteIP(),
-        discoverUdp.remotePort() + 1);
-    discoverUdp.print(eTomadaGetSnapshotJSON());
-    discoverUdp.endPacket();
+    discoverRecvUdp.beginPacket(
+        discoverRecvUdp.remoteIP(),
+        porta);
+    discoverRecvUdp.print(eTomadaGetSnapshotJSON());
+    discoverRecvUdp.endPacket();
 
     // Verificar se é nosso mestre
-    mestreCheckDiscover(doc["mac"].as<String>(), discoverUdp.remoteIP());
+    mestreCheckDiscover(doc["mac"].as<String>(), discoverRecvUdp.remoteIP());
 }
 
 void discoverStart(bool ehTask)
@@ -143,6 +165,12 @@ void discoverStart(bool ehTask)
 
 bool discoverWaitRun(bool ehTask)
 {
+    if (discoverGetTaskRunning())
+    {
+        logaM(LOG_CRITICO, ">> discoverWaitRun >> TASK JA RODANDO!!!");
+        return false;
+    }
+
     int maxDelay = DISCOVER_TEMPO_SCAN_MS * DISCOVER_MAX_RETRIES + 200;
 
     discoverStart(ehTask);
@@ -170,13 +198,15 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar);
 void discoverTask(void *args)
 {
     bool ehTask = args && !strncmp((char *)args, "TASK", 4);
-    bool logar = !ehTask;
+    bool logar = true; // !ehTask;
 
     JsonDocument doc;
     doc["app"] = "eTomada";
     doc["device"] = eTomadaDeviceID();
     doc["cmd"] = "discover";
     doc["mac"] = getMACStr();
+    doc["replyTo"] = DISCOVER_PORT + 1;
+
     if (logaRemotoAtivo())
         doc["logServer"] = logaGetLogServer(); // TODO :: tratar nos NODO_NO
 
@@ -207,6 +237,12 @@ void discoverTask(void *args)
 
 static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
 {
+    if (eTomadaGetModoOperacao() != MODO_CONTROLADOR)
+    {
+        logaM(LOG_CRITICO, ">> discoverTaskScan : ABORTANDO : chamado de NO?");
+        return;
+    }
+
     IPAddress broadcast = ~WiFi.subnetMask() | WiFi.localIP();
 
     if (logar)
@@ -214,7 +250,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
 
     // Obter horario
     struct tm timeinfo;
-    ntpGetTime(&timeinfo);
+    sysGetTime(&timeinfo);
 
     doc["time"] = mktime(&timeinfo); // TODO tratar nos nodos, se precisarem da hora
     doc["scanID"] = scanID;
@@ -222,13 +258,9 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
     String out;
     serializeJson(doc, out);
 
-    // Abrir a porta +1 para receber as respoastas
-    WiFiUDP replyUdp;
-    replyUdp.begin(DISCOVER_PORT + 1);
-
-    discoverUdp.beginPacket(broadcast, DISCOVER_PORT);
-    discoverUdp.print(out.c_str());
-    discoverUdp.endPacket();
+    discoverSendUdp.beginPacket(broadcast, DISCOVER_PORT);
+    discoverSendUdp.print(out.c_str());
+    discoverSendUdp.endPacket();
 
     // if (logar)
     //     logaM(LOG_DEBUG, ">> Aguardar por %d ms", DISCOVER_TEMPO_SCAN_MS);
@@ -238,7 +270,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
     uint32_t inicio = millis();
     while (millis() - inicio < DISCOVER_TEMPO_SCAN_MS)
     {
-        if (!replyUdp.parsePacket())
+        if (!discoverReplyUdp.parsePacket())
         {
             vTaskDelay(pdMS_TO_TICKS(10));
             continue;
@@ -251,7 +283,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
         }
 
         JsonDocument doc;
-        DeserializationError err = deserializeJson(doc, replyUdp);
+        DeserializationError err = deserializeJson(doc, discoverReplyUdp);
         if (err)
         {
             logaM(LOG_AVISO, ">> discoverTask : Erro JSON: %s\n", err.c_str());
@@ -281,7 +313,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
 
         // Adicionar esse nodo no nosso array
         NodoRemoto *nr = &discoverNodos[totDiscoverNodos];
-        nr->ip = replyUdp.remoteIP();
+        nr->ip = discoverReplyUdp.remoteIP();
         nr->ping = millis() - inicio;
         strlcpy(nr->deviceID, novoMAC, sizeof(nr->deviceID));
 
@@ -292,11 +324,11 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
         if (logar)
         {
             logaM(LOG_NORMAL, ">> Achei [%s] (%d ms)!",
-                  replyUdp.remoteIP().toString().c_str(),
+                  discoverReplyUdp.remoteIP().toString().c_str(),
                   nr->ping);
             /*
             Serial.printf("Resposta[%d] de %s:\n",
-                          totDiscoverNodos, replyUdp.remoteIP().toString().c_str());
+                          totDiscoverNodos, discoverReplyUdp.remoteIP().toString().c_str());
             String s;
             serializeJson(doc, s);
             Serial.write(s.c_str(), s.length());
@@ -304,6 +336,4 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
             */
         }
     }
-
-    replyUdp.stop();
 }

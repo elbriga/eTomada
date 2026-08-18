@@ -3,7 +3,7 @@
 #include "nodoRemoto.h"
 
 void discoverInit();
-void discoverLoop();
+void discoverLoopNo();
 
 void discoverStart(bool ehTask);
 bool discoverWaitRun(bool ehTask);
