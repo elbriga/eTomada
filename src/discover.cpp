@@ -246,7 +246,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
     IPAddress broadcast = ~WiFi.subnetMask() | WiFi.localIP();
 
     if (logar)
-        logaM(LOG_DEBUG0, "Enviando cmd discover[%d] para o broadcast: %s", scanID, broadcast.toString().c_str());
+        logaM(LOG_NORMAL, "Enviando cmd discover[%d] para o broadcast: %s", scanID, broadcast.toString().c_str());
 
     // Obter horario
     struct tm timeinfo;
