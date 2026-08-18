@@ -3,7 +3,7 @@
 
 const HardwareProfile hardwareProfile = {
     .modelo = "ESP32-S3",
-    .ledPin = 255, // TODO :: controlar o led RGB!
+    .ledPin = 48, // LED RGB
     .reles = {
         {10, true},
         {11, true},

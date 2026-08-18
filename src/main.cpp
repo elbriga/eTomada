@@ -17,6 +17,7 @@
 #include "util.h"
 #include "rtc-hw.h"
 #include "hardwareProfile.h"
+#include "rgb-led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
@@ -51,6 +52,18 @@ void setup()
   esp_task_wdt_init(5, true); // true = resetar automaticamente
   esp_task_wdt_add(NULL);     // adiciona a task atual (loop)
 
+  if (ledAtivo())
+  {
+    pinMode(hardwareProfile.ledPin, OUTPUT);
+    digitalWrite(hardwareProfile.ledPin, LOW);
+
+    if (hardwareProfile.ledPin == RGB_LED_PIN)
+    {
+      rgbLedInit();
+      rgbLedSetAnim(1); // Azul == Boot!
+    }
+  }
+
   // Inicializa o nivel de LOG e a Task de logs remotos, ela ira descartar logs enquanto sem wifi
   logaInit();
 
@@ -68,6 +81,7 @@ void setup()
   eTomadaInit0();
 
   logaM(LOG_NORMAL, "Flash: %u MB", ESP.getFlashChipSize() / (1024 * 1024));
+  logaM(LOG_NORMAL, "Arduino ESP32: %s", ESP.getSdkVersion());
 
   nvs_stats_t stats;
   nvs_get_stats(NULL, &stats);
@@ -123,12 +137,6 @@ void setup()
   logaM(LOG_NORMAL, "Inicializando o servidor http:");
   httpServerInit();
 
-  if (ledAtivo())
-  {
-    pinMode(hardwareProfile.ledPin, OUTPUT);
-    digitalWrite(hardwareProfile.ledPin, LOW);
-  }
-
   logaTitulo("Setup OK!");
 
   // Inicializar controles do loop principal
@@ -137,6 +145,8 @@ void setup()
   lastSecond = timeinfo.tm_sec;
   last10Second = timeinfo.tm_sec / 10;
   lastMinute = timeinfo.tm_min; // TODO :: Esse impede que dispare um EVENTO_HORARIO para o minuto atual do boot
+
+  rgbLedSetAnim(0); // Verde == Loop
 }
 
 static bool ledState = false;
@@ -146,8 +156,8 @@ void loop()
 
   if (WiFiGetModoAP())
     WiFiModoAPLoop();
-  else
-    discoverLoop();
+  else if (eTomadaGetModoOperacao() == MODO_NO)
+    discoverLoopNo();
 
   // 10ms/10ms
   botoesAtualiza();
@@ -161,7 +171,7 @@ void loop()
     lastSecond = timeinfo.tm_sec;
 
     // Heartbeat
-    if (ledAtivo())
+    if (ledAtivo() && hardwareProfile.ledPin != RGB_LED_PIN) // rgbLed tem Task propria
     {
       ledState = !ledState;
       digitalWrite(hardwareProfile.ledPin, ledState);
@@ -185,6 +195,7 @@ void loop()
     {
       last10Second = timeinfo.tm_sec / 10;
 
+      rgbLedSetAnim(3, 3);
       sensoresAtualiza();
 
       // Keepalive para a interface web
@@ -192,18 +203,18 @@ void loop()
 
       // Verificar os NÓs remotos (em nova Task) a cada 10s:
       if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
-      {
         nodosRemotosRefresh();
-      }
 
       // Usado no NODO_NO para verificar se o mestre ficou offline
-      mestreLoop();
+      if (eTomadaGetModoOperacao() == MODO_NO)
+        mestreLoop();
 
       // 1m/1m
       if (timeinfo.tm_min != lastMinute)
       {
         lastMinute = timeinfo.tm_min;
-        eventoPost(EVENTO_HORARIO, nullptr, false, false);
+        if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
+          eventoPost(EVENTO_HORARIO, nullptr, false, false);
 
         int dbm = WiFi.RSSI();
         if (dbm < -70)
