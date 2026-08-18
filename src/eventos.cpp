@@ -7,9 +7,11 @@
 #include "mestre.h"
 #include "regras.h"
 #include "util.h"
+#include "loga.h"
+#include "rtc-hw.h"
 
 // Função de log para esta modulo
-// #define logaM(nivel, fmt, ...) loga("EVENTOS", nivel, fmt, ##__VA_ARGS__)
+#define logaM(nivel, fmt, ...) loga("EVENTOS", nivel, fmt, ##__VA_ARGS__)
 
 #define EVENTOS_TAMNHO_FILA 20
 
@@ -86,6 +88,13 @@ void eventosProcessaTask(void *)
             case EVENTO_TOGGLE:
                 // TODO :: agora o TOGGLE pode vir sozinho da interface: achar outra forma de nao duplicar
                 // atualiza = false; // Já será atualizado no EVENTO_ON / EVENTO_OFF, nao duplicar
+                break;
+
+            case EVENTO_NTP_SYNC:
+                atualiza = false;
+                processaRegras = false;
+                logaM(LOG_AVISO, "NTP SYNC OK. Sync RTC");
+                rtcStoreSystemClock();
                 break;
             }
 

@@ -3,7 +3,7 @@
 #include <esp_sntp.h> // Required for the callback functions
 
 #include "loga.h"
-#include "rtc-hw.h"
+#include "eventos.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("NTP", nivel, fmt, ##__VA_ARGS__)
@@ -15,14 +15,10 @@ const char *ntpServer2 = "a.ntp.br";
 // See list of timezone strings https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 const char *tzInfo = "<-03>3";
 
-static void ntpTimeSyncCallback(struct timeval *tv);
+void ntpTimeSyncCallback(struct timeval *tv);
 
 void ntpInit()
 {
-  // Set the timezone for your region
-  setenv("TZ", tzInfo, 1);
-  tzset();
-
   // Register the callback function
   sntp_set_time_sync_notification_cb(ntpTimeSyncCallback);
 }
@@ -32,22 +28,17 @@ long ntpSyncTime()
   logaM(LOG_NORMAL, "Buscando Data/Hora NTP em background");
   configTime(0, 0, ntpServer1, ntpServer2);
 
+  // Set the timezone for your region
+  setenv("TZ", tzInfo, 1);
+  tzset();
+
   return millis() + 24 * 60 * 60 * 1000; // sync de novo em 24h
 }
 
-static void ntpTimeSyncCallback(struct timeval *tv)
+void ntpTimeSyncCallback(struct timeval *tv)
 {
-  if (sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED)
-  {
-    logaM(LOG_NORMAL, "NTP assíncrono concluído com sucesso!");
-
-    // Update your hardware RTC immediately with the fresh time
-    rtcStoreSystemClock();
-  }
-  else
-  {
-    logaM(LOG_AVISO, "NTP :: Falha de Sync!");
-  }
+  // callback deve ser rápido!
+  eventoPost(EVENTO_NTP_SYNC, nullptr, false, false);
 }
 
 void sysGetTime(struct tm *out)
