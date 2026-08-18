@@ -18,6 +18,7 @@
 #include "rtc-hw.h"
 #include "hardwareProfile.h"
 #include "rgb-led.h"
+#include "ota.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
@@ -44,6 +45,8 @@ bool ledAtivo()
 
 void setup()
 {
+  bool verificaFirmwareNovo = true;
+
   Serial.begin(115200);
 
   delay(500);
@@ -131,6 +134,11 @@ void setup()
       logaM(LOG_CRITICO, ">>> POUCO ESPAÇO NO FILE SYSTEM!!!");
     }
   }
+
+  logaM(LOG_NORMAL, "Versao do Firmware: %s", eTomadaGetVersao());
+
+  if (verificaFirmwareNovo && utilEspSuportaOTA())
+    otaChecaNovoFirmware();
 
   eTomadaInit();
 

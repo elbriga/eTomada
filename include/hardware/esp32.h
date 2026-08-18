@@ -3,6 +3,7 @@
 
 const HardwareProfile hardwareProfile = {
     .modelo = "ESP32",
+    .board = "esp32",
     .ledPin = 255, // SEM LED
     .reles = {
         {255, true}, // FIM

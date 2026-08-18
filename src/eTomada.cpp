@@ -2,6 +2,8 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
+#define ETOMADA_VERSAO "1.3.0"
+
 #include "eTomada.h"
 #include "mestre.h"
 #include "wifi.h"
@@ -135,13 +137,18 @@ String eTomadaDeviceIDPadrao()
   return String(deviceID);
 }
 
+String eTomadaGetVersao()
+{
+  return ETOMADA_VERSAO;
+}
+
 String eTomadaGetSnapshotJSON()
 {
   JsonDocument doc;
 
   doc["device_id"] = eTomadaDeviceID();
   doc["device_name"] = "eTomada Sala"; // TODO
-  doc["fw_version"] = "1.3.0";
+  doc["fw_version"] = eTomadaGetVersao();
 
   doc["mac"] = getMACStr();
   doc["wifiPower"] = WiFiGetPower(); // TODO :: mostar na interface

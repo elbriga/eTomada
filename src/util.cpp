@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <LittleFS.h>
+#include <esp_partition.h>
 
 #include "loga.h"
 
@@ -10,6 +11,28 @@ void utilDIE(const char *msg)
 {
   logaM(LOG_CRITICO, ">>> DIE!!! [%s]", msg);
   ESP.restart();
+}
+
+bool utilEspSuportaOTA()
+{
+  int tamanhoFlash = ESP.getFlashChipSize() / (1024 * 1024);
+
+  const esp_partition_t *ota1 =
+      esp_partition_find_first(
+          ESP_PARTITION_TYPE_APP,
+          ESP_PARTITION_SUBTYPE_APP_OTA_1,
+          NULL);
+
+  return (tamanhoFlash >= 8) && (ota1 != nullptr);
+}
+
+int utilVersionToInt(const char *ver)
+{
+  int v1, v2, v3;
+
+  sscanf(ver, "%d.%d.%d", &v1, &v2, &v3);
+
+  return v1 * 1000000 + v2 * 1000 + v3;
 }
 
 int utilCopiaArquivo(const char *pathOrigem, const char *pathDestino)

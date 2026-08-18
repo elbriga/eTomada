@@ -15,6 +15,7 @@ void eTomadaInit();
 ModoOperacao eTomadaGetModoOperacao();
 const char *eTomadaGetModoOperacaoStr();
 
+String eTomadaGetVersao();
 String eTomadaDeviceID();
 
 String eTomadaGetSnapshotJSON();

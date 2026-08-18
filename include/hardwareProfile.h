@@ -23,7 +23,8 @@ typedef struct
 
 typedef struct
 {
-    const char *modelo;
+    const char *modelo; // Modelo do eTomada - config de reles, sensores e botoes
+    const char *board;  // board do esp
     int ledPin;
     ReleHW reles[MAX_RELES];
     SensorHW sensores[MAX_SENSORES];

@@ -3,6 +3,7 @@
 
 const HardwareProfile hardwareProfile = {
     .modelo = "C3MINI",
+    .board = "esp32c3",
     .ledPin = 4,
     .reles = {
         {3, true},
