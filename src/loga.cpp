@@ -18,6 +18,8 @@
 #define LOG_QUEUE_SIZE 32
 #define LOG_MESSAGE_SIZE 512
 
+#define LOG_SERVER "192.168.1.220:8080"
+
 String logServer = "";
 LogLevel logLevel = LOG_NORMAL;
 
@@ -80,7 +82,7 @@ void logaInit()
     break;
   }
 
-  logServer = ""; // getPrefsAtr(prefs, "", "logServer");
+  logServer = LOG_SERVER; // getPrefsAtr(prefs, "", "logServer");
 
   prefs.end();
 
