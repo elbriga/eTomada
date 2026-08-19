@@ -1,3 +1,5 @@
 #pragma once
 
-void otaChecaNovoFirmware();
+bool otaChecaNovoFirmware(bool fazDownload);
+bool otaEspSuportaOTA();
+const char *otaGetState();

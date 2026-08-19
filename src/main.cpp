@@ -31,6 +31,9 @@ extern const HardwareProfile hardwareProfile;
 // Timestamp da proxima sincronizacao do NTP
 static long ntpSyncTimeTS = 0;
 
+// TS para checagem de firmware
+static long otaCheckTS = 0;
+
 // Controles do loop principal
 static int lastSecond = -1;
 static int last10Second = -1;
@@ -45,8 +48,6 @@ bool ledAtivo()
 
 void setup()
 {
-  bool verificaFirmwareNovo = true;
-
   Serial.begin(115200);
 
   delay(500);
@@ -93,10 +94,11 @@ void setup()
 
   displayInit();
 
-  logaM(LOG_NORMAL, "Inicializando FS:");
+  logaM(LOG_NORMAL, "Inicializando FS");
   if (!LittleFS.begin())
     utilDIE("ERRO LITTLEFS!!!");
 
+  logaM(LOG_NORMAL, "Inicializando WiFi");
   displayMostraString(0, 20, "Conectando...");
   WiFiConnect();
 
@@ -125,9 +127,10 @@ void setup()
     size_t total = LittleFS.totalBytes();
     size_t usado = LittleFS.usedBytes();
     size_t livre = total - usado;
-    logaM(LOG_NORMAL, "  Total : %u bytes (%u KB)", total, total / 1024);
-    logaM(LOG_NORMAL, "  Usado : %u bytes (%u KB)", usado, usado / 1024);
-    logaM(LOG_NORMAL, "  Livre : %u bytes (%u KB)", livre, livre / 1024);
+    logaM(LOG_NORMAL, "Status LittleFS:");
+    logaM(LOG_NORMAL, "> Total : %u bytes (%u KB)", total, total / 1024);
+    logaM(LOG_NORMAL, "> Usado : %u bytes (%u KB)", usado, usado / 1024);
+    logaM(LOG_NORMAL, "> Livre : %u bytes (%u KB)", livre, livre / 1024);
     if (livre < FS_LIMITE_LIVRE)
     {
       logaM(LOG_CRITICO, ">>> POUCO ESPAÇO NO FILE SYSTEM!!!");
@@ -137,9 +140,20 @@ void setup()
 
   logaM(LOG_NORMAL, "Versao do Firmware: %s", eTomadaGetVersao());
 
-  if (verificaFirmwareNovo && utilEspSuportaOTA())
-    otaChecaNovoFirmware();
+  if (otaEspSuportaOTA())
+  {
+    logaM(LOG_NORMAL, "Estado OTA: %s", otaGetState());
 
+    logaM(LOG_NORMAL, "Verificando novo firmware:");
+    otaCheckTS = millis() + 60 * 1000;
+    if (!otaChecaNovoFirmware(true))
+    {
+      logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
+      otaCheckTS += 10 * 60 * 1000;
+    }
+  }
+
+  logaM(LOG_NORMAL, "== eTomada Init() ==");
   eTomadaInit();
 
   logaM(LOG_NORMAL, "Inicializando o servidor http:");
@@ -221,6 +235,7 @@ void loop()
       if (timeinfo.tm_min != lastMinute)
       {
         lastMinute = timeinfo.tm_min;
+
         if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
           eventoPost(EVENTO_HORARIO, nullptr, false, false);
 
@@ -258,6 +273,18 @@ void loop()
       if (ntpSyncTimeTS > 0 && (long)(millis() - ntpSyncTimeTS) >= 0)
       {
         ntpSyncTimeTS = ntpSyncTime();
+      }
+    }
+
+    // Check firmware novo
+    if (otaCheckTS > 0 && (long)(millis() - otaCheckTS) >= 0)
+    {
+      otaCheckTS = millis() + ((50 + (rand() % 20)) * 1000);
+
+      if (!otaChecaNovoFirmware(false))
+      {
+        logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
+        otaCheckTS += 10 * 60 * 1000;
       }
     }
   }

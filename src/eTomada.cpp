@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "1.3.0"
+#define ETOMADA_VERSAO "1.3.4"
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -22,9 +22,13 @@
 #include "regras.h"
 #include "util.h"
 #include "recursoRemoto.h"
+#include "hardwareProfile.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("eTOMADA", nivel, fmt, ##__VA_ARGS__)
+
+// Hardware Profile - um para cada placa
+extern const HardwareProfile hardwareProfile;
 
 // Modo de Operação
 ModoOperacao modoOperacao = MODO_NO;
@@ -53,6 +57,8 @@ void eTomadaInit0()
   deviceID = prefs.getString("deviceID");
 
   logaM(LOG_NORMAL, "DeviceID: %s", deviceID.c_str());
+  logaM(LOG_NORMAL, "Board: %s", hardwareProfile.board);
+  logaM(LOG_NORMAL, "Modelo: %s", hardwareProfile.modelo);
   logaM(LOG_NORMAL, "Modo de Operação: %s", eTomadaGetModoOperacaoStr());
   logaM(LOG_NORMAL, "MAC: %s", getMACStr().c_str());
 
@@ -147,7 +153,9 @@ String eTomadaGetSnapshotJSON()
   JsonDocument doc;
 
   doc["device_id"] = eTomadaDeviceID();
-  doc["device_name"] = "eTomada Sala"; // TODO
+  doc["device_name"] = "eTomada!"; // TODO
+  doc["device_model"] = hardwareProfile.modelo;
+  doc["device_board"] = hardwareProfile.board;
   doc["fw_version"] = eTomadaGetVersao();
 
   doc["mac"] = getMACStr();
