@@ -60,24 +60,31 @@ void logaInit()
   switch (levelPrefs)
   {
   case LOG_CRITICO:
+    logaM(LOG_NORMAL, "Nivel de log: CRITICO");
     logLevel = LOG_CRITICO;
     break;
   case LOG_AVISO:
+    logaM(LOG_NORMAL, "Nivel de log: AVISO");
     logLevel = LOG_AVISO;
     break;
   case LOG_NORMAL:
+    logaM(LOG_NORMAL, "Nivel de log: NORMAL");
     logLevel = LOG_NORMAL;
     break;
   case LOG_DEBUG0:
+    logaM(LOG_NORMAL, "Nivel de log: DEBUG0");
     logLevel = LOG_DEBUG0;
     break;
   case LOG_DEBUG:
+    logaM(LOG_NORMAL, "Nivel de log: DEBUG");
     logLevel = LOG_DEBUG;
     break;
   case LOG_TESTE:
+    logaM(LOG_NORMAL, "Nivel de log: TESTE");
     logLevel = LOG_TESTE;
     break;
   default:
+    logaM(LOG_NORMAL, "Nivel de log: NORMAL");
     logLevel = LOG_NORMAL;
     break;
   }
