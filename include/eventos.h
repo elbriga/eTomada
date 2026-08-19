@@ -20,8 +20,6 @@ enum TipoEvento
     EVENTO_VALOR_MUDOU,
 
     EVENTO_HORARIO,
-
-    EVENTO_NTP_SYNC,
 };
 
 typedef struct

@@ -30,6 +30,7 @@ extern const HardwareProfile hardwareProfile;
 
 // Timestamp da proxima sincronizacao do NTP
 static long ntpSyncTimeTS = 0;
+static bool ntpSyncOKFlag = false; // Flag setada pelo callback do ntp
 
 // TS para checagem de firmware
 static long otaCheckTS = 0;
@@ -44,6 +45,11 @@ static int lastMsgDBM = -(60 * 60 * 1000); // MSG a cada 1h
 bool ledAtivo()
 {
   return hardwareProfile.ledPin != 255;
+}
+
+void mainNtpSetSyncFlag()
+{
+  ntpSyncOKFlag = true;
 }
 
 void setup()
@@ -197,6 +203,13 @@ void loop()
     {
       ledState = !ledState;
       digitalWrite(hardwareProfile.ledPin, ledState);
+    }
+
+    if (ntpSyncOKFlag)
+    {
+      ntpSyncOKFlag = false;
+      logaM(LOG_AVISO, "NTP SYNC OK. Sync RTC");
+      rtcStoreSystemClock();
     }
 
 #ifdef TEM_OLED

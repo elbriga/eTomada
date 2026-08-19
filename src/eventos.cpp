@@ -39,6 +39,12 @@ void eventoPost(TipoEvento tipo,
                 bool enviaSSE,
                 bool enviaMestre)
 {
+    if (!filaEventos)
+    {
+        logaM(LOG_CRITICO, "Descartando evento [%d] antes da inicializacao", tipo);
+        return;
+    }
+
     Evento evento = {
         .tipo = tipo,
         .recurso = recurso,
@@ -88,13 +94,6 @@ void eventosProcessaTask(void *)
             case EVENTO_TOGGLE:
                 // TODO :: agora o TOGGLE pode vir sozinho da interface: achar outra forma de nao duplicar
                 // atualiza = false; // Já será atualizado no EVENTO_ON / EVENTO_OFF, nao duplicar
-                break;
-
-            case EVENTO_NTP_SYNC:
-                atualiza = false;
-                processaRegras = false;
-                logaM(LOG_AVISO, "NTP SYNC OK. Sync RTC");
-                rtcStoreSystemClock();
                 break;
             }
 
