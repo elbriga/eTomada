@@ -117,9 +117,9 @@ bool otaChecaNovoFirmware(bool fazDownload)
             }
         }
         else if (versaoServer == minhaVersao)
-            logaM(LOG_NORMAL, "Estamos na ultima versao");
+            logaM(LOG_DEBUG, "Estamos na ultima versao");
         else
-            logaM(LOG_NORMAL, "Versão DEV!");
+            logaM(LOG_DEBUG, "Versão DEV!");
     }
     return true;
 }
