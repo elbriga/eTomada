@@ -2,7 +2,7 @@
 #include "hardwareProfile.h"
 
 const HardwareProfile hardwareProfile = {
-    .modelo = "LOLIN-OLED",
+    .modelo = "R6S4B1",
     .board = "lolin32",
     .ledPin = 255, // SEM LED
     .reles = {
