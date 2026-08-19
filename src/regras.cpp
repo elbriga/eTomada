@@ -103,7 +103,6 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
     return regraAtivadaOut;
 }
 
-// TODO : chamar regrasBoot quando ficar sem HORA e dai pegar a HORA
 void regrasBoot()
 {
     // Obter horario
@@ -115,6 +114,8 @@ void regrasBoot()
         logaM(LOG_AVISO, "Pulando Boot das regras!!! estamos sem HORA!!");
         return;
     }
+
+    logaM(LOG_AVISO, "== regrasBoot() ==");
 
     // Ajustar o estado dos RELEs conforme as regras de HORARIO para agora
     int totRecursos = recursosGetCount();

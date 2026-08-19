@@ -87,6 +87,7 @@ struct Regra
 };
 
 void regrasInit();
+void regrasBoot();
 
 Regra *regraGet(int i);
 int regrasCount();

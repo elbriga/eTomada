@@ -210,6 +210,8 @@ void loop()
       ntpSyncOKFlag = false;
       logaM(LOG_AVISO, "NTP SYNC OK. Sync RTC");
       rtcStoreSystemClock();
+      // TODO : verificar se deve rodar sempre
+      regrasBoot();
     }
 
 #ifdef TEM_OLED
