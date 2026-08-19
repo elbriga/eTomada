@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "1.3.4"
+#define ETOMADA_VERSAO "1.3.6"
 
 #include "eTomada.h"
 #include "mestre.h"
