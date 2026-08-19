@@ -1,0 +1,22 @@
+{
+  "devices": [
+    {
+      "board": "esp32s3",
+      "modelos": [
+        {
+          "modelo": "R2B2",
+          "versao": "1.3.3"
+        }
+      ]
+    },
+    {
+      "board": "lolin32",
+      "modelos": [
+        {
+          "modelo": "R6S4B1",
+          "versao": "1.3.5"
+        }
+      ]
+    }
+  ]
+}
