@@ -19,6 +19,7 @@
 #include "hardwareProfile.h"
 #include "rgb-led.h"
 #include "ota.h"
+#include "memoria.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
@@ -39,6 +40,7 @@ static long otaCheckTS = 0;
 static int lastSecond = -1;
 static int last10Second = -1;
 static int lastMinute = -1;
+static int lastHour = -1;
 static int wifiFora = 0;
 static int lastMsgDBM = -(60 * 60 * 1000); // MSG a cada 1h
 
@@ -73,6 +75,8 @@ void setup()
       rgbLedSetAnim(1); // Azul == Boot!
     }
   }
+
+  ntpSetTZ(); // Podemos estar no RTC interno que reseta sem config de TZ
 
   // Inicializa o nivel de LOG e a Task de logs remotos, ela ira descartar logs enquanto sem wifi
   logaInit();
@@ -170,12 +174,13 @@ void setup()
 
   logaTitulo("Setup OK!");
 
-  // Inicializar controles do loop principal
+  /*/ Inicializar controles do loop principal
   struct tm timeinfo;
   sysGetTime(&timeinfo);
   lastSecond = timeinfo.tm_sec;
   last10Second = timeinfo.tm_sec / 10;
   lastMinute = timeinfo.tm_min; // TODO :: Esse impede que dispare um EVENTO_HORARIO para o minuto atual do boot
+  lastHour = timeinfo.tm_hour; */
 
   rgbLedSetAnim(0); // Verde == Loop
 }
@@ -268,6 +273,13 @@ void loop()
             logaM(LOG_AVISO, "Sinal do WiFi muito baixo! [%d]", dbm);
             lastMsgDBM = millis();
           }
+        }
+
+        // 1h/1h
+        if (timeinfo.tm_hour != lastHour)
+        {
+          lastHour = timeinfo.tm_hour;
+          memoriaLog("1H/1H");
         }
       }
     }

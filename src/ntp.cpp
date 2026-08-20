@@ -18,6 +18,13 @@ const char *tzInfo = "<-03>3";
 void mainNtpSetSyncFlag();
 void ntpTimeSyncCallback(struct timeval *tv);
 
+void ntpSetTZ()
+{
+  // Set the timezone for your region
+  setenv("TZ", tzInfo, 1);
+  tzset();
+}
+
 void ntpInit()
 {
   // Register the callback function
@@ -29,9 +36,7 @@ long ntpSyncTime()
   logaM(LOG_NORMAL, "Buscando Data/Hora NTP em background");
   configTime(0, 0, ntpServer1, ntpServer2);
 
-  // Set the timezone for your region
-  setenv("TZ", tzInfo, 1);
-  tzset();
+  ntpSetTZ();
 
   return millis() + 24 * 60 * 60 * 1000; // sync de novo em 24h
 }
