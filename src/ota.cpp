@@ -123,7 +123,7 @@ bool otaChecaNovoFirmware(bool ehBoot)
     else if (versaoServer == minhaVersao)
         logaM(ehBoot ? LOG_NORMAL : LOG_DEBUG, "Estamos na ultima versao");
     else
-        logaM(ehBoot ? LOG_NORMAL : LOG_DEBUG, "Versão DEV!");
+        logaM(ehBoot ? LOG_NORMAL : LOG_DEBUG, "Estamos em versão DEV!! Versão Server: [%s]", versaoServerStr.c_str());
 
     return true;
 }
@@ -197,10 +197,16 @@ bool otaDownload(const char *url)
 
     size_t totalRecebido = 0;
     int ultimoPercentual = -1;
+    int wdtCounter = 0;
 
     while (http.connected() && totalRecebido < total)
     {
-        esp_task_wdt_reset(); // alimenta o watchdog
+        if (wdtCounter++ >= 250) // 250 ticks
+        {
+            wdtCounter = 0;
+            esp_task_wdt_reset(); // alimenta o watchdog
+        }
+
         size_t disponivel = stream->available();
 
         if (disponivel)
