@@ -5,6 +5,7 @@
 #include <Update.h>
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
+#include <WiFi.h>
 
 #include "eTomada.h"
 #include "loga.h"
@@ -23,7 +24,7 @@ extern const HardwareProfile hardwareProfile;
 bool otaDownload(const char *url);
 const char *otaGetState();
 
-bool otaChecaNovoFirmware(bool fazDownload)
+bool otaChecaNovoFirmware(bool ehBoot)
 {
     bool downloadFirmwareNovo = true;
 
@@ -32,19 +33,26 @@ bool otaChecaNovoFirmware(bool fazDownload)
     logaM(LOG_DEBUG0, "OTA: Verificando %s", url.c_str());
 
     HTTPClient http;
-    http.begin(url);
-    http.setTimeout(2000);
+    http.setTimeout(1000);
+    http.setConnectTimeout(1000);
 
-    int code = http.GET();
+    http.begin(url);
 
     esp_task_wdt_reset(); // alimenta o watchdog
+    int code = http.GET();
+    esp_task_wdt_reset(); // alimenta o watchdog
 
-    if (code == 200)
+    if (code != 200)
     {
-        // TODO http.getString() é perigoso !!! usar o stream
-        // String respBody = http.getString();
-        // logaM(LOG_NORMAL, " >> RESP: %s", respBody.c_str());
+        logaM(LOG_AVISO, "Falha no Download : [%d]", code);
+        return true;
+    }
 
+    int minhaVersao = utilVersionToInt(eTomadaGetVersao().c_str());
+
+    String versaoServerStr = "";
+    // Procurar nosso modelo na lista do servidor
+    {
         JsonDocument doc;
         DeserializationError erro = deserializeJson(doc, http.getStream());
         if (erro)
@@ -53,74 +61,70 @@ bool otaChecaNovoFirmware(bool fazDownload)
             return false;
         }
 
-        String versaoServerStr = "";
-        int minhaVersao = utilVersionToInt(eTomadaGetVersao().c_str());
-
-        // Procurar nosso modelo na lista do servidor
+        JsonArray devices = doc["devices"];
+        for (JsonObject dev : devices)
         {
-            JsonArray devices = doc["devices"];
-            for (JsonObject dev : devices)
+            if (!strcmp(dev["board"].as<const char *>(), hardwareProfile.board))
             {
-                if (!strcmp(dev["board"].as<const char *>(), hardwareProfile.board))
+                JsonArray modelos = dev["modelos"];
+                for (JsonObject modelo : modelos)
                 {
-                    JsonArray modelos = dev["modelos"];
-                    for (JsonObject modelo : modelos)
+                    if (!strcmp(modelo["modelo"].as<const char *>(), hardwareProfile.modelo))
                     {
-                        if (!strcmp(modelo["modelo"].as<const char *>(), hardwareProfile.modelo))
-                        {
-                            versaoServerStr = modelo["versao"].as<String>();
-                        }
+                        versaoServerStr = modelo["versao"].as<String>();
                     }
                 }
             }
         }
 
-        if (versaoServerStr == "")
+        doc.clear();
+    }
+
+    if (versaoServerStr == "")
+    {
+        logaM(LOG_AVISO, ">> Nao achei nossa board [%s] modelo [%s] no firmware server!",
+              hardwareProfile.board, hardwareProfile.modelo);
+        return true;
+    }
+
+    int versaoServer = utilVersionToInt(versaoServerStr.c_str());
+    if (versaoServer > minhaVersao)
+    {
+        logaM(LOG_AVISO, "Novo Firmware!! >> V: %s", versaoServerStr.c_str());
+
+        if (!downloadFirmwareNovo)
         {
-            logaM(LOG_AVISO, ">> Nao achei nossa board [%s] modelo [%s] no firmware server!",
-                  hardwareProfile.board, hardwareProfile.modelo);
-            return true;
+            logaM(LOG_AVISO, "ABORTANDO download do novo firmware!");
+            return false;
         }
 
-        int versaoServer = utilVersionToInt(versaoServerStr.c_str());
-        if (versaoServer > minhaVersao)
+        String urlFW = "http://" + String(OTA_SERVER) + "/firmware/" + String(hardwareProfile.board) + "_" + String(hardwareProfile.modelo) + "_" + versaoServerStr + ".bin";
+
+        if (ehBoot) // opção enviada no boot, para fazer o download antes de começar a funcionar
         {
-            logaM(LOG_AVISO, "Novo Firmware!! >> V: %s", versaoServerStr.c_str());
-
-            if (!downloadFirmwareNovo)
+            if (otaDownload(urlFW.c_str()))
             {
-                logaM(LOG_AVISO, "ABORTANDO download do novo firmware!");
-                return false;
-            }
-
-            String urlFW = "http://" + String(OTA_SERVER) + "/firmware/" + String(hardwareProfile.board) + "_" + String(hardwareProfile.modelo) + "_" + versaoServerStr + ".bin";
-
-            if (fazDownload) // opção enviada no boot, para fazer o download antes de começar a funcionar
-            {
-                if (otaDownload(urlFW.c_str()))
-                {
-                    logaM(LOG_AVISO, "Reiniciando para novo firmware...");
-                    delay(100);
-                    ESP.restart();
-                }
-                else
-                {
-                    // Desativar OTA visto que o download falhou
-                    return false;
-                }
+                logaM(LOG_AVISO, "Reiniciando para novo firmware...");
+                utilRestart("Atualizacao de Firmware");
             }
             else
             {
-                logaM(LOG_AVISO, "Reiniciando para fazer o download de [%s]", urlFW.c_str());
-                delay(100);
-                ESP.restart();
+                // Desativar OTA visto que o download falhou
+                logaM(LOG_CRITICO, "Falha no download do firmware...");
+                return false;
             }
         }
-        else if (versaoServer == minhaVersao)
-            logaM(LOG_DEBUG, "Estamos na ultima versao");
         else
-            logaM(LOG_DEBUG, "Versão DEV!");
+        {
+            logaM(LOG_AVISO, "Reiniciando para fazer o download de [%s]", urlFW.c_str());
+            utilRestart("Restart para iniciar download de firmware");
+        }
     }
+    else if (versaoServer == minhaVersao)
+        logaM(ehBoot ? LOG_NORMAL : LOG_DEBUG, "Estamos na ultima versao");
+    else
+        logaM(ehBoot ? LOG_NORMAL : LOG_DEBUG, "Versão DEV!");
+
     return true;
 }
 
@@ -139,7 +143,16 @@ bool otaEspSuportaOTA()
 
 bool otaDownload(const char *url)
 {
+    int dbm = WiFi.RSSI();
+    if (dbm <= -70)
+    {
+        logaM(LOG_CRITICO, "ABORTANDO download do firmware. WiFi muito fraco [%d]!", dbm);
+        return false;
+    }
+
     HTTPClient http;
+    http.setTimeout(1000);
+    http.setConnectTimeout(1000);
 
     logaM(LOG_NORMAL, "Baixando firmware: %s", url);
 
@@ -150,6 +163,7 @@ bool otaDownload(const char *url)
     }
 
     int httpCode = http.GET();
+    esp_task_wdt_reset(); // alimenta o watchdog
 
     if (httpCode != HTTP_CODE_OK)
     {
@@ -186,6 +200,7 @@ bool otaDownload(const char *url)
 
     while (http.connected() && totalRecebido < total)
     {
+        esp_task_wdt_reset(); // alimenta o watchdog
         size_t disponivel = stream->available();
 
         if (disponivel)
@@ -225,7 +240,7 @@ bool otaDownload(const char *url)
         }
         else
         {
-            delay(1);
+            vTaskDelay(1);
         }
     }
 
