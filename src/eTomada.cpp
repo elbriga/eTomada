@@ -97,17 +97,23 @@ void eTomadaInit()
   logaM(LOG_NORMAL, "Inicializando o Discover:");
   discoverInit();
 
-  logaM(LOG_NORMAL, "Carregando Nodos Remotos:");
-  nodoRemotoInit();
+  if (modoOperacao == MODO_CONTROLADOR) // TODO :: MODO_NO com nodo/recurso remoto?
+  {
+    logaM(LOG_NORMAL, "Carregando Nodos Remotos:");
+    nodoRemotoInit();
 
-  logaM(LOG_NORMAL, "Inicializando Recursos Remotos:");
-  recursosRemotosInit();
+    logaM(LOG_NORMAL, "Inicializando Recursos Remotos:");
+    recursosRemotosInit();
+  }
 
   logaM(LOG_NORMAL, "Inicializando Recursos:");
   recursosInit();
 
-  logaM(LOG_NORMAL, "Inicializando Regras:");
-  regrasInit();
+  if (modoOperacao == MODO_CONTROLADOR)
+  {
+    logaM(LOG_NORMAL, "Inicializando Regras:");
+    regrasInit();
+  }
 }
 
 ModoOperacao eTomadaGetModoOperacao()
