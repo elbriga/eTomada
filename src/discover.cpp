@@ -9,6 +9,7 @@
 #include "nodoRemoto.h"
 #include "mestre.h"
 #include "ntp.h"
+#include "memoria.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("DISCOVR", nivel, fmt, ##__VA_ARGS__)
@@ -165,6 +166,8 @@ void discoverStart(bool ehTask)
 
 bool discoverWaitRun(bool ehTask)
 {
+    // memoriaLog("Antes DISCOVER");
+
     if (discoverGetTaskRunning())
     {
         logaM(LOG_CRITICO, ">> discoverWaitRun >> TASK JA RODANDO!!!");
@@ -182,6 +185,9 @@ bool discoverWaitRun(bool ehTask)
             break;
         vTaskDelay(pdMS_TO_TICKS(50));
     }
+
+    // memoriaLog("Depois DISCOVER");
+
     if (discoverGetTaskRunning())
     {
         logaM(LOG_CRITICO, ">> discoverWaitRun >> TASK RODANDO MESMO DEPOIS DE maxDelay[%d]", maxDelay);
@@ -198,7 +204,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar);
 void discoverTask(void *args)
 {
     bool ehTask = args && !strncmp((char *)args, "TASK", 4);
-    bool logar = true; // !ehTask;
+    bool logar = !ehTask;
 
     JsonDocument doc;
     doc["app"] = "eTomada";
@@ -228,6 +234,8 @@ void discoverTask(void *args)
         }
     }
 
+    doc.clear();
+
     if (logar)
         logaM(LOG_NORMAL, ">> Scan completo - Nodos encontrados: [%d]", totDiscoverNodos);
 
@@ -242,6 +250,9 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
         logaM(LOG_CRITICO, ">> discoverTaskScan : ABORTANDO : chamado de NO?");
         return;
     }
+
+    for (int i = 0; i < MAX_NODOS_REMOTOS; i++)
+        discoverSnapshotBuffer[i].clear();
 
     IPAddress broadcast = ~WiFi.subnetMask() | WiFi.localIP();
 
@@ -282,15 +293,15 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
             continue;
         }
 
-        JsonDocument doc;
-        DeserializationError err = deserializeJson(doc, discoverReplyUdp);
+        JsonDocument docReply;
+        DeserializationError err = deserializeJson(docReply, discoverReplyUdp);
         if (err)
         {
             logaM(LOG_AVISO, ">> discoverTask : Erro JSON: %s\n", err.c_str());
             continue;
         }
 
-        const char *novoMAC = doc["mac"].as<const char *>();
+        const char *novoMAC = docReply["mac"].as<const char *>();
 
         // Verificar se já não temos resposta deste nodo no buffer
         if (totDiscoverNodos)
@@ -308,7 +319,10 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
                 }
             }
             if (respostaDuplicada)
+            {
+                docReply.clear();
                 continue;
+            }
         }
 
         // Adicionar esse nodo no nosso array
@@ -317,7 +331,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
         nr->ping = millis() - inicio;
         strlcpy(nr->deviceID, novoMAC, sizeof(nr->deviceID));
 
-        discoverSnapshotBuffer[totDiscoverNodos] = doc;
+        discoverSnapshotBuffer[totDiscoverNodos] = docReply;
 
         totDiscoverNodos++;
 
@@ -330,10 +344,12 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
             Serial.printf("Resposta[%d] de %s:\n",
                           totDiscoverNodos, discoverReplyUdp.remoteIP().toString().c_str());
             String s;
-            serializeJson(doc, s);
+            serializeJson(docReply, s);
             Serial.write(s.c_str(), s.length());
             Serial.println();
             */
         }
+
+        docReply.clear();
     }
 }
