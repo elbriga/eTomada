@@ -12,6 +12,16 @@ void utilDIE(const char *msg)
   ESP.restart();
 }
 
+void utilRestart(const char *msg)
+{
+  logaM(LOG_AVISO, ">>> Restart!!! [%s]", msg);
+
+  // TODO :: Salvar estado dos reles
+
+  delay(100);
+  ESP.restart();
+}
+
 int utilVersionToInt(const char *ver)
 {
   int v1, v2, v3;

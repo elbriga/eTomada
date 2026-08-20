@@ -150,12 +150,15 @@ void setup()
   {
     logaM(LOG_NORMAL, "Estado OTA: %s", otaGetState());
 
-    logaM(LOG_NORMAL, "Verificando novo firmware:");
-    otaCheckTS = millis() + 60 * 1000;
-    if (!otaChecaNovoFirmware(true))
+    if (!WiFiGetModoAP())
     {
-      logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
-      otaCheckTS += 10 * 60 * 1000;
+      logaM(LOG_NORMAL, "Verificando novo firmware:");
+      otaCheckTS = millis() + 60 * 1000;
+      if (!otaChecaNovoFirmware(true))
+      {
+        logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
+        otaCheckTS += 10 * 60 * 1000;
+      }
     }
   }
 
@@ -210,8 +213,11 @@ void loop()
       ntpSyncOKFlag = false;
       logaM(LOG_AVISO, "NTP SYNC OK. Sync RTC");
       rtcStoreSystemClock();
-      // TODO : verificar se deve rodar sempre
-      regrasBoot();
+      if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
+      {
+        // TODO : verificar se deve rodar sempre
+        regrasBoot();
+      }
     }
 
 #ifdef TEM_OLED
