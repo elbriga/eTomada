@@ -4,7 +4,7 @@
 const HardwareProfile hardwareProfile = {
     .modelo = "R6S4B1",
     .board = "lolin32",
-    .ledPin = 255, // SEM LED
+    .ledPin = 25,
     .reles = {
         {16, false},
         {13, false},
