@@ -218,6 +218,9 @@ void discoverTask(void *args)
 
     discoverScanID++;
 
+    for (int i = 0; i < MAX_NODOS_REMOTOS; i++)
+        discoverSnapshotBuffer[i].clear();
+
     int totNR = nodosRemotosGetCount();
 
     // Tentar achar os nodos remotos ate 3 vezes
@@ -250,9 +253,6 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
         logaM(LOG_CRITICO, ">> discoverTaskScan : ABORTANDO : chamado de NO?");
         return;
     }
-
-    for (int i = 0; i < MAX_NODOS_REMOTOS; i++)
-        discoverSnapshotBuffer[i].clear();
 
     IPAddress broadcast = ~WiFi.subnetMask() | WiFi.localIP();
 
