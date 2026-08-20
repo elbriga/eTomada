@@ -97,24 +97,6 @@ String WiFiGetSSID()
   return ssid;
 }
 
-String WiFiGetPower()
-{
-  int dbm = WiFi.RSSI();
-
-  if (dbm >= -30)
-    return "Excelente";
-  if (dbm >= -50)
-    return "Muito Bom";
-  if (dbm >= -60)
-    return "Bom";
-  if (dbm >= -70)
-    return "Razoável";
-  if (dbm >= -80)
-    return "Fraco";
-
-  return "Péssimo";
-}
-
 void WiFiSalvaConfig(String ssid, String senha)
 {
   tempoIdleModoAP = millis();

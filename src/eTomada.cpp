@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "1.3.6"
+#define ETOMADA_VERSAO "1.3.11"
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -158,16 +158,13 @@ String eTomadaGetSnapshotJSON()
 {
   JsonDocument doc;
 
-  doc["device_id"] = eTomadaDeviceID();
-  doc["device_name"] = "eTomada!"; // TODO
+  doc["device_id"] = eTomadaDeviceID(); // Ex.: QUARTO
   doc["device_model"] = hardwareProfile.modelo;
   doc["device_board"] = hardwareProfile.board;
   doc["fw_version"] = eTomadaGetVersao();
 
   doc["mac"] = getMACStr();
-  doc["wifiPower"] = WiFiGetPower(); // TODO :: mostar na interface
-
-  doc["api"] = 3; // versão da API
+  doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
 
   doc["uptime"] = millis();
   time_t now = 0;
@@ -177,6 +174,7 @@ String eTomadaGetSnapshotJSON()
   time_t agora = time(nullptr);
   doc["datahora"] = (unsigned long)agora;
 
+  // TODO :: remover!
   struct tm timeinfo;
   sysGetTime(&timeinfo);
   char formattedTime[32];

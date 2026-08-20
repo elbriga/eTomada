@@ -121,7 +121,7 @@ void nodosRemotosRefreshTask(void *args)
     }
     if (!achei)
     {
-      logaM(LOG_AVISO, ">>> Nodo [%s] encontrado em %s. Avisar na interface",
+      logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em %s. Avisar na interface",
             nodoDiscover->deviceID, nodoDiscover->ip.toString().c_str());
       // TODO
     }

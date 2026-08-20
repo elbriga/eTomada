@@ -8,7 +8,6 @@ bool WiFiGetModoAP();
 void WiFiModoAPLoop();
 
 String WiFiGetSSID();
-String WiFiGetPower();
 
 bool WiFiTemConfig();
 void WiFiSalvaConfig(String ssid, String senha);
