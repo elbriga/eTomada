@@ -27,7 +27,7 @@ void nodoRemotoInit()
 
   if (!LittleFS.exists(NODOS_PATH))
   {
-    logaM(LOG_CRITICO, "ERRO: nodoRemotoInit > Arquivo [%s] nao existe!", NODOS_PATH);
+    logaM(LOG_DEBUG, "Abortando nodoRemotoInit > Arquivo [%s] nao existe!", NODOS_PATH);
     return;
   }
 

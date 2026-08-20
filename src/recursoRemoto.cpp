@@ -29,7 +29,7 @@ void recursosRemotosInit()
 
   if (!LittleFS.exists(RECURSOS_REMOTOS_PATH))
   {
-    logaM(LOG_CRITICO, "ERRO: recursosRemotosInit > Arquivo [%s] nao existe!", RECURSOS_REMOTOS_PATH);
+    logaM(LOG_DEBUG, "Abortando recursosRemotosInit > Arquivo [%s] nao existe!", RECURSOS_REMOTOS_PATH);
     return;
   }
 
