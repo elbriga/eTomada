@@ -40,3 +40,12 @@ async function factoryReset() {
 
   statusMsg("Recarregado com configuração de fábrica");
 }
+
+async function soReset() {
+  // TODO Modal confirm
+  await eTomadaAPI("reset", { senha: 1333 }, "POST");
+
+  closeConfig();
+
+  statusMsg("Reset!");
+}

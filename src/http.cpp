@@ -161,6 +161,14 @@ void httpServerInitModoAPI()
     delay(1000);
     ESP.restart(); });
 
+  httpServer.on("/api/reset", HTTP_POST, [](AsyncWebServerRequest *request)
+                {
+    request->send(200, "application/json", R"({"msg":"OK"})");
+    logaRequest(request, "200 OK");
+
+    delay(1000);
+    ESP.restart(); });
+
   httpServer.on("/api/roleta", HTTP_GET, [](AsyncWebServerRequest *request)
                 {
     String body = "Sorteando!";
