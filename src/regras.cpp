@@ -16,16 +16,6 @@
 
 #define MAX_REGRAS 64
 
-/*
-int regrasTotal = 4;
-Regra regras[] = {
-    regraCriaEvento(1, "B1", EVENTO_TOGGLE, "R10", ACAO_TOGGLE),
-    regraCriaEvento(2, "B2", EVENTO_TOGGLE, "R9", ACAO_PULSE),
-    regraCriaHorario(3, 18, 45, "R2", ACAO_ON),
-    regraCriaHorario(4, 18, 55, "R2", ACAO_OFF),
-};
-*/
-
 int regrasTotal = 0;
 Regra *regras = nullptr;
 
@@ -47,7 +37,7 @@ void regrasInit()
         }
         else
         {
-            logaM(LOG_CRITICO, "ERRO: regrasLoad > Arquivo [%s] nao existe!", REGRAS_PATH);
+            logaM(LOG_AVISO, "ERRO: regrasLoad > Arquivo [%s] nao existe!", REGRAS_PATH);
             return;
         }
     }
@@ -160,7 +150,7 @@ String regraDisparaAcao(Regra *regra)
 
     switch (acao->tipo)
     {
-    case ACAO_RECURSO:
+    case ACAO_ESTADO:
     {
         Recurso *rec = recursoGet(acao->recursoID);
         if (rec->tipo != RECURSO_RELE)
@@ -273,16 +263,16 @@ static const char *regraTipoEventoTxt(TipoEvento evento)
         return "DESLIGOU";
     case EVENTO_TOGGLE:
         return "TOGGLE";
-    case EVENTO_PRESSIONOU:
-        return "PRESSIONOU";
-    case EVENTO_SOLTOU:
-        return "SOLTOU";
+    // case EVENTO_PRESSIONOU:
+    //     return "PRESSIONOU";
+    // case EVENTO_SOLTOU:
+    //     return "SOLTOU";
     case EVENTO_CLICK:
         return "CLICK";
     case EVENTO_DOUBLE_CLICK:
         return "DOUBLE_CLICK";
-    case EVENTO_LONG_PRESS:
-        return "LONG_PRESS";
+    // case EVENTO_LONG_PRESS:
+    //     return "LONG_PRESS";
     case EVENTO_VALOR_MUDOU:
         return "VALOR_MUDOU";
     case EVENTO_HORARIO:
@@ -309,8 +299,10 @@ static const char *regraTipoAcaoTxt(TipoAcao acao)
 {
     switch (acao)
     {
-    case ACAO_RECURSO:
-        return "RECURSO";
+    case ACAO_ESTADO:
+        return "ESTADO";
+    case ACAO_TIMER:
+        return "TIMER";
     default:
         return "ACAO??";
     }
@@ -338,13 +330,6 @@ String regraGetTxt(Regra *r)
     String ret;
 
     ret.reserve(96);
-
-    ret += "Regra[";
-    ret += r->id;
-    ret += "] ";
-
-    if (!r->ativa)
-        ret += "(INATIVA) ";
 
     // Condição
     switch (r->condicao.tipo)
@@ -388,15 +373,16 @@ String regraGetTxt(Regra *r)
     // Ação
     switch (r->acao.tipo)
     {
-    case ACAO_RECURSO:
+    case ACAO_ESTADO:
         ret += r->acao.recursoID;
         ret += ":";
         ret += regraAcaoRecursoTxt(r->acao.comando);
         break;
 
-    case ACAO_DELAY:
-        ret += "DELAY:";
-        ret += r->acao.delay;
+    case ACAO_TIMER:
+        ret += r->acao.recursoID;
+        ret += " TIMER:";
+        ret += r->acao.timer;
         break;
 
     case ACAO_SCRIPT:
@@ -443,7 +429,7 @@ JsonDocument regraGetAcaoJSONDoc(Regra *r)
 
     switch (a->tipo)
     {
-    case ACAO_RECURSO:
+    case ACAO_ESTADO:
         doc["comando"] = regraAcaoRecursoTxt(a->comando);
         doc["recurso"] = a->recursoID;
         break;
@@ -530,6 +516,8 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
         String eventoStr = doc["quando"]["evento"].as<String>();
         if (eventoStr == "TOGGLE")
             regra->condicao.evento = EVENTO_TOGGLE;
+        else if (eventoStr == "CLICK")
+            regra->condicao.evento = EVENTO_CLICK;
         else
         // TODO :: outros eventos
         {
@@ -551,9 +539,9 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
 
     // preencher acao
     String tipoAcaoStr = doc["acao"]["tipo"];
-    if (tipoAcaoStr == "RECURSO")
+    if (tipoAcaoStr == "ESTADO")
     {
-        regra->acao.tipo = ACAO_RECURSO;
+        regra->acao.tipo = ACAO_ESTADO;
         strlcpy(regra->acao.recursoID,
                 doc["acao"]["recurso"].as<const char *>(),
                 sizeof(regra->acao.recursoID));
@@ -571,6 +559,14 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
             logaM(LOG_CRITICO, "AcaoRecurso %s ??? Inativando regra", acaoStr.c_str());
             regra->ativa = false;
         }
+    }
+    else if (tipoAcaoStr == "TIMER")
+    {
+        regra->acao.tipo = ACAO_TIMER;
+        strlcpy(regra->acao.recursoID,
+                doc["acao"]["recurso"].as<const char *>(),
+                sizeof(regra->acao.recursoID));
+        regra->acao.timer = doc["acao"]["timer"].as<uint32_t>();
     }
     else
     {
@@ -640,7 +636,7 @@ Regra regraCriaEvento(
     strlcpy(r.condicao.recursoID, recursoID, sizeof(r.condicao.recursoID));
     r.condicao.evento = evento;
 
-    r.acao.tipo = ACAO_RECURSO;
+    r.acao.tipo = ACAO_ESTADO;
     strlcpy(r.acao.recursoID, acaoRecurso, sizeof(r.acao.recursoID));
     r.acao.comando = comando;
 
@@ -663,7 +659,7 @@ Regra regraCriaHorario(
     r.condicao.horario.hora = hora;
     r.condicao.horario.minuto = minuto;
 
-    r.acao.tipo = ACAO_RECURSO;
+    r.acao.tipo = ACAO_ESTADO;
     strlcpy(r.acao.recursoID, recursoID, sizeof(r.acao.recursoID));
     r.acao.comando = comando;
 

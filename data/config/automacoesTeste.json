@@ -5,12 +5,12 @@
       "quando": {
         "tipo": "EVENTO",
         "recurso": "B1",
-        "evento": "TOGGLE"
+        "evento": "CLICK"
       },
       "acao": {
-        "tipo": "RECURSO",
-        "comando": "PULSE",
-        "recurso": "R10"
+        "tipo": "TIMER",
+        "recurso": "R10",
+        "timer": 600
       }
     },
     {
@@ -21,7 +21,7 @@
         "evento": "TOGGLE"
       },
       "acao": {
-        "tipo": "RECURSO",
+        "tipo": "ESTADO",
         "comando": "TOGGLE",
         "recurso": "R9"
       }
@@ -34,7 +34,7 @@
         "minuto": 0
       },
       "acao": {
-        "tipo": "RECURSO",
+        "tipo": "ESTADO",
         "comando": "ON",
         "recurso": "R2"
       }
@@ -47,7 +47,7 @@
         "minuto": 30
       },
       "acao": {
-        "tipo": "RECURSO",
+        "tipo": "ESTADO",
         "comando": "OFF",
         "recurso": "R2"
       }

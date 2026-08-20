@@ -8,35 +8,36 @@
 
 enum TipoCondicao
 {
-    COND_EVENTO,
-    COND_HORARIO,
-    COND_ESTADO,   // TODO
-    COND_EXPRESSAO // TODO
+    COND_EVENTO = 10,
+    COND_HORARIO = 20,
+    COND_ESTADO = 30,   // TODO
+    COND_EXPRESSAO = 40 // TODO
 };
 
 enum TipoAcao
 {
-    ACAO_RECURSO,
-    ACAO_DELAY, // TODO
-    ACAO_SCRIPT // TODO
+    ACAO_ESTADO = 10,
+    ACAO_TIMER = 20,
+    ACAO_DELAY = 30, // TODO
+    ACAO_SCRIPT = 40 // TODO
 };
 
 enum AcaoRecurso
 {
-    ACAO_ON,
-    ACAO_OFF,
-    ACAO_TOGGLE,
-    ACAO_PULSE
+    ACAO_ON = 10,
+    ACAO_OFF = 20,
+    ACAO_TOGGLE = 30,
+    ACAO_PULSE = 40
 };
 
 enum Operador // TODO
 {
-    OP_EQ,
-    OP_NE,
-    OP_GT,
-    OP_LT,
-    OP_GE,
-    OP_LE
+    OP_EQ = 1,
+    OP_NE = 2,
+    OP_GT = 3,
+    OP_LT = 4,
+    OP_GE = 5,
+    OP_LE = 6
 };
 
 struct Condicao
@@ -71,9 +72,8 @@ struct Acao
 
     union
     {
-        AcaoRecurso comando;
-
-        uint32_t delay;
+        AcaoRecurso comando; // ACAO_ESTADO
+        uint32_t timer;      // ACAO_TIMER
     };
 };
 

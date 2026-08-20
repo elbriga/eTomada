@@ -9,7 +9,7 @@
         "evento": "TOGGLE"
       },
       "acao": {
-        "tipo": "RECURSO",
+        "tipo": "ESTADO",
         "comando": "TOGGLE",
         "recurso": "R1"
       }
@@ -23,7 +23,7 @@
         "minuto": 0
       },
       "acao": {
-        "tipo": "RECURSO",
+        "tipo": "ESTADO",
         "comando": "ON",
         "recurso": "R2"
       }
@@ -37,7 +37,7 @@
         "minuto": 30
       },
       "acao": {
-        "tipo": "RECURSO",
+        "tipo": "ESTADO",
         "comando": "OFF",
         "recurso": "R2"
       }

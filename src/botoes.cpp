@@ -15,6 +15,7 @@
 #define logaM(nivel, fmt, ...) loga("BOTAO", nivel, fmt, ##__VA_ARGS__)
 
 #define BOTAO_DEBOUCE_TIME_MS 50
+#define BOTAO_TEMPO_CLICK_MS 333
 
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
@@ -28,6 +29,7 @@ struct AtualizacaoBotao
 {
   Recurso *rec;
   int novoEstado;
+  uint32_t ultimoToggle;
 };
 
 void botoesInit()
@@ -190,6 +192,8 @@ void botoesAtualiza()
       Botao *botao = rec->botao;
 
       botao->estado = atual[rb].novoEstado;
+      atual[rb].ultimoToggle = botao->ultimoToggle;
+      botao->ultimoToggle = millis();
     }
   }
 
@@ -201,6 +205,9 @@ void botoesAtualiza()
     // recursoEnviaSSE(atual[rb].rec) e mestreEnviaEvento(atual[rb].rec) em outra thread
     eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, atual[rb].rec, true, true);
     eventoPost(EVENTO_TOGGLE, atual[rb].rec, true, true);
+
+    if (millis() - atual[rb].ultimoToggle < BOTAO_TEMPO_CLICK_MS)
+      eventoPost(EVENTO_CLICK, atual[rb].rec, true, true);
   }
 
   delete[] atual;

@@ -16,6 +16,7 @@ struct Botao
     bool estado; // nível atual
     bool ultimoEstado;
     uint32_t debounce;
+    uint32_t ultimoToggle; // para detectar CLICK
 };
 
 void botoesInit();
