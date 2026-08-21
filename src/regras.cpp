@@ -10,6 +10,7 @@
 #include "ntp.h"
 #include "util.h"
 #include "recurso.h"
+#include "agendamentos.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("REGRA", nivel, fmt, ##__VA_ARGS__)
@@ -154,7 +155,7 @@ String regraDisparaAcao(Regra *regra)
     {
         Recurso *rec = recursoGet(acao->recursoID);
         if (rec->tipo != RECURSO_RELE)
-            return "dispAcaoRECURSO : Nao eh RELE!";
+            return "dispAcaoESTADO : Nao eh RELE!";
 
         switch (acao->comando)
         {
@@ -167,6 +168,19 @@ String regraDisparaAcao(Regra *regra)
         case ACAO_PULSE:
             return recursoSet(rec, "PULSE");
         }
+    }
+    break;
+
+    case ACAO_TIMER:
+    {
+        Recurso *rec = recursoGet(acao->recursoID);
+        if (rec->tipo != RECURSO_RELE)
+            return "dispAcaoTIMER : Nao eh RELE!";
+
+        String ret = recursoSet(rec, "ON");
+        // Agendar o OFF
+        // TODO :: no recursoSet cancelar os agendamentos
+        agendamentosAdd(rec->id, false, acao->timer * 1000);
     }
     break;
 
