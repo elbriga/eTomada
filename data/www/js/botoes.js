@@ -20,8 +20,11 @@ function botaoGetCard(recurso) {
 <div class="status ${botao.estado ? "on" : "off"}">
   ${botao.estado ? "● Ligado" : "● Desligado"}
 </div>
-<button onclick="botaoToggle('${recurso.id}', this)">
+<button onclick="botaoMock('TOGGLE', '${recurso.id}', this)">
   Enviar Toggle
+</button>
+<button onclick="botaoMock('CLICK', '${recurso.id}', this)">
+  Enviar Click
 </button>
 `;
   return card;
@@ -85,7 +88,7 @@ async function botaoSalvarFromModal() {
   }
 }
 
-async function botaoToggle(recursoID, btn) {
+async function botaoMock(acao, recursoID, btn) {
   //btn.innerText = "Processando...";
   //btn.disabled = true;
 
@@ -94,7 +97,7 @@ async function botaoToggle(recursoID, btn) {
       "mock",
       {
         recursoID: recursoID,
-        acao: "TOGGLE",
+        acao: acao,
       },
       "POST",
     );

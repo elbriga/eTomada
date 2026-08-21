@@ -60,19 +60,33 @@ String eventoMockFromJson(uint8_t *json)
 
     DeserializationError err = deserializeJson(doc, json);
     if (err)
+    {
+        doc.clear();
         return "JSON Invalido";
+    }
 
+    TipoEvento mock = EVENTO_NENHUM;
     String acao = doc["acao"];
-    if (acao != "TOGGLE")
+    if (acao == "TOGGLE")
+        mock = EVENTO_TOGGLE;
+    else if (acao == "CLICK")
+        mock = EVENTO_CLICK;
+    else
+    {
+        doc.clear();
         return "Acao invalida";
+    }
 
     Recurso *recurso = recursoGet(doc["recursoID"].as<const char *>());
+
+    doc.clear();
+
     if (!recurso)
         return "Recurso Invalido";
     if (recurso->tipo != RECURSO_BOTAO)
         return "Recurso nao eh botao!";
 
-    eventoPost(EVENTO_TOGGLE, recurso, false, true);
+    eventoPost(mock, recurso, false, true);
 
     return "OK";
 }
