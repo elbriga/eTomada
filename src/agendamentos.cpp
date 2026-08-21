@@ -5,6 +5,14 @@
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("AGENDS", nivel, fmt, ##__VA_ARGS__)
 
+struct AcaoAgendada
+{
+    char recursoID[8];
+    bool estado;
+    bool ativa;
+    uint32_t quando;
+};
+
 #define MAX_ACOES_AGENDADAS 16
 AcaoAgendada acoes[MAX_ACOES_AGENDADAS];
 
