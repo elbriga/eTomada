@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <LittleFS.h>
-#include <mbedtls/sha256.h>
 
 #include "loga.h"
 
@@ -91,78 +90,4 @@ const char *utilGetDiaSemana(struct tm timeinfo)
   default:
     return "---";
   }
-}
-
-bool utilArquivoSha256(const char *path, char *sha256Hex, size_t hexSize)
-{
-  if (hexSize < 65)
-  {
-    logaM(LOG_CRITICO, ">> arquivoSha256 :: buffer muito pequeno!!");
-    return false;
-  }
-
-  File file = LittleFS.open(path, "r");
-
-  if (!file)
-  {
-    logaM(LOG_CRITICO, ">> arquivoSha256 :: FNF");
-    return false;
-  }
-
-  mbedtls_sha256_context ctx;
-  mbedtls_sha256_init(&ctx);
-
-  if (mbedtls_sha256_starts_ret(&ctx, 0) != 0)
-  {
-    mbedtls_sha256_free(&ctx);
-    file.close();
-    logaM(LOG_CRITICO, ">> arquivoSha256 :: erro mbedtls_sha256_starts_ret");
-    return false;
-  }
-
-  uint8_t buffer[1024];
-
-  while (file.available())
-  {
-    size_t lidos = file.read(buffer, sizeof(buffer));
-
-    if (lidos == 0)
-    {
-      mbedtls_sha256_free(&ctx);
-      file.close();
-      logaM(LOG_CRITICO, ">> arquivoSha256 :: Erro file.read()");
-      return false;
-    }
-
-    if (mbedtls_sha256_update_ret(&ctx, buffer, lidos) != 0)
-    {
-      mbedtls_sha256_free(&ctx);
-      file.close();
-      logaM(LOG_CRITICO, ">> arquivoSha256 :: Erro mbedtls_sha256_update_ret 2");
-      return false;
-    }
-  }
-
-  uint8_t hash[32];
-
-  if (mbedtls_sha256_finish_ret(&ctx, hash) != 0)
-  {
-    mbedtls_sha256_free(&ctx);
-    file.close();
-    logaM(LOG_CRITICO, ">> arquivoSha256 :: Erro mbedtls_sha256_finish_ret");
-    return false;
-  }
-
-  mbedtls_sha256_free(&ctx);
-  file.close();
-
-  // Converte os 32 bytes para 64 caracteres hexadecimais
-  for (int i = 0; i < 32; i++)
-  {
-    sprintf(&sha256Hex[i * 2], "%02x", hash[i]);
-  }
-
-  sha256Hex[64] = '\0';
-
-  return true;
 }

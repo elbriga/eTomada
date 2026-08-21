@@ -20,6 +20,7 @@
 #include "rgb-led.h"
 #include "ota.h"
 #include "memoria.h"
+#include "shaCache.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
@@ -87,6 +88,8 @@ void setup()
   rtcInit();
 
   ntpInit();
+
+  shaInit();
 
   // Inicializar MODO DE OPERAÇÃO e o deviceID
   eTomadaInit0();

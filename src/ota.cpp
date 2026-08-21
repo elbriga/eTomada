@@ -13,6 +13,7 @@
 #include "hardwareProfile.h"
 #include "util.h"
 #include "wifi.h"
+#include "shaCache.h"
 
 #define OTA_SERVER "192.168.1.220"
 #define OTA_TAMANHO_MINIMO_FLASH 4
@@ -151,9 +152,8 @@ bool otaChecaWWW(JsonDocument &doc)
         }
 
         // calcular SHA256 do arquivo local
-        char localSha[65];
-        // TODO :: cache dos SHA! Nao calcular todo minuto
-        if (!utilArquivoSha256(path, localSha, sizeof(localSha)))
+        const char *localSha = shaGet(path);
+        if (!localSha)
         {
             logaM(LOG_CRITICO, "ERRO SHA - ABORTANDO arquivo www: [%s]", path);
             // NÃO baixar arquivo??
@@ -175,6 +175,7 @@ bool otaChecaWWW(JsonDocument &doc)
 
 bool otaDownloadWWW(const char *path)
 {
+    const char *tempPath = "/tempFile.tmp";
     String url = "http://" + String(OTA_SERVER) + "/firmware" + String(path);
 
     logaM(LOG_AVISO, "BAIXAR [%s]", url.c_str());
@@ -202,10 +203,10 @@ bool otaDownloadWWW(const char *path)
 
     logaM(LOG_NORMAL, "Baixando %d bytes", total);
 
-    File file = LittleFS.open(path, "w");
+    File file = LittleFS.open(tempPath, "w");
     if (!file)
     {
-        logaM(LOG_AVISO, "otaDownloadWWW :: Erro abrindo [%s]", path);
+        logaM(LOG_AVISO, "otaDownloadWWW :: Erro abrindo [%s] para [%s]", tempPath, path);
         http.end();
         return false;
     }
@@ -254,6 +255,15 @@ bool otaDownloadWWW(const char *path)
         logaM(LOG_AVISO, "otaDownloadWWW :: Download incompleto: %d/%d bytes", totalLido, total);
         return false;
     }
+
+    // Renomear o tempFile para o arquivo final
+    if (!LittleFS.rename(tempPath, path))
+    {
+        logaM(LOG_CRITICO, "otaDownloadWWW :: Erro no rename!");
+        return false;
+    }
+
+    shaRemoveCache(path);
 
     logaM(LOG_NORMAL, "Download concluído: %d bytes", totalLido);
     return true;

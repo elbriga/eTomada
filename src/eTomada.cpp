@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
+#include <LittleFS.h>
 
 #define ETOMADA_VERSAO "1.3.12"
 
@@ -67,6 +68,24 @@ void eTomadaInit0()
 
 void eTomadaInit()
 {
+  // Para testes de OTA:
+  bool testaOTA = false;
+  if (testaOTA)
+  {
+    // Apaga o arquivo e ele deve baixar de novo:
+    LittleFS.remove("/www/favicon.ico.gz");
+    // Altera o arquivo e ele deve corrigir
+    File fp = LittleFS.open("/www/js/api.js", FILE_APPEND);
+    if (fp)
+    {
+      const char *teste = "aaa";
+      fp.write((const uint8_t *)teste, 3);
+      fp.close();
+    }
+    else
+      logaM(LOG_AVISO, "Teste de OTA! Arquivo Faltando!?");
+  }
+
   bool carregaTestes = false;
   if (carregaTestes && modoOperacao == MODO_CONTROLADOR)
   {
