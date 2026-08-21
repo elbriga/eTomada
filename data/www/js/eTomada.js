@@ -1,5 +1,7 @@
 const API_BASE =
-  window.location.host === "localhost"
+  window.location.host == "localhost" ||
+  window.location.host == "pi" ||
+  window.location.host == "192.168.1.220"
     ? "http://192.168.1.141" // IP do ESP quando o frontend esta hospedado para DEV
     : window.location.origin;
 

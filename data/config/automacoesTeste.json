@@ -9,8 +9,8 @@
       },
       "acao": {
         "tipo": "TIMER",
-        "recurso": "R10",
-        "timer": 600
+        "recurso": "R1",
+        "timer": 10
       }
     },
     {

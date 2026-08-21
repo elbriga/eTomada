@@ -6,11 +6,13 @@
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
 #include <WiFi.h>
+#include <LittleFS.h>
 
 #include "eTomada.h"
 #include "loga.h"
 #include "hardwareProfile.h"
 #include "util.h"
+#include "wifi.h"
 
 #define OTA_SERVER "192.168.1.220"
 #define OTA_TAMANHO_MINIMO_FLASH 4
@@ -21,13 +23,76 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
+static bool downloadFirmwareNovo = true;
+static bool downloadWWWNovo = true;
+
+static int otaCheckDelayInicial = 5000;
+static bool otaSupported = false;
+
+void otaUpdateTask(void *args);
+bool otaEspSuportaOTA();
+bool otaChecaNovoFirmware(bool ehBoot);
+bool otaChecaBinario(JsonDocument &doc, bool ehBoot);
 bool otaDownload(const char *url);
+bool otaChecaWWW(JsonDocument &doc);
+bool otaDownloadWWW(const char *path);
 const char *otaGetState();
+
+void otaInit()
+{
+    // TODO :: 60s
+    otaCheckDelayInicial = 5 * 1000;
+
+    otaSupported = otaEspSuportaOTA();
+    if (otaSupported)
+    {
+        logaM(LOG_NORMAL, "Estado OTA: %s", otaGetState());
+
+        if (!WiFiGetModoAP())
+        {
+            logaM(LOG_NORMAL, "Verificando novo firmware:");
+            if (!otaChecaNovoFirmware(true))
+            {
+                logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
+                otaCheckDelayInicial = 10 * 60 * 1000;
+            }
+        }
+    }
+
+    if (!WiFiGetModoAP())
+    {
+        // Inicializar a Task que vai conferir o firmware e os arquivos estaticos
+        xTaskCreate(
+            otaUpdateTask,
+            "otaUpdate",
+            8192,
+            nullptr,
+            1,
+            nullptr);
+    }
+}
+
+void otaUpdateTask(void *args)
+{
+    vTaskDelay(pdMS_TO_TICKS(otaCheckDelayInicial));
+
+    while (1)
+    {
+        if (!otaChecaNovoFirmware(false))
+        {
+            logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
+            vTaskDelay(pdMS_TO_TICKS(9 * 60 * 1000));
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(60 * 1000));
+    }
+
+    // Nao chega aqui!
+    vTaskDelete(NULL);
+}
 
 bool otaChecaNovoFirmware(bool ehBoot)
 {
-    bool downloadFirmwareNovo = true;
-
     String url = "http://" + String(OTA_SERVER) + "/firmware/eTomada.json";
 
     logaM(LOG_DEBUG0, "OTA: Verificando %s", url.c_str());
@@ -48,18 +113,159 @@ bool otaChecaNovoFirmware(bool ehBoot)
         return true;
     }
 
+    JsonDocument doc;
+    DeserializationError erro = deserializeJson(doc, http.getStream());
+    if (erro)
+    {
+        logaM(LOG_AVISO, "Falha JSON ao contactar servidor de Firmware");
+        return false;
+    }
+
+    bool retBin = true;
+    if (otaSupported)
+        retBin = otaChecaBinario(doc, ehBoot);
+
+    bool retWWW = true;
+    if (!ehBoot)
+        retWWW = otaChecaWWW(doc);
+
+    doc.clear();
+
+    return retBin && retWWW;
+}
+
+bool otaChecaWWW(JsonDocument &doc)
+{
+    JsonObject www = doc["www"]["arquivos"].as<JsonObject>();
+    for (JsonPair arq : www)
+    {
+        String pathStr = String("/www") + arq.key().c_str();
+        const char *path = pathStr.c_str();
+        const char *remoteSha = arq.value().as<const char *>();
+
+        if (!LittleFS.exists(path))
+        {
+            logaM(LOG_AVISO, "NOVO arquivo www: [%s]", path);
+            otaDownloadWWW(path);
+            continue;
+        }
+
+        // calcular SHA256 do arquivo local
+        char localSha[65];
+        // TODO :: cache dos SHA! Nao calcular todo minuto
+        if (!utilArquivoSha256(path, localSha, sizeof(localSha)))
+        {
+            logaM(LOG_CRITICO, "ERRO SHA - ABORTANDO arquivo www: [%s]", path);
+            // NÃO baixar arquivo??
+            continue;
+        }
+
+        // comparar com remoteSha
+        if (strcmp(localSha, remoteSha) != 0)
+        {
+            logaM(LOG_AVISO, "Nova Versao arquivo www: [%s]", path);
+            otaDownloadWWW(path);
+            continue;
+        }
+
+        // logaM(LOG_DEBUG, ">> [%s] Atualizado!", path);
+    }
+    return true;
+}
+
+bool otaDownloadWWW(const char *path)
+{
+    String url = "http://" + String(OTA_SERVER) + "/firmware" + String(path);
+
+    logaM(LOG_AVISO, "BAIXAR [%s]", url.c_str());
+
+    HTTPClient http;
+    http.setTimeout(1000);
+    http.setConnectTimeout(1000);
+
+    if (!http.begin(url))
+    {
+        logaM(LOG_AVISO, "otaDownloadWWW :: Erro iniciando HTTP");
+        return false;
+    }
+
+    int httpCode = http.GET();
+
+    if (httpCode != HTTP_CODE_OK)
+    {
+        logaM(LOG_AVISO, "otaDownloadWWW :: Erro HTTP [%d]", httpCode);
+        http.end();
+        return false;
+    }
+
+    int total = http.getSize();
+
+    logaM(LOG_NORMAL, "Baixando %d bytes", total);
+
+    File file = LittleFS.open(path, "w");
+    if (!file)
+    {
+        logaM(LOG_AVISO, "otaDownloadWWW :: Erro abrindo [%s]", path);
+        http.end();
+        return false;
+    }
+
+    WiFiClient *stream = http.getStreamPtr();
+
+    uint8_t buffer[1024];
+    size_t totalLido = 0;
+
+    while (http.connected() && (total < 0 || totalLido < (size_t)total))
+    {
+        size_t disponivel = stream->available();
+
+        if (disponivel)
+        {
+            size_t lidos = stream->readBytes(
+                buffer,
+                min(disponivel, sizeof(buffer)));
+
+            if (lidos == 0)
+                break;
+
+            size_t gravados = file.write(buffer, lidos);
+
+            if (gravados != lidos)
+            {
+                logaM(LOG_AVISO, "otaDownloadWWW :: Erro escrevendo no LittleFS");
+                file.close();
+                http.end();
+                return false;
+            }
+
+            totalLido += lidos;
+        }
+        else
+        {
+            vTaskDelay(1);
+        }
+    }
+
+    file.close();
+    http.end();
+
+    if (total >= 0 && totalLido != (size_t)total)
+    {
+        logaM(LOG_AVISO, "otaDownloadWWW :: Download incompleto: %d/%d bytes", totalLido, total);
+        return false;
+    }
+
+    logaM(LOG_NORMAL, "Download concluído: %d bytes", totalLido);
+    return true;
+}
+
+bool otaChecaBinario(JsonDocument &doc, bool ehBoot)
+{
     int minhaVersao = utilVersionToInt(eTomadaGetVersao().c_str());
 
     String versaoServerStr = "";
     // Procurar nosso modelo na lista do servidor
     {
-        JsonDocument doc;
-        DeserializationError erro = deserializeJson(doc, http.getStream());
-        if (erro)
-        {
-            logaM(LOG_AVISO, "Falha JSON ao contactar servidor de Firmware");
-            return false;
-        }
 
         JsonArray devices = doc["devices"];
         for (JsonObject dev : devices)
@@ -76,8 +282,6 @@ bool otaChecaNovoFirmware(bool ehBoot)
                 }
             }
         }
-
-        doc.clear();
     }
 
     if (versaoServerStr == "")

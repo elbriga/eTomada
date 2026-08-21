@@ -23,9 +23,28 @@
       "modelos": [
         {
           "modelo": "R2B2",
-          "versao": "1.3.10"
+          "versao": "1.3.12"
         }
       ]
     }
-  ]
+  ],
+  "www": {
+    "versao": "2.1",
+    "arquivos": {
+      "/favicon.ico": "5d3e7c96ac156eeeb5653b6dd9098fc299b2040956d02e17bd07f7dd6bba299b",
+      "/favicon.ico.gz": "19272c35bf71a25275e396b8f519884115eaebfc27c5b221b54fb6118c0503c7",
+      "/index.html": "292419e35b02390dc09fa564febce611e03f972f92bf89e7effa120d15b5ff30",
+      "/portal.html": "509b1e30a57d4a92f3996c4bdf1bb2ede0fa7f5047a73a54cb731f02052a3d49",
+      "/style.css": "7aa047f55d8e089b95852996ca1e19b96fe71139f92915be0b289ec6a55148d1",
+      "/js/api.js": "bfdc71a7bc780e50c223d539e6e0927f492c9415dbc9abbc06b86dbd5b0272e8",
+      "/js/botoes.js": "abc2825928f401ea12e2703fe79dbe41b4d9ca5f1ff103b61dbd3f6e7df8fdeb",
+      "/js/config.js": "fcb004fe43a2cdd6023bf37f087424aa04412b70c511e462e4431230698bd584",
+      "/js/eTomada.js": "cdf1d9f4621fe2ec1a13945dcd39ee56fa675468da8c9c1d5f1f6002eec9a3fb",
+      "/js/recurso.js": "c8963aacb4dbf8b407196d5a26216d242538e762e1113688666243c31b69e53f",
+      "/js/regras.js": "9683a983f467c6e43896d486afd5a45bc962a5afaa5377bb944133cf8c4c5e5d",
+      "/js/reles.js": "2aa9c3ef0bffb9383e654818d8d19c8c73b3f23acc01037f543e87553df91120",
+      "/js/sensores.js": "37539541058c17ba2b939467cf9b66ae192ec3db1ac6f5926c7da504708bba7a",
+      "/js/util.js": "14039cae49d220fbefbba21723148325b6b9d8c93d299eaa033f69f8c19dea07"
+    }
+  }
 }

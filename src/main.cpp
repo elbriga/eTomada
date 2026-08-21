@@ -33,9 +33,6 @@ extern const HardwareProfile hardwareProfile;
 static long ntpSyncTimeTS = 0;
 static bool ntpSyncOKFlag = false; // Flag setada pelo callback do ntp
 
-// TS para checagem de firmware
-static long otaCheckTS = 0;
-
 // Controles do loop principal
 static int lastSecond = -1;
 static int last10Second = -1;
@@ -150,21 +147,8 @@ void setup()
 
   logaM(LOG_NORMAL, "Versao do Firmware: %s", eTomadaGetVersao());
 
-  if (otaEspSuportaOTA())
-  {
-    logaM(LOG_NORMAL, "Estado OTA: %s", otaGetState());
-
-    if (!WiFiGetModoAP())
-    {
-      logaM(LOG_NORMAL, "Verificando novo firmware:");
-      otaCheckTS = millis() + 60 * 1000;
-      if (!otaChecaNovoFirmware(true))
-      {
-        logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
-        otaCheckTS += 10 * 60 * 1000;
-      }
-    }
-  }
+  logaM(LOG_NORMAL, "Inicializando OTA:");
+  otaInit();
 
   logaM(LOG_NORMAL, "== eTomada Init() ==");
   eTomadaInit();
@@ -306,18 +290,6 @@ void loop()
       if (ntpSyncTimeTS > 0 && (long)(millis() - ntpSyncTimeTS) >= 0)
       {
         ntpSyncTimeTS = ntpSyncTime();
-      }
-    }
-
-    // Check firmware novo
-    if (otaCheckTS > 0 && (long)(millis() - otaCheckTS) >= 0)
-    {
-      otaCheckTS = millis() + ((50 + (rand() % 20)) * 1000);
-
-      if (!otaChecaNovoFirmware(false))
-      {
-        logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
-        otaCheckTS += 10 * 60 * 1000;
       }
     }
   }
