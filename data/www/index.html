@@ -76,6 +76,46 @@
         <label>Nome</label>
         <input id="modalNome" maxlength="31" />
         <br /><br />
+        <div id="modalDivRegra">
+          <label>Condição</label>
+          Tipo:
+          <select id="modalRegraCondicao" onchange="regrasOCModalCondicao()">
+            <option value="EVENTO">Eventos</option>
+            <option value="HORARIO">Horário</option>
+            <option value="SENSOR">Sensores</option>
+          </select>
+          <br /><br />
+          <div id="divRegraEvento">
+            Recurso:
+            <select id="modalRegraRecursoEvento"></select>
+            Evento:
+            <select id="modalRegraEvento">
+              <option value="ON">Ligou</option>
+              <option value="OFF">Desligou</option>
+              <option value="TOGGLE">Mudou</option>
+              <option value="CLICK">Click!</option>
+              <option value="DUPCLICK">Duplo Click!</option>
+            </select>
+          </div>
+          <div id="divRegraHorario">
+            Horário:
+            <select id="modalRegraHora"></select>
+            :
+            <select id="modalRegraMinuto"></select>
+          </div>
+          <div id="divRegraSensor">
+            TODO!
+            <div class="formCondicional">
+              <select id="modalCondSensorLiga"></select>
+              <select id="modalCondOpLiga">
+                <option value="+">&gt;</option>
+                <option value="-">&lt;</option>
+              </select>
+              <input id="modalCondValTesteLiga" maxlength="5" />
+            </div>
+          </div>
+        </div>
+        <br /><br />
         <button id="modalSalvarBtn">💾 Salvar</button>
       </div>
     </div>

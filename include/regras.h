@@ -51,7 +51,7 @@ struct Condicao
     {
         TipoEvento evento;
 
-        struct
+        struct // TODO
         {
             Operador op;
             float valor;

@@ -284,11 +284,11 @@ static const char *regraTipoEventoTxt(TipoEvento evento)
     case EVENTO_CLICK:
         return "CLICK";
     case EVENTO_DOUBLE_CLICK:
-        return "DOUBLE_CLICK";
+        return "DUPCLICK";
     // case EVENTO_LONG_PRESS:
     //     return "LONG_PRESS";
     case EVENTO_VALOR_MUDOU:
-        return "VALOR_MUDOU";
+        return "CHANGED";
     case EVENTO_HORARIO:
         return "HORARIO";
     default:
@@ -444,8 +444,13 @@ JsonDocument regraGetAcaoJSONDoc(Regra *r)
     switch (a->tipo)
     {
     case ACAO_ESTADO:
-        doc["comando"] = regraAcaoRecursoTxt(a->comando);
         doc["recurso"] = a->recursoID;
+        doc["comando"] = regraAcaoRecursoTxt(a->comando);
+        break;
+
+    case ACAO_TIMER:
+        doc["recurso"] = a->recursoID;
+        doc["timer"] = a->timer;
         break;
     }
 
@@ -532,6 +537,12 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
             regra->condicao.evento = EVENTO_TOGGLE;
         else if (eventoStr == "CLICK")
             regra->condicao.evento = EVENTO_CLICK;
+        else if (eventoStr == "ON")
+            regra->condicao.evento = EVENTO_LIGOU;
+        else if (eventoStr == "OFF")
+            regra->condicao.evento = EVENTO_DESLIGOU;
+        else if (eventoStr == "DUPCLICK")
+            regra->condicao.evento = EVENTO_DOUBLE_CLICK;
         else
         // TODO :: outros eventos
         {

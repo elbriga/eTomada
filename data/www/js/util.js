@@ -2,9 +2,13 @@ function statusMsg(msg) {
   document.getElementById("status").innerHTML = msg;
 }
 
-function editModalOpen() {
+function editModalOpen(comRegras) {
   document.getElementById("modalOverlay").classList.add("open");
   document.getElementById("editModal").classList.add("open");
+
+  document.getElementById("modalDivRegra").style.display = comRegras
+    ? "block"
+    : "none";
 }
 
 function editModalClose() {

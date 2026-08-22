@@ -58,7 +58,7 @@ function botaoOpenEditModal(recursoID) {
     botaoSalvarFromModal();
   };
 
-  editModalOpen();
+  editModalOpen(false);
 }
 
 async function botaoSalvarFromModal() {

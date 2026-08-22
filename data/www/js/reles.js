@@ -68,7 +68,7 @@ function releOpenEditModal(recursoID) {
     releSalvarFromModal();
   };
 
-  editModalOpen();
+  editModalOpen(false);
 }
 
 async function releSalvarFromModal() {

@@ -60,7 +60,7 @@ function sensorOpenEditModal(recursoID) {
     sensorSalvarFromModal();
   };
 
-  editModalOpen();
+  editModalOpen(false);
 }
 
 async function sensorSalvarFromModal() {
