@@ -476,22 +476,16 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, json);
   if (err)
-  {
     return "JSON Invalido";
-  }
 
   String id = doc["id"];
   Recurso *recurso = recursoGet(id.c_str());
   if (!recurso)
-  {
     return "Recurso Invalido";
-  }
 
   MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
   if (!lock)
-  {
     return "mutex timeout";
-  }
 
   bool mudou = false;
 
@@ -500,6 +494,8 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
     mudou = true;
     strlcpy(recurso->nome, doc["nome"].as<String>().c_str(), sizeof(recurso->nome));
   }
+
+  doc.clear();
 
   if (mudou)
   {
