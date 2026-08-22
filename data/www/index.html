@@ -84,7 +84,6 @@
             <option value="HORARIO">Horário</option>
             <option value="SENSOR">Sensores</option>
           </select>
-          <br /><br />
           <div id="divRegraEvento">
             Recurso:
             <select id="modalRegraRecursoEvento"></select>
@@ -113,6 +112,30 @@
               </select>
               <input id="modalCondValTesteLiga" maxlength="5" />
             </div>
+          </div>
+
+          <br /><br />
+          <label>Ação</label>
+          Tipo:
+          <select id="modalRegraAcao" onchange="regrasOCModalAcao()">
+            <option value="ESTADO">Mudar Estado</option>
+            <option value="TIMER">Timer</option>
+          </select>
+          <div id="divRegraAcaoEstado">
+            Recurso:
+            <select id="modalRegraAcaoEstadoRecurso"></select>
+            Comando:
+            <select id="modalRegraAcaoEstadoComando">
+              <option value="ON">Ligar</option>
+              <option value="OFF">Desligar</option>
+              <option value="TOGGLE">Mudar Estado</option>
+            </select>
+          </div>
+          <div id="divRegraAcaoTimer">
+            Recurso:
+            <select id="modalRegraAcaoTimerRecurso"></select>
+            Timer:
+            <input id="modalRegraAcaoTimerTempo" maxlength="10" />
           </div>
         </div>
         <br /><br />

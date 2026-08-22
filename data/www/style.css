@@ -107,6 +107,14 @@ input {
   color: white;
 }
 
+select {
+  width: 100%;
+  border-radius: 6px;
+  padding: 8px;
+  background: #0f172a;
+  color: white;
+}
+
 button {
   width: 100%;
   padding: 10px;

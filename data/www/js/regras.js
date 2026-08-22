@@ -31,11 +31,11 @@ function regrasRenderFromSnapshot() {
   });
 }
 
-function regraPopulaComboRecursos(comboID) {
+function regraPopulaComboRecursos(comboID, somenteReles) {
   var options =
     "<option value=''>Escolha um Recurso</option>\n" +
     eTomadaData.recursos
-      .filter((r) => r.tipo != "SENSOR")
+      .filter((r) => r.tipo != "SENSOR" && (!somenteReles || r.tipo == "RELE"))
       .map((r) => `<option value="${r.id}">${r.tipo} - ${r.nome}</option>`)
       .join("\n");
 
@@ -71,7 +71,7 @@ function regraOpenEditModal(regraID) {
   regrasOCModalCondicao();
 
   if (regra.quando.tipo == "EVENTO") {
-    regraPopulaComboRecursos("modalRegraRecursoEvento");
+    regraPopulaComboRecursos("modalRegraRecursoEvento", false);
     document.getElementById("modalRegraRecursoEvento").value =
       regra.quando.recurso;
     document.getElementById("modalRegraEvento").value = regra.quando.evento;
@@ -79,6 +79,23 @@ function regraOpenEditModal(regraID) {
     regraPopulaCombosHorario();
     document.getElementById("modalRegraHora").value = regra.quando.hora;
     document.getElementById("modalRegraMinuto").value = regra.quando.minuto;
+  }
+
+  document.getElementById("modalRegraAcao").value = regra.acao.tipo;
+  regrasOCModalAcao();
+
+  if (regra.acao.tipo == "ESTADO") {
+    regraPopulaComboRecursos("modalRegraAcaoEstadoRecurso", true);
+    document.getElementById("modalRegraAcaoEstadoRecurso").value =
+      regra.acao.recurso;
+    document.getElementById("modalRegraAcaoEstadoComando").value =
+      regra.acao.comando;
+  } else if (regra.acao.tipo == "TIMER") {
+    regraPopulaComboRecursos("modalRegraAcaoTimerRecurso", true);
+    document.getElementById("modalRegraAcaoTimerRecurso").value =
+      regra.acao.recurso;
+    document.getElementById("modalRegraAcaoTimerTempo").value =
+      regra.acao.timer;
   }
 
   document.getElementById("modalSalvarBtn").onclick = function () {
@@ -97,6 +114,15 @@ function regrasOCModalCondicao() {
     condicao == "HORARIO" ? "block" : "none";
   document.getElementById("divRegraSensor").style.display =
     condicao == "SENSOR" ? "block" : "none";
+}
+
+function regrasOCModalAcao() {
+  const acao = document.getElementById("modalRegraAcao").value;
+
+  document.getElementById("divRegraAcaoEstado").style.display =
+    acao == "ESTADO" ? "block" : "none";
+  document.getElementById("divRegraAcaoTimer").style.display =
+    acao == "TIMER" ? "block" : "none";
 }
 
 async function regraSalvarFromModal() {
