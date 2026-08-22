@@ -23,6 +23,7 @@ Regra *regras = nullptr;
 void regrasBoot();
 String regrasLoad(const char *path);
 String regraGetTxt(Regra *r);
+void regraLoadFromJSON(Regra *regra, JsonObject &doc);
 
 void regrasInit()
 {
@@ -129,7 +130,18 @@ void regrasBoot()
     }
 }
 
-Regra *regraGet(int i)
+Regra *regraGet(int id)
+{
+    int tot = regrasCount();
+    for (int r = 0; r < tot; r++)
+    {
+        if (regras[r].id == id)
+            return &regras[r];
+    }
+    return NULL;
+}
+
+Regra *regraGetPorIndice(int i)
 {
     if (i >= 0 && i < regrasCount())
         return &regras[i];
@@ -475,10 +487,30 @@ void regrasGetJSONDoc(JsonDocument &doc)
     int totRegras = regrasCount();
     for (int r = 0; r < totRegras; r++)
     {
-        Regra *regra = regraGet(r);
+        Regra *regra = regraGetPorIndice(r);
         JsonObject obj = regrasOut.add<JsonObject>();
         regraGetJS(regra, obj);
     }
+}
+
+String regraAtualizaFromJSON(uint8_t *json)
+{
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, json);
+    if (err)
+        return "JSON Invalido";
+
+    int id = doc["id"].as<int>();
+    Regra *regra = regraGet(id);
+    if (!regra) // TODO :: Add
+        return "Regra Invalida";
+
+    JsonObject obj = doc.as<JsonObject>();
+    regraLoadFromJSON(regra, obj);
+
+    doc.clear();
+
+    return regrasPersiste();
 }
 
 String regrasPersiste()
@@ -516,7 +548,7 @@ String regrasPersiste()
 
     logaM(LOG_NORMAL, "Regras Salvas!");
 
-    return out;
+    return "OK";
 }
 
 void regraLoadFromJSON(Regra *regra, JsonObject &doc)

@@ -90,10 +90,11 @@ struct Regra
 void regrasInit();
 void regrasBoot();
 
-Regra *regraGet(int i);
 int regrasCount();
 
 void regrasGetJSONDoc(JsonDocument &doc);
+
+String regraAtualizaFromJSON(uint8_t *json);
 
 void regrasProcessaEvento(Evento e);
 

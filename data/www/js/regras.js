@@ -133,16 +133,45 @@ async function regraSalvarFromModal() {
   btn.disabled = true;
   btn.innerText = "Salvando...";
 
+  let body = {
+    id: regraEditando,
+    nome: document.getElementById("modalNome").value,
+    quando: {
+      tipo: document.getElementById("modalRegraCondicao").value,
+    },
+    acao: {
+      tipo: document.getElementById("modalRegraAcao").value,
+    },
+  };
+
+  if (body.quando.tipo == "EVENTO") {
+    body.quando.recurso = document.getElementById(
+      "modalRegraRecursoEvento",
+    ).value;
+    body.quando.evento = document.getElementById("modalRegraEvento").value;
+  } else if (body.quando.tipo == "HORARIO") {
+    body.quando.hora = document.getElementById("modalRegraHora").value;
+    body.quando.minuto = document.getElementById("modalRegraMinuto").value;
+  } else if (body.quando.tipo == "SENSOR") {
+    // TODO
+  }
+
+  if (body.acao.tipo == "ESTADO") {
+    body.acao.recurso = document.getElementById(
+      "modalRegraAcaoEstadoRecurso",
+    ).value;
+    body.acao.comando = document.getElementById(
+      "modalRegraAcaoEstadoComando",
+    ).value;
+  } else if (body.acao.tipo == "TIMER") {
+    body.acao.recurso = document.getElementById(
+      "modalRegraAcaoTimerRecurso",
+    ).value;
+    body.acao.timer = document.getElementById("modalRegraAcaoTimerTempo").value;
+  }
+
   try {
-    await eTomadaAPI(
-      "setRegra",
-      {
-        id: regraEditando,
-        nome: document.getElementById("modalNome").value,
-        // TODO
-      },
-      "PUT",
-    );
+    await eTomadaAPI("setRegra", body, "PUT");
 
     editModalClose();
   } catch (e) {

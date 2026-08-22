@@ -104,10 +104,7 @@ void httpServerInitModoAPI()
                   String atzCfgOK = recursoAtualizaConfigFromJSON(data);
 
                   request->send(200, "application/json", "{\"msg\": \"" + atzCfgOK + "\"}");
-                  logaRequest(request, "200 " + atzCfgOK);
-
-                  // regrasProcessa();
-                });
+                  logaRequest(request, "200 " + atzCfgOK); });
 
   httpServer.on("/api/evento", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {
@@ -145,6 +142,13 @@ void httpServerInitModoAPI()
     request->send(response);
 
     logaRequest(request, "200 OK"); });
+
+  httpServer.on("/api/setRegra", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+                {
+                  String atzCfgOK = regraAtualizaFromJSON(data);
+
+                  request->send(200, "application/json", "{\"msg\": \"" + atzCfgOK + "\"}");
+                  logaRequest(request, "200 " + atzCfgOK); });
 
   httpServer.on("/api/factoryReset", HTTP_POST, [](AsyncWebServerRequest *request)
                 {
