@@ -1,6 +1,7 @@
 
 # WWW
 rsync -rav /home/gabriel/Documents/PlatformIO/Projects/eTomada/data/www/* pi:/root/nginx-docker/html/firmware/www/
+cd firmware-server/ && bash geraManifest.sh && cd -
 
 # eTomada.json
 scp /home/gabriel/Documents/PlatformIO/Projects/eTomada/firmware-server/eTomada.json pi:/root/nginx-docker/html/firmware/
