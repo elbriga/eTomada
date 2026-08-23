@@ -92,28 +92,12 @@ void regrasBoot();
 
 int regrasCount();
 
-void regrasGetJSONDoc(JsonDocument &doc);
+void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra = nullptr);
 
 String regraAtualizaFromJSON(uint8_t *json);
 
 void regrasProcessaEvento(Evento e);
 
-String regrasPersiste();
-
 String regraValida(String regra);
-
-Regra regraCriaEvento(
-    uint16_t id,
-    const char *recursoID,
-    TipoEvento evento,
-    const char *acaoRecurso,
-    AcaoRecurso comando);
-
-Regra regraCriaHorario(
-    uint16_t id,
-    uint8_t hora,
-    uint8_t minuto,
-    const char *recursoID,
-    AcaoRecurso comando);
 
 void regraPrint(Regra *r);

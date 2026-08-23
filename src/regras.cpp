@@ -24,6 +24,7 @@ void regrasBoot();
 String regrasLoad(const char *path);
 String regraGetTxt(Regra *r);
 void regraLoadFromJSON(Regra *regra, JsonObject &doc);
+String regrasPersiste(Regra *novaRegra);
 
 void regrasInit()
 {
@@ -480,7 +481,7 @@ void regraGetJS(Regra *r, JsonObject &doc)
     doc["acao"] = regraGetAcaoJSONDoc(r);
 }
 
-void regrasGetJSONDoc(JsonDocument &doc)
+void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra)
 {
     JsonArray regrasOut = doc.to<JsonArray>();
 
@@ -490,6 +491,13 @@ void regrasGetJSONDoc(JsonDocument &doc)
         Regra *regra = regraGetPorIndice(r);
         JsonObject obj = regrasOut.add<JsonObject>();
         regraGetJS(regra, obj);
+    }
+
+    if (novaRegra)
+    {
+        // Add!
+        JsonObject obj = regrasOut.add<JsonObject>();
+        regraGetJS(novaRegra, obj);
     }
 }
 
@@ -501,19 +509,43 @@ String regraAtualizaFromJSON(uint8_t *json)
         return "JSON Invalido";
 
     int id = doc["id"].as<int>();
-    Regra *regra = regraGet(id);
-    if (!regra) // TODO :: Add
-        return "Regra Invalida";
+    bool addRegra = (id == 0);
+
+    Regra *regra, novaRegra;
+
+    if (addRegra)
+    {
+        memset(&novaRegra, 0, sizeof(novaRegra));
+        regra = &novaRegra;
+    }
+    else
+    {
+        regra = regraGet(id);
+        if (!regra)
+            return "Regra Invalida";
+    }
 
     JsonObject obj = doc.as<JsonObject>();
     regraLoadFromJSON(regra, obj);
-
     doc.clear();
 
-    return regrasPersiste();
+    // Se passar a novaRegra para o regrasPersiste() ele adiciona ela no final
+    String msg = regrasPersiste(addRegra ? &novaRegra : nullptr);
+    if (msg != "OK")
+        return msg;
+
+    if (addRegra)
+    {
+        // Recarregar as regras para a nova regra entrar no array global de regras
+        msg = regrasLoad(REGRAS_PATH);
+        if (msg != "OK")
+            return msg;
+    }
+
+    return "OK";
 }
 
-String regrasPersiste()
+String regrasPersiste(Regra *novaRegra)
 {
     File file = LittleFS.open("/automacoes.json.tmp", "w");
     if (!file)
@@ -522,7 +554,7 @@ String regrasPersiste()
     }
 
     JsonDocument regras;
-    regrasGetJSONDoc(regras);
+    regrasGetJSONDoc(regras, novaRegra); // Se novaRegra != nullptr == ADD
 
     JsonDocument doc;
     doc["regras"] = regras;
@@ -675,52 +707,6 @@ String regrasLoad(const char *path)
     }
 
     return "OK";
-}
-
-Regra regraCriaEvento(
-    uint16_t id,
-    const char *recursoID,
-    TipoEvento evento,
-    const char *acaoRecurso,
-    AcaoRecurso comando)
-{
-    Regra r{};
-
-    r.id = id;
-    r.ativa = true;
-
-    r.condicao.tipo = COND_EVENTO;
-    strlcpy(r.condicao.recursoID, recursoID, sizeof(r.condicao.recursoID));
-    r.condicao.evento = evento;
-
-    r.acao.tipo = ACAO_ESTADO;
-    strlcpy(r.acao.recursoID, acaoRecurso, sizeof(r.acao.recursoID));
-    r.acao.comando = comando;
-
-    return r;
-}
-
-Regra regraCriaHorario(
-    uint16_t id,
-    uint8_t hora,
-    uint8_t minuto,
-    const char *recursoID,
-    AcaoRecurso comando)
-{
-    Regra r{};
-
-    r.id = id;
-    r.ativa = true;
-
-    r.condicao.tipo = COND_HORARIO;
-    r.condicao.horario.hora = hora;
-    r.condicao.horario.minuto = minuto;
-
-    r.acao.tipo = ACAO_ESTADO;
-    strlcpy(r.acao.recursoID, recursoID, sizeof(r.acao.recursoID));
-    r.acao.comando = comando;
-
-    return r;
 }
 
 void regraPrint(Regra *r)
