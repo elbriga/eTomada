@@ -55,15 +55,32 @@ function regraPopulaCombosHorario() {
 }
 
 function regraOpenEditModal(regraID) {
-  const regra = eTomadaData.regras.find((r) => r.id == regraID);
-  if (!regra) {
-    // TODO :: msg
-    return;
+  let regra = {};
+  if (regraID == 0) {
+    regra = {
+      id: 0,
+      nome: "Nova Regra",
+      quando: {
+        tipo: "EVENTO",
+        recurso: "",
+      },
+      acao: {
+        tipo: "ESTADO",
+        recurso: "",
+      },
+    };
+  } else {
+    regra = eTomadaData.regras.find((r) => r.id == regraID);
+    if (!regra) {
+      // TODO :: msg
+      return;
+    }
   }
 
   regraEditando = regraID;
 
-  document.getElementById("modalTitle").innerHTML = "Editar Regra " + regraID;
+  document.getElementById("modalTitle").innerHTML =
+    regraID > 0 ? "Editar Regra " + regraID : "Editar Nova Regra";
 
   document.getElementById("modalNome").value = regra.nome || "";
 
@@ -77,8 +94,8 @@ function regraOpenEditModal(regraID) {
     document.getElementById("modalRegraEvento").value = regra.quando.evento;
   } else if (regra.quando.tipo == "HORARIO") {
     regraPopulaCombosHorario();
-    document.getElementById("modalRegraHora").value = regra.quando.hora;
-    document.getElementById("modalRegraMinuto").value = regra.quando.minuto;
+    document.getElementById("modalRegraHora").value = regra.quando.hora | 0;
+    document.getElementById("modalRegraMinuto").value = regra.quando.minuto | 0;
   }
 
   document.getElementById("modalRegraAcao").value = regra.acao.tipo;
@@ -95,7 +112,7 @@ function regraOpenEditModal(regraID) {
     document.getElementById("modalRegraAcaoTimerRecurso").value =
       regra.acao.recurso;
     document.getElementById("modalRegraAcaoTimerTempo").value =
-      regra.acao.timer;
+      regra.acao.timer | 10;
   }
 
   document.getElementById("modalSalvarBtn").onclick = function () {

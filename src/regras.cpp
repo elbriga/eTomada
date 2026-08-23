@@ -583,9 +583,24 @@ String regrasPersiste(Regra *novaRegra)
     return "OK";
 }
 
+int regraFindNextID()
+{
+    int MAX = 0, totRegras = regrasCount();
+    for (int r = 0; r < totRegras; r++)
+    {
+        Regra *regra = regraGetPorIndice(r);
+        if (regra->id > MAX)
+            MAX = regra->id;
+    }
+    return MAX + 1;
+}
+
 void regraLoadFromJSON(Regra *regra, JsonObject &doc)
 {
-    regra->id = doc["id"].as<int>() | (regrasTotal + 1); // TODO rever esse ID ao chamar fora de regrasLoad()
+    regra->id = doc["id"].as<int>();
+    if (!regra->id)
+        regra->id = regraFindNextID();
+
     regra->ativa = doc["ativa"].as<bool>();
 
     // preencher condicao
@@ -601,9 +616,9 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
             regra->condicao.evento = EVENTO_TOGGLE;
         else if (eventoStr == "CLICK")
             regra->condicao.evento = EVENTO_CLICK;
-        else if (eventoStr == "ON")
+        else if (eventoStr == "LIGOU")
             regra->condicao.evento = EVENTO_LIGOU;
-        else if (eventoStr == "OFF")
+        else if (eventoStr == "DESLIGOU")
             regra->condicao.evento = EVENTO_DESLIGOU;
         else if (eventoStr == "DUPCLICK")
             regra->condicao.evento = EVENTO_DOUBLE_CLICK;
