@@ -172,7 +172,6 @@ void setup()
   rgbLedSetAnim(0); // Verde == Loop
 }
 
-static bool ledState = false;
 void loop()
 {
   esp_task_wdt_reset(); // alimenta o watchdog
@@ -196,8 +195,7 @@ void loop()
     // Heartbeat
     if (ledAtivo() && hardwareProfile.ledPin != RGB_LED_PIN) // rgbLed tem Task propria
     {
-      ledState = !ledState;
-      digitalWrite(hardwareProfile.ledPin, ledState);
+      digitalWrite(hardwareProfile.ledPin, lastSecond % 2);
     }
 
     if (ntpSyncOKFlag)
