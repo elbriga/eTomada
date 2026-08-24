@@ -106,7 +106,7 @@ String recursosRemotosLoad(const char *path)
     }
     else
     {
-      JsonDocument *snapshot = discoverGetNodoSnapshot(recursoRemoto->nodo->deviceID);
+      JsonDocument *snapshot = discoverGetNodoSnapshot(recursoRemoto->nodo->mac);
       if (snapshot)
       {
         JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, String(recursoRemoto->idRemoto));
@@ -202,7 +202,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
   {
     logaM(LOG_CRITICO,
           "recursoRemotoAtualizaFromSnapshot: snapshot NULL para [%s]",
-          nodo ? nodo->deviceID : "(null)");
+          nodo ? nodo->mac : "(null)");
     return;
   }
 
@@ -218,7 +218,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
       continue;
 
     rr = recurso->recursoRemoto;
-    if (rr->nodo != nodo)
+    if (rr->nodo != nodo) // TODO : strcmp(mac) ao inves de testar o ponteiro?
       continue;
 
     JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, String(rr->idRemoto));

@@ -67,13 +67,13 @@ NodoRemoto *discoverGetNodoPorIndice(int id)
     return NULL;
 }
 
-NodoRemoto *discoverGetNodo(const char *deviceID)
+NodoRemoto *discoverGetNodo(const char *mac)
 {
     int tot = discoverGetNodosCount();
     for (int dn = 0; dn < tot; dn++)
     {
         NodoRemoto *nodo = &discoverNodos[dn];
-        if (!strncmp(nodo->deviceID, deviceID, 32))
+        if (!strncmp(nodo->mac, mac, 32))
         {
             return nodo;
         }
@@ -81,13 +81,13 @@ NodoRemoto *discoverGetNodo(const char *deviceID)
     return NULL;
 }
 
-JsonDocument *discoverGetNodoSnapshot(const char *deviceID)
+JsonDocument *discoverGetNodoSnapshot(const char *mac)
 {
     int tot = discoverGetNodosCount();
     for (int dn = 0; dn < tot; dn++)
     {
         NodoRemoto *nodo = &discoverNodos[dn];
-        if (!strncmp(nodo->deviceID, deviceID, 32))
+        if (!strncmp(nodo->mac, mac, 32))
         {
             return &discoverSnapshotBuffer[dn];
         }
@@ -310,7 +310,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
             for (int i = 0; i < totDiscoverNodos; i++)
             {
                 NodoRemoto *nodoTeste = &discoverNodos[i];
-                if (!strcmp(nodoTeste->deviceID, novoMAC))
+                if (!strcmp(nodoTeste->mac, novoMAC))
                 {
                     // Resposta duplicada!
                     // logaM(LOG_AVISO, "<< Resposta ao discover duplicada do nodo [%s]", nodoTeste->nome);
@@ -329,7 +329,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
         NodoRemoto *nr = &discoverNodos[totDiscoverNodos];
         nr->ip = discoverReplyUdp.remoteIP();
         nr->ping = millis() - inicio;
-        strlcpy(nr->deviceID, novoMAC, sizeof(nr->deviceID));
+        strlcpy(nr->mac, novoMAC, sizeof(nr->mac));
 
         discoverSnapshotBuffer[totDiscoverNodos] = docReply;
 

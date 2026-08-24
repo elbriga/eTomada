@@ -71,7 +71,7 @@ NodoRemoto *nodoRemotoGetPorMAC(const char *mac)
   for (int nr = 0; nr < tot; nr++)
   {
     NodoRemoto *nodo = nodoRemotoGetPorIndice(nr);
-    if (!strcmp(nodo->deviceID, mac))
+    if (!strcmp(nodo->mac, mac))
       return &nodosRemotos[nr];
   }
   return NULL;
@@ -113,7 +113,7 @@ void nodosRemotosRefreshTask(void *args)
     for (int nr = 0; nr < totNR; nr++)
     {
       NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
-      if (!strcmp(nodoDiscover->deviceID, nodoRemoto->deviceID))
+      if (!strcmp(nodoDiscover->mac, nodoRemoto->mac))
       {
         achei = true;
         break;
@@ -122,7 +122,7 @@ void nodosRemotosRefreshTask(void *args)
     if (!achei)
     {
       logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em %s. Avisar na interface",
-            nodoDiscover->deviceID, nodoDiscover->ip.toString().c_str());
+            nodoDiscover->mac, nodoDiscover->ip.toString().c_str());
       // TODO
     }
   }
@@ -132,32 +132,38 @@ void nodosRemotosRefreshTask(void *args)
     NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
 
     // Buscar este deviceID nos nodos escaneados
-    NodoRemoto *nodoDescoberto = discoverGetNodo(nodoRemoto->deviceID);
+    NodoRemoto *nodoDescoberto = discoverGetNodo(nodoRemoto->mac);
     if (nodoDescoberto)
     {
       if (!nodoRemoto->online)
-        logaM(LOG_AVISO, "Nodo Remoto[%s] %s - ONLINE", nodoRemoto->id, nodoRemoto->nome);
+        logaM(LOG_AVISO, "Nodo Remoto [%s] ONLINE", nodoRemoto->id);
       nodoRemoto->online = true;
 
       if (nodoRemoto->ip != nodoDescoberto->ip)
       {
         nodoRemoto->ip = nodoDescoberto->ip;
-        logaM(LOG_AVISO, "Nodo Remoto[%s] %s - Novo IP: %s",
-              nodoRemoto->id, nodoRemoto->nome,
-              nodoRemoto->ip.toString().c_str());
+        logaM(LOG_AVISO, "Nodo Remoto [%s] Novo IP: %s",
+              nodoRemoto->id, nodoRemoto->ip.toString().c_str());
+      }
+
+      if (strncmp(nodoRemoto->id, nodoDescoberto->id, 8))
+      {
+        logaM(LOG_AVISO, "Nodo Remoto [%s] Novo Nome: [%s] !!",
+              nodoRemoto->id, nodoDescoberto->id);
+        strlcpy(nodoRemoto->id, nodoDescoberto->id, sizeof(nodoRemoto->id));
       }
 
       nodoRemoto->ping = nodoDescoberto->ping;
 
       // Atualizar os RecursoRemoto com o snapshot do discover
-      JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->deviceID);
+      JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->mac);
 
       recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
     }
     else
     {
       if (nodoRemoto->online)
-        logaM(LOG_AVISO, "Nodo Remoto[%s] %s OFFLINE", nodoRemoto->id, nodoRemoto->nome);
+        logaM(LOG_AVISO, "Nodo Remoto [%s] OFFLINE", nodoRemoto->id);
       nodoRemoto->online = false;
     }
   }
@@ -205,8 +211,7 @@ String nodosRemotosLoad(const char *path)
     }
 
     strlcpy(nodo->id, nodoJson["id"].as<const char *>(), sizeof(nodo->id));
-    strlcpy(nodo->nome, nodoJson["nome"].as<const char *>(), sizeof(nodo->nome));
-    strlcpy(nodo->deviceID, nodoJson["mac"].as<const char *>(), sizeof(nodo->deviceID));
+    strlcpy(nodo->mac, nodoJson["mac"].as<const char *>(), sizeof(nodo->mac));
     nodo->online = false;
 
     totNodosRemotos++;
@@ -217,8 +222,8 @@ String nodosRemotosLoad(const char *path)
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto)
 {
-  logaM(LOG_NORMAL, "NodoRemoto %s [%s] > %s > [%s] (%d ms)",
-        nodoRemoto->id, nodoRemoto->nome, nodoRemoto->deviceID,
+  logaM(LOG_NORMAL, "NodoRemoto [%s] > [%s] [%s] (%d ms)",
+        nodoRemoto->id, nodoRemoto->mac,
         nodoRemoto->ip.toString().c_str(),
         nodoRemoto->ping);
 }
