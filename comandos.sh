@@ -8,3 +8,6 @@ scp /home/gabriel/Documents/PlatformIO/Projects/eTomada/firmware-server/eTomada.
 
 # Firmware
 scp .pio/build/lolin/firmware.bin pi:/root/nginx-docker/html/firmware/lolin32_R6S4B1_1.3.9.bin
+
+# Umidificador!
+curl -v -X PUT "http://192.168.1.151/api/setUmidificador" -H "Content-Type: application/json" -d '{"estado":0}'
