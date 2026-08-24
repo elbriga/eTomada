@@ -10,7 +10,11 @@ function regraGetCard(regra) {
     <div class="medio">Regra ${regra.id}</div>
     <div class="title">NOME</div>
   </div>
-  <button class="editBtn" onclick="regraOpenEditModal('${regra.id}')">✏️</button>
+  <div>
+    <button class="editBtn" onclick="regraDelete('${regra.id}', this)">🗑️</button>
+    <button class="editBtn" onclick="regraSetAtiva('${regra.id}', ${regra.ativa ? 0 : 1}, this)">${regra.ativa ? "🟢" : "🔴"}</button>
+    <button class="editBtn" onclick="regraOpenEditModal('${regra.id}')">✏️</button>
+  </div>
 </div>
 <div class="status">
   ${regra.descricao}
@@ -196,5 +200,28 @@ async function regraSalvarFromModal() {
   } finally {
     btn.disabled = false;
     btn.innerText = "💾 Salvar";
+  }
+}
+
+async function regraDelete(regraID, btn) {
+  if (!confirm("Deseja deletar essa regra?")) return;
+
+  btn.disabled = true;
+  btn.innerText = "...";
+
+  try {
+    await eTomadaAPI("delRegra", { id: regraID }, "PUT");
+    eTomadaRender();
+  } catch (e) {
+    statusMsg("Erro ao deletar regra: " + e);
+  }
+}
+
+async function regraSetAtiva(regraID, ativa) {
+  try {
+    await eTomadaAPI("setRegra", { id: regraID, ativa: !!ativa }, "PUT");
+    eTomadaRender();
+  } catch (e) {
+    statusMsg(`Erro ao ${ativa ? "ativar" : "desativar"} regra: ` + e);
   }
 }

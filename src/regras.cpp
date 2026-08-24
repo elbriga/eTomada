@@ -601,81 +601,88 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
     if (!regra->id)
         regra->id = regraFindNextID();
 
-    regra->ativa = doc["ativa"].as<bool>();
+    if (doc["ativa"])
+        regra->ativa = doc["ativa"].as<bool>();
 
     // preencher condicao
-    String tipoCondicaoStr = doc["quando"]["tipo"].as<String>();
-    if (tipoCondicaoStr == "EVENTO")
+    if (doc["quando"]["tipo"])
     {
-        regra->condicao.tipo = COND_EVENTO;
-        strlcpy(regra->condicao.recursoID,
-                doc["quando"]["recurso"].as<const char *>(),
-                sizeof(regra->condicao.recursoID));
-        String eventoStr = doc["quando"]["evento"].as<String>();
-        if (eventoStr == "TOGGLE")
-            regra->condicao.evento = EVENTO_TOGGLE;
-        else if (eventoStr == "CLICK")
-            regra->condicao.evento = EVENTO_CLICK;
-        else if (eventoStr == "LIGOU")
-            regra->condicao.evento = EVENTO_LIGOU;
-        else if (eventoStr == "DESLIGOU")
-            regra->condicao.evento = EVENTO_DESLIGOU;
-        else if (eventoStr == "DUPCLICK")
-            regra->condicao.evento = EVENTO_DOUBLE_CLICK;
-        else
-        // TODO :: outros eventos
+        String tipoCondicaoStr = doc["quando"]["tipo"].as<String>();
+        if (tipoCondicaoStr == "EVENTO")
         {
-            logaM(LOG_CRITICO, "TipoEvento %s ??? Inativando regra", eventoStr.c_str());
+            regra->condicao.tipo = COND_EVENTO;
+            strlcpy(regra->condicao.recursoID,
+                    doc["quando"]["recurso"].as<const char *>(),
+                    sizeof(regra->condicao.recursoID));
+            String eventoStr = doc["quando"]["evento"].as<String>();
+            if (eventoStr == "TOGGLE")
+                regra->condicao.evento = EVENTO_TOGGLE;
+            else if (eventoStr == "CLICK")
+                regra->condicao.evento = EVENTO_CLICK;
+            else if (eventoStr == "LIGOU")
+                regra->condicao.evento = EVENTO_LIGOU;
+            else if (eventoStr == "DESLIGOU")
+                regra->condicao.evento = EVENTO_DESLIGOU;
+            else if (eventoStr == "DUPCLICK")
+                regra->condicao.evento = EVENTO_DOUBLE_CLICK;
+            else
+            // TODO :: outros eventos
+            {
+                logaM(LOG_CRITICO, "TipoEvento %s ??? Inativando regra[%d]", eventoStr.c_str(), regra->id);
+                regra->ativa = false;
+            }
+        }
+        else if (tipoCondicaoStr == "HORARIO")
+        {
+            regra->condicao.tipo = COND_HORARIO;
+            regra->condicao.horario.hora = doc["quando"]["hora"].as<int>();
+            regra->condicao.horario.minuto = doc["quando"]["minuto"].as<int>();
+        }
+        else
+        {
+            logaM(LOG_CRITICO, "TipoCondicao %s ??? Inativando regra[%d]", tipoCondicaoStr.c_str(), regra->id);
             regra->ativa = false;
         }
-    }
-    else if (tipoCondicaoStr == "HORARIO")
-    {
-        regra->condicao.tipo = COND_HORARIO;
-        regra->condicao.horario.hora = doc["quando"]["hora"].as<int>();
-        regra->condicao.horario.minuto = doc["quando"]["minuto"].as<int>();
-    }
-    else
-    {
-        logaM(LOG_CRITICO, "TipoCondicao %s ??? Inativando regra", tipoCondicaoStr.c_str());
-        regra->ativa = false;
     }
 
     // preencher acao
-    String tipoAcaoStr = doc["acao"]["tipo"];
-    if (tipoAcaoStr == "ESTADO")
+    if (doc["acao"]["tipo"])
     {
-        regra->acao.tipo = ACAO_ESTADO;
-        strlcpy(regra->acao.recursoID,
-                doc["acao"]["recurso"].as<const char *>(),
-                sizeof(regra->acao.recursoID));
-        String acaoStr = doc["acao"]["comando"];
-        if (acaoStr == "ON")
-            regra->acao.comando = ACAO_ON;
-        else if (acaoStr == "OFF")
-            regra->acao.comando = ACAO_OFF;
-        else if (acaoStr == "TOGGLE")
-            regra->acao.comando = ACAO_TOGGLE;
-        else if (acaoStr == "PULSE")
-            regra->acao.comando = ACAO_PULSE;
+        String tipoAcaoStr = doc["acao"]["tipo"];
+        if (tipoAcaoStr == "ESTADO")
+        {
+            regra->acao.tipo = ACAO_ESTADO;
+            strlcpy(regra->acao.recursoID,
+                    doc["acao"]["recurso"].as<const char *>(),
+                    sizeof(regra->acao.recursoID));
+            String acaoStr = doc["acao"]["comando"];
+            if (acaoStr == "ON")
+                regra->acao.comando = ACAO_ON;
+            else if (acaoStr == "OFF")
+                regra->acao.comando = ACAO_OFF;
+            else if (acaoStr == "TOGGLE")
+                regra->acao.comando = ACAO_TOGGLE;
+            else if (acaoStr == "PULSE")
+                regra->acao.comando = ACAO_PULSE;
+            else
+            {
+                logaM(LOG_CRITICO, "AcaoRecurso %s ??? Inativando regra[%d]", acaoStr.c_str(), regra->id);
+                regra->ativa = false;
+            }
+        }
+        else if (tipoAcaoStr == "TIMER")
+        {
+            regra->acao.tipo = ACAO_TIMER;
+            strlcpy(regra->acao.recursoID,
+                    doc["acao"]["recurso"].as<const char *>(),
+                    sizeof(regra->acao.recursoID));
+            regra->acao.timer = doc["acao"]["timer"].as<uint32_t>();
+        }
         else
         {
-            logaM(LOG_CRITICO, "AcaoRecurso %s ??? Inativando regra", acaoStr.c_str());
+            logaM(LOG_CRITICO, "TipoAcao %s ??? Inativando regra[%d]", tipoAcaoStr.c_str(), regra->id);
             regra->ativa = false;
         }
-    }
-    else if (tipoAcaoStr == "TIMER")
-    {
-        regra->acao.tipo = ACAO_TIMER;
-        strlcpy(regra->acao.recursoID,
-                doc["acao"]["recurso"].as<const char *>(),
-                sizeof(regra->acao.recursoID));
-        regra->acao.timer = doc["acao"]["timer"].as<uint32_t>();
-    }
-    else
-    {
-        logaM(LOG_CRITICO, "TipoAcao %s ??? Inativando regra", tipoAcaoStr.c_str());
-        regra->ativa = false;
     }
 }
 
