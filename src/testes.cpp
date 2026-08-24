@@ -18,8 +18,11 @@ void TESTES()
     // Remove e altera arquivos para testar a atualização via firmware server
     // testaOTA();
 
-    // Carrega os JSON de testes
-    // carregaArquivosJsonTeste();
+    if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
+    {
+        // Carrega os JSON de testes
+        // carregaArquivosJsonTeste();
+    }
 }
 
 void testaOTA()
@@ -40,15 +43,12 @@ void testaOTA()
 
 void carregaArquivosJsonTeste()
 {
-    if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
-    {
-        logaM(LOG_AVISO, "INICIALIZANDO REGRAS FROM TESTES!!!");
-        utilCopiaArquivo("/config/automacoesTeste.json", REGRAS_PATH);
+    logaM(LOG_AVISO, "INICIALIZANDO REGRAS FROM TESTES!!!");
+    utilCopiaArquivo("/config/automacoesTeste.json", REGRAS_PATH);
 
-        logaM(LOG_AVISO, "INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
-        utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
+    logaM(LOG_AVISO, "INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
+    utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
 
-        logaM(LOG_AVISO, "INICIALIZANDO RECURSOS REMOTOS FROM TESTES!!!");
-        utilCopiaArquivo("/config/recursosRemotosTeste.json", RECURSOS_REMOTOS_PATH);
-    }
+    logaM(LOG_AVISO, "INICIALIZANDO RECURSOS REMOTOS FROM TESTES!!!");
+    utilCopiaArquivo("/config/recursosRemotosTeste.json", RECURSOS_REMOTOS_PATH);
 }
