@@ -23,11 +23,6 @@ async function eTomadaRefresh(snapshot) {
     return;
   }
 
-  if (snapshot.api < 3) {
-    statusMsg("Erro versao API!");
-    return;
-  }
-
   eTomadaData = snapshot;
 }
 
@@ -52,6 +47,8 @@ async function eTomadaRender(snapshot) {
     botoesRenderFromRecursos();
 
     regrasRenderFromSnapshot();
+
+    umidificadorRenderFromSnapshot();
   }
 
   _eTomadaLoading = false;

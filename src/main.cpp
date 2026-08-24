@@ -21,6 +21,7 @@
 #include "ota.h"
 #include "memoria.h"
 #include "shaCache.h"
+#include "umidificador.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
@@ -107,6 +108,9 @@ void setup()
   logaM(LOG_NORMAL, "Inicializando FS");
   if (!LittleFS.begin())
     utilDIE("ERRO LITTLEFS!!!");
+
+  if (umidificadorAtivo())
+    umidificadorInit();
 
   logaM(LOG_NORMAL, "Inicializando WiFi");
   displayMostraString(0, 20, "Conectando...");

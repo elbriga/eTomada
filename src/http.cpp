@@ -9,6 +9,7 @@
 #include "recurso.h"
 #include "mestre.h"
 #include "eventos.h"
+#include "umidificador.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("HTTP", nivel, fmt, ##__VA_ARGS__)
@@ -149,6 +150,14 @@ void httpServerInitModoAPI()
 
                   request->send(200, "application/json", "{\"msg\": \"" + atzCfgOK + "\"}");
                   logaRequest(request, "200 " + atzCfgOK); });
+
+  if (umidificadorAtivo())
+    httpServer.on("/api/setUmidificador", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+                  {
+                  String atzUmidOK = umidificadorSetFromJSON(data);
+
+                  request->send(200, "application/json", "{\"msg\": \"" + atzUmidOK + "\"}");
+                  logaRequest(request, "200 " + atzUmidOK); });
 
   httpServer.on("/api/factoryReset", HTTP_POST, [](AsyncWebServerRequest *request)
                 {

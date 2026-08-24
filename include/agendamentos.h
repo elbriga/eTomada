@@ -2,4 +2,4 @@
 #include <Arduino.h>
 
 void agendamentosInit();
-void agendamentosAdd(const char *recursoID, bool estado, int timeoutMs);
+void agendamentosAdd(const char *recursoID, int estado, int timeoutMs);

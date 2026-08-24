@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "1.3.12"
+#define ETOMADA_VERSAO "1.3.14"
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -22,6 +22,7 @@
 #include "regras.h"
 #include "util.h"
 #include "hardwareProfile.h"
+#include "umidificador.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("eTOMADA", nivel, fmt, ##__VA_ARGS__)
@@ -155,6 +156,9 @@ String eTomadaGetSnapshotJSON()
 
   doc["mac"] = getMACStr();
   doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
+
+  if (umidificadorAtivo())
+    doc["umidPower"] = umidificadorGetEstado();
 
   doc["uptime"] = millis();
   time_t now = 0;

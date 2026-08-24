@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arduino.h>
+
 #include "rele.h"
 #include "sensor.h"
 #include "botao.h"
@@ -29,6 +31,7 @@ typedef struct
     ReleHW reles[MAX_RELES];
     SensorHW sensores[MAX_SENSORES];
     BotaoHW botoes[MAX_BOTOES];
+    uint8_t umidificador[2]; // se os 2 != 0 > eTomada Umidificador!
 } HardwareProfile;
 
 #ifdef HW_LOLIN

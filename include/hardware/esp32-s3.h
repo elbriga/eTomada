@@ -18,4 +18,5 @@ const HardwareProfile hardwareProfile = {
         {6},
         {255}, // FIM
     },
+    .umidificador = {0, 0},
 };
