@@ -57,13 +57,8 @@ void eventoPost(TipoEvento tipo,
 String eventoMockFromJson(uint8_t *json)
 {
     JsonDocument doc;
-
-    DeserializationError err = deserializeJson(doc, json);
-    if (err)
-    {
-        doc.clear();
+    if (utilLeJson("eventoMockFromJson", doc, json))
         return "JSON Invalido";
-    }
 
     TipoEvento mock = EVENTO_NENHUM;
     String acao = doc["acao"];

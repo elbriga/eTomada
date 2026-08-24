@@ -140,11 +140,14 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
   recursoOut = nullptr;
 
   JsonDocument jsonIN;
-  DeserializationError err = deserializeJson(jsonIN, json);
-  if (err)
+  if (utilLeJson("recursoSetFromJSON", jsonIN, json))
     return "JSON Invalido";
 
-  Recurso *recurso = recursoGet(jsonIN["id"].as<const char *>());
+  String id = jsonIN["id"].as<String>();
+  String estado = jsonIN["estado"].as<String>();
+  jsonIN.clear();
+
+  Recurso *recurso = recursoGet(id.c_str());
   if (!recurso)
     return "Recurso invalido";
 
@@ -153,7 +156,6 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
 
   recursoOut = recurso;
 
-  String estado = jsonIN["estado"].as<String>();
   return recursoSet(recurso, estado, enviaMestre);
 }
 
@@ -369,16 +371,13 @@ JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
 String recursoEventoRecebido(uint8_t *json)
 {
   JsonDocument doc;
-
-  DeserializationError err = deserializeJson(doc, json);
-  if (err)
-  {
+  if (utilLeJson("recursoEventoRecebido", doc, json))
     return "JSON Invalido";
-  }
 
   NodoRemoto *nr = nodoRemotoGetPorMAC(doc["mac"].as<const char *>());
   if (!nr)
   {
+    doc.clear();
     return "Nodo Invalido!";
   }
 
@@ -394,11 +393,12 @@ String recursoEventoRecebido(uint8_t *json)
     if (!strcmp(doc["id"].as<const char *>(), rec->recursoRemoto->idRemoto))
     {
       logaM(LOG_TESTE, "Evento recebido! Atualizar recurso [%s]", rec->id);
-
+      doc.clear();
       return recursoAtualizaFromJson(rec, doc["device"], doc["timestamp"].as<unsigned long>(), doc["evento"].as<String>());
     }
   }
 
+  doc.clear();
   return "Recurso nao encontrado";
 }
 
@@ -474,18 +474,23 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
 String recursoAtualizaConfigFromJSON(uint8_t *json)
 {
   JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, json);
-  if (err)
+  if (utilLeJson("recursoAtualizaConfigFromJSON", doc, json))
     return "JSON Invalido";
 
   String id = doc["id"];
   Recurso *recurso = recursoGet(id.c_str());
   if (!recurso)
+  {
+    doc.clear();
     return "Recurso Invalido";
+  }
 
   MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
   if (!lock)
+  {
+    doc.clear();
     return "mutex timeout";
+  }
 
   bool mudou = false;
 

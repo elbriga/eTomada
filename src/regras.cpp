@@ -504,8 +504,7 @@ void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra)
 String regraAtualizaFromJSON(uint8_t *json)
 {
     JsonDocument doc;
-    DeserializationError err = deserializeJson(doc, json);
-    if (err)
+    if (utilLeJson("regraAtualizaFromJSON", doc, json))
         return "JSON Invalido";
 
     int id = doc["id"].as<int>();
@@ -522,7 +521,10 @@ String regraAtualizaFromJSON(uint8_t *json)
     {
         regra = regraGet(id);
         if (!regra)
+        {
+            doc.clear();
             return "Regra Invalida";
+        }
     }
 
     JsonObject obj = doc.as<JsonObject>();
@@ -693,7 +695,7 @@ String regrasLoad(const char *path)
         return "ERRO: regrasLoad > nao abriu";
 
     JsonDocument doc;
-    DeserializationError erro = deserializeJson(doc, file);
+    DeserializationError erro = utilLeJson("regrasLoad", doc, file);
     file.close();
     if (erro)
         return "ERRO: regrasLoad > lendo regras";
@@ -727,6 +729,8 @@ String regrasLoad(const char *path)
 
         regrasTotal++;
     }
+
+    doc.clear();
 
     return "OK";
 }

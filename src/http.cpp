@@ -10,6 +10,7 @@
 #include "mestre.h"
 #include "eventos.h"
 #include "umidificador.h"
+#include "util.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("HTTP", nivel, fmt, ##__VA_ARGS__)
@@ -258,21 +259,21 @@ void httpServerInitModoAP()
   httpServer.on("/api/setWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {
     JsonDocument doc;
-
-    DeserializationError err = deserializeJson(doc, data);
-    if (err) {
+    if (utilLeJson("/api/setWiFiConfig", doc, data)) {
       logaRequest(request, "400 JSON Invalido");
       request->send(400, "application/json", R"({"msg":"JSON Invalido"})");
       return;
     }
 
     String ssid = doc["ssid"] | "";
+    String pass = doc["pass"] | "";
+    doc.clear();
+
     if (ssid == "") {
       logaRequest(request, "400 SSID Invalido");
       request->send(400, "application/json", R"({"msg":"SSID Invalido"})");
       return;
     }
-    String pass = doc["pass"] | "";
 
     WiFiSalvaConfig(ssid, pass);
 

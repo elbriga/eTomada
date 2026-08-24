@@ -115,8 +115,7 @@ bool otaChecaNovoFirmware(bool ehBoot)
     }
 
     JsonDocument doc;
-    DeserializationError erro = deserializeJson(doc, http.getStream());
-    if (erro)
+    if (utilLeJson("otaChecaNovoFirmware", doc, http.getStream()))
     {
         logaM(LOG_AVISO, "Falha JSON ao contactar servidor de Firmware");
         return false;

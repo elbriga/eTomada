@@ -10,6 +10,7 @@
 #include "mestre.h"
 #include "ntp.h"
 #include "memoria.h"
+#include "util.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("DISCOVR", nivel, fmt, ##__VA_ARGS__)
@@ -113,9 +114,15 @@ void discoverLoopNo()
 
     // Protocolo
     JsonDocument doc;
-    deserializeJson(doc, discoverRecvUdp);
+    if (utilLeJson("discoverLoopNo", doc, discoverRecvUdp))
+    {
+        logaM(LOG_AVISO, "discoverLoop :: erro JSON!");
+        return;
+    }
+
     if (doc["cmd"] != "discover")
     {
+        doc.clear();
         logaM(LOG_AVISO, "discoverLoop :: cmd nao discover!");
         return;
     }
@@ -123,6 +130,7 @@ void discoverLoopNo()
     int porta = doc["replyTo"].as<int>();
     if (porta < 1024)
     {
+        doc.clear();
         logaM(LOG_AVISO, "discoverLoop :: Sem porta para reply!");
         return;
     }
@@ -141,6 +149,8 @@ void discoverLoopNo()
 
     // Verificar se é nosso mestre
     mestreCheckDiscover(doc["mac"].as<String>(), discoverRecvUdp.remoteIP());
+
+    doc.clear();
 }
 
 void discoverStart(bool ehTask)
@@ -294,10 +304,9 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
         }
 
         JsonDocument docReply;
-        DeserializationError err = deserializeJson(docReply, discoverReplyUdp);
-        if (err)
+        if (utilLeJson("discoverTaskScan", docReply, discoverReplyUdp))
         {
-            logaM(LOG_AVISO, ">> discoverTask : Erro JSON: %s\n", err.c_str());
+            logaM(LOG_AVISO, ">> discoverTask : Erro JSON");
             continue;
         }
 

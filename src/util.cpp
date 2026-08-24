@@ -1,5 +1,8 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <LittleFS.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
 
 #include "loga.h"
 
@@ -90,4 +93,51 @@ const char *utilGetDiaSemana(struct tm timeinfo)
   default:
     return "---";
   }
+}
+
+// TODO :: Usar!
+DeserializationError utilLeJson(const char *onde, JsonDocument &doc, uint8_t *str)
+{
+  DeserializationError erro = deserializeJson(doc, str);
+
+  if (erro)
+    logaM(LOG_AVISO, ">>> ERRO JSON STR* em [%s] : [%s]", onde, erro.c_str());
+
+  return erro;
+}
+DeserializationError utilLeJson(const char *onde, JsonDocument &doc, String jsonStr)
+{
+  DeserializationError erro = deserializeJson(doc, jsonStr);
+
+  if (erro)
+    logaM(LOG_AVISO, ">>> ERRO JSON STR em [%s] : [%s]", onde, erro.c_str());
+
+  return erro;
+}
+DeserializationError utilLeJson(const char *onde, JsonDocument &doc, File file)
+{
+  DeserializationError erro = deserializeJson(doc, file);
+
+  if (erro)
+    logaM(LOG_AVISO, ">>> ERRO JSON FILE em [%s] : [%s]", onde, erro.c_str());
+
+  return erro;
+}
+DeserializationError utilLeJson(const char *onde, JsonDocument &doc, WiFiUDP udp)
+{
+  DeserializationError erro = deserializeJson(doc, udp);
+
+  if (erro)
+    logaM(LOG_AVISO, ">>> ERRO JSON UDP em [%s] : [%s]", onde, erro.c_str());
+
+  return erro;
+}
+DeserializationError utilLeJson(const char *onde, JsonDocument &doc, WiFiClient &wifiClient)
+{
+  DeserializationError erro = deserializeJson(doc, wifiClient);
+
+  if (erro)
+    logaM(LOG_AVISO, ">>> ERRO JSON WIFICLI em [%s] : [%s]", onde, erro.c_str());
+
+  return erro;
 }

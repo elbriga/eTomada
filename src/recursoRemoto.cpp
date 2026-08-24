@@ -148,6 +148,8 @@ String recursosRemotosLoad(const char *path)
     totRecursosRemotos++;
   }
 
+  doc.clear();
+
   return "OK";
 }
 

@@ -5,6 +5,7 @@
 #include "loga.h"
 #include "hardwareProfile.h"
 #include "agendamentos.h"
+#include "util.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("UMIDIFC", nivel, fmt, ##__VA_ARGS__)
@@ -151,8 +152,7 @@ void umidSendClick()
 String umidificadorSetFromJSON(uint8_t *json)
 {
   JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, json);
-  if (err)
+  if (utilLeJson("umidificadorSetFromJSON", doc, json))
     return "JSON Invalido";
 
   int estado = doc["estado"].as<int>();

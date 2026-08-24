@@ -179,10 +179,10 @@ String nodosRemotosLoad(const char *path)
     return "ERRO: nodosRemotosLoad > nao abriu";
 
   JsonDocument doc;
-  DeserializationError erro = deserializeJson(doc, file);
+  DeserializationError erro = utilLeJson("nodosRemotosLoad", doc, file);
   file.close();
   if (erro)
-    return "ERRO: nodosRemotosLoad > lendo nodos";
+    return "ERRO: nodosRemotosLoad > JSON nodos";
 
   JsonArray nodosJson = doc["nodos"].as<JsonArray>();
   int totNodos = nodosJson.size();
@@ -216,6 +216,8 @@ String nodosRemotosLoad(const char *path)
 
     totNodosRemotos++;
   }
+
+  doc.clear();
 
   return "OK";
 }

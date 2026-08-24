@@ -7,6 +7,7 @@
 #include "nodoRemoto.h"
 #include "recurso.h"
 #include "recursoRemoto.h"
+#include "util.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("APIINT", nivel, fmt, ##__VA_ARGS__)
@@ -105,7 +106,7 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
     logaM(LOG_DEBUG, " >> RESP: %s", respBody.c_str());
 
     if (response)
-      deserializeJson(*response, respBody);
+      utilLeJson("apiInterna", *response, respBody);
   }
 
   http.end();
