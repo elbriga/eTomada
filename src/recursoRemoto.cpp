@@ -45,10 +45,10 @@ String recursosRemotosLoad(const char *path)
     return "ERRO: recursosRemotosLoad > nao abriu";
 
   JsonDocument doc;
-  DeserializationError erro = deserializeJson(doc, file);
+  DeserializationError erro = utilLeJson("recursosRemotosLoad", doc, file);
   file.close();
   if (erro)
-    return "ERRO: recursosRemotosLoad > lendo recursos";
+    return "ERRO: recursosRemotosLoad > JSON recursos";
 
   JsonArray recursosJson = doc["recursosRemotos"].as<JsonArray>();
   int totRR = recursosJson.size();
@@ -96,7 +96,7 @@ String recursosRemotosLoad(const char *path)
     strlcpy(recursoRemoto->idLocal, idLocal.c_str(), sizeof(recursoRemoto->idLocal));
     strlcpy(recursoRemoto->idRemoto, idRemoto.c_str(), sizeof(recursoRemoto->idRemoto));
 
-    recursoRemoto->nodo = nodoRemotoGet(nodo.c_str());
+    recursoRemoto->nodo = nodoRemotoGetPorMAC(nodo.c_str());
 
     // Buscar o estado remoto do recurso com o snapshot do nodosRemotosInit()
     JsonObject deviceRemoto;
@@ -235,7 +235,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
 
 void recursoRemotoPrint(RecursoRemoto *recursoRemoto)
 {
-  logaM(LOG_NORMAL, "RecursoRemoto[%s] %s em %s",
+  logaM(LOG_NORMAL, "RecursoRemoto [%s] %s em %s",
         recursoRemoto->idLocal, recursoGetTipoStr(recursoRemoto->tipo),
-        recursoRemoto->nodo->ip.toString().c_str());
+        recursoRemoto->nodo ? recursoRemoto->nodo->ip.toString().c_str() : "???");
 }

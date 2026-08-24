@@ -8,7 +8,7 @@
 
 struct NodoRemoto
 {
-  char id[9];
+  char id[32];
   char mac[32];
   IPAddress ip;
   bool online;

@@ -46,7 +46,7 @@ void eTomadaInit0()
 
   // Para testes
   // prefs.putUChar("modo", MODO_CONTROLADOR);
-  // prefs.putString("deviceID", "QUARTO");
+  // prefs.putString("deviceID", "QUARTO"); // Nao pode ser maior que 32 chars
 
   if (!prefs.isKey("modo"))
     prefs.putUChar("modo", MODO_NO);

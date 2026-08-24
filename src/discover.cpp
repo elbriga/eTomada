@@ -301,6 +301,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
             continue;
         }
 
+        const char *novoID = docReply["device_id"].as<const char *>();
         const char *novoMAC = docReply["mac"].as<const char *>();
 
         // Verificar se já não temos resposta deste nodo no buffer
@@ -330,6 +331,7 @@ static void discoverTaskScan(int scanID, JsonDocument &doc, bool logar)
         nr->ip = discoverReplyUdp.remoteIP();
         nr->ping = millis() - inicio;
         strlcpy(nr->mac, novoMAC, sizeof(nr->mac));
+        strlcpy(nr->id, novoID, sizeof(nr->id));
 
         discoverSnapshotBuffer[totDiscoverNodos] = docReply;
 
