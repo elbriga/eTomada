@@ -1,6 +1,7 @@
 #include "agendamentos.h"
 #include "recurso.h"
 #include "loga.h"
+// #include "umidificador.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("AGENDS", nivel, fmt, ##__VA_ARGS__)
@@ -8,7 +9,7 @@
 struct AcaoAgendada
 {
     char recursoID[8];
-    bool estado;
+    int estado;
     bool ativa;
     uint32_t quando;
 };
@@ -32,7 +33,7 @@ void agendamentosInit()
         1);
 }
 
-void agendamentosAdd(const char *recursoID, bool estado, int timeoutMs)
+void agendamentosAdd(const char *recursoID, int estado, int timeoutMs)
 {
     AcaoAgendada *acao = nullptr;
 
@@ -72,14 +73,14 @@ void agendamentosProcessaTask(void *)
 
             if ((int32_t)(millis() - acao->quando) >= 0)
             {
+                // remove do slot
+                acao->ativa = false;
+
                 Recurso *r = recursoGet(acao->recursoID);
                 if (r)
                     recursoSet(r, acao->estado ? "ON" : "OFF");
                 else
                     logaM(LOG_CRITICO, "agendamentosProcessaTask :: recurso invalido!");
-
-                // remove do slot
-                acao->ativa = false;
             }
         }
 
