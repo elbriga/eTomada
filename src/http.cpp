@@ -124,21 +124,41 @@ void httpServerInitModoAPI()
     request->send(200, "application/json", "{\"msg\": \""+mockOK+"\"}");
     logaRequest(request, "200 " + mockOK); });
 
-  httpServer.on("/api/regras", HTTP_GET, [](AsyncWebServerRequest *request)
+  httpServer.on("/api/getFile", HTTP_GET, [](AsyncWebServerRequest *request)
                 {
-    if (!LittleFS.exists("/automacoes.json"))
+    if (!request->hasParam("file"))
     {
-      request->send(404, "application/json", R"({"msg":"FNF"})");
-      logaRequest(request, "404 FNF");
-      return;
+        request->send(400, "application/json", R"({"msg":"Parametro 'file' obrigatorio"})");
+        logaRequest(request, "400 Missing file");
+        return;
+    }
+
+    String file = request->getParam("file")->value();
+
+    if (file.indexOf("..") >= 0)
+    {
+        request->send(400, "application/json", R"({"msg":"Nome de arquivo invalido"})");
+        logaRequest(request, "400 Invalid file");
+        return;
+    }
+
+    // Garante que o caminho comece com /
+    if (!file.startsWith("/"))
+        file = "/" + file;
+
+    if (!LittleFS.exists(file))
+    {
+        request->send(404, "application/json", R"({"msg":"FNF"})");
+        logaRequest(request, "404 FNF");
+        return;
     }
 
     AsyncWebServerResponse *response =
-      request->beginResponse(
-        LittleFS,
-        "/automacoes.json",
-        "application/json"
-      );
+        request->beginResponse(
+            LittleFS,
+            file,
+            "application/json"
+        );
 
     request->send(response);
 
