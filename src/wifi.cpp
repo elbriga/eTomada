@@ -5,6 +5,7 @@
 #include <Preferences.h>
 #include <DNSServer.h>
 
+#include "eTomada.h"
 #include "display.h"
 #include "wifi.h"
 #include "loga.h"
@@ -49,7 +50,8 @@ void WiFiConnect()
   WiFi.disconnect();
   WiFi.setSleep(false);
 
-  delay(100);
+  String hostname = "eTomada-" + eTomadaDeviceID();
+  WiFi.setHostname(hostname.c_str());
 
   WiFi.begin(ssid.c_str(), pass.c_str());
 
@@ -77,7 +79,8 @@ void WiFiConnect()
     delay(500);
   }
 
-  logaM(LOG_NORMAL, "Endereço IP: [%s]", WiFi.localIP().toString().c_str());
+  logaM(LOG_NORMAL, "Endereço IP: [%s] em [%s]",
+        WiFi.localIP().toString().c_str(), WiFi.getHostname());
 }
 
 bool WiFiGetModoAP()
