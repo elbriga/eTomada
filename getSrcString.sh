@@ -1,5 +1,10 @@
 #!/bin/bash
 
+echo "platformio.ini"
+echo "==="
+cat platformio.ini
+echo
+
 for ARQ in `ls include/`; do
     if [ -d "include/$ARQ" ]; then
         # 1 nivel de recursao manual
