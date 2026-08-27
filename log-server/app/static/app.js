@@ -40,6 +40,10 @@ async function carregarLogs() {
                 ${formataData(escapeHtml(log.timestamp))}
             </td>
 
+            <td class="ip">
+                ${escapeHtml(log.ip)}
+            </td>
+
             <td class="device">
                 ${escapeHtml(log.device_id)}
             </td>

@@ -2,6 +2,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
 
+import os
+import tempfile
+
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -10,6 +13,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi import Request
 
 from fastapi.staticfiles import StaticFiles
+
+DNS_HOSTS_PATH = Path("/app/data/etomadas.hosts")
+DNS_DOMAIN = "etomada"
 
 DB_PATH = Path("/app/data/logs.db")
 
@@ -33,6 +39,10 @@ class LogEntry(BaseModel):
     uptime: int | None = None
     timestamp: int | None = None
 
+class DNSRegister(BaseModel):
+    deviceID: str
+    hostname: str
+    ip: str
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -50,6 +60,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp INTEGER,
             device_id TEXT NOT NULL,
+            ip TEXT,
             level INTEGER,
             module TEXT,
             message TEXT NOT NULL,
@@ -96,6 +107,84 @@ def init_db():
 def startup():
     init_db()
 
+def update_dns_host(device_id: str, hostname: str, ip: str):
+
+    hostname = hostname.strip().lower()
+
+    # Validação simples do hostname
+    if not hostname:
+        raise ValueError("hostname vazio")
+
+    if "." in hostname:
+        raise ValueError("hostname não deve conter domínio")
+
+    if not all(c.isalnum() or c == "-" for c in hostname):
+        raise ValueError("hostname contém caracteres inválidos")
+
+    fqdn = f"{hostname}.{DNS_DOMAIN}"
+
+    DNS_HOSTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    entries = {}
+
+    if DNS_HOSTS_PATH.exists():
+        for line in DNS_HOSTS_PATH.read_text().splitlines():
+
+            line = line.strip()
+
+            if not line or line.startswith("#"):
+                continue
+
+            parts = line.split()
+
+            if len(parts) >= 2:
+                old_ip = parts[0]
+                old_hostname = parts[1]
+
+                entries[old_hostname] = (old_ip, old_hostname)
+
+    # Remove qualquer entrada existente para este device/IP/hostname
+    entries = {
+        name: value
+        for name, value in entries.items()
+        if value[0] != ip and name != fqdn
+    }
+
+    entries[fqdn] = (ip, fqdn)
+
+    content = "".join(
+        f"{entry_ip} {entry_hostname}\n"
+        for entry_ip, entry_hostname in entries.values()
+    )
+
+    fd, temp_path = tempfile.mkstemp(
+        dir=DNS_HOSTS_PATH.parent,
+        prefix=".etomadas-",
+        text=True
+    )
+
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
+
+        # dnsmasq precisa conseguir ler o arquivo
+        os.chmod(temp_path, 0o644)
+
+        # Substituicaoo atomica
+        os.replace(temp_path, DNS_HOSTS_PATH)
+
+    except Exception:
+        try:
+            os.unlink(temp_path)
+        except FileNotFoundError:
+            pass
+
+        raise
+
+    return fqdn
+
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
@@ -107,7 +196,9 @@ def index(request: Request):
 
 
 @app.post("/api/log")
-def receive_log(log: LogEntry):
+def receive_log(log: LogEntry, request: Request):
+
+    ip = request.client.host
 
     conn = get_db()
 
@@ -115,15 +206,17 @@ def receive_log(log: LogEntry):
         INSERT INTO logs (
             timestamp,
             device_id,
+            ip,
             level,
             module,
             message,
             uptime
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         log.timestamp,
         log.deviceID,
+        ip,
         log.level,
         log.module,
         log.message,
@@ -158,6 +251,7 @@ def get_logs(
             l.id,
             l.timestamp,
             l.device_id,
+            l.ip,
             lv.nome AS level,
             l.module,
             l.message,
@@ -214,3 +308,25 @@ def get_nodes():
 
     return [dict(row) for row in rows]
 
+@app.post("/api/dns/register")
+def register_dns(register: DNSRegister):
+
+    try:
+        fqdn = update_dns_host(
+            register.deviceID,
+            register.hostname,
+            register.ip
+        )
+
+    except ValueError as e:
+        return {
+            "ok": False,
+            "error": str(e)
+        }
+
+    return {
+        "ok": True,
+        "deviceID": register.deviceID,
+        "hostname": fqdn,
+        "ip": register.ip
+    }
