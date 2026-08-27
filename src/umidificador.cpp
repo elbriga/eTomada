@@ -91,14 +91,12 @@ void umidificadorSetEstadoTask(void *args)
 {
   UmidificadorEstado estado = (UmidificadorEstado)(intptr_t)args;
 
-  if (estado)
-  {
-    // Salvar ultimo estado
-    Preferences prefs;
-    prefs.begin("eTomada", false);
+  // Salvar ultimo estado
+  Preferences prefs;
+  prefs.begin("eTomada", false);
+  if (prefs.getUChar("umidPower") != estado)
     prefs.putUChar("umidPower", estado);
-    prefs.end();
-  }
+  prefs.end();
 
   // TODO :: mudar estado sem desligar
 
