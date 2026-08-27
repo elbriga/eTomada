@@ -22,6 +22,7 @@
 #include "memoria.h"
 #include "shaCache.h"
 #include "umidificador.h"
+#include "mdns.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
@@ -162,6 +163,8 @@ void setup()
 
   logaM(LOG_NORMAL, "Inicializando o servidor http:");
   httpServerInit();
+
+  mdnsInit();
 
   logaTitulo("Setup OK!");
 

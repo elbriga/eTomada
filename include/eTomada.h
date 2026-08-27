@@ -17,6 +17,8 @@ const char *eTomadaGetModoOperacaoStr();
 
 String eTomadaGetVersao();
 String eTomadaDeviceID();
+String eTomadaDeviceModel();
+String eTomadaDeviceBoard();
 
 String eTomadaGetSnapshotJSON();
 

@@ -144,17 +144,26 @@ String eTomadaGetVersao()
 {
   return ETOMADA_VERSAO;
 }
+String eTomadaDeviceModel()
+{
+  return hardwareProfile.modelo;
+}
+String eTomadaDeviceBoard()
+{
+  return hardwareProfile.board;
+}
 
 String eTomadaGetSnapshotJSON()
 {
   JsonDocument doc;
 
   doc["device_id"] = eTomadaDeviceID(); // Ex.: QUARTO
-  doc["device_model"] = hardwareProfile.modelo;
-  doc["device_board"] = hardwareProfile.board;
+  doc["device_model"] = eTomadaDeviceModel();
+  doc["device_board"] = eTomadaDeviceBoard();
   doc["fw_version"] = eTomadaGetVersao();
 
   doc["mac"] = getMACStr();
+  doc["ip"] = WiFi.localIP().toString();
   doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
 
   if (umidificadorAtivo())
