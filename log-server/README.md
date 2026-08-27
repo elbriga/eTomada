@@ -1,9 +1,9 @@
 ## RUN
- Serial.println("......>>>>>
+
+docker compose up -d --build
 
 ## CHECK
- docker compose ps
+
+docker compose ps
 E
- docker compose logs -f
-
-
+docker compose logs -f
