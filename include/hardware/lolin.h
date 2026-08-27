@@ -5,6 +5,7 @@ const HardwareProfile hardwareProfile = {
     .modelo = "R6S4B1",
     .board = "lolin32",
     .ledPin = 25,
+    .ledInvertido = false,
     .reles = {
         {16, false},
         {13, false},
