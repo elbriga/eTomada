@@ -22,7 +22,8 @@
 #include "memoria.h"
 #include "shaCache.h"
 #include "umidificador.h"
-#include "mdns.h"
+#include "mdns-gs.h"
+#include "led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
@@ -44,11 +45,6 @@ static int lastHour = -1;
 static int wifiFora = 0;
 static int lastMsgDBM = -(60 * 60 * 1000); // MSG a cada 1h
 
-bool ledAtivo()
-{
-  return hardwareProfile.ledPin != 255;
-}
-
 void mainNtpSetSyncFlag()
 {
   ntpSyncOKFlag = true;
@@ -64,17 +60,7 @@ void setup()
   esp_task_wdt_init(5, true); // true = resetar automaticamente
   esp_task_wdt_add(NULL);     // adiciona a task atual (loop)
 
-  if (ledAtivo())
-  {
-    pinMode(hardwareProfile.ledPin, OUTPUT);
-    digitalWrite(hardwareProfile.ledPin, LOW);
-
-    if (hardwareProfile.ledPin == RGB_LED_PIN)
-    {
-      rgbLedInit();
-      rgbLedSetAnim(1); // Azul == Boot!
-    }
-  }
+  ledInit();
 
   ntpSetTZ(); // Podemos estar no RTC interno que reseta sem config de TZ
 
@@ -190,6 +176,7 @@ void loop()
 
   // 10ms/10ms
   botoesAtualiza();
+  ledProcessa();
 
   struct tm timeinfo;
   sysGetTime(&timeinfo);
@@ -198,12 +185,6 @@ void loop()
   if (timeinfo.tm_sec != lastSecond)
   {
     lastSecond = timeinfo.tm_sec;
-
-    // Heartbeat
-    if (ledAtivo() && hardwareProfile.ledPin != RGB_LED_PIN) // rgbLed tem Task propria
-    {
-      digitalWrite(hardwareProfile.ledPin, lastSecond % 2);
-    }
 
     if (ntpSyncOKFlag)
     {
