@@ -1,3 +1,5 @@
+#include <Arduino.h>
+#include <WiFi.h>
 #include <ESPmDNS.h>
 
 #include "eTomada.h"
@@ -22,6 +24,7 @@ void mdnsInit()
 
         MDNS.addServiceTxt("etomada", "tcp", "device", "eTomada");
         MDNS.addServiceTxt("etomada", "tcp", "id", hostname.c_str());
+        MDNS.addServiceTxt("etomada", "tcp", "ip", WiFi.localIP().toString().c_str());
         MDNS.addServiceTxt("etomada", "tcp", "model", eTomadaDeviceModel().c_str());
         MDNS.addServiceTxt("etomada", "tcp", "board", eTomadaDeviceBoard().c_str());
         MDNS.addServiceTxt("etomada", "tcp", "fw", eTomadaGetVersao().c_str());
