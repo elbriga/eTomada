@@ -79,6 +79,8 @@ void WiFiConnect()
     delay(500);
   }
 
+  WiFi.setSleep(false);
+
   logaM(LOG_NORMAL, "Endereço IP: [%s] em [%s]",
         WiFi.localIP().toString().c_str(), WiFi.getHostname());
 }
