@@ -15,7 +15,7 @@
 #include "wifi.h"
 #include "shaCache.h"
 
-#define OTA_SERVER "192.168.1.220"
+#define OTA_SERVER "10.0.0.1" // TODO :: Unificar em eTomadaServer junto com o log-server
 #define OTA_TAMANHO_MINIMO_FLASH 4
 
 // Função de log para esta modulo

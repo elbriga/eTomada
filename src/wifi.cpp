@@ -76,9 +76,11 @@ void WiFiConnect()
       return;
     }
 
+    Serial.print(".");
     delay(500);
   }
 
+  Serial.println();
   WiFi.setSleep(false);
 
   logaM(LOG_NORMAL, "Endereço IP: [%s] em [%s]",
