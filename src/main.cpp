@@ -150,7 +150,7 @@ void setup()
   logaM(LOG_NORMAL, "Inicializando o servidor http:");
   httpServerInit();
 
-  mdnsInit();
+  mdnsInit(true);
 
   logaTitulo("Setup OK!");
 
@@ -164,6 +164,8 @@ void setup()
 
   rgbLedSetAnim(0); // Verde == Loop
 }
+
+static uint32_t tsMdnsTeste = 0;
 
 void loop()
 {
@@ -185,6 +187,13 @@ void loop()
   if (timeinfo.tm_sec != lastSecond)
   {
     lastSecond = timeinfo.tm_sec;
+
+    // CHUNCHO para consertar o mDNS
+    if (millis() - tsMdnsTeste >= 60 * 1000)
+    {
+      tsMdnsTeste = millis();
+      mdnsInit(false);
+    }
 
     if (ntpSyncOKFlag)
     {
@@ -284,4 +293,5 @@ void loop()
   }
 
   vTaskDelay(pdMS_TO_TICKS(10));
+  yield();
 }

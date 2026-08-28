@@ -1,3 +1,3 @@
 #pragma once
 
-void mdnsInit();
+void mdnsInit(bool logar);
