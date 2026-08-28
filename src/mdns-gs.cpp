@@ -30,6 +30,7 @@ void mdnsInit(bool logar)
         MDNS.addServiceTxt("etomada", "tcp", "id", hostname.c_str());
         MDNS.addServiceTxt("etomada", "tcp", "ssid", WiFi.SSID().c_str());
         MDNS.addServiceTxt("etomada", "tcp", "ip", WiFi.localIP().toString().c_str());
+        MDNS.addServiceTxt("etomada", "tcp", "mac", getMACStr().c_str());
         MDNS.addServiceTxt("etomada", "tcp", "model", eTomadaDeviceModel().c_str());
         MDNS.addServiceTxt("etomada", "tcp", "board", eTomadaDeviceBoard().c_str());
         MDNS.addServiceTxt("etomada", "tcp", "fw", eTomadaGetVersao().c_str());

@@ -25,5 +25,4 @@ String eTomadaGetSnapshotJSON();
 void eTomadaRoleta();
 void eTomadaFactoryReset();
 
-uint64_t getMAC();
 String getMACStr();

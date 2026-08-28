@@ -2,7 +2,8 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "1.3.18"
+#define ETOMADA_VERSAO "1.3.19"
+// 1.3.19 - Rede 10 com log server, mac no mDNS,
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -132,12 +133,9 @@ String eTomadaDeviceID()
 
 String eTomadaDeviceIDPadrao()
 {
-  uint64_t MAC = getMAC();
-
-  char deviceID[32];
-  snprintf(deviceID, sizeof(deviceID), "etomada_%04X", (uint16_t)(MAC & 0xFFFF));
-
-  return String(deviceID);
+  String mac = WiFi.macAddress();
+  mac.replace(":", "");
+  return "etomada_" + mac.substring(mac.length() - 6);
 }
 
 String eTomadaGetVersao()
@@ -321,25 +319,7 @@ void eTomadaFactoryReset()
   ESP.restart();
 }
 
-uint64_t getMAC()
-{
-  return ESP.getEfuseMac();
-}
-
 String getMACStr()
 {
-  uint64_t MAC = getMAC();
-
-  char macStr[18];
-  sprintf(
-      macStr,
-      "%02X:%02X:%02X:%02X:%02X:%02X",
-      (uint8_t)(MAC >> 40),
-      (uint8_t)(MAC >> 32),
-      (uint8_t)(MAC >> 24),
-      (uint8_t)(MAC >> 16),
-      (uint8_t)(MAC >> 8),
-      (uint8_t)(MAC));
-
-  return String(macStr);
+  return WiFi.macAddress();
 }
