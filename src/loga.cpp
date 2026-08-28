@@ -18,7 +18,7 @@
 #define LOG_QUEUE_SIZE 32
 #define LOG_MESSAGE_SIZE 512
 
-#define LOG_SERVER "192.168.1.220:8080"
+#define LOG_SERVER "10.0.0.1:8080"
 
 String logServer = "";
 LogLevel logLevel = LOG_NORMAL;
