@@ -29,7 +29,7 @@ void displayInit()
     tft.pushImage(0, 0, 240, 135, BackgroundTelaColorida);
 
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.setCursor(10, 10, 2);
+    tft.setCursor(145, 33, 2);
     tft.println("eTomada!");
 
     // Allocate RAM block for the canvas buffer (240 x 135 pixels)
@@ -54,14 +54,14 @@ void displayMostraMsg(const char *msg, int timeout, bool logar)
 {
     imgBuffer.pushImage(0, 0, 240, 135, BackgroundTelaColorida);
 
-    imgBuffer.setCursor(148, 33, 2);
+    imgBuffer.setCursor(147, 33, 2);
     imgBuffer.printf("%s", eTomadaDeviceID().c_str());
 
     IPAddress ip = WiFiGetModoAP() ? WiFi.softAPIP() : WiFi.localIP();
-    imgBuffer.setCursor(148, 61, 2);
+    imgBuffer.setCursor(147, 61, 2);
     imgBuffer.printf("%s", ip.toString().c_str());
 
-    imgBuffer.setCursor(148, 87, 2);
+    imgBuffer.setCursor(147, 87, 2);
     imgBuffer.printf("%s", msg);
 
     imgBuffer.pushSprite(0, 0);
