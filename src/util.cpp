@@ -21,7 +21,8 @@ void utilRestart(const char *msg)
 
   // TODO :: Salvar estado dos reles
 
-  delay(100);
+  vTaskDelay(pdTICKS_TO_MS(500)); // Delay para dar tempo de flush nos logs
+
   ESP.restart();
 }
 
