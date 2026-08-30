@@ -100,7 +100,7 @@ void setup()
     umidificadorInit();
 
   logaM(LOG_NORMAL, "Inicializando WiFi");
-  displayMostraString(0, 20, "Conectando...");
+  displayMostraString(145, 61, "Conectando");
   WiFiConnect();
 
   // NTP somente no modo STA
@@ -113,7 +113,7 @@ void setup()
     if (timeinfo.tm_year + 1900 < 2026)
     {
       // Nao temos RTC ou ele falhou!
-      displayMostraString(0, 40, "Buscando Hora...");
+      displayMostraString(145, 87, "Buscando Hora");
       ntpSyncTimeTS = ntpSyncTime();
     }
     else
@@ -211,10 +211,10 @@ void loop()
     if (displayPodeMostrar())
     {
       // Atualizar o relogio
-      char formattedTime[10];
+      char formattedTime[16];
       // char msgDataHora[32];
       // strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-      strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
+      strftime(formattedTime, sizeof(formattedTime), "%H : %M : %S", &timeinfo);
       // snprintf(msgDataHora, sizeof(msgDataHora), "%s %s", utilGetDiaSemana(timeinfo), formattedTime);
       displayMostraMsg(formattedTime, 0, false);
     }
