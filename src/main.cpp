@@ -207,16 +207,16 @@ void loop()
       }
     }
 
-#ifdef TEM_OLED
+#ifdef TELA_COLORIDA
     if (displayPodeMostrar())
     {
       // Atualizar o relogio
       char formattedTime[10];
-      char msgDataHora[32];
+      // char msgDataHora[32];
       // strftime(formattedTime, sizeof(formattedTime), "%A, %B %d %Y %H:%M:%S", &timeinfo);
       strftime(formattedTime, sizeof(formattedTime), "%H:%M:%S", &timeinfo);
-      snprintf(msgDataHora, sizeof(msgDataHora), "  %s    %s", utilGetDiaSemana(timeinfo), formattedTime);
-      displayMostraMsg(msgDataHora, 0, false);
+      // snprintf(msgDataHora, sizeof(msgDataHora), "%s %s", utilGetDiaSemana(timeinfo), formattedTime);
+      displayMostraMsg(formattedTime, 0, false);
     }
 #endif
 

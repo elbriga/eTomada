@@ -2,7 +2,7 @@
 #include "hardwareProfile.h"
 
 const HardwareProfile hardwareProfile = {
-    .modelo = "R8S4B2",
+    .modelo = "R5S4B2",
     .board = "esp32dev",
     .ledPin = 2,
     .ledInvertido = false,
@@ -12,9 +12,7 @@ const HardwareProfile hardwareProfile = {
         {25, false},
         {33, false},
         {32, false},
-        {39, false},
-        {38, false},
-        {37, false},
+        {255, false},
     },
     .sensores = {
         {"AHT10t", 0},
