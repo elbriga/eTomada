@@ -11,6 +11,7 @@
 #include "eventos.h"
 #include "umidificador.h"
 #include "util.h"
+#include "ota.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("HTTP", nivel, fmt, ##__VA_ARGS__)
@@ -188,20 +189,49 @@ void httpServerInitModoAPI()
 
   httpServer.on("/api/resetWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request)
                 {
+                  // TODO :: MAGIC!
     WiFiResetConfig();
     request->send(200, "application/json", R"({"msg":"OK"})");
     logaRequest(request, "200 OK");
 
-    delay(1000);
-    ESP.restart(); });
+    utilRestart("reset WiFi"); });
 
-  httpServer.on("/api/reset", HTTP_POST, [](AsyncWebServerRequest *request)
+  httpServer.on("/api/setWiFiConfig", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {
-    request->send(200, "application/json", R"({"msg":"OK"})");
+    JsonDocument doc;
+    if (utilLeJson("/api/setWiFiConfig", doc, data)) {
+      logaRequest(request, "400 JSON Invalido");
+      request->send(400, "application/json", R"({"msg":"JSON Invalido"})");
+      return;
+    }
+
+    String ssid = doc["ssid"] | "";
+    String pass = doc["pass"] | "";
+    doc.clear();
+
+    if (ssid == "") {
+      logaRequest(request, "400 SSID Invalido");
+      request->send(400, "application/json", R"({"msg":"SSID Invalido"})");
+      return;
+    }
+
+    WiFiSalvaConfig(ssid, pass);
+
+    request->send(200, "application/json", R"({"msg":"OK - vou reinicar"})");
     logaRequest(request, "200 OK");
 
-    delay(1000);
-    ESP.restart(); });
+    utilRestart("WiFi Change"); });
+
+  httpServer.on("/api/ota", HTTP_POST, [](AsyncWebServerRequest *request)
+                { otaUploadHelper(request); }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)
+                { otaUpload(request, filename, index, data, len, final); });
+
+  httpServer.on("/api/reset", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
+    request->send(200, "application/json", R"({"msg":"OK - vou reiniciar"})");
+    logaRequest(request, "200 OK");
+
+    utilRestart("API!"); });
 
   httpServer.on("/api/roleta", HTTP_GET, [](AsyncWebServerRequest *request)
                 {
@@ -280,8 +310,7 @@ void httpServerInitModoAP()
     request->send(200, "application/json", R"({"msg":"OK"})");
     logaRequest(request, "200 OK");
 
-    delay(1000);
-    ESP.restart(); });
+    utilRestart("Novo WiFi!"); });
 
   httpServer.serveStatic("/", LittleFS, "/www/").setDefaultFile("portal.html");
 }

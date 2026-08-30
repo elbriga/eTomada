@@ -7,6 +7,7 @@
 #include <esp_partition.h>
 #include <WiFi.h>
 #include <LittleFS.h>
+#include <ESPAsyncWebServer.h>
 
 #include "eTomada.h"
 #include "loga.h"
@@ -63,13 +64,13 @@ void otaInit()
     if (!WiFiGetModoAP())
     {
         // Inicializar a Task que vai conferir o firmware e os arquivos estaticos
-        xTaskCreate(
-            otaUpdateTask,
-            "otaUpdate",
-            8192,
-            nullptr,
-            1,
-            nullptr);
+        // xTaskCreate(
+        //     otaUpdateTask,
+        //     "otaUpdate",
+        //     8192,
+        //     nullptr,
+        //     1,
+        //     nullptr);
     }
 }
 
@@ -524,4 +525,158 @@ const char *otaGetState()
     }
 
     return "ERR";
+}
+
+// ============================================================
+// OTA via HTTP Upload
+// ============================================================
+
+static const char *otaUploadErro = nullptr;
+static size_t otaUploadTamanhoEsperado = 0;
+static size_t otaUploadTamanhoAtual = 0;
+static int otaUploadUltimoPercentual = -1;
+
+void otaUpload(
+    AsyncWebServerRequest *request,
+    String filename,
+    size_t index,
+    uint8_t *data,
+    size_t len,
+    bool final)
+{
+    // Primeiro chunk
+    if (index == 0)
+    {
+        otaUploadErro = nullptr;
+        otaUploadTamanhoAtual = 0;
+        otaUploadUltimoPercentual = -1;
+
+        if (!request->hasParam("tamanho"))
+        {
+            logaM(LOG_AVISO, "OTA: parametro tamanho ausente");
+            otaUploadErro = "parametro tamanho ausente";
+            return;
+        }
+
+        otaUploadTamanhoEsperado = request->getParam("tamanho")->value().toInt();
+
+        logaM(LOG_NORMAL,
+              "OTA upload iniciando: %s (%u bytes)",
+              filename.c_str(),
+              (unsigned)otaUploadTamanhoEsperado);
+
+        if (otaUploadTamanhoEsperado == 0)
+        {
+            otaUploadErro = "tamanho invalido";
+            return;
+        }
+
+        if (!Update.begin(otaUploadTamanhoEsperado))
+        {
+            otaUploadErro = "Update.begin falhou";
+
+            logaM(LOG_CRITICO,
+                  "OTA: Update.begin falhou: %s",
+                  Update.errorString());
+
+            return;
+        }
+    }
+
+    // Recebendo dados
+    if (otaUploadErro == nullptr && len > 0)
+    {
+        size_t gravado = Update.write(data, len);
+
+        if (gravado != len)
+        {
+            otaUploadErro = "erro ao gravar";
+
+            logaM(LOG_CRITICO,
+                  "OTA: erro ao gravar: %s",
+                  Update.errorString());
+
+            Update.abort();
+            return;
+        }
+
+        otaUploadTamanhoAtual += gravado;
+
+        int percentual =
+            (otaUploadTamanhoAtual * 100) / otaUploadTamanhoEsperado;
+
+        if (percentual / 10 != otaUploadUltimoPercentual / 10)
+        {
+            otaUploadUltimoPercentual = percentual;
+
+            logaM(LOG_NORMAL,
+                  "OTA: %d%% (%u/%u bytes)",
+                  percentual,
+                  (unsigned)otaUploadTamanhoAtual,
+                  (unsigned)otaUploadTamanhoEsperado);
+        }
+    }
+
+    // Upload terminou
+    if (final)
+    {
+        if (otaUploadErro != nullptr)
+            return;
+
+        logaM(LOG_AVISO,
+              "OTA recebido: %u bytes",
+              (unsigned)otaUploadTamanhoAtual);
+
+        if (otaUploadTamanhoAtual != otaUploadTamanhoEsperado)
+        {
+            logaM(LOG_CRITICO,
+                  "OTA: esperado=%u recebido=%u",
+                  (unsigned)otaUploadTamanhoEsperado,
+                  (unsigned)otaUploadTamanhoAtual);
+
+            otaUploadErro = "tamanho recebido diferente";
+            Update.abort();
+            return;
+        }
+
+        if (!Update.end(true))
+        {
+            otaUploadErro = "Update.end falhou";
+
+            logaM(LOG_CRITICO,
+                  "OTA: Update.end falhou: %s",
+                  Update.errorString());
+
+            return;
+        }
+
+        if (!Update.isFinished())
+        {
+            otaUploadErro = "OTA nao finalizado";
+            logaM(LOG_CRITICO, "OTA: nao finalizado");
+            return;
+        }
+
+        logaM(LOG_AVISO, "OTA upload concluido!");
+    }
+}
+
+void otaUploadHelper(AsyncWebServerRequest *request)
+{
+    if (otaUploadErro != nullptr)
+    {
+        String resposta = "{\"ok\":false,\"msg\":\"";
+        resposta += otaUploadErro;
+        resposta += "\"}";
+
+        request->send(400, "application/json", resposta);
+        return;
+    }
+
+    request->send(
+        200,
+        "application/json",
+        R"({"ok":true,"msg":"ota ok > restart"})");
+
+    utilRestart("OTA upload");
 }

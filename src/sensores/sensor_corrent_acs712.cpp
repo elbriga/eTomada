@@ -43,7 +43,7 @@ void sensorCorrenteACS712Task(void *args)
     }
     sensorCorrenteACS712Leitura = max - min;
 
-    Serial.printf(">>>>> Lido ACS712: %d\n", sensorCorrenteACS712Leitura);
+    // Serial.printf(">>>>> Lido ACS712: %d\n", sensorCorrenteACS712Leitura);
 
     vTaskDelay(pdTICKS_TO_MS(8000));
   }
