@@ -41,6 +41,8 @@ typedef struct
 #include "hardware/c3mini.h"
 #elif defined(HW_ESP32)
 #include "hardware/esp32.h"
+#elif defined(HW_TELA)
+#include "hardware/tela.h"
 #elif defined(HW_ESP32S3)
 #include "hardware/esp32-s3.h"
 #else
