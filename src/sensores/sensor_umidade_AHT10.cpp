@@ -2,7 +2,7 @@
 #include "tipoSensores.h"
 #include "tipoSensor_AHT10.h"
 
-static String sensorUmidadeAHT10Init()
+static String sensorUmidadeAHT10Init(int pin)
 {
   return sensorAHT10Init();
 }

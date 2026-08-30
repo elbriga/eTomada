@@ -5,7 +5,7 @@
 #include "sensor.h"
 #include "tipoSensores.h"
 
-static String sensorUmidadeInit()
+static String sensorUmidadeInit(int pin)
 {
   return "OK";
 }

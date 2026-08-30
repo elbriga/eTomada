@@ -3,7 +3,7 @@
 #include "tipoSensores.h"
 #include "tipoSensor_AHT10.h"
 
-static String sensorTemperaturaAHT10Init()
+static String sensorTemperaturaAHT10Init(int pin)
 {
   return sensorAHT10Init();
 }

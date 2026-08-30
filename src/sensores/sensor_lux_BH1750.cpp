@@ -7,14 +7,12 @@
 
 BH1750 lightMeter;
 
-static String sensorLuxBH1750Init()
+static String sensorLuxBH1750Init(int pin)
 {
   Wire.begin();
 
   if (!lightMeter.begin())
-  {
     return "Falha init BH1750";
-  }
 
   return "OK";
 }

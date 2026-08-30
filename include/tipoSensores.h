@@ -8,7 +8,7 @@ struct TipoSensor
     const char *nome;
     const char *tipo;
     const char *unidade;
-    String (*inicializaSensor)();
+    String (*inicializaSensor)(int p);
     int (*lerSensor)(Sensor *s);
     String status;
     int num;

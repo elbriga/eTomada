@@ -5,7 +5,7 @@
 #include "sensor.h"
 #include "tipoSensores.h"
 
-static String sensorLuxInit()
+static String sensorLuxInit(int pin)
 {
   return "OK";
 }

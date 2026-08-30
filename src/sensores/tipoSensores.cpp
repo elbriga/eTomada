@@ -33,12 +33,12 @@ void tipoSensorInit()
     ts->num = t + 1;
 
     // Verificar se temos esse sensor no hardware
-    bool temos = false;
+    int temosPino = 255;
     for (int s = 0; s < MAX_SENSORES; s++)
     {
       if (!strcmp(hardwareProfile.sensores[s].sensorID, ts->nome))
       {
-        temos = true;
+        temosPino = hardwareProfile.sensores[s].pino;
         break;
       }
       if (hardwareProfile.sensores[s].pino == 255)
@@ -47,10 +47,10 @@ void tipoSensorInit()
       }
     }
 
-    if (temos)
+    if (temosPino != 255)
     {
       logaM(LOG_NORMAL, "Inicializando sensor [%s]", ts->nome);
-      ts->status = ts->inicializaSensor();
+      ts->status = ts->inicializaSensor(temosPino);
     }
     else
     {
