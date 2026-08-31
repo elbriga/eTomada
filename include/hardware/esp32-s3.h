@@ -9,17 +9,18 @@ const HardwareProfile hardwareProfile = {
     .reles = {
         {21, false},
         {47, false},
-        {48, false},
         {45, false},
-        {35, false},
-        {36, false},
-        {37, false},
-        {38, false},
+        {39, false},
+        {40, false},
+        {41, false},
+        {42, false},
+        {2, false},
+        // {255, false},
     },
     .sensores = {
         {"AHT10t", 0},
         {"AHT10u", 0},
-        //{"ACS712", 1},
+        {"ACS712", 1},
         {"", 255}, // FIM
     },
     .botoes = {
