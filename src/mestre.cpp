@@ -40,7 +40,7 @@ void mestreInit()
     prefs.end();
 }
 
-// chamado pelo modulo discover em discoverLoop()
+/*/ chamado pelo modulo discover em discoverLoop()
 void mestreCheckDiscover(String mac, IPAddress ip)
 {
     if (!mestreAtivo()) // Sem mestre retorna
@@ -62,7 +62,7 @@ void mestreCheckDiscover(String mac, IPAddress ip)
     }
 
     mestre.ultimoHeartbeat = millis();
-}
+}*/
 
 void mestreLoop()
 {

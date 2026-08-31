@@ -5,7 +5,6 @@
 #include "regras.h"
 #include "sensor.h"
 #include "wifi.h"
-#include "discover.h"
 #include "recurso.h"
 #include "mestre.h"
 #include "eventos.h"
@@ -78,13 +77,6 @@ void httpServerInitModoAPI()
     String body = eTomadaGetSnapshotJSON();
     request->send(200, "application/json", body);
     logaRequest(request, "200 OK"); });
-
-  httpServer.on("/api/discover", HTTP_GET, [](AsyncWebServerRequest *request)
-                {
-    request->send(200, "application/json", R"({"scantime":3,"msg":"Escaneando..."})");
-    logaRequest(request, "200 OK");
-
-    discoverStart(false); });
 
   httpServer.on("/api/setRecurso", HTTP_PUT, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                 {
@@ -206,6 +198,7 @@ void httpServerInitModoAPI()
     }
 
     String ssid = doc["ssid"] | "";
+    bool temPass = !doc["pass"].isNull();
     String pass = doc["pass"] | "";
     doc.clear();
 
@@ -215,7 +208,15 @@ void httpServerInitModoAPI()
       return;
     }
 
+    if (!temPass) {
+      logaRequest(request, "400 sem PASS");
+      request->send(400, "application/json", R"({"msg":"PASS Invalido"})");
+      return;
+    }
+
     WiFiSalvaConfig(ssid, pass);
+
+    // TODO :: mudar WiFi sem reiniciar??
 
     request->send(200, "application/json", R"({"msg":"OK - vou reinicar"})");
     logaRequest(request, "200 OK");

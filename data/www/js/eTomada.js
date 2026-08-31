@@ -54,10 +54,6 @@ async function eTomadaRender(snapshot) {
   _eTomadaLoading = false;
 }
 
-function eTomadaDiscover() {
-  eTomadaAPI("discover");
-}
-
 function eTomadaRoleta() {
   eTomadaAPI("roleta");
 }

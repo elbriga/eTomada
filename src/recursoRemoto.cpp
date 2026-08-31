@@ -9,7 +9,6 @@
 #include "recursoRemoto.h"
 #include "rele.h"
 #include "sensor.h"
-#include "discover.h"
 #include "tipoRecurso.h"
 #include "util.h"
 
@@ -29,7 +28,7 @@ void recursosRemotosInit()
 
   if (!LittleFS.exists(RECURSOS_REMOTOS_PATH))
   {
-    logaM(LOG_DEBUG, "Abortando recursosRemotosInit > Arquivo [%s] nao existe!", RECURSOS_REMOTOS_PATH);
+    logaM(LOG_AVISO, "Abortando recursosRemotosInit > Arquivo [%s] nao existe!", RECURSOS_REMOTOS_PATH);
     return;
   }
 
@@ -96,9 +95,9 @@ String recursosRemotosLoad(const char *path)
     strlcpy(recursoRemoto->idLocal, idLocal.c_str(), sizeof(recursoRemoto->idLocal));
     strlcpy(recursoRemoto->idRemoto, idRemoto.c_str(), sizeof(recursoRemoto->idRemoto));
 
-    recursoRemoto->nodo = nodoRemotoGetPorMAC(nodo.c_str());
+    recursoRemoto->nodo = nodoRemotoGet(nodo.c_str());
 
-    // Buscar o estado remoto do recurso com o snapshot do nodosRemotosInit()
+    /*/ Buscar o estado remoto do recurso com o snapshot do nodosRemotosInit()
     JsonObject deviceRemoto;
     if (!recursoRemoto->nodo)
     {
@@ -141,7 +140,7 @@ String recursosRemotosLoad(const char *path)
       botao->ativo = true;
       if (deviceRemoto)
         botao->estado = deviceRemoto["estado"].as<bool>();
-    }
+    }*/
 
     recursoRemotoPrint(recursoRemoto);
 
@@ -204,7 +203,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
   {
     logaM(LOG_CRITICO,
           "recursoRemotoAtualizaFromSnapshot: snapshot NULL para [%s]",
-          nodo ? nodo->mac : "(null)");
+          nodo ? nodo->id : "(null)");
     return;
   }
 

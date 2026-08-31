@@ -3,35 +3,35 @@
     {
       "nome": "RREMOTO1",
       "tipo": "RELE",
-      "nodo": "20:07:69:75:06:DC",
+      "nodo": "TERRARIO",
       "idLocal": "R9",
       "idRemoto": "R1"
     },
     {
       "nome": "RREMOTO2",
       "tipo": "RELE",
-      "nodo": "20:07:69:75:06:DC",
+      "nodo": "TERRARIO",
       "idLocal": "R10",
       "idRemoto": "R2"
     },
     {
       "nome": "SREMOTO1",
       "tipo": "SENSOR",
-      "nodo": "CC:AE:54:DA:F3:80",
+      "nodo": "DEV",
       "idLocal": "S5",
       "idRemoto": "S1"
     },
     {
       "nome": "SREMOTO2",
       "tipo": "SENSOR",
-      "nodo": "CC:AE:54:DA:F3:80",
+      "nodo": "DEV",
       "idLocal": "S6",
       "idRemoto": "S2"
     },
     {
       "nome": "BREMOTO1",
       "tipo": "BOTAO",
-      "nodo": "20:07:69:75:06:DC",
+      "nodo": "TERRARIO",
       "idLocal": "B2",
       "idRemoto": "B1"
     }

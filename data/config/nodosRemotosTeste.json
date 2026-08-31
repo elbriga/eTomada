@@ -1,12 +1,16 @@
 {
   "nodos": [
     {
-      "id": "NR1",
-      "mac": "20:07:69:75:06:DC"
+      "id": "TERRARIO",
+      "desc": "Embaixo da Escada"
     },
     {
-      "id": "NR2",
-      "mac": "CC:AE:54:DA:F3:80"
+      "id": "UMID-TERRARIO",
+      "desc": "Embaixo da escada na tomada do TERRARIO"
+    },
+    {
+      "id": "DEV",
+      "desc": "8266 sem USB"
     }
   ]
 }

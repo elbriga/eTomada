@@ -9,17 +9,14 @@
 struct NodoRemoto
 {
   char id[32];
-  char mac[32];
   IPAddress ip;
   bool online;
-  int ping;
 };
 
 void nodoRemotoInit();
 int nodosRemotosGetCount();
 
 NodoRemoto *nodoRemotoGet(const char *id);
-NodoRemoto *nodoRemotoGetPorMAC(const char *mac);
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto);
 

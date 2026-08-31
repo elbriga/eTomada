@@ -1,12 +1,12 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
+#include <ESPmDNS.h>
 
 #include "eTomada.h"
 #include "loga.h"
 #include "prefs.h"
 #include "nodoRemoto.h"
-#include "discover.h"
 #include "recursoRemoto.h"
 #include "util.h"
 
@@ -27,7 +27,7 @@ void nodoRemotoInit()
 
   if (!LittleFS.exists(NODOS_PATH))
   {
-    logaM(LOG_DEBUG, "Abortando nodoRemotoInit > Arquivo [%s] nao existe!", NODOS_PATH);
+    logaM(LOG_AVISO, "Abortando nodoRemotoInit > Arquivo [%s] nao existe!", NODOS_PATH);
     return;
   }
 
@@ -35,7 +35,7 @@ void nodoRemotoInit()
   if (msgLoad != "OK")
     logaM(LOG_AVISO, ">> nodosRemotosLoad: [%s]", msgLoad.c_str());
 
-  nodosRemotosRefreshTask(nullptr);
+  // nodosRemotosRefreshTask(nullptr);
 
   for (int nr = 0; nr < totNodosRemotos; nr++)
     nodoRemotoPrint(nodoRemotoGetPorIndice(nr));
@@ -65,18 +65,6 @@ NodoRemoto *nodoRemotoGetPorIndice(int i)
   return NULL;
 }
 
-NodoRemoto *nodoRemotoGetPorMAC(const char *mac)
-{
-  int tot = nodosRemotosGetCount();
-  for (int nr = 0; nr < tot; nr++)
-  {
-    NodoRemoto *nodo = nodoRemotoGetPorIndice(nr);
-    if (!strcmp(nodo->mac, mac))
-      return &nodosRemotos[nr];
-  }
-  return NULL;
-}
-
 void nodosRemotosRefresh()
 {
   const char *argsFlagTask = "TASK";
@@ -94,26 +82,17 @@ void nodosRemotosRefreshTask(void *args)
   bool ehTask = args && !strncmp((char *)args, "TASK", 4);
 
   // Escanear
-  if (!discoverWaitRun(ehTask))
-  {
-    logaM(LOG_AVISO, "++ nodosRemotosRefreshTask >> abortando por falha no discover!");
-    if (ehTask)
-      vTaskDelete(NULL);
-    return;
-  }
-
+  int totND = MDNS.queryService("etomada", "tcp");
   int totNR = nodosRemotosGetCount();
-  int totND = discoverGetNodosCount();
 
   // Verificar por novos nodos
-  for (int nd = 1; nd <= totND; nd++)
+  for (int nd = 0; nd < totND; nd++)
   {
-    NodoRemoto *nodoDiscover = discoverGetNodoPorIndice(nd - 1);
     bool achei = false;
     for (int nr = 0; nr < totNR; nr++)
     {
       NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
-      if (!strcmp(nodoDiscover->mac, nodoRemoto->mac))
+      if (!strcmp(MDNS.hostname(nd).c_str(), nodoRemoto->id))
       {
         achei = true;
         break;
@@ -121,44 +100,47 @@ void nodosRemotosRefreshTask(void *args)
     }
     if (!achei)
     {
-      logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em %s. Avisar na interface",
-            nodoDiscover->mac, nodoDiscover->ip.toString().c_str());
+      logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em [%s]. Avisar na interface",
+            MDNS.hostname(nd).c_str(), MDNS.IP(nd).toString().c_str());
       // TODO
     }
   }
 
+  // Atualizar os nodos encontrados
   for (int nr = 0; nr < totNR; nr++)
   {
     NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
 
     // Buscar este deviceID nos nodos escaneados
-    NodoRemoto *nodoDescoberto = discoverGetNodo(nodoRemoto->mac);
-    if (nodoDescoberto)
+    bool achei = false;
+    IPAddress ipScan;
+    for (int nd = 0; nd < totND; nd++)
+    {
+      if (!strcmp(MDNS.hostname(nd).c_str(), nodoRemoto->id))
+      {
+        ipScan = MDNS.IP(nd);
+        achei = true;
+        break;
+      }
+    }
+
+    if (achei)
     {
       if (!nodoRemoto->online)
         logaM(LOG_AVISO, "Nodo Remoto [%s] ONLINE", nodoRemoto->id);
       nodoRemoto->online = true;
 
-      if (nodoRemoto->ip != nodoDescoberto->ip)
+      if (nodoRemoto->ip != ipScan)
       {
-        nodoRemoto->ip = nodoDescoberto->ip;
+        nodoRemoto->ip = ipScan;
         logaM(LOG_AVISO, "Nodo Remoto [%s] Novo IP: %s",
               nodoRemoto->id, nodoRemoto->ip.toString().c_str());
       }
 
-      if (strncmp(nodoRemoto->id, nodoDescoberto->id, 8))
-      {
-        logaM(LOG_AVISO, "Nodo Remoto [%s] Novo Nome: [%s] !!",
-              nodoRemoto->id, nodoDescoberto->id);
-        strlcpy(nodoRemoto->id, nodoDescoberto->id, sizeof(nodoRemoto->id));
-      }
-
-      nodoRemoto->ping = nodoDescoberto->ping;
-
       // Atualizar os RecursoRemoto com o snapshot do discover
-      JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->mac);
+      // JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->mac);
 
-      recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
+      // recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
     }
     else
     {
@@ -211,7 +193,7 @@ String nodosRemotosLoad(const char *path)
     }
 
     strlcpy(nodo->id, nodoJson["id"].as<const char *>(), sizeof(nodo->id));
-    strlcpy(nodo->mac, nodoJson["mac"].as<const char *>(), sizeof(nodo->mac));
+    // strlcpy(nodo->desc, nodoJson["desc"].as<const char *>(), sizeof(nodo->desc));
     nodo->online = false;
 
     totNodosRemotos++;
@@ -224,8 +206,6 @@ String nodosRemotosLoad(const char *path)
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto)
 {
-  logaM(LOG_NORMAL, "NodoRemoto [%s] > [%s] [%s] (%d ms)",
-        nodoRemoto->id, nodoRemoto->mac,
-        nodoRemoto->ip.toString().c_str(),
-        nodoRemoto->ping);
+  logaM(LOG_NORMAL, "NodoRemoto [%s] @ [%s]",
+        nodoRemoto->id, nodoRemoto->ip.toString().c_str());
 }

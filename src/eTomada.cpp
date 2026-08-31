@@ -2,10 +2,11 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "1.3.21"
+#define ETOMADA_VERSAO "1.3.22"
 // 1.3.19 - Rede 10 com log server, mac no mDNS,
 // 1.3.20 - endpoint de UPLOAD de Firmware
 // 1.3.21 - sensor de corrent com task propria
+// 1.3.22 - del discover > usar mDNS
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -19,7 +20,6 @@
 #include "prefs.h"
 #include "nodoRemoto.h"
 #include "recurso.h"
-#include "discover.h"
 #include "eventos.h"
 #include "agendamentos.h"
 #include "regras.h"
@@ -88,12 +88,9 @@ void eTomadaInit()
   logaM(LOG_NORMAL, "Inicializando Botões Locais:");
   botoesInit();
 
-  logaM(LOG_NORMAL, "Inicializando o Discover:");
-  discoverInit();
-
   if (modoOperacao == MODO_CONTROLADOR) // TODO :: MODO_NO com nodo/recurso remoto?
   {
-    logaM(LOG_NORMAL, "Carregando Nodos Remotos:");
+    logaM(LOG_NORMAL, "Inicializando Nodos Remotos:");
     nodoRemotoInit();
 
     logaM(LOG_NORMAL, "Inicializando Recursos Remotos:");
@@ -164,6 +161,7 @@ String eTomadaGetSnapshotJSON()
 
   doc["mac"] = getMACStr();
   doc["ip"] = WiFi.localIP().toString();
+  doc["ssid"] = WiFi.SSID();
   doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
 
   if (umidificadorAtivo())

@@ -13,7 +13,6 @@
 #include "regras.h"
 #include "sensor.h"
 #include "botao.h"
-#include "discover.h"
 #include "util.h"
 #include "rtc-hw.h"
 #include "hardwareProfile.h"
@@ -165,7 +164,7 @@ void setup()
   rgbLedSetAnim(0); // Verde == Loop
 }
 
-static uint32_t tsMdnsTeste = 0;
+static uint32_t tsMdnsChuncho = 0;
 
 void loop()
 {
@@ -173,8 +172,6 @@ void loop()
 
   if (WiFiGetModoAP())
     WiFiModoAPLoop();
-  else if (eTomadaGetModoOperacao() == MODO_NO)
-    discoverLoopNo();
 
   // 10ms/10ms
   botoesAtualiza();
@@ -189,9 +186,9 @@ void loop()
     lastSecond = timeinfo.tm_sec;
 
     // CHUNCHO para consertar o mDNS
-    if (millis() - tsMdnsTeste >= 60 * 1000)
+    if (millis() - tsMdnsChuncho >= 60 * 1000)
     {
-      tsMdnsTeste = millis();
+      tsMdnsChuncho = millis();
       mdnsInit(false);
     }
 
