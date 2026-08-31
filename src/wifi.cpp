@@ -83,8 +83,9 @@ void WiFiConnect()
   Serial.println();
   WiFi.setSleep(false);
 
-  logaM(LOG_NORMAL, "Endereço IP: [%s]@[%s] em [%s]",
-        WiFi.getHostname(), WiFi.localIP().toString().c_str(), ssid.c_str());
+  logaM(LOG_NORMAL, "Endereço IP: [%s]@[%s] em [%s]@[%d]",
+        WiFi.getHostname(), WiFi.localIP().toString().c_str(),
+        ssid.c_str(), WiFi.RSSI());
 }
 
 bool WiFiGetModoAP()
