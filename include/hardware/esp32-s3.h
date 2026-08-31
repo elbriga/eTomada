@@ -2,16 +2,24 @@
 #include "hardwareProfile.h"
 
 const HardwareProfile hardwareProfile = {
-    .modelo = "R2B2", // :)
+    .modelo = "R8S3B2", // :)
     .board = "esp32s3",
     .ledPin = 48, // LED RGB
     .ledInvertido = false,
     .reles = {
-        {16, true},
-        {17, true},
-        {255, true}, // FIM
+        {21, false},
+        {47, false},
+        {48, false},
+        {45, false},
+        {35, false},
+        {36, false},
+        {37, false},
+        {38, false},
     },
     .sensores = {
+        {"AHT10t", 0},
+        {"AHT10u", 0},
+        //{"ACS712", 1},
         {"", 255}, // FIM
     },
     .botoes = {
