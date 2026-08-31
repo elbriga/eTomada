@@ -248,15 +248,20 @@ static void logRemotoTask(void *param)
     if (!logaRemotoAtivo())
     {
       // Nao deve entrar aqui, essa task nao roda se nao estiver ativo
-      // Serial.println("Descartando log remoto!!??????");
+      Serial.println("log remoto task sem log remoto!!??????");
       continue;
     }
 
-    // Sem WiFi: simplesmente descarta este log
+    // Sem WiFi : esperar
     if (WiFi.status() != WL_CONNECTED)
     {
-      // Serial.println("Descartando log remoto!!");
-      continue;
+      // Esperar pelo WiFi
+      vTaskDelay(pdTICKS_TO_MS(500));
+      if (WiFi.status() != WL_CONNECTED)
+      {
+        Serial.println("Descartando log remoto - sem wifi!!");
+        continue;
+      }
     }
 
     HTTPClient http;
