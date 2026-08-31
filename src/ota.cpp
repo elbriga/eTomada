@@ -63,6 +63,7 @@ void otaInit()
 
     if (!WiFiGetModoAP())
     {
+        // Desligado!
         // Inicializar a Task que vai conferir o firmware e os arquivos estaticos
         // xTaskCreate(
         //     otaUpdateTask,
@@ -319,7 +320,7 @@ bool otaChecaBinario(JsonDocument &doc, bool ehBoot)
             if (otaDownload(urlFW.c_str()))
             {
                 logaM(LOG_AVISO, "Reiniciando para novo firmware...");
-                utilRestart("Atualizacao de Firmware");
+                utilRestart("Atualizacao de Firmware", true);
             }
             else
             {
@@ -331,7 +332,7 @@ bool otaChecaBinario(JsonDocument &doc, bool ehBoot)
         else
         {
             logaM(LOG_AVISO, "Reiniciando para fazer o download de [%s]", urlFW.c_str());
-            utilRestart("Restart para iniciar download de firmware");
+            utilRestart("Restart para iniciar download de firmware", true);
         }
     }
     else if (versaoServer == minhaVersao)

@@ -193,7 +193,7 @@ String regraDisparaAcao(Regra *regra)
         String ret = recursoSet(rec, "ON");
         // Agendar o OFF
         // TODO :: no recursoSet cancelar os agendamentos
-        agendamentosAdd(rec->id, false, acao->timer * 1000);
+        agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, rec->id, false);
     }
     break;
 

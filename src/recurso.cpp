@@ -219,8 +219,8 @@ String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
 
   if (estadoStr == "PULSE")
   {
-    // Agendar o OFF
-    agendamentosAdd(recurso->id, false, 1000);
+    // Agendar o OFF = pulso de 1000ms
+    agendamentosAdd(AGEND_RECURSO, 1000, recurso->id, false);
   }
 
   return msg;
@@ -339,7 +339,7 @@ JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
 {
   JsonDocument doc;
 
-  doc["mac"] = getMACStr();
+  doc["origem"] = eTomadaDeviceID();
   doc["id"] = String(r->id);
 
   time_t now = 0;
@@ -374,7 +374,7 @@ String recursoEventoRecebido(uint8_t *json)
   if (utilLeJson("recursoEventoRecebido", doc, json))
     return "JSON Invalido";
 
-  NodoRemoto *nr = nodoRemotoGetPorMAC(doc["mac"].as<const char *>());
+  NodoRemoto *nr = nodoRemotoGet(doc["origem"].as<const char *>());
   if (!nr)
   {
     doc.clear();

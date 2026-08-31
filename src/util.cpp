@@ -5,6 +5,7 @@
 #include <WiFiUdp.h>
 
 #include "loga.h"
+#include "agendamentos.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("UTIL", nivel, fmt, ##__VA_ARGS__)
@@ -15,15 +16,26 @@ void utilDIE(const char *msg)
   ESP.restart();
 }
 
-void utilRestart(const char *msg)
+void utilRestart(const char *msg, bool now)
 {
-  logaM(LOG_AVISO, ">>> Restart!!! [%s]", msg);
 
   // TODO :: Salvar estado dos reles
 
-  vTaskDelay(pdTICKS_TO_MS(500)); // Delay para dar tempo de flush nos logs
-
-  ESP.restart();
+  if (now)
+  {
+    logaM(LOG_AVISO, ">>> util::Restart NOW!!! [%s]", msg);
+    vTaskDelay(pdTICKS_TO_MS(500)); // Delay para dar tempo de flush nos logs
+    ESP.restart();
+    while (1)
+    {
+    };
+  }
+  else
+  {
+    logaM(LOG_AVISO, ">>> util::Restart Agendado [%s]", msg);
+    vTaskDelay(pdTICKS_TO_MS(500)); // Delay para dar tempo de flush nos logs
+    agendamentosAdd(AGEND_RESET, 1000);
+  }
 }
 
 int utilVersionToInt(const char *ver)

@@ -8,10 +8,12 @@
 
 struct AcaoAgendada
 {
-    char recursoID[8];
-    int estado;
-    bool ativa;
+    TipoAgendamento tipo;
     uint32_t quando;
+
+    // Para acao AGEND_RECURSO
+    char recursoID[32];
+    int estado;
 };
 
 #define MAX_ACOES_AGENDADAS 16
@@ -33,31 +35,29 @@ void agendamentosInit()
         1);
 }
 
-void agendamentosAdd(const char *recursoID, int estado, int timeoutMs)
+void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID, int estado)
 {
-    AcaoAgendada *acao = nullptr;
-
     // procurar um "slot"
+    AcaoAgendada *acao = nullptr;
     for (int s = 0; s < MAX_ACOES_AGENDADAS; s++)
     {
-        if (!acoes[s].ativa)
+        if (acoes[s].tipo == AGEND_NENHUM)
         {
             acao = &acoes[s];
             break;
         }
     }
-
     if (!acao)
     {
-        logaM(LOG_CRITICO, "agendamentosAdd: IMPOSSIVEL ACHAR SLOT!");
+        logaM(LOG_CRITICO, "agendamentosAdd[%d]: IMPOSSIVEL ACHAR SLOT!", tipo);
         return;
     }
 
+    acao->tipo = tipo;
+    acao->quando = millis() + timeoutMs;
+
     strlcpy(acao->recursoID, recursoID, sizeof(acao->recursoID));
     acao->estado = estado;
-
-    acao->quando = millis() + timeoutMs;
-    acao->ativa = true;
 }
 
 void agendamentosProcessaTask(void *)
@@ -68,19 +68,41 @@ void agendamentosProcessaTask(void *)
         for (int s = 0; s < MAX_ACOES_AGENDADAS; s++)
         {
             AcaoAgendada *acao = &acoes[s];
-            if (!acao->ativa)
+            if (acao->tipo == AGEND_NENHUM)
                 continue;
 
             if ((int32_t)(millis() - acao->quando) >= 0)
             {
-                // remove do slot
-                acao->ativa = false;
+                switch (acao->tipo)
+                {
+                case AGEND_RECURSO:
+                {
+                    Recurso *r = recursoGet(acao->recursoID);
+                    if (!r)
+                    {
+                        logaM(LOG_CRITICO, "agendamentosProcessaTask :: recurso invalido!");
+                        break;
+                    }
 
-                Recurso *r = recursoGet(acao->recursoID);
-                if (r)
                     recursoSet(r, acao->estado ? "ON" : "OFF");
-                else
-                    logaM(LOG_CRITICO, "agendamentosProcessaTask :: recurso invalido!");
+                }
+                break;
+
+                case AGEND_RESET:
+                {
+                    logaM(LOG_AVISO, "RESETANDO!");
+                    vTaskDelay(pdTICKS_TO_MS(1000)); // Delay para dar tempo de flush nos logs
+                    ESP.restart();
+                }
+                break;
+
+                default:
+                    logaM(LOG_CRITICO, "agendamentosProcessaTask :: TIPO [%d] invalido!", acao->tipo);
+                    break;
+                }
+
+                // remove do slot
+                acao->tipo = AGEND_NENHUM;
             }
         }
 
