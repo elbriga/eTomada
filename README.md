@@ -167,7 +167,7 @@ Exemplo:
 
 Quando uma regra automática existe:
 
-- o override manual dura 30 minutos
+- o acionamento manual dura 30 minutos # TODO!
 - depois o sistema volta ao modo automático
 
 ---

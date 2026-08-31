@@ -52,7 +52,6 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
   case RECURSO_RELE:
     Rele *rele = &rr->rele;
     rele->estado = resposta["recurso"]["device"]["estado"].as<bool>();
-    rele->override = resposta["recurso"]["device"]["override"].as<int>();
     break;
   }
 

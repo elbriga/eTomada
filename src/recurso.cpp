@@ -177,7 +177,7 @@ String recursoSetLocked(Recurso *recurso, bool estado, bool enviaMestre)
   }
   else
   {
-    msg = releControlaLocked(recurso->rele, estado, 30 * 60); // TODO tirar o hardcoded de 30 minutos
+    msg = releControlaLocked(recurso->rele, estado);
   }
 
   // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);

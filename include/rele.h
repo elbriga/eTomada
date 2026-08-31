@@ -14,7 +14,6 @@ struct Rele
   bool ativo;
   bool estado;
   bool invertido;
-  unsigned long override; // TS para sobrepor o estado manual as regras
 };
 
 void relesInit();
@@ -24,5 +23,5 @@ void relePrint(Rele *rele);
 
 JsonDocument releGetJSONDoc(Rele *r, bool full);
 
-String releControlaLocked(Rele *r, bool estado, int override = 0);
-String releControla(Rele *r, bool estado, int override = 0);
+String releControlaLocked(Rele *r, bool estado);
+String releControla(Rele *r, bool estado);

@@ -27,13 +27,6 @@ function escapeHtml(str) {
     .replaceAll("'", "&#039;");
 }
 
-function getHoraFromTS(ts) {
-  var date = new Date(ts * 1000);
-  var h = "0" + date.getHours();
-  var m = "0" + date.getMinutes();
-  return h.slice(-2) + ":" + m.slice(-2);
-}
-
 function formataTempo(millis) {
   const secs = Math.floor(millis / 1000);
 

@@ -42,7 +42,6 @@ void relesInit()
 
     // TODO :: guardar estado dos reles ativos e sem regra (modo manual) para voltar ao estado certo no boot
     rele->estado = 0;
-    rele->override = 0;
 
     ReleHW rHW = hardwareProfile.reles[r - 1];
     rele->pino = rHW.pino;
@@ -93,7 +92,6 @@ JsonDocument releGetJSONDoc(Rele *r, bool full)
     doc["pino"] = r->pino;
     doc["ativo"] = r->ativo;
     doc["estado"] = r->estado;
-    doc["override"] = r->override;
   }
 
   return doc;
@@ -109,7 +107,7 @@ String releGetJSONString(Rele *r)
   return out;
 }
 
-String releControla(Rele *rele, bool estado, int override)
+String releControla(Rele *rele, bool estado)
 {
   MutexLock lock(recursosMutex);
   if (!lock)
@@ -117,11 +115,11 @@ String releControla(Rele *rele, bool estado, int override)
     return "releControla: mutex timeout";
   }
 
-  return releControlaLocked(rele, estado, override);
+  return releControlaLocked(rele, estado);
 }
 
 // REQUIRE recursosMutex locked
-String releControlaLocked(Rele *rele, bool estado, int override)
+String releControlaLocked(Rele *rele, bool estado)
 {
   if (!rele)
   {
@@ -141,8 +139,6 @@ String releControlaLocked(Rele *rele, bool estado, int override)
   {
     digitalWrite(rele->pino, rele->invertido ? !estado : estado);
     rele->estado = estado;
-
-    rele->override = (override > 0) ? time(nullptr) + override : 0;
 
     char msg[40];
     snprintf(msg, sizeof(msg), "%s (rele %d, pino %d)", // TODO :: nome

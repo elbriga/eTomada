@@ -18,10 +18,9 @@ function releGetCard(recurso) {
 </div>
 <div class="status ${rele.estado ? "on" : "off"}">
   ${rele.estado ? "● Ligado" : "● Desligado"}
-  ${rele.override > Date.now() / 1000 ? ` (até ${getHoraFromTS(rele.override)})` : ""}
 </div>
 
-<button onclick="releOverride('${recurso.id}', ${rele.estado ? "false" : "true"}, this)">
+<button onclick="releControla('${recurso.id}', ${rele.estado ? "false" : "true"}, this)">
   ${rele.estado ? "🔴 Desligar" : "🟢 Ligar"}
 </button>
 `;
@@ -98,7 +97,7 @@ async function releSalvarFromModal() {
   }
 }
 
-async function releOverride(recursoID, novoEstado, btn) {
+async function releControla(recursoID, novoEstado, btn) {
   btn.innerText = "Processando...";
   btn.disabled = true;
 
