@@ -28,3 +28,5 @@ echo
 
 curl -X POST -F "firmware=@$FW" "$URL"
 
+echo
+echo
