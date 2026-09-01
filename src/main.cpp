@@ -192,7 +192,7 @@ void loop()
     lastSecond = timeinfo.tm_sec;
 
     // CHUNCHO para consertar o mDNS
-    if (millis() - tsMdnsChuncho >= 60 * 1000)
+    if (!wifiModoAP && millis() - tsMdnsChuncho >= 60 * 1000)
     {
       tsMdnsChuncho = millis();
       mdnsInit(false);
@@ -228,19 +228,22 @@ void loop()
     {
       last10Second = timeinfo.tm_sec / 10;
 
-      rgbLedSetAnim(3, 3);
-      sensoresAtualiza();
+      if (!wifiModoAP)
+      {
+        rgbLedSetAnim(3, 3);
+        sensoresAtualiza();
 
-      // Keepalive para a interface web
-      httpEnviaSSE("{}", "sse_ping");
+        // Keepalive para a interface web
+        httpEnviaSSE("{}", "sse_ping");
 
-      // Verificar os NÓs remotos (em nova Task) a cada 10s:
-      if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
-        nodosRemotosRefresh();
+        // Verificar os NÓs remotos (em nova Task) a cada 10s:
+        if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
+          nodosRemotosRefresh();
 
-      // Usado no NODO_NO para verificar se o mestre ficou offline
-      if (eTomadaGetModoOperacao() == MODO_NO)
-        mestreLoop();
+        // Usado no NODO_NO para verificar se o mestre ficou offline
+        if (eTomadaGetModoOperacao() == MODO_NO)
+          mestreLoop();
+      }
 
       // 1m/1m
       if (timeinfo.tm_min != lastMinute)
