@@ -162,18 +162,30 @@ String sensorGetJSONString(Sensor *s)
   return out;
 }
 
+void sensoresAtualizaTask(void *args);
+
 void sensoresAtualiza()
 {
-  int maxSensores = sensoresGetCount();
-  if (!maxSensores)
+  if (!sensoresGetCount())
     return;
 
-  int totRecursos = recursosGetCount(RECURSO_TODOS);
+  xTaskCreate(
+      sensoresAtualizaTask,
+      "sensoresAtz",
+      4096,
+      NULL,
+      1,
+      NULL);
+}
 
-  AtualizacaoSensor *atual = new AtualizacaoSensor[maxSensores]();
+static AtualizacaoSensor atual[MAX_SENSORES] = {};
+void sensoresAtualizaTask(void *args)
+{
+  memset(atual, 0, sizeof(atual));
 
   // Ler os sensores sem o Lock
   int totSensoresOK = 0;
+  int totRecursos = recursosGetCount(RECURSO_TODOS);
   for (int r = 0; r < totRecursos; r++)
   {
     Recurso *rec = recursoGetPorIndice(r);
@@ -214,8 +226,8 @@ void sensoresAtualiza()
     MutexLock lock(recursosMutex);
     if (!lock)
     {
-      delete[] atual;
       logaM(LOG_CRITICO, "sensorAtualiza: mutex timeout");
+      vTaskDelete(NULL);
       return;
     }
 
@@ -245,5 +257,5 @@ void sensoresAtualiza()
     eventoPost(EVENTO_VALOR_MUDOU, atual[rs].rec, true, true);
   }
 
-  delete[] atual;
+  vTaskDelete(NULL);
 }

@@ -228,7 +228,7 @@ void loop()
       last10Second = timeinfo.tm_sec / 10;
 
       rgbLedSetAnim(3, 3);
-      sensoresAtualiza(); // TODO :: non block!
+      sensoresAtualiza();
 
       // Keepalive para a interface web
       httpEnviaSSE("{}", "sse_ping");
