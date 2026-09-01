@@ -227,6 +227,14 @@ void httpServerInitModoAPI()
                 { otaUploadHelper(request); }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)
                 { otaUpload(request, filename, index, data, len, final); });
 
+  // função para atualizar o www
+  httpServer.on("/api/checkWWW", HTTP_GET, [](AsyncWebServerRequest *request)
+                {
+                  otaChecaWWW();
+
+                  request->send(200, "application/json", R"({"msg":"WWW conferido"})");
+                  logaRequest(request, "200 OK"); });
+
   httpServer.on("/api/reset", HTTP_GET, [](AsyncWebServerRequest *request)
                 {
     request->send(200, "application/json", R"({"msg":"OK - vou reiniciar"})");

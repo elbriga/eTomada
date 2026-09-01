@@ -8,7 +8,7 @@
 // 1.3.21 - sensor de corrent com task propria
 // 1.3.22 - del discover > usar mDNS
 // 1.3.23 - Removido override dos reles e OTA automatico
-// 1.3.24 - reset pin
+// 1.3.24 - btn reset
 
 #include "eTomada.h"
 #include "mestre.h"

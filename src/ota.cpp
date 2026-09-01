@@ -25,76 +25,23 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
-static bool downloadFirmwareNovo = true;
 static bool downloadWWWNovo = true;
 
-static int otaCheckDelayInicial = 5000;
 static bool otaSupported = false;
 
-void otaUpdateTask(void *args);
 bool otaEspSuportaOTA();
-bool otaChecaNovoFirmware(bool ehBoot);
-bool otaChecaBinario(JsonDocument &doc, bool ehBoot);
-bool otaDownload(const char *url);
-bool otaChecaWWW(JsonDocument &doc);
+bool otaChecaWWW();
 bool otaDownloadWWW(const char *path);
 const char *otaGetState();
 
 void otaInit()
 {
-    // TODO :: 60s
-    otaCheckDelayInicial = 5 * 1000;
-
     otaSupported = otaEspSuportaOTA();
     if (otaSupported)
-    {
         logaM(LOG_NORMAL, "Estado OTA: %s", otaGetState());
-
-        if (!WiFiGetModoAP())
-        {
-            logaM(LOG_NORMAL, "Verificando novo firmware:");
-            if (!otaChecaNovoFirmware(true))
-            {
-                logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
-                otaCheckDelayInicial = 10 * 60 * 1000;
-            }
-        }
-    }
-
-    if (!WiFiGetModoAP())
-    {
-        // Desligado!
-        // Inicializar a Task que vai conferir o firmware e os arquivos estaticos
-        // xTaskCreate(
-        //     otaUpdateTask,
-        //     "otaUpdate",
-        //     8192,
-        //     nullptr,
-        //     1,
-        //     nullptr);
-    }
 }
 
-void otaUpdateTask(void *args)
-{
-    vTaskDelay(pdMS_TO_TICKS(otaCheckDelayInicial));
-
-    while (1)
-    {
-        if (!otaChecaNovoFirmware(false))
-        {
-            logaM(LOG_AVISO, "Falha na checagem de firmware. Tentar de novo em 10 minutos");
-            vTaskDelay(pdMS_TO_TICKS(9 * 60 * 1000));
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(60 * 1000));
-    }
-
-    // Nao chega aqui!
-    vTaskDelete(NULL);
-}
-
-bool otaChecaNovoFirmware(bool ehBoot)
+bool otaChecaWWW()
 {
     String url = "http://" + String(OTA_SERVER) + "/firmware/eTomada.json";
 
@@ -123,21 +70,6 @@ bool otaChecaNovoFirmware(bool ehBoot)
         return false;
     }
 
-    bool retBin = true;
-    if (otaSupported)
-        retBin = otaChecaBinario(doc, ehBoot);
-
-    bool retWWW = true;
-    if (!ehBoot)
-        retWWW = otaChecaWWW(doc);
-
-    doc.clear();
-
-    return retBin && retWWW;
-}
-
-bool otaChecaWWW(JsonDocument &doc)
-{
     JsonObject www = doc["www"]["arquivos"].as<JsonObject>();
     for (JsonPair arq : www)
     {
@@ -171,6 +103,9 @@ bool otaChecaWWW(JsonDocument &doc)
 
         // logaM(LOG_DEBUG, ">> [%s] Atualizado!", path);
     }
+
+    doc.clear();
+
     return true;
 }
 
@@ -270,79 +205,6 @@ bool otaDownloadWWW(const char *path)
     return true;
 }
 
-bool otaChecaBinario(JsonDocument &doc, bool ehBoot)
-{
-    int minhaVersao = utilVersionToInt(eTomadaGetVersao().c_str());
-
-    String versaoServerStr = "";
-    // Procurar nosso modelo na lista do servidor
-    {
-
-        JsonArray devices = doc["devices"];
-        for (JsonObject dev : devices)
-        {
-            if (!strcmp(dev["board"].as<const char *>(), hardwareProfile.board))
-            {
-                JsonArray modelos = dev["modelos"];
-                for (JsonObject modelo : modelos)
-                {
-                    if (!strcmp(modelo["modelo"].as<const char *>(), hardwareProfile.modelo))
-                    {
-                        versaoServerStr = modelo["versao"].as<String>();
-                    }
-                }
-            }
-        }
-    }
-
-    if (versaoServerStr == "")
-    {
-        logaM(LOG_AVISO, ">> Nao achei nossa board [%s] modelo [%s] no firmware server!",
-              hardwareProfile.board, hardwareProfile.modelo);
-        return true;
-    }
-
-    int versaoServer = utilVersionToInt(versaoServerStr.c_str());
-    if (versaoServer > minhaVersao)
-    {
-        logaM(LOG_AVISO, "Novo Firmware!! >> V: %s", versaoServerStr.c_str());
-
-        if (!downloadFirmwareNovo)
-        {
-            logaM(LOG_AVISO, "ABORTANDO download do novo firmware!");
-            return false;
-        }
-
-        String urlFW = "http://" + String(OTA_SERVER) + "/firmware/" + String(hardwareProfile.board) + "_" + String(hardwareProfile.modelo) + "_" + versaoServerStr + ".bin";
-
-        if (ehBoot) // opção enviada no boot, para fazer o download antes de começar a funcionar
-        {
-            if (otaDownload(urlFW.c_str()))
-            {
-                logaM(LOG_AVISO, "Reiniciando para novo firmware...");
-                utilRestart("Atualizacao de Firmware", true);
-            }
-            else
-            {
-                // Desativar OTA visto que o download falhou
-                logaM(LOG_CRITICO, "Falha no download do firmware...");
-                return false;
-            }
-        }
-        else
-        {
-            logaM(LOG_AVISO, "Reiniciando para fazer o download de [%s]", urlFW.c_str());
-            utilRestart("Restart para iniciar download de firmware", true);
-        }
-    }
-    else if (versaoServer == minhaVersao)
-        logaM(ehBoot ? LOG_NORMAL : LOG_DEBUG, "Estamos na ultima versao");
-    else
-        logaM(ehBoot ? LOG_NORMAL : LOG_DEBUG, "Estamos em versão DEV!! Versão Server: [%s]", versaoServerStr.c_str());
-
-    return true;
-}
-
 bool otaEspSuportaOTA()
 {
     int tamanhoFlash = ESP.getFlashChipSize() / (1024 * 1024);
@@ -354,147 +216,6 @@ bool otaEspSuportaOTA()
             NULL);
 
     return (tamanhoFlash >= OTA_TAMANHO_MINIMO_FLASH) && (ota1 != nullptr);
-}
-
-bool otaDownload(const char *url)
-{
-    int dbm = WiFi.RSSI();
-    if (dbm <= -70)
-    {
-        logaM(LOG_CRITICO, "ABORTANDO download do firmware. WiFi muito fraco [%d]!", dbm);
-        return false;
-    }
-
-    HTTPClient http;
-    http.setTimeout(1000);
-    http.setConnectTimeout(1000);
-
-    logaM(LOG_NORMAL, "Baixando firmware: %s", url);
-
-    if (!http.begin(url))
-    {
-        logaM(LOG_CRITICO, "Falha ao iniciar HTTP");
-        return false;
-    }
-
-    int httpCode = http.GET();
-    esp_task_wdt_reset(); // alimenta o watchdog
-
-    if (httpCode != HTTP_CODE_OK)
-    {
-        logaM(LOG_CRITICO, "HTTP GET falhou: %d", httpCode);
-        http.end();
-        return false;
-    }
-
-    int total = http.getSize();
-
-    logaM(LOG_NORMAL, "Firmware: %d bytes", total);
-
-    if (total <= 0)
-    {
-        logaM(LOG_CRITICO, "Tamanho do firmware invalido");
-        http.end();
-        return false;
-    }
-
-    if (!Update.begin(total))
-    {
-        logaM(LOG_CRITICO, "Nao foi possivel iniciar OTA: %s",
-              Update.errorString());
-        http.end();
-        return false;
-    }
-
-    WiFiClient *stream = http.getStreamPtr();
-
-    uint8_t buffer[1024];
-
-    size_t totalRecebido = 0;
-    int ultimoPercentual = -1;
-    int wdtCounter = 0;
-
-    while (http.connected() && totalRecebido < total)
-    {
-        if (wdtCounter++ >= 250) // 250 ticks
-        {
-            wdtCounter = 0;
-            esp_task_wdt_reset(); // alimenta o watchdog
-        }
-
-        size_t disponivel = stream->available();
-
-        if (disponivel)
-        {
-            size_t lido = stream->readBytes(
-                buffer,
-                min(disponivel, sizeof(buffer)));
-
-            if (lido > 0)
-            {
-                if (Update.write(buffer, lido) != lido)
-                {
-                    logaM(LOG_CRITICO, "Erro gravando OTA: %s",
-                          Update.errorString());
-
-                    Update.abort();
-                    http.end();
-                    return false;
-                }
-
-                totalRecebido += lido;
-
-                int percentual = (totalRecebido * 100) / total;
-
-                // Loga somente a cada 10%
-                if (percentual / 10 != ultimoPercentual / 10)
-                {
-                    ultimoPercentual = percentual;
-
-                    logaM(LOG_NORMAL,
-                          "OTA: %d%% (%u/%u bytes)",
-                          percentual,
-                          (unsigned)totalRecebido,
-                          (unsigned)total);
-                }
-            }
-        }
-        else
-        {
-            vTaskDelay(1);
-        }
-    }
-
-    logaM(LOG_NORMAL, "Firmware gravado: %u/%d bytes", (unsigned)totalRecebido, total);
-
-    if (totalRecebido != (size_t)total)
-    {
-        logaM(LOG_CRITICO, "Firmware incompleto");
-        Update.abort();
-        http.end();
-        return false;
-    }
-
-    if (!Update.end())
-    {
-        logaM(LOG_CRITICO, "Falha ao finalizar OTA: %s",
-              Update.errorString());
-        http.end();
-        return false;
-    }
-
-    if (!Update.isFinished())
-    {
-        logaM(LOG_CRITICO, "OTA nao foi finalizado");
-        http.end();
-        return false;
-    }
-
-    logaM(LOG_NORMAL, "OTA concluido com sucesso!");
-
-    http.end();
-
-    return true;
 }
 
 const char *otaGetState()

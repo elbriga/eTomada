@@ -3,6 +3,8 @@
 
 void otaInit();
 
+bool otaChecaWWW();
+
 void otaUpload(
     AsyncWebServerRequest *request,
     String filename,
@@ -10,5 +12,4 @@ void otaUpload(
     uint8_t *data,
     size_t len,
     bool final);
-
 void otaUploadHelper(AsyncWebServerRequest *request);
