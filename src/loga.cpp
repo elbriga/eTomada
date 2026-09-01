@@ -11,6 +11,7 @@
 #include "loga.h"
 #include "ntp.h"
 #include "prefs.h"
+#include "wifi.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("LOGS", nivel, fmt, ##__VA_ARGS__)
@@ -249,6 +250,12 @@ static void logRemotoTask(void *param)
     {
       // Nao deve entrar aqui, essa task nao roda se nao estiver ativo
       Serial.println("log remoto task sem log remoto!!??????");
+      continue;
+    }
+
+    if (WiFiGetModoAP())
+    {
+      // Serial.println("Descartando log remoto - wifi modo AP");
       continue;
     }
 

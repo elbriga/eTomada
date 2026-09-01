@@ -3,6 +3,8 @@
 #include "botaoReset.h"
 #include "loga.h"
 #include "hardwareProfile.h"
+#include "rgb-led.h"
+#include "wifi.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("BTNRST", nivel, fmt, ##__VA_ARGS__)
@@ -70,9 +72,22 @@ void botaoResetAtualiza()
   // Detectar longPress e bigPress ao desligar
   if (!botaoReset.estado)
   {
-    if (duracaoAnterior > BOTAO_TEMPO_BIGP_MS)
-      logaM(LOG_AVISO, "BTN RESET BIG PRESS!!");
-    else if (duracaoAnterior > BOTAO_TEMPO_LONGP_MS)
-      logaM(LOG_AVISO, "BTN RESET LONG PRESS!");
+    if (duracaoAnterior > BOTAO_TEMPO_LONGP_MS)
+    {
+      logaM(LOG_AVISO, "BTN RESET LONG PRESS!!");
+
+      if (WiFiGetModoAP())
+      {
+        // Voltar para modo normal
+        WiFiConnect();
+        rgbLedSetBaseAnim(RGB_LED_ANIM_GREEN);
+      }
+      else
+      {
+        // Mudar para modo AP
+        WiFiModoAP();
+        rgbLedSetBaseAnim(RGB_LED_ANIM_BLUE);
+      }
+    }
   }
 }

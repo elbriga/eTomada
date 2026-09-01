@@ -126,4 +126,5 @@ void rgbLedSetBaseAnim(uint8_t num)
 {
     if (num >= 0 && num < TOT_ANIMS)
         BaseAnim = num;
+    rgbLedSetAnim(num);
 }

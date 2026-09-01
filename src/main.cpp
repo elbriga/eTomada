@@ -173,7 +173,8 @@ void loop()
 {
   esp_task_wdt_reset(); // alimenta o watchdog
 
-  if (WiFiGetModoAP())
+  bool wifiModoAP = WiFiGetModoAP();
+  if (wifiModoAP)
     WiFiModoAPLoop();
 
   // 5ms/5ms
@@ -269,7 +270,7 @@ void loop()
     }
 
     // Verificar o WiFi
-    if (!WiFiGetModoAP())
+    if (!wifiModoAP)
     {
       if (WiFi.status() != WL_CONNECTED)
       {

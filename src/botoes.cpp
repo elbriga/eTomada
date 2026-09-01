@@ -26,7 +26,7 @@ struct AtualizacaoBotao
 {
   Recurso *rec;
   int novoEstado;
-  uint32_t ultimoToggle;
+  uint32_t duracaoAnterior;
 };
 
 void botoesInit()
@@ -183,14 +183,15 @@ void botoesAtualiza()
       return;
     }
 
+    uint32_t agora = millis();
     for (int rb = 0; rb < totBotoesParaAtualizar; rb++)
     {
       Recurso *rec = atual[rb].rec;
       Botao *botao = rec->botao;
 
       botao->estado = atual[rb].novoEstado;
-      atual[rb].ultimoToggle = botao->ultimoToggle;
-      botao->ultimoToggle = millis();
+      atual[rb].duracaoAnterior = agora - botao->ultimoToggle;
+      botao->ultimoToggle = agora;
     }
   }
 
@@ -204,18 +205,11 @@ void botoesAtualiza()
     eventoPost(EVENTO_TOGGLE, atual[rb].rec, true, true);
 
     // Detectar CLICK, em qualquer direcao
-    if (millis() - atual[rb].ultimoToggle < BOTAO_TEMPO_CLICK_MS)
+    if (atual[rb].duracaoAnterior < BOTAO_TEMPO_CLICK_MS)
       eventoPost(EVENTO_CLICK, atual[rb].rec, true, true);
 
     // Detectar longPress e bigPress ao desligar
-    if (!botao->estado)
-    {
-      int msON = millis() - atual[rb].ultimoToggle;
-
-      if (msON > BOTAO_TEMPO_BIGP_MS)
-        eventoPost(EVENTO_BIG_PRESS, atual[rb].rec, true, true);
-      else if (msON > BOTAO_TEMPO_LONGP_MS)
-        eventoPost(EVENTO_LONG_PRESS, atual[rb].rec, true, true);
-    }
+    if (!botao->estado && atual[rb].duracaoAnterior > BOTAO_TEMPO_LONGP_MS)
+      eventoPost(EVENTO_LONG_PRESS, atual[rb].rec, true, true);
   }
 }

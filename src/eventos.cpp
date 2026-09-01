@@ -100,9 +100,6 @@ void eventosProcessaTask(void *)
 
             switch (evento.tipo)
             {
-            case EVENTO_BIG_PRESS:
-                logaM(LOG_AVISO, "BIG PRESS!");
-                break;
             case EVENTO_LONG_PRESS:
                 logaM(LOG_AVISO, "LONG PRESS!");
                 break;
