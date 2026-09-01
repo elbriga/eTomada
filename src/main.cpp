@@ -23,6 +23,7 @@
 #include "umidificador.h"
 #include "mdns-gs.h"
 #include "led.h"
+#include "botaoReset.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MAIN", nivel, fmt, ##__VA_ARGS__)
@@ -77,6 +78,8 @@ void setup()
   ntpInit();
 
   shaInit();
+
+  botaoResetInit();
 
   // Inicializar MODO DE OPERAÇÃO e o deviceID
   eTomadaInit0();
@@ -173,9 +176,11 @@ void loop()
   if (WiFiGetModoAP())
     WiFiModoAPLoop();
 
-  // 10ms/10ms
+  // 5ms/5ms
   botoesAtualiza();
   ledProcessa();
+  if (botaoResetAtivo())
+    botaoResetAtualiza();
 
   struct tm timeinfo;
   sysGetTime(&timeinfo);
@@ -223,7 +228,7 @@ void loop()
       last10Second = timeinfo.tm_sec / 10;
 
       rgbLedSetAnim(3, 3);
-      sensoresAtualiza();
+      sensoresAtualiza(); // TODO :: non block!
 
       // Keepalive para a interface web
       httpEnviaSSE("{}", "sse_ping");
@@ -289,6 +294,6 @@ void loop()
     }
   }
 
-  vTaskDelay(pdMS_TO_TICKS(10));
+  vTaskDelay(pdMS_TO_TICKS(5));
   yield();
 }

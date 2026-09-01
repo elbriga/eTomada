@@ -2,12 +2,13 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "1.3.23"
+#define ETOMADA_VERSAO "1.3.24"
 // 1.3.19 - Rede 10 com log server, mac no mDNS,
 // 1.3.20 - endpoint de UPLOAD de Firmware
 // 1.3.21 - sensor de corrent com task propria
 // 1.3.22 - del discover > usar mDNS
-// 1.3.23 - Removido override
+// 1.3.23 - Removido override dos reles e OTA automatico
+// 1.3.24 - reset pin
 
 #include "eTomada.h"
 #include "mestre.h"
