@@ -7,6 +7,7 @@ echo
 
 for ARQ in `ls include/`; do
     if [ -d "include/$ARQ" ]; then
+        [ "$ARQ" == "images" ] && continue
         # 1 nivel de recursao manual
         for ARQ2 in `ls include/$ARQ/`; do
             echo "$ARQ/$ARQ2"
