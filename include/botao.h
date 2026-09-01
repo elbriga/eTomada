@@ -7,6 +7,11 @@ struct Recurso; // Forward declaration
 
 #define MAX_BOTOES 4
 
+#define BOTAO_DEBOUCE_TIME_MS 33
+#define BOTAO_TEMPO_CLICK_MS 333
+#define BOTAO_TEMPO_LONGP_MS 3333
+#define BOTAO_TEMPO_BIGP_MS 7777
+
 struct Botao
 {
     int num;

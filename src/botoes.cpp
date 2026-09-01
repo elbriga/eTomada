@@ -14,9 +14,6 @@
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("BOTAO", nivel, fmt, ##__VA_ARGS__)
 
-#define BOTAO_DEBOUCE_TIME_MS 50
-#define BOTAO_TEMPO_CLICK_MS 333
-
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
@@ -63,10 +60,12 @@ void botoesInit()
     botao->ativo = (botao->pino != 255);
     if (botao->ativo)
     {
-      pinMode(botao->pino, INPUT);
+      pinMode(botao->pino, INPUT_PULLUP);
+      botao->estado = !digitalRead(botao->pino);
+      botao->ultimoEstado = botao->estado;
+      botao->debounce = millis();
+      botao->ultimoToggle = millis();
     }
-
-    botao->estado = digitalRead(botao->pino);
 
     botaoPrint(botao);
   }
@@ -128,13 +127,12 @@ String botaoGetJSONString(Botao *b)
 
 void botoesAtualiza()
 {
-  int maxBotoes = botoesGetCount();
-  if (!maxBotoes)
+  if (!botoesGetCount())
     return;
 
   int totRecursos = recursosGetCount(RECURSO_TODOS);
 
-  AtualizacaoBotao *atual = new AtualizacaoBotao[maxBotoes]();
+  AtualizacaoBotao atual[MAX_BOTOES] = {};
 
   // Ler os botoes sem o Lock
   int totBotoesParaAtualizar = 0;
@@ -155,7 +153,7 @@ void botoesAtualiza()
     }
 
     // Debounce
-    bool leitura = digitalRead(botao->pino);
+    bool leitura = !digitalRead(botao->pino); // PINO LOW == BOTAO ON
 
     if (leitura != botao->ultimoEstado)
     {
@@ -181,7 +179,6 @@ void botoesAtualiza()
     MutexLock lock(recursosMutex);
     if (!lock)
     {
-      delete[] atual;
       logaM(LOG_CRITICO, "botoesAtualiza: mutex timeout");
       return;
     }
@@ -206,9 +203,19 @@ void botoesAtualiza()
     eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, atual[rb].rec, true, true);
     eventoPost(EVENTO_TOGGLE, atual[rb].rec, true, true);
 
+    // Detectar CLICK, em qualquer direcao
     if (millis() - atual[rb].ultimoToggle < BOTAO_TEMPO_CLICK_MS)
       eventoPost(EVENTO_CLICK, atual[rb].rec, true, true);
-  }
 
-  delete[] atual;
+    // Detectar longPress e bigPress ao desligar
+    if (!botao->estado)
+    {
+      int msON = millis() - atual[rb].ultimoToggle;
+
+      if (msON > BOTAO_TEMPO_BIGP_MS)
+        eventoPost(EVENTO_BIG_PRESS, atual[rb].rec, true, true);
+      else if (msON > BOTAO_TEMPO_LONGP_MS)
+        eventoPost(EVENTO_LONG_PRESS, atual[rb].rec, true, true);
+    }
+  }
 }
