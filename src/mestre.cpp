@@ -1,4 +1,5 @@
 #include <ArduinoJson.h>
+#include <ESPmDNS.h>
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -28,41 +29,47 @@ void mestreInit()
     prefs.begin("eTomada", false);
 
     // Para testes
-    // prefs.putString("mestre1", "04:D3:08:A4:AE:30"); // MAC lolin
+    prefs.putString("mestre1", "GROW"); // resolve por mDNS
 
-    mestre.mac = getPrefsAtr(prefs, "1", "mestre");
-    if (mestreAtivo())
-        logaM(LOG_AVISO, "Nodo Mestre: %s", mestre.mac.c_str());
-
-    // TODO :: mestreCheckOnline()
-    mestre.online = false;
-
+    mestre.deviceID = getPrefsAtr(prefs, "1", "mestre");
     prefs.end();
+
+    if (mestreAtivo())
+        logaM(LOG_AVISO, "Nodo Mestre: %s", mestre.deviceID.c_str());
+
+    mestre.online = false;
+    mestreCheckOnline();
 }
 
-/*/ chamado pelo modulo discover em discoverLoop()
-void mestreCheckDiscover(String mac, IPAddress ip)
+void mestreCheckOnline()
 {
-    if (!mestreAtivo()) // Sem mestre retorna
+    if (!mestreAtivo())
         return;
 
-    if (mestre.mac != mac) // Nao eh o mestre
-        return;
+    // Escanear
+    int totND = MDNS.queryService("etomada", "tcp");
 
-    if (!mestre.online)
+    // Procurar nosso mestre
+    IPAddress ipMestre = nullptr;
+    for (int nd = 0; nd < totND; nd++)
+        if (MDNS.hostname(nd) == mestre.deviceID)
+        {
+            ipMestre = MDNS.IP(nd);
+            break;
+        }
+    if (ipMestre)
     {
+        if (!mestre.online)
+            logaM(LOG_AVISO, "Mestre Online!");
         mestre.online = true;
-        logaM(LOG_AVISO, "Mestre - ONLINE");
-    }
 
-    if (mestre.ip != ip)
-    {
-        mestre.ip = ip;
-        logaM(LOG_AVISO, "Mestre - Novo IP: %s", mestre.ip.toString().c_str());
-    }
+        if (mestre.ip != ipMestre)
+            logaM(LOG_AVISO, "Mestre novo IP [%s]", ipMestre.toString().c_str());
+        mestre.ip = ipMestre;
 
-    mestre.ultimoHeartbeat = millis();
-}*/
+        mestre.ultimoHeartbeat = millis();
+    }
+}
 
 void mestreLoop()
 {
@@ -81,8 +88,12 @@ void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento)
 {
     if (!mestreAtivo()) // Sem mestre retorna
         return;
-    if (!mestre.online) // Mestre offline retorna
+
+    if (!mestre.online)
+    {
+        logaM(LOG_AVISO, "Mestre OFFLINE. Descartando evento [%d]", tipoEvento);
         return;
+    }
 
     JsonDocument payload = recursoGetJSONEvento(rec, tipoEvento);
 
@@ -91,7 +102,7 @@ void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento)
 
 bool mestreAtivo()
 {
-    return (mestre.mac != "");
+    return (mestre.deviceID != "");
 }
 
 IPAddress mestreGetIP()

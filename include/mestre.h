@@ -6,17 +6,17 @@
 
 struct Mestre
 {
-    String mac;
+    String deviceID;
     IPAddress ip;
     bool online;
     uint32_t ultimoHeartbeat;
 };
 
 void mestreInit();
+void mestreCheckOnline();
+
 void mestreLoop();
 bool mestreAtivo();
 IPAddress mestreGetIP();
-
-// void mestreCheckDiscover(String mac, IPAddress ip);
 
 void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento);
