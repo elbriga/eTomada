@@ -19,7 +19,7 @@ static RecursoRemoto *recursosRemotos;
 static int totRecursosRemotos = 0;
 
 String recursosRemotosLoad(const char *path);
-JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id);
+JsonObject recursoRemotoGetFromSnapshot(JsonDocument &snapshot, String id);
 
 void recursosRemotosInit()
 {
@@ -177,11 +177,11 @@ RecursoRemoto *recursoRemotoGetPorIndice(int i)
   return NULL;
 }
 
-JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id)
+JsonObject recursoRemotoGetFromSnapshot(JsonDocument &snapshot, String id)
 {
   JsonObject recurso;
 
-  JsonArray recursos = (*snapshot)["recursos"];
+  JsonArray recursos = snapshot["recursos"];
   for (JsonObject r : recursos)
   {
     if (r["id"].as<String>() == id)
@@ -194,19 +194,10 @@ JsonObject recursoRemotoGetFromSnapshot(JsonDocument *snapshot, String id)
   return recurso;
 }
 
-void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
+void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument &snapshot)
 {
-  if (!snapshot)
-  {
-    logaM(LOG_CRITICO,
-          "recursoRemotoAtualizaFromSnapshot: snapshot NULL para [%s]",
-          nodo ? nodo->id : "(null)");
-    return;
-  }
-
   Recurso *recurso;
   RecursoRemoto *rr;
-  time_t tsSnapshot = (*snapshot)["timestamp"].as<unsigned long>();
 
   int totRecursos = recursosGetCount();
   for (int i = 0; i < totRecursos; i++)
@@ -227,7 +218,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot)
     if (!deviceRemoto)
       continue;
 
-    recursoAtualizaFromJson(recurso, deviceRemoto, tsSnapshot, "");
+    recursoAtualizaFromJson(recurso, deviceRemoto);
   }
 }
 

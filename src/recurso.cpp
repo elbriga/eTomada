@@ -14,6 +14,7 @@
 #include "agendamentos.h"
 #include "util.h"
 #include "umidificador.h"
+#include "eventos.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RECURSO", nivel, fmt, ##__VA_ARGS__)
@@ -105,7 +106,6 @@ Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id, bool r
 
   r->tipo = tipo;
   r->remoto = remoto;
-  r->tsAtualizacao = millis();
 
   strlcpy(r->id, id, sizeof(r->id));
 
@@ -172,10 +172,6 @@ String recursoSetLocked(Recurso *recurso, int estado, bool enviaMestre)
 {
   if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
     return "recursoSetLocked: Recurso nao eh RELE nem UMID";
-
-  time_t now = 0;
-  time(&now);
-  recurso->tsAtualizacao = now;
 
   String msg;
   // TODO colocar ponteiros de funcoes em Recurso para ler e escrever, ao inves desses ifs:
@@ -369,13 +365,7 @@ JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
 
   doc["origem"] = eTomadaDeviceID();
   doc["id"] = String(r->id);
-
-  time_t now = 0;
-  time(&now);
-  doc["timestamp"] = (unsigned long)now;
-
-  // TODO :: revisar :: mascarando os eventos. enviar a string de cada um
-  doc["evento"] = tipoEvento == EVENTO_TOGGLE ? "TOGGLE" : "";
+  doc["evento"] = eventoGetTipoTxt(tipoEvento);
 
   JsonDocument device;
   switch (r->tipo)
@@ -424,8 +414,8 @@ String recursoEventoRecebido(uint8_t *json)
     if (strcmp(doc["id"].as<const char *>(), rec->recursoRemoto->idRemoto))
       continue;
 
-    logaM(LOG_TESTE, "Evento recebido! Atualizar recurso [%s]", rec->id);
-    String ret = recursoAtualizaFromJson(rec, doc["device"], doc["timestamp"].as<unsigned long>(), doc["evento"].as<String>());
+    logaM(LOG_DEBUG0, "Evento recebido! Atualizar recurso [%s]", rec->id);
+    String ret = recursoAtualizaFromJson(rec, doc["device"], doc["evento"].as<String>());
 
     doc.clear();
     return ret;
@@ -435,23 +425,15 @@ String recursoEventoRecebido(uint8_t *json)
   return "Recurso nao encontrado";
 }
 
-String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long timestamp, String evento)
+String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento)
 {
-  // Verificar a "idade" da atualizacao
-  if (timestamp <= recurso->tsAtualizacao)
-  {
-    logaM(LOG_AVISO, "Por que eu devia ignorar esse evento por ts antigo?");
-    // return "ignorando atualização antiga";
-  }
-
   MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
   if (!lock)
   {
     return "mutex timeout";
   }
 
-  recurso->tsAtualizacao = timestamp;
-
+  // TODO :: mudar para ponteiro de funcao dentro de recurso?
   switch (recurso->tipo)
   {
   case RECURSO_RELE:

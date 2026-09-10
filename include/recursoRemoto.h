@@ -31,6 +31,6 @@ int recursosRemotosGetCount();
 RecursoRemoto *recursoRemotoGet(const char *id);
 RecursoRemoto *recursoRemotoGetPorIndice(int i);
 
-void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument *snapshot);
+void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument &snapshot);
 
 void recursoRemotoPrint(RecursoRemoto *r);

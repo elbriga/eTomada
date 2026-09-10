@@ -16,7 +16,6 @@ struct Recurso
   TipoRecurso tipo;
   char nome[32];
   bool remoto;
-  unsigned long tsAtualizacao; // TODO :: rever necessidade ja que nao fazemos mais discovery demorado
   union
   {
     Rele *rele;
@@ -40,8 +39,8 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre 
 String recursoSet(Recurso *recurso, String estadoStr = "ON", bool enviaMestre = true);
 String recursoCheck(Recurso *recurso, bool estadoDesejado);
 
-// Atualiza o recurso > eventos - timestamp para ignorar eventos antigos
-String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long timestamp, String evento);
+// Atualiza o recurso > eventos
+String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento = "");
 
 const char *recursoGetTipoStr(TipoRecurso tipo);
 JsonDocument recursoGetJSONDoc(Recurso *r);
