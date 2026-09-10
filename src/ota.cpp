@@ -25,12 +25,9 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
-static bool downloadWWWNovo = true;
-
 static bool otaSupported = false;
 
 bool otaEspSuportaOTA();
-bool otaChecaWWW();
 bool otaDownloadWWW(const char *path);
 const char *otaGetState();
 
@@ -98,10 +95,17 @@ bool otaChecaWWW()
         {
             logaM(LOG_AVISO, "Nova Versao arquivo www: [%s]", path);
             otaDownloadWWW(path);
+
+            localSha = shaGet(path);
+            if (strcmp(localSha, remoteSha) != 0)
+            {
+                logaM(LOG_AVISO, "Nova Versao DO ARQUIVO [%s] não bate o SHA!!!", path);
+                logaM(LOG_AVISO, "Vai dar loop!!!!");
+            }
             continue;
         }
 
-        // logaM(LOG_DEBUG, ">> [%s] Atualizado!", path);
+        logaM(LOG_DEBUG, ">> [%s] Atualizado!", path);
     }
 
     doc.clear();

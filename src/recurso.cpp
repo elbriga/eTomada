@@ -334,6 +334,7 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
   doc["tipo"] = recursoGetTipoStr(r->tipo);
   doc["nome"] = r->nome;
   doc["remoto"] = r->remoto;
+  doc["nodo"] = r->remoto ? r->recursoRemoto->nodo->id : "_LOCAL";
 
   switch (r->tipo)
   {
@@ -420,12 +421,14 @@ String recursoEventoRecebido(uint8_t *json)
     if (rec->recursoRemoto->nodo != nr) // TODO :: Melhor testar por ID?
       continue;
 
-    if (!strcmp(doc["id"].as<const char *>(), rec->recursoRemoto->idRemoto))
-    {
-      logaM(LOG_TESTE, "Evento recebido! Atualizar recurso [%s]", rec->id);
-      doc.clear();
-      return recursoAtualizaFromJson(rec, doc["device"], doc["timestamp"].as<unsigned long>(), doc["evento"].as<String>());
-    }
+    if (strcmp(doc["id"].as<const char *>(), rec->recursoRemoto->idRemoto))
+      continue;
+
+    logaM(LOG_TESTE, "Evento recebido! Atualizar recurso [%s]", rec->id);
+    String ret = recursoAtualizaFromJson(rec, doc["device"], doc["timestamp"].as<unsigned long>(), doc["evento"].as<String>());
+
+    doc.clear();
+    return ret;
   }
 
   doc.clear();

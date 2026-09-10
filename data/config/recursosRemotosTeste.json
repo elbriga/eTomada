@@ -34,6 +34,13 @@
       "nodo": "TERRARIO",
       "idLocal": "B2",
       "idRemoto": "B1"
+    },
+    {
+      "nome": "BREMOTO2",
+      "tipo": "BOTAO",
+      "nodo": "DEV",
+      "idLocal": "B3",
+      "idRemoto": "B1"
     }
   ]
 }
