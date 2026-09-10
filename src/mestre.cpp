@@ -9,6 +9,7 @@
 #include "recurso.h"
 #include "apiInterna.h"
 #include "eventos.h"
+#include "wifi.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MESTRE", nivel, fmt, ##__VA_ARGS__)
@@ -29,7 +30,7 @@ void mestreInit()
     prefs.begin("eTomada", false);
 
     // Para testes
-    prefs.putString("mestre1", "GROW"); // resolve por mDNS
+    // prefs.putString("mestre1", "GROW"); // resolve por mDNS
 
     mestre.deviceID = getPrefsAtr(prefs, "1", "mestre");
     prefs.end();
@@ -46,18 +47,13 @@ void mestreCheckOnline()
     if (!mestreAtivo())
         return;
 
-    // Escanear
-    int totND = MDNS.queryService("etomada", "tcp");
+    if (WiFiGetModoAP())
+        return;
 
     // Procurar nosso mestre
-    IPAddress ipMestre = nullptr;
-    for (int nd = 0; nd < totND; nd++)
-        if (MDNS.hostname(nd) == mestre.deviceID)
-        {
-            ipMestre = MDNS.IP(nd);
-            break;
-        }
-    if (ipMestre)
+    IPAddress ipMestre = MDNS.queryHost(mestre.deviceID);
+
+    if (ipMestre != IPAddress())
     {
         if (!mestre.online)
             logaM(LOG_AVISO, "Mestre Online!");
@@ -75,6 +71,8 @@ void mestreLoop()
 {
     if (!mestreAtivo()) // Sem mestre retorna
         return;
+
+    mestreCheckOnline();
 
     if (millis() - mestre.ultimoHeartbeat > MESTRE_HEARTBEAT_TIMEOUT)
     {

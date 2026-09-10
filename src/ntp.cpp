@@ -15,7 +15,7 @@ const char *ntpServer2 = "a.ntp.br";
 // See list of timezone strings https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 const char *tzInfo = "<-03>3";
 
-void mainNtpSetSyncFlag();
+void appNtpSetSyncFlag();
 void ntpTimeSyncCallback(struct timeval *tv);
 
 void ntpSetTZ()
@@ -44,7 +44,7 @@ long ntpSyncTime()
 void ntpTimeSyncCallback(struct timeval *tv)
 {
   // callback deve ser rápido!
-  mainNtpSetSyncFlag();
+  appNtpSetSyncFlag();
 }
 
 void sysGetTime(struct tm *out)
