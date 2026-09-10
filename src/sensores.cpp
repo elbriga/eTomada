@@ -22,15 +22,6 @@ static Sensor sensores[MAX_SENSORES];
 
 static int boardSensorCount = 0;
 
-// struct temporaria usada em sensoresAtualiza
-struct AtualizacaoSensor
-{
-  Recurso *rec;
-  int novoValor;
-  bool mudou;
-  bool desativar;
-};
-
 void sensoresInit()
 {
   // Zerar tudo
@@ -73,28 +64,16 @@ void sensoresInit()
       tipoSensor = tipoSensorGet(sensor->tipo);
     }
 
-    sensor->ativo = !!tipoSensor;
-    if (sensor->ativo)
+    if (tipoSensor->status != "OK")
     {
-      if (tipoSensor->status != "OK")
-      {
-        logaM(LOG_CRITICO, "Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
-        sensor->ativo = false;
-      }
-      else
-      {
-        // Sensores que usam os ADCs
-        if (!strcmp(sensor->tipo, "ACS712"))
-        {
-          pinMode(sensor->pino, INPUT);
-        }
-      }
+      logaM(LOG_CRITICO, "Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
     }
     else
     {
-      if (strlen(sensor->tipo) > 0)
+      // Sensores que usam os ADCs
+      if (!strcmp(sensor->tipo, "ACS712"))
       {
-        logaM(LOG_AVISO, "TipoSensor [%s] INVALIDO! Desativando Sensor[%d]", sensor->tipo, s);
+        pinMode(sensor->pino, INPUT);
       }
     }
 
@@ -123,9 +102,8 @@ void sensorPrint(Sensor *sensor) // TODO :: substituir por recursoPrint
 {
   TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
 
-  logaM(LOG_NORMAL, "Sensor %d:%d (%s) > [%s - %s]",
+  logaM(LOG_NORMAL, "Sensor %d:%d > [%s - %s]",
         sensor->num, sensor->pino,
-        (sensor->ativo ? "on" : "off"),
         tipoSensor ? tipoSensor->tipo : "",
         tipoSensor ? tipoSensor->nome : "");
 }
@@ -142,7 +120,6 @@ JsonDocument sensorGetJSONDoc(Sensor *s, bool full)
   {
     doc["pino"] = s->pino;
     doc["valor"] = s->valor;
-    doc["ativo"] = s->ativo;
 
     TipoSensor *ts = tipoSensorGet(s->tipo);
     doc["categoria"] = ts ? ts->tipo : "???";
@@ -178,6 +155,15 @@ void sensoresAtualiza()
       NULL);
 }
 
+// struct temporaria
+struct AtualizacaoSensor
+{
+  Recurso *rec;
+  int novoValor;
+  bool mudou;
+  // bool desativar;
+};
+
 static AtualizacaoSensor atual[MAX_SENSORES] = {};
 void sensoresAtualizaTask(void *args)
 {
@@ -196,7 +182,7 @@ void sensoresAtualizaTask(void *args)
 
     Sensor *sensor = rec->sensor;
 
-    if (!sensor->ativo || sensor->pino == -1)
+    if (sensor->pino == -1)
     {
       // Desativado
       continue;
@@ -211,12 +197,14 @@ void sensoresAtualizaTask(void *args)
     int idx = totSensoresOK++;
     atual[idx].rec = rec;
 
-    if (tipoSensor->status != "OK")
-    {
-      logaM(LOG_AVISO, "Sensor[%s] tipo inativo [%s]. Inativando sensor", rec->id, tipoSensor->nome);
-      atual[idx].desativar = true;
-      continue;
-    }
+    /* removido sensor->!ativo!
+        if (tipoSensor->status != "OK")
+        {
+          logaM(LOG_AVISO, "Sensor[%s] tipo inativo [%s]. Inativando sensor", rec->id, tipoSensor->nome);
+          atual[idx].desativar = true;
+          continue;
+        }
+    */
 
     atual[idx].novoValor = tipoSensor->lerSensor(sensor);
   }
@@ -236,11 +224,11 @@ void sensoresAtualizaTask(void *args)
       Recurso *rec = atual[rs].rec;
       Sensor *sensor = rec->sensor;
 
-      if (atual[rs].desativar)
+      /*if (atual[rs].desativar)
       {
-        sensor->ativo = false;
+        sensor->!ativo! = false;
         continue;
-      }
+      }*/
 
       atual[rs].mudou = (sensor->valor != atual[rs].novoValor);
       sensor->valor = atual[rs].novoValor;

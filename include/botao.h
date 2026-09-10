@@ -15,7 +15,6 @@ struct Botao
 {
     int num;
     int pino;
-    bool ativo;
 
     bool estado; // nível atual
     bool ultimoEstado;

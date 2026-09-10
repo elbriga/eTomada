@@ -37,9 +37,6 @@ function botoesRenderFromRecursos() {
   eTomadaData.recursos.forEach((recurso, i) => {
     if (recurso.tipo != "BOTAO") return;
 
-    let botao = recurso.device;
-    if (!botao.ativo) return;
-
     const card = botaoGetCard(recurso);
     container.appendChild(card);
   });

@@ -16,13 +16,12 @@ async def async_setup_entry(
 
     for sensor in coordinator.data["sensores"]:
 
-        if sensor["ativo"]:
-            entities.append(
-                ETomadaSensor(
-                    coordinator,
-                    sensor["num"],
-                )
+        entities.append(
+            ETomadaSensor(
+                coordinator,
+                sensor["num"],
             )
+        )
 
     async_add_entities(entities)
 

@@ -45,14 +45,10 @@ void relesInit()
 
     ReleHW rHW = hardwareProfile.reles[r - 1];
     rele->pino = rHW.pino;
-    rele->ativo = (rele->pino >= 0); // TODO > != 255 ?
     rele->invertido = rHW.invertido;
 
-    if (rele->ativo)
-    {
-      pinMode(rele->pino, OUTPUT);
-      digitalWrite(rele->pino, rele->invertido ? !rele->estado : rele->estado);
-    }
+    pinMode(rele->pino, OUTPUT);
+    digitalWrite(rele->pino, rele->invertido ? !rele->estado : rele->estado);
 
     relePrint(rele);
   }
@@ -75,9 +71,7 @@ Rele *releGet(int numRele)
 
 void relePrint(Rele *rele)
 {
-  logaM(LOG_NORMAL, "Rele %d:%d (%s)",
-        rele->num, rele->pino, // TODO :: nome
-        (rele->ativo ? "on" : "off"));
+  logaM(LOG_NORMAL, "Rele %d:%d", rele->num, rele->pino);
 }
 
 // REQUIRE releMutex locked
@@ -90,7 +84,6 @@ JsonDocument releGetJSONDoc(Rele *r, bool full)
   if (full)
   {
     doc["pino"] = r->pino;
-    doc["ativo"] = r->ativo;
     doc["estado"] = r->estado;
   }
 

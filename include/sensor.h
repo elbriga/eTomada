@@ -13,7 +13,6 @@ struct Sensor
     int pino;
     char tipo[32];
     int valor;
-    bool ativo;
 };
 
 void sensoresInit();

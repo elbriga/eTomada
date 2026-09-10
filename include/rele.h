@@ -11,7 +11,6 @@ struct Rele
 {
   int num;
   int pino;
-  bool ativo;
   bool estado;
   bool invertido;
 };

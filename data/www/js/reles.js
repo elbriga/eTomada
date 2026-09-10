@@ -34,9 +34,6 @@ function relesRenderFromRecursos() {
   eTomadaData.recursos.forEach((recurso, i) => {
     if (recurso.tipo != "RELE") return;
 
-    let rele = recurso.device;
-    if (!rele.ativo) return;
-
     const card = releGetCard(recurso);
     container.appendChild(card);
   });

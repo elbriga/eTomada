@@ -28,7 +28,7 @@ function regrasRenderFromSnapshot() {
   container.innerHTML = "";
 
   eTomadaData.regras.forEach((regra, i) => {
-    //if (!regra.ativo) return;
+    //if (!regra.ativa) return;
 
     const card = regraGetCard(regra);
     container.appendChild(card);

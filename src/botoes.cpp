@@ -56,16 +56,13 @@ void botoesInit()
     BotaoHW bHW = hardwareProfile.botoes[b - 1];
 
     botao->pino = bHW.pino;
+    pinMode(botao->pino, INPUT_PULLUP);
 
-    botao->ativo = (botao->pino != 255);
-    if (botao->ativo)
-    {
-      pinMode(botao->pino, INPUT_PULLUP);
-      botao->estado = !digitalRead(botao->pino);
-      botao->ultimoEstado = botao->estado;
-      botao->debounce = millis();
-      botao->ultimoToggle = millis();
-    }
+    botao->estado = !digitalRead(botao->pino);
+    botao->ultimoEstado = botao->estado;
+
+    botao->debounce = millis();
+    botao->ultimoToggle = millis();
 
     botaoPrint(botao);
   }
@@ -90,9 +87,7 @@ Botao *botaoGet(int num)
 
 void botaoPrint(Botao *botao)
 {
-  logaM(LOG_NORMAL, "Botao %d:%d (%s)",
-        botao->num, botao->pino,
-        (botao->ativo ? "on" : "off"));
+  logaM(LOG_NORMAL, "Botao %d:%d", botao->num, botao->pino);
 }
 
 // REQUIRE recursosMutex locked
@@ -109,7 +104,6 @@ JsonDocument botaoGetJSONDoc(Botao *b, bool full)
   {
     doc["pino"] = b->pino;
     doc["estado"] = b->estado;
-    doc["ativo"] = b->ativo;
   }
 
   return doc;
@@ -146,7 +140,7 @@ void botoesAtualiza()
 
     Botao *botao = rec->botao;
 
-    if (!botao->ativo || botao->pino == -1)
+    if (botao->pino == -1)
     {
       // Desativado
       continue;

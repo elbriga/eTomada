@@ -16,13 +16,12 @@ async def async_setup_entry(
 
     for rele in coordinator.data["reles"]:
 
-        if rele["ativo"]:
-            entities.append(
-                ETomadaSwitch(
-                    coordinator,
-                    rele["num"],
-                )
+        entities.append(
+            ETomadaSwitch(
+                coordinator,
+                rele["num"],
             )
+        )
 
     async_add_entities(entities)
 

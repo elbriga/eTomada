@@ -98,48 +98,45 @@ String recursosRemotosLoad(const char *path)
     recursoRemoto->nodo = nodoRemotoGet(nodo.c_str());
 
     /*/ Buscar o estado remoto do recurso com o snapshot do nodosRemotosInit()
-    JsonObject deviceRemoto;
-    if (!recursoRemoto->nodo)
-    {
-      logaM(LOG_CRITICO, "ERRO: recursosRemotosInit()[%d] sem nodo!", totRecursosRemotos);
-    }
-    else
-    {
-      JsonDocument *snapshot = discoverGetNodoSnapshot(recursoRemoto->nodo->mac);
-      if (snapshot)
-      {
-        JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, String(recursoRemoto->idRemoto));
-        if (cacheRR)
-          deviceRemoto = cacheRR["device"];
-      }
-    }
+        JsonObject deviceRemoto;
+        if (!recursoRemoto->nodo)
+        {
+          logaM(LOG_CRITICO, "ERRO: recursosRemotosInit()[%d] sem nodo!", totRecursosRemotos);
+        }
+        else
+        {
+          JsonDocument *snapshot = discoverGetNodoSnapshot(recursoRemoto->nodo->mac);
+          if (snapshot)
+          {
+            JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, String(recursoRemoto->idRemoto));
+            if (cacheRR)
+              deviceRemoto = cacheRR["device"];
+          }
+        }
 
-    if (tipo == "RELE")
-    {
-      Rele *rele = &recursoRemoto->rele;
-      rele->num = totRecursosRemotos;
-      rele->ativo = true;
-      if (deviceRemoto)
-        rele->estado = deviceRemoto["estado"].as<bool>();
-    }
-    else if (tipo == "SENSOR")
-    {
-      Sensor *sensor = &recursoRemoto->sensor;
-      sensor->num = totRecursosRemotos;
-      sensor->ativo = true;
-      if (deviceRemoto)
-      {
-        strlcpy(sensor->tipo, deviceRemoto["tipo"].as<const char *>(), sizeof(sensor->tipo));
-        sensor->valor = deviceRemoto["valor"].as<int>();
-      }
-    }
-    else if (tipo == "BOTAO")
-    {
-      Botao *botao = &recursoRemoto->botao;
-      botao->num = totRecursosRemotos;
-      botao->ativo = true;
-      if (deviceRemoto)
-        botao->estado = deviceRemoto["estado"].as<bool>();
+        if (tipo == "RELE")
+        {
+          Rele *rele = &recursoRemoto->rele;
+          rele->num = totRecursosRemotos;
+          if (deviceRemoto)
+            rele->estado = deviceRemoto["estado"].as<bool>();
+        }
+        else if (tipo == "SENSOR")
+        {
+          Sensor *sensor = &recursoRemoto->sensor;
+          sensor->num = totRecursosRemotos;
+          if (deviceRemoto)
+          {
+            strlcpy(sensor->tipo, deviceRemoto["tipo"].as<const char *>(), sizeof(sensor->tipo));
+            sensor->valor = deviceRemoto["valor"].as<int>();
+          }
+        }
+        else if (tipo == "BOTAO")
+        {
+          Botao *botao = &recursoRemoto->botao;
+          botao->num = totRecursosRemotos;
+          if (deviceRemoto)
+            botao->estado = deviceRemoto["estado"].as<bool>();
     }*/
 
     recursoRemotoPrint(recursoRemoto);
