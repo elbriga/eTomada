@@ -410,7 +410,8 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
   // Verificar a "idade" da atualizacao
   if (timestamp <= recurso->tsAtualizacao)
   {
-    return "ignorando atualização antiga";
+    logaM(LOG_AVISO, "Por que eu devia ignorar esse evento por ts antigo?");
+    // return "ignorando atualização antiga";
   }
 
   MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));

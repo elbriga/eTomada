@@ -16,7 +16,7 @@ struct Recurso
   TipoRecurso tipo;
   char nome[32];
   bool remoto;
-  unsigned long tsAtualizacao;
+  unsigned long tsAtualizacao; // TODO :: rever necessidade ja que nao fazemos mais discovery demorado
   union
   {
     Rele *rele;
