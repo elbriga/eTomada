@@ -32,6 +32,8 @@ void httpEnviaSSE(String msg, String tipo)
 
 void httpServerInit()
 {
+  logaM(LOG_NORMAL, "Inicializando o servidor http");
+
 #ifdef DEV
   //  Adicionar headers para functionar o CORS quando em DEV localhost
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");

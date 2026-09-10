@@ -31,6 +31,8 @@ struct AtualizacaoBotao
 
 void botoesInit()
 {
+  logaM(LOG_NORMAL, "Inicializando Botões Locais");
+
   // Zerar tudo
   memset(botoes, 0, sizeof(botoes));
 
@@ -63,8 +65,6 @@ void botoesInit()
 
     botao->debounce = millis();
     botao->ultimoToggle = millis();
-
-    botaoPrint(botao);
   }
 
   prefs.end();
@@ -83,11 +83,6 @@ Botao *botaoGet(int num)
   }
 
   return NULL;
-}
-
-void botaoPrint(Botao *botao)
-{
-  logaM(LOG_NORMAL, "Botao %d:%d", botao->num, botao->pino);
 }
 
 // REQUIRE recursosMutex locked

@@ -82,13 +82,8 @@ void eTomadaInit()
 
   agendamentosInit();
 
-  logaM(LOG_NORMAL, "Inicializando Relés Locais:");
   relesInit();
-
-  logaM(LOG_NORMAL, "Inicializando Sensores Locais:");
   sensoresInit();
-
-  logaM(LOG_NORMAL, "Inicializando Botões Locais:");
   botoesInit();
 
   if (modoOperacao == MODO_CONTROLADOR) // TODO :: MODO_NO com nodo/recurso remoto?

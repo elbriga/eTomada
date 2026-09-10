@@ -25,6 +25,16 @@ static bool wifiScanning = false;
 static unsigned long lastWiFiScan = 0;
 static JsonDocument wifiScanDoc;
 
+bool WiFiTemIP()
+{
+  IPAddress ip = WiFi.localIP();
+
+  return ip[0] != 0 ||
+         ip[1] != 0 ||
+         ip[2] != 0 ||
+         ip[3] != 0;
+}
+
 void WiFiConnect()
 {
   // Para testes
@@ -56,7 +66,7 @@ void WiFiConnect()
   WiFi.begin(ssid.c_str(), pass.c_str());
 
   unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED)
+  while (WiFi.status() != WL_CONNECTED || !WiFiTemIP())
   {
     esp_task_wdt_reset(); // alimenta o watchdog
 

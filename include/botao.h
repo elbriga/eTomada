@@ -25,7 +25,6 @@ struct Botao
 void botoesInit();
 int botoesGetCount();
 Botao *botaoGet(int numBotao);
-void botaoPrint(Botao *botao);
 
 JsonDocument botaoGetJSONDoc(Botao *s, bool full);
 

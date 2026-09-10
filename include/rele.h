@@ -18,7 +18,6 @@ struct Rele
 void relesInit();
 int relesGetCount();
 Rele *releGet(int numRele);
-void relePrint(Rele *rele);
 
 JsonDocument releGetJSONDoc(Rele *r, bool full);
 

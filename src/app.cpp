@@ -145,7 +145,6 @@ void appInit()
   logaM(LOG_NORMAL, "== eTomada Init() ==");
   eTomadaInit();
 
-  logaM(LOG_NORMAL, "Inicializando o servidor http:");
   httpServerInit();
 
   // mDNS somente no modo STA

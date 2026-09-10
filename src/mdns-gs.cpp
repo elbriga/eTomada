@@ -18,7 +18,7 @@ void mdnsInit(bool logar)
     if (MDNS.begin(hostname.c_str()))
     {
         if (logar)
-            logaM(LOG_NORMAL, "mDNS iniciado em [%s]", hostname.c_str());
+            logaM(LOG_NORMAL, "Inicializando mDNS em [%s]", hostname.c_str());
 
         if (!MDNS.addService("etomada", "tcp", 80))
         {

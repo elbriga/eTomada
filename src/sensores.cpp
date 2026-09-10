@@ -24,6 +24,8 @@ static int boardSensorCount = 0;
 
 void sensoresInit()
 {
+  logaM(LOG_NORMAL, "Inicializando Sensores Locais");
+
   // Zerar tudo
   memset(sensores, 0, sizeof(sensores));
 
@@ -76,8 +78,6 @@ void sensoresInit()
         pinMode(sensor->pino, INPUT);
       }
     }
-
-    sensorPrint(sensor);
   }
 
   prefs.end();
@@ -96,16 +96,6 @@ Sensor *sensorGet(int numSensor)
   }
 
   return &sensores[numSensor - 1];
-}
-
-void sensorPrint(Sensor *sensor) // TODO :: substituir por recursoPrint
-{
-  TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
-
-  logaM(LOG_NORMAL, "Sensor %d:%d > [%s - %s]",
-        sensor->num, sensor->pino,
-        tipoSensor ? tipoSensor->tipo : "",
-        tipoSensor ? tipoSensor->nome : "");
 }
 
 // REQUIRE sensorMutex locked

@@ -21,6 +21,8 @@ static int boardReleCount = 0;
 
 void relesInit()
 {
+  logaM(LOG_NORMAL, "Inicializando Relés Locais");
+
   // Zerar tudo
   memset(reles, 0, sizeof(reles));
 
@@ -49,8 +51,6 @@ void relesInit()
 
     pinMode(rele->pino, OUTPUT);
     digitalWrite(rele->pino, rele->invertido ? !rele->estado : rele->estado);
-
-    relePrint(rele);
   }
 }
 
@@ -67,11 +67,6 @@ Rele *releGet(int numRele)
   }
 
   return &reles[numRele - 1];
-}
-
-void relePrint(Rele *rele)
-{
-  logaM(LOG_NORMAL, "Rele %d:%d", rele->num, rele->pino);
 }
 
 // REQUIRE releMutex locked
