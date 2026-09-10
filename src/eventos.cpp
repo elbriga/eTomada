@@ -108,6 +108,7 @@ void eventosProcessaTask(void *)
                 break;
 
             case EVENTO_TOGGLE:
+                logaM(LOG_AVISO, "TOGGLE!");
                 // TODO :: agora o TOGGLE pode vir sozinho da interface: achar outra forma de nao duplicar
                 // atualiza = false; // Já será atualizado no EVENTO_ON / EVENTO_OFF, nao duplicar
                 break;

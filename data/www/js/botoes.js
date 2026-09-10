@@ -11,7 +11,7 @@ function botaoGetCard(recurso) {
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">
-    <div class="medio">Botao ${recurso.id}</div>
+    <div class="medio">Botao ${recurso.id}${recurso.remoto ? ` em ${recurso.nodo}` : ""}</div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
   <button class="editBtn" onclick="botaoOpenEditModal('${recurso.id}')">✏️</button>
