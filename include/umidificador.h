@@ -13,3 +13,4 @@ bool umidificadorAtivo();
 UmidificadorEstado umidificadorGetEstado();
 void umidificadorSetEstado(UmidificadorEstado estado);
 String umidificadorSetFromJSON(uint8_t *json);
+JsonDocument umidificadorGetJSONDoc();

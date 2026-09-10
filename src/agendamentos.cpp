@@ -35,6 +35,13 @@ void agendamentosInit()
         1);
 }
 
+void agendamentosLimpa(TipoAgendamento tipo, const char *recursoID)
+{
+    for (int s = 0; s < MAX_ACOES_AGENDADAS; s++)
+        if (acoes[s].tipo == tipo && !strcmp(acoes[s].recursoID, recursoID))
+            acoes[s].tipo = AGEND_NENHUM;
+}
+
 void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID, int estado)
 {
     // procurar um "slot"
@@ -52,6 +59,8 @@ void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID,
         logaM(LOG_CRITICO, "agendamentosAdd[%d]: IMPOSSIVEL ACHAR SLOT!", tipo);
         return;
     }
+
+    // TODO :: sempre chamar agendamentoLimpa()?
 
     acao->tipo = tipo;
     acao->quando = millis() + timeoutMs;

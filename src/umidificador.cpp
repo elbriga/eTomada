@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <Preferences.h>
 
 #include "umidificador.h"
@@ -131,6 +132,11 @@ void umidificadorSetEstadoTask(void *args)
 
   logaM(LOG_NORMAL, "Umidificador ligado no POWER[%d]", (int)estado);
 
+  int minutosOff = (4 - estado) * 30; // timer de 30, 60 ou 90 minutos, conforme o power
+  agendamentosLimpa(AGEND_RECURSO, "UMIDIFICADOR");
+  agendamentosAdd(AGEND_RECURSO, minutosOff * 60 * 1000, "UMIDIFICADOR", 0);
+  logaM(LOG_NORMAL, "Agendado desligamento para daqui [%d] minutos", minutosOff);
+
   umidTaskRodando = false;
   vTaskDelete(NULL);
 }
@@ -162,4 +168,14 @@ String umidificadorSetFromJSON(uint8_t *json)
   umidificadorSetEstado((UmidificadorEstado)estado);
 
   return "OK";
+}
+
+JsonDocument umidificadorGetJSONDoc()
+{
+  JsonDocument doc;
+
+  doc["num"] = 1;
+  doc["estado"] = umidificadorGetEstado();
+
+  return doc;
 }

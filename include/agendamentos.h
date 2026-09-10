@@ -10,3 +10,4 @@ enum TipoAgendamento
 
 void agendamentosInit();
 void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID = "", int estado = 0);
+void agendamentosLimpa(TipoAgendamento tipo, const char *recursoID);
