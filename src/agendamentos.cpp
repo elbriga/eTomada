@@ -17,7 +17,7 @@ struct AcaoAgendada
 };
 
 #define MAX_ACOES_AGENDADAS 16
-AcaoAgendada acoes[MAX_ACOES_AGENDADAS];
+AcaoAgendada acoes[MAX_ACOES_AGENDADAS] = {};
 
 void agendamentosProcessaTask(void *);
 

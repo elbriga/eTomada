@@ -11,6 +11,7 @@
 #include "umidificador.h"
 #include "util.h"
 #include "ota.h"
+#include "recovery.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("HTTP", nivel, fmt, ##__VA_ARGS__)
@@ -225,10 +226,6 @@ void httpServerInitModoAPI()
 
     utilRestart("WiFi Change"); });
 
-  httpServer.on("/api/ota", HTTP_POST, [](AsyncWebServerRequest *request)
-                { otaUploadHelper(request); }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)
-                { otaUpload(request, filename, index, data, len, final); });
-
   // função para atualizar o www
   httpServer.on("/api/checkWWW", HTTP_GET, [](AsyncWebServerRequest *request)
                 {
@@ -236,13 +233,6 @@ void httpServerInitModoAPI()
 
                   request->send(200, "application/json", R"({"msg":"WWW conferido"})");
                   logaRequest(request, "200 OK"); });
-
-  httpServer.on("/api/reset", HTTP_GET, [](AsyncWebServerRequest *request)
-                {
-    request->send(200, "application/json", R"({"msg":"OK - vou reiniciar"})");
-    logaRequest(request, "200 OK");
-
-    utilRestart("API!"); });
 
   httpServer.on("/api/roleta", HTTP_GET, [](AsyncWebServerRequest *request)
                 {
@@ -259,6 +249,8 @@ void httpServerInitModoAPI()
       NULL,
       1
     ); });
+
+  recoveryAPIRegister();
 
   // Eventos de conexão/desconexão
   sse.onConnect([](AsyncEventSourceClient *client)

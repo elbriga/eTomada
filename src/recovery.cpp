@@ -37,6 +37,8 @@ extern const HardwareProfile hardwareProfile;
 // Estado
 // ============================================================
 
+static bool recoveryAtivo = false;
+
 static bool bootAguardandoOK = false;
 static uint32_t bootInicio = 0;
 
@@ -44,6 +46,11 @@ static bool modoAP = false;
 static String apSSID;
 
 static bool ledUltimoEstado = false;
+
+bool recoveryGetAtivo()
+{
+    return recoveryAtivo;
+}
 
 // ============================================================
 // Storage
@@ -108,6 +115,7 @@ bool recoveryBoot()
         if (!recoveryStorageWrite(0))
             Serial.println("ERRO zerando contador de recovery");
 
+        recoveryAtivo = true;
         return true;
     }
 
@@ -254,17 +262,13 @@ static void recoveryWifiInit()
 
 void recoveryAPIRegister()
 {
-    // Reutiliza exatamente o OTA existente.
-    httpServer.on("/api/ota", HTTP_POST, [](AsyncWebServerRequest *request)
-                  { otaUploadHelper(request); }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)
-                  { otaUpload(request, filename, index, data, len, final); });
+    httpServer.on("/api/ota", HTTP_POST, otaUploadHelper, otaUpload);
 
     httpServer.on("/api/reboot", HTTP_GET, [](AsyncWebServerRequest *request)
                   {
     request->send(200, "application/json", R"({"msg":"OK - vou reiniciar"})");
-    //logaRequest(request, "200 OK");
 
-    utilRestart("recovery API!"); });
+    utilRestart("rAPI!"); });
 }
 
 // ============================================================
@@ -275,6 +279,8 @@ static void recoveryHttpInit()
 {
     httpServer.on("/api/status", HTTP_GET, [](AsyncWebServerRequest *request)
                   {
+                      Serial.println("GET /api/status");
+
                       IPAddress ip = modoAP ? WiFi.softAPIP() : WiFi.localIP();
                       String ssid = modoAP ? apSSID : WiFi.SSID();
 
@@ -299,7 +305,9 @@ static void recoveryHttpInit()
                       request->send(200, "application/json", resposta); });
 
     httpServer.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-                  { request->send(200, "text/plain", "eTomada Recovery"); });
+                  {
+                    Serial.println("GET /");
+                    request->send(200, "text/plain", "eTomada Recovery"); });
 
     recoveryAPIRegister();
 
@@ -343,9 +351,23 @@ void recoveryInit()
     recoveryHttpInit();
 }
 
+static bool doReboot = false;
+void recoveryReboot()
+{
+    doReboot = true;
+}
+
 void recoveryLoop()
 {
     recoveryLedLoop();
 
     vTaskDelay(pdMS_TO_TICKS(50));
+
+    if (doReboot)
+    {
+        ESP.restart();
+        while (1)
+        {
+        };
+    }
 }

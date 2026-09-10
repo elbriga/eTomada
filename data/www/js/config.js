@@ -43,7 +43,7 @@ async function factoryReset() {
 
 async function soReset() {
   // TODO Modal confirm
-  await eTomadaAPI("reset", { senha: 1333 }, "POST");
+  await eTomadaAPI("reboot");
 
   closeConfig();
 

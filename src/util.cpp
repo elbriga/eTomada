@@ -6,6 +6,7 @@
 
 #include "loga.h"
 #include "agendamentos.h"
+#include "recovery.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("UTIL", nivel, fmt, ##__VA_ARGS__)
@@ -30,12 +31,16 @@ void utilRestart(const char *msg, bool now)
     {
     };
   }
-  else
+
+  logaM(LOG_AVISO, ">>> util::Restart [%s]", msg);
+
+  if (!recoveryGetAtivo())
   {
-    logaM(LOG_AVISO, ">>> util::Restart Agendado [%s]", msg);
     vTaskDelay(pdTICKS_TO_MS(500)); // Delay para dar tempo de flush nos logs
-    agendamentosAdd(AGEND_RESET, 1000);
+    agendamentosAdd(AGEND_RESET, 100);
   }
+  else
+    recoveryReboot();
 }
 
 int utilVersionToInt(const char *ver)

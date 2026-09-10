@@ -433,7 +433,6 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento
     return "mutex timeout";
   }
 
-  // TODO :: mudar para ponteiro de funcao dentro de recurso?
   switch (recurso->tipo)
   {
   case RECURSO_RELE:
