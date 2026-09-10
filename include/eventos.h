@@ -37,3 +37,5 @@ void eventoPost(TipoEvento tipo,
                 bool enviaMestre);
 
 String eventoMockFromJson(uint8_t *json);
+
+const char *eventoGetTipoTxt(TipoEvento tipo);
