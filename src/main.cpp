@@ -268,6 +268,8 @@ void loop()
         {
           lastHour = timeinfo.tm_hour;
           memoriaLog("1H/1H");
+
+          nodosRemotosLimpaCacheNovosNodos();
         }
       }
     }
