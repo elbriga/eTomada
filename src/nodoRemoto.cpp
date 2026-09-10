@@ -13,8 +13,17 @@
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("NODORMT", nivel, fmt, ##__VA_ARGS__)
 
+#define MAX_NOVOS_NODOS 4
+
 NodoRemoto *nodosRemotos = nullptr;
 static int totNodosRemotos = 0;
+
+struct NovoNodo
+{
+  bool ativo;
+  char nome[32];
+};
+static NovoNodo novosNodos[MAX_NOVOS_NODOS] = {};
 
 NodoRemoto *nodoRemotoGetPorIndice(int i);
 void nodosRemotosRefreshTask(void *args);
@@ -77,6 +86,11 @@ void nodosRemotosRefresh()
       NULL);
 }
 
+void nodosRemotosLimpaCacheNovosNodos()
+{
+  memset(novosNodos, 0, sizeof(novosNodos));
+}
+
 void nodosRemotosRefreshTask(void *args)
 {
   bool ehTask = args && !strncmp((char *)args, "TASK", 4);
@@ -100,9 +114,29 @@ void nodosRemotosRefreshTask(void *args)
     }
     if (!achei)
     {
-      logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em [%s]. Avisar na interface",
-            MDNS.hostname(nd).c_str(), MDNS.IP(nd).toString().c_str());
-      // TODO
+      // Ver se já demos msg para esse novo nodo
+      bool jaAvisei = false;
+      for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+        if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, MDNS.hostname(nd).c_str()))
+        {
+          jaAvisei = true;
+          break;
+        }
+
+      if (!jaAvisei)
+      {
+        for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+          if (!novosNodos[i].ativo)
+          {
+            novosNodos[i].ativo = true;
+            strlcpy(novosNodos[i].nome, MDNS.hostname(nd).c_str(), sizeof(novosNodos[i].nome));
+            break;
+          }
+
+        logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em [%s]. Avisar na interface",
+              MDNS.hostname(nd).c_str(), MDNS.IP(nd).toString().c_str());
+        // TODO
+      }
     }
   }
 

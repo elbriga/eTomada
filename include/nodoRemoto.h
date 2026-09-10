@@ -3,7 +3,6 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
-#define MAX_NODOS_REMOTOS 8
 #define NODOS_PATH "/nodosRemotos.json"
 
 struct NodoRemoto
@@ -21,3 +20,4 @@ NodoRemoto *nodoRemotoGet(const char *id);
 void nodoRemotoPrint(NodoRemoto *nodoRemoto);
 
 void nodosRemotosRefresh();
+void nodosRemotosLimpaCacheNovosNodos();
