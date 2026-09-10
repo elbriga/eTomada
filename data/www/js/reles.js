@@ -11,7 +11,7 @@ function releGetCard(recurso) {
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">
-    <div class="medio">Tomada ${recurso.id}</div>
+    <div class="medio">Tomada ${recurso.id}${recurso.remoto ? ` em ${recurso.nodo}` : ""}</div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
   <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
