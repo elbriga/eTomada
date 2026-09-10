@@ -13,6 +13,7 @@
 #include "mutex.h"
 #include "agendamentos.h"
 #include "util.h"
+#include "umidificador.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RECURSO", nivel, fmt, ##__VA_ARGS__)
@@ -30,7 +31,9 @@ void recursosInit()
   int totBotoesLocais = botoesGetCount();
   int totRecursosRemotos = recursosRemotosGetCount();
 
-  totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais + totRecursosRemotos;
+  totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais + totRecursosRemotos +
+                (umidificadorAtivo() ? 1 : 0);
+
   recursos = new Recurso[totRecursos]();
   if (!recursos)
     utilDIE("RECURSOS");
@@ -70,6 +73,11 @@ void recursosInit()
     recurso->recursoRemoto = rr;
   }
 
+  if (umidificadorAtivo())
+  {
+    recursoAdd(prefs, RECURSO_UMIDIFICADOR, "UMIDIFICADOR", false);
+  }
+
   prefs.end();
 
   int tot = recursosGetCount(RECURSO_TODOS);
@@ -101,7 +109,8 @@ Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id, bool r
 
   strlcpy(r->id, id, sizeof(r->id));
 
-  recursoLoadFromPrefs(r, prefs);
+  if (strcmp(id, "UMIDIFICADOR"))
+    recursoLoadFromPrefs(r, prefs);
 
   return r;
 }
@@ -159,10 +168,10 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
   return recursoSet(recurso, estado, enviaMestre);
 }
 
-String recursoSetLocked(Recurso *recurso, bool estado, bool enviaMestre)
+String recursoSetLocked(Recurso *recurso, int estado, bool enviaMestre)
 {
-  if (recurso->tipo != RECURSO_RELE)
-    return "recursoSetLocked: Recurso nao eh RELE";
+  if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
+    return "recursoSetLocked: Recurso nao eh RELE nem UMID";
 
   time_t now = 0;
   time(&now);
@@ -177,7 +186,16 @@ String recursoSetLocked(Recurso *recurso, bool estado, bool enviaMestre)
   }
   else
   {
-    msg = releControlaLocked(recurso->rele, estado);
+    if (recurso->tipo == RECURSO_RELE)
+      msg = releControlaLocked(recurso->rele, estado);
+    else
+    {
+      if (estado < UMID_DESLIGADO || estado > UMID_POWER5)
+        return "resursoSetLocked: Estado UMID invalido";
+
+      msg = estado ? "Umid Ligando no POWER " + estado : "Desliando Umid";
+      umidificadorSetEstado((UmidificadorEstado)estado);
+    }
   }
 
   // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);
@@ -188,8 +206,8 @@ String recursoSetLocked(Recurso *recurso, bool estado, bool enviaMestre)
 
 String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
 {
-  if (recurso->tipo != RECURSO_RELE)
-    return "recursoSet: Recurso nao eh RELE";
+  if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
+    return "recursoSet: Recurso nao eh RELE nem UMID";
 
   MutexLock lock(recursosMutex);
   if (!lock)
@@ -200,6 +218,9 @@ String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
   bool estado;
   if (estadoStr == "TOGGLE")
   {
+    if (recurso->tipo != RECURSO_RELE)
+      return "recursoSet: Recurso nao eh RELE";
+
     Rele *r = recursoGetRele(recurso);
     if (!r)
       return "recursoToggle : RELE invalido";
@@ -298,6 +319,8 @@ const char *recursoGetTipoStr(TipoRecurso tipo)
     return "SENSOR";
   case RECURSO_BOTAO:
     return "BOTAO";
+  case RECURSO_UMIDIFICADOR:
+    return "UMIDIFICADOR";
   default:
     return "TIPORECURSODESCONHECIDO";
   }
@@ -325,6 +348,10 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
 
   case RECURSO_BOTAO:
     doc["device"] = botaoGetJSONDoc(recursoGetBotao(r), true);
+    break;
+
+  case RECURSO_UMIDIFICADOR:
+    doc["device"] = umidificadorGetJSONDoc();
     break;
 
   default:
@@ -361,6 +388,9 @@ JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
     break;
   case RECURSO_BOTAO:
     device["estado"] = recursoGetBotao(r)->estado;
+    break;
+  case RECURSO_UMIDIFICADOR:
+    device["estado"] = umidificadorGetEstado();
     break;
   }
 
@@ -467,6 +497,19 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, unsigned long
     {
       eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso, true, true);
       eventoPost(EVENTO_TOGGLE, recurso, true, true);
+    }
+  }
+  break;
+
+  case RECURSO_UMIDIFICADOR:
+  {
+    int novoEstado = doc["estado"].as<int>();
+    if (novoEstado >= UMID_DESLIGADO && novoEstado <= UMID_POWER5)
+    {
+      bool mudou = (umidificadorGetEstado() != novoEstado);
+      umidificadorSetEstado((UmidificadorEstado)novoEstado);
+      if (mudou)
+        eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
     }
   }
   break;
