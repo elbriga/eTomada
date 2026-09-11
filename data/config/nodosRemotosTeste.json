@@ -11,6 +11,10 @@
     {
       "id": "DEV",
       "desc": "8266 sem USB"
+    },
+    {
+      "id": "AGUA-QUARTO",
+      "desc": "Sensor de Chuva e irrigação da sacada"
     }
   ]
 }

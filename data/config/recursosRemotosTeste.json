@@ -1,46 +1,46 @@
 {
   "recursosRemotos": [
     {
-      "nome": "RREMOTO1",
       "tipo": "RELE",
       "nodo": "TERRARIO",
       "idLocal": "R9",
       "idRemoto": "R1"
     },
     {
-      "nome": "RREMOTO2",
       "tipo": "RELE",
       "nodo": "TERRARIO",
       "idLocal": "R10",
       "idRemoto": "R2"
     },
     {
-      "nome": "SREMOTO1",
       "tipo": "SENSOR",
       "nodo": "DEV",
       "idLocal": "S5",
       "idRemoto": "S1"
     },
     {
-      "nome": "SREMOTO2",
       "tipo": "SENSOR",
       "nodo": "DEV",
       "idLocal": "S6",
       "idRemoto": "S2"
     },
     {
-      "nome": "BREMOTO1",
       "tipo": "BOTAO",
       "nodo": "TERRARIO",
       "idLocal": "B2",
       "idRemoto": "B1"
     },
     {
-      "nome": "BREMOTO2",
       "tipo": "BOTAO",
       "nodo": "DEV",
       "idLocal": "B3",
       "idRemoto": "B1"
+    },
+    {
+      "tipo": "SENSOR",
+      "nodo": "AGUA-QUARTO",
+      "idLocal": "S7",
+      "idRemoto": "S1"
     }
   ]
 }

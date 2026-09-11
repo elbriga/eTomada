@@ -23,7 +23,7 @@
       "acao": {
         "tipo": "ESTADO",
         "comando": "TOGGLE",
-        "recurso": "R9"
+        "recurso": "R10"
       }
     },
     {

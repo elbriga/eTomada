@@ -20,7 +20,12 @@ function sensorGetCard(recurso) {
   card.innerHTML = `
 <div class="headerTop">
   <div>
-    <div class="medio">Sensor ${sensor.num} - ${tipoSensor.nome} - ${tipoSensor.tipo}${recurso.remoto ? ` em ${recurso.nodo}` : ""}</div>
+    <div class="medio">
+      Sensor ${recurso.id}
+      ${tipoSensor.nome != undefined ? " - "+tipoSensor.nome : ""}
+      ${tipoSensor.tipo != undefined ? " - "+tipoSensor.tipo : ""}
+      ${recurso.remoto ? ` em ${recurso.nodo}` : ""}
+    </div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
   <button class="editBtn" onclick="sensorOpenEditModal('${recurso.id}')">✏️</button>

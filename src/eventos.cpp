@@ -45,19 +45,19 @@ const char *eventoGetTipoTxt(TipoEvento tipo)
     case EVENTO_DESLIGOU:
         return "DESLIGOU";
     case EVENTO_TOGGLE:
-        return "TOGLLE";
+        return "TOGGLE";
     case EVENTO_CLICK:
         return "CLICK";
     case EVENTO_DOUBLE_CLICK:
         return "DUPCLICK";
     case EVENTO_LONG_PRESS:
-        return "LONGPRESS";
+        return "LONG_PRESS";
     case EVENTO_VALOR_MUDOU:
-        return "VALOR";
+        return "CHANGED";
     case EVENTO_HORARIO:
         return "HORARIO";
     default:
-        return "??????";
+        return "?*?";
     }
 }
 
