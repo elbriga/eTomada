@@ -453,7 +453,7 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento
     Sensor *sensor = recursoGetSensor(recurso);
 
     // Inicializar sensor?
-    if (!strlen(sensor->tipo) && doc["tipo"] != "")
+    if (!strlen(sensor->tipo) && !doc["tipo"].isNull())
     {
       strcpy(sensor->tipo, doc["tipo"].as<const char *>());
     }
