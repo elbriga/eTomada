@@ -27,7 +27,6 @@ typedef struct
 {
     const char *modelo; // Modelo do eTomada - config de reles, sensores e botoes
     const char *board;  // board do esp
-    int btnResetPin;
     int ledPin;
     bool ledInvertido;
     ReleHW reles[MAX_RELES];

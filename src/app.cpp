@@ -23,7 +23,6 @@
 #include "umidificador.h"
 #include "mdns-gs.h"
 #include "led.h"
-#include "botaoReset.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("APP", nivel, fmt, ##__VA_ARGS__)
@@ -74,8 +73,6 @@ void appInit()
   ntpInit();
 
   shaInit();
-
-  botaoResetInit();
 
   // Inicializar MODO DE OPERAÇÃO e o deviceID
   eTomadaInit0();
@@ -177,8 +174,6 @@ void appLoop()
   // 5ms/5ms
   botoesAtualiza();
   ledProcessa();
-  if (botaoResetAtivo())
-    botaoResetAtualiza();
 
   struct tm timeinfo;
   sysGetTime(&timeinfo);

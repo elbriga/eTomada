@@ -4,7 +4,6 @@
 const HardwareProfile hardwareProfile = {
     .modelo = "R5S4B2",
     .board = "esp32dev",
-    .btnResetPin = 255,
     .ledPin = 2,
     .ledInvertido = false,
     .reles = {

@@ -4,7 +4,6 @@
 const HardwareProfile hardwareProfile = {
     .modelo = "R6S4B1",
     .board = "lolin32",
-    .btnResetPin = 255,
     .ledPin = 25,
     .ledInvertido = false,
     .reles = {
