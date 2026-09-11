@@ -31,7 +31,9 @@ function sensorGetCard(recurso) {
   <button class="editBtn" onclick="sensorOpenEditModal('${recurso.id}')">✏️</button>
 </div>
 <br>
-<div class="status on">${valor}</div>
+${recurso.nome=='CHUVA' ? 
+  `<div class="status ${!sensor.valor ? "on" : "off"}">${!sensor.valor ? "CHUVA" : "SECO"}</div>` : 
+  `<div class="status on">${valor}</div>`}
 `;
   return card;
 }
