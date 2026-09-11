@@ -17,13 +17,26 @@
       "ativa": true,
       "quando": {
         "tipo": "EVENTO",
-        "recurso": "B2",
+        "recurso": "B3",
         "evento": "TOGGLE"
       },
       "acao": {
         "tipo": "ESTADO",
         "comando": "TOGGLE",
         "recurso": "R10"
+      }
+    },
+    {
+      "ativa": true,
+      "quando": {
+        "tipo": "EVENTO",
+        "recurso": "B3",
+        "evento": "CLICK"
+      },
+      "acao": {
+        "tipo": "TIMER",
+        "recurso": "R9",
+        "timer": 300
       }
     },
     {

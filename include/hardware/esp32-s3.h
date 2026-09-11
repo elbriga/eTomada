@@ -24,6 +24,7 @@ const HardwareProfile hardwareProfile = {
         {"", 255}, // FIM
     },
     .botoes = {
+        {5},
         {6},
         {255}, // FIM
     },

@@ -27,13 +27,13 @@
     {
       "tipo": "BOTAO",
       "nodo": "TERRARIO",
-      "idLocal": "B2",
+      "idLocal": "B3",
       "idRemoto": "B1"
     },
     {
       "tipo": "BOTAO",
       "nodo": "DEV",
-      "idLocal": "B3",
+      "idLocal": "B4",
       "idRemoto": "B1"
     },
     {
