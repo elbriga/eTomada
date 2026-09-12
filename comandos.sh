@@ -9,11 +9,12 @@ scp /home/gabriel/workspace/eTomada/firmware-server/eTomada.json pi:/root/nginx-
 # Firmware
 sudo scp .pio/build/lolin/firmware.bin pi:/root/nginx-docker/html/firmware/lolin32_R6S4B1_1.3.9.bin
 
-# Log Server (eTomada Server!)
-sudo rsync -rav /home/gabriel/workspace/eTomada/log-server/* pi:/opt/etomada-log-server/
+# eTomada Server!
 # dentro do raspberry:
-docker stop etomada-log-server
-cd /opt/etomada-log-server
+cd /opt
+git clone git@github.com:elbriga/eTomadaServer.git
+cd /opt/eTomadaServer
+docker stop etomada-server
 docker compose up -d --build
 
 # Umidificador!
