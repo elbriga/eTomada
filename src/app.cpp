@@ -23,6 +23,7 @@
 #include "umidificador.h"
 #include "mdns-gs.h"
 #include "led.h"
+#include "sensorChuva.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("APP", nivel, fmt, ##__VA_ARGS__)
@@ -219,6 +220,8 @@ void appLoop()
     if ((int)(timeinfo.tm_sec / 10) != last10Second)
     {
       last10Second = timeinfo.tm_sec / 10;
+
+      sensorChuvaLoop();
 
       if (!wifiModoAP)
       {

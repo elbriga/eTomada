@@ -295,6 +295,19 @@ Recurso *recursoGet(const char *id)
   return NULL;
 }
 
+Recurso *recursoGetPorNome(const char *nome)
+{
+  int tot = recursosGetCount(RECURSO_TODOS);
+  for (int r = 0; r < tot; r++)
+  {
+    if (!strcmp(recursos[r].nome, nome))
+    {
+      return &recursos[r];
+    }
+  }
+  return NULL;
+}
+
 Rele *recursoGetRele(Recurso *recurso)
 {
   return recurso->remoto ? &recurso->recursoRemoto->rele : recurso->rele;

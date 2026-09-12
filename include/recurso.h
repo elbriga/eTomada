@@ -12,7 +12,7 @@
 
 struct Recurso
 {
-  char id[9];
+  char id[32];
   TipoRecurso tipo;
   char nome[32];
   bool remoto;
@@ -29,6 +29,7 @@ void recursosInit();
 int recursosGetCount(TipoRecurso tipo = RECURSO_TODOS);
 Recurso *recursoGet(const char *id);
 Recurso *recursoGetPorIndice(int posicao);
+Recurso *recursoGetPorNome(const char *nome);
 
 Rele *recursoGetRele(Recurso *r);
 Sensor *recursoGetSensor(Recurso *r);

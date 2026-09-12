@@ -23,6 +23,7 @@ function botaoGetCard(recurso) {
 <button onclick="botaoMock('TOGGLE', '${recurso.id}', this)">
   Enviar Toggle
 </button>
+<br>
 <button onclick="botaoMock('CLICK', '${recurso.id}', this)">
   Enviar Click
 </button>
