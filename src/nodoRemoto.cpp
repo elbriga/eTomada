@@ -160,10 +160,6 @@ void nodosRemotosRefreshTask(void *args)
 
     if (achei)
     {
-      if (!nodoRemoto->online)
-        logaM(LOG_AVISO, "Nodo Remoto [%s] ONLINE", nodoRemoto->id);
-      nodoRemoto->online = true;
-
       if (nodoRemoto->ip != ipScan)
       {
         nodoRemoto->ip = ipScan;
@@ -178,9 +174,7 @@ void nodosRemotosRefreshTask(void *args)
     }
     else
     {
-      if (nodoRemoto->online)
-        logaM(LOG_AVISO, "Nodo Remoto [%s] OFFLINE", nodoRemoto->id);
-      nodoRemoto->online = false;
+      // ?
     }
   }
 
@@ -228,7 +222,6 @@ String nodosRemotosLoad(const char *path)
 
     strlcpy(nodo->id, nodoJson["id"].as<const char *>(), sizeof(nodo->id));
     // strlcpy(nodo->desc, nodoJson["desc"].as<const char *>(), sizeof(nodo->desc));
-    nodo->online = false;
 
     totNodosRemotos++;
   }
