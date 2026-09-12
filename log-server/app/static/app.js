@@ -1,3 +1,35 @@
+const nodeColors = [
+  "#FFD1DC", // Rosa claro
+  "#FFE4E1", // Rosa bebê
+  "#FFE4B5", // Pêssego claro
+  "#FFE4C4", // Laranja claro
+  "#FFFACD", // Amarelo claro
+  "#98FB98", // Verde claro
+  "#AFEEEE", // Azul claro
+  "#E6E6FA", // Roxo claro
+  "#DDA0DD", // Lilás claro
+  "#F0E68C", // Amarelo pastel
+  "#90EE90", // Verde menta
+  "#87CEFA", // Azul pastel
+  "#DDA0DD", // Lilás pastel
+  "#F5DEB3", // Beige claro
+  "#FFB6C1", // Rosa pastel
+  "#FFDAB9", // Pêssego pastel
+];
+
+const nodeColorMap = new Map();
+
+function getNodeColor(deviceId) {
+  const id = deviceId ?? "";
+
+  if (!nodeColorMap.has(id)) {
+    const color = nodeColors[nodeColorMap.size % nodeColors.length];
+    nodeColorMap.set(id, color);
+  }
+
+  return nodeColorMap.get(id);
+}
+
 async function carregarNodos() {
   const response = await fetch("/api/nodes");
   const nodes = await response.json();
@@ -34,6 +66,7 @@ async function carregarLogs() {
   tbody.innerHTML = "";
   for (const log of logs) {
     const tr = document.createElement("tr");
+    tr.style.backgroundColor = getNodeColor(log.device_id);
     const levelClass = "log-" + log.level.toLowerCase().replaceAll("!", "");
     tr.innerHTML = `
             <td class="timestamp">
