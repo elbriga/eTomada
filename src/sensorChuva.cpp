@@ -9,7 +9,7 @@
 #define logaM(nivel, fmt, ...) loga("CHUVA", nivel, fmt, ##__VA_ARGS__)
 
 #define SENSORCHUVA_SECO 0
-#define SENSORCHUVA_CHUVA 1
+#define SENSORCHUVA_MOLHADO 1
 
 #define SENSORCHUVA_DEBOUCE_TIME_CHUVA_MS 60000 // 1 minuto
 #define SENSORCHUVA_DEBOUCE_TIME_SECO_MS 600000 // 10 minutos
@@ -56,7 +56,7 @@ void sensorChuvaInit()
   sensorChuva.estado = SENSORCHUVA_SECO;
   sensorChuva.ultimoEstado = SENSORCHUVA_SECO;
   sensorChuva.debounce = millis();
-  sensorChuva.tsInicioSeco = millis();
+  sensorChuva.tsInicioSeco = millis() - (3 * 24 * 60 * 60 * 1000); // Nao chove a 72h!
 
   logaM(LOG_NORMAL, "Inicializando sensor de CHUVA em [%s]", sensorChuva.recurso->id);
 }
@@ -69,14 +69,15 @@ void sensorChuvaLoop()
 
   // Debounce
   Sensor *s = recursoGetSensor(sensorChuva.recurso);
-  bool leitura = !s->valor ? SENSORCHUVA_CHUVA : SENSORCHUVA_SECO; // PINO LOW == CHUVA ON
+  bool leitura = !s->valor ? SENSORCHUVA_MOLHADO : SENSORCHUVA_SECO; // PINO LOW == CHUVA ON
   if (leitura != sensorChuva.ultimoEstado)
   {
     sensorChuva.debounce = millis();
     sensorChuva.ultimoEstado = leitura;
   }
 
-  if (sensorChuva.estado == SENSORCHUVA_CHUVA)
+  bool mudou = false;
+  if (sensorChuva.estado == SENSORCHUVA_MOLHADO)
   {
     // Verificar se parou de chover
     if (millis() - sensorChuva.debounce > SENSORCHUVA_DEBOUCE_TIME_SECO_MS && leitura == SENSORCHUVA_SECO)
@@ -84,16 +85,21 @@ void sensorChuvaLoop()
       sensorChuva.estado = SENSORCHUVA_SECO;
       sensorChuva.tsInicioSeco = millis();
       logaM(LOG_NORMAL, "SENSOR DE CHUVA MUDOU [SECO]");
+      mudou = true;
     }
   }
   else
   {
     // Verificar se comecou a chover
-    if (millis() - sensorChuva.debounce > SENSORCHUVA_DEBOUCE_TIME_CHUVA_MS && leitura == SENSORCHUVA_CHUVA)
+    if (millis() - sensorChuva.debounce > SENSORCHUVA_DEBOUCE_TIME_CHUVA_MS && leitura == SENSORCHUVA_MOLHADO)
     {
-      sensorChuva.estado = SENSORCHUVA_CHUVA;
+      sensorChuva.estado = SENSORCHUVA_MOLHADO;
       sensorChuva.tsInicioSeco = 0;
       logaM(LOG_NORMAL, "SENSOR DE CHUVA MUDOU [CHUVA!]");
+      mudou = true;
     }
   }
+
+  if (mudou)
+    eventoPost(EVENTO_VALOR_MUDOU, sensorChuva.recurso, true, true);
 }

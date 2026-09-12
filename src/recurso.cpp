@@ -543,7 +543,17 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   if (!doc["nome"].isNull())
   {
     mudou = true;
-    strlcpy(recurso->nome, doc["nome"].as<String>().c_str(), sizeof(recurso->nome));
+    String nome = doc["nome"];
+    strlcpy(recurso->nome, nome.c_str(), sizeof(recurso->nome));
+
+    // Salvar no Preferences
+    Preferences prefs;
+    prefs.begin("recursos", false);
+
+    String chave = String("nome") + id;
+    prefs.putString(chave.c_str(), nome);
+
+    prefs.end();
   }
 
   doc.clear();

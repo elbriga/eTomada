@@ -230,6 +230,9 @@ void sensoresAtualizaTask(void *args)
   {
     if (!atual[rs].mudou)
       continue;
+    // Sensor de chuva tem os eventos postados pelo modulo sensorChuva.cpp
+    if (!strcmp(atual[rs].rec->nome, "CHUVA"))
+      continue;
 
     // recursoEnviaSSE(atual[rb].rec) e mestreEnviaEvento(atual[rb].rec) em outra thread
     eventoPost(EVENTO_VALOR_MUDOU, atual[rs].rec, true, true);

@@ -22,8 +22,8 @@ function sensorGetCard(recurso) {
   <div>
     <div class="medio">
       Sensor ${recurso.id}
-      ${tipoSensor.nome != undefined ? " - "+tipoSensor.nome : ""}
-      ${tipoSensor.tipo != undefined ? " - "+tipoSensor.tipo : ""}
+      ${tipoSensor.nome != undefined ? " - " + tipoSensor.nome : ""}
+      ${tipoSensor.tipo != undefined ? " - " + tipoSensor.tipo : ""}
       ${recurso.remoto ? ` em ${recurso.nodo}` : ""}
     </div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
@@ -31,9 +31,13 @@ function sensorGetCard(recurso) {
   <button class="editBtn" onclick="sensorOpenEditModal('${recurso.id}')">✏️</button>
 </div>
 <br>
-${recurso.nome=='CHUVA' ? 
-  `<div class="status ${!sensor.valor ? "on" : "off"}">${!sensor.valor ? "CHUVA" : "SECO"}</div>` : 
-  `<div class="status on">${valor}</div>`}
+${
+  recurso.nome == "CHUVA"
+    ? `<div class="status ${!eTomadaData.horasSemChuva ? "on" : "off"}">
+        ${!eTomadaData.horasSemChuva ? "MOLHADO" : `horas sem chuva: ${eTomadaData.horasSemChuva}`}
+      </div>`
+    : `<div class="status on">${valor}</div>`
+}
 `;
   return card;
 }

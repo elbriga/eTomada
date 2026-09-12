@@ -216,6 +216,9 @@ String eTomadaGetSnapshotJSON()
   regrasGetJSONDoc(regrasJS);
   doc["regras"] = regrasJS;
 
+  if (sensorChuvaAtivo())
+    doc["horasSemChuva"] = sensorChuvaGetHorasSemChuva();
+
   String out;
   serializeJson(doc, out);
 
