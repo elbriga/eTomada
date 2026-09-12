@@ -38,6 +38,7 @@
     },
     {
       "tipo": "SENSOR",
+      "tipoSensor": "CHUVA",
       "nodo": "AGUA-QUARTO",
       "idLocal": "S7",
       "idRemoto": "S1"

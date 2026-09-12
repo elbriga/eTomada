@@ -36,6 +36,10 @@ async function eTomadaRender(snapshot) {
   {
     await eTomadaRefresh(snapshot);
 
+    document.title = eTomadaData.device_id
+      ? `${eTomadaData.device_id} - eTomada`
+      : "eTomada";
+
     document.getElementById("datahora").innerHTML =
       "uptime: " +
       formataTempo(eTomadaData.uptime) +
