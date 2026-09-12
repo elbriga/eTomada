@@ -45,7 +45,7 @@ void sensorChuvaInit()
   memset(&sensorChuva, 0, sizeof(SensorChuva));
 
   // Verificar se temos um sensor chamado CHUVA!
-  Recurso *rChuva = recursoGetPorNome("CHUVA");
+  Recurso *rChuva = recursoGet("CHUVA");
   if (!rChuva)
     return;
   if (rChuva->tipo != RECURSO_SENSOR)

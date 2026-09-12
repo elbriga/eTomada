@@ -11,6 +11,7 @@
 #include "prefs.h"
 #include "recurso.h"
 #include "eventos.h"
+#include "sensorChuva.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("SENSOR", nivel, fmt, ##__VA_ARGS__)
@@ -98,10 +99,13 @@ Sensor *sensorGet(int numSensor)
   return &sensores[numSensor - 1];
 }
 
-// REQUIRE sensorMutex locked
-JsonDocument sensorGetJSONDoc(Sensor *s, bool full)
+JsonDocument sensorGetJSONDoc(Recurso *r, bool full)
 {
   JsonDocument doc;
+
+  Sensor *s = recursoGetSensor(r);
+  if (!s)
+    return doc;
 
   doc["num"] = s->num;
   doc["tipo"] = s->tipo;
@@ -109,24 +113,21 @@ JsonDocument sensorGetJSONDoc(Sensor *s, bool full)
   if (full)
   {
     doc["pino"] = s->pino;
-    doc["valor"] = s->valor;
 
-    TipoSensor *ts = tipoSensorGet(s->tipo);
-    doc["categoria"] = ts ? ts->tipo : "???";
-    doc["unidade"] = ts ? ts->unidade : "?-?";
+    if (!strcmp(r->id, "CHUVA"))
+    {
+      doc["valor"] = sensorChuvaGetHorasSemChuva();
+    }
+    else
+    {
+      doc["valor"] = s->valor;
+      TipoSensor *ts = tipoSensorGet(s->tipo);
+      doc["categoria"] = ts ? ts->tipo : "???";
+      doc["unidade"] = ts ? ts->unidade : "?-?";
+    }
   }
 
   return doc;
-}
-
-// REQUIRE sensorMutex locked
-String sensorGetJSONString(Sensor *s)
-{
-  String out;
-  JsonDocument doc = sensorGetJSONDoc(s, true);
-
-  serializeJson(doc, out);
-  return out;
 }
 
 void sensoresAtualizaTask(void *args);

@@ -19,6 +19,6 @@ void sensoresInit();
 int sensoresGetCount();
 Sensor *sensorGet(int numSensor);
 
-JsonDocument sensorGetJSONDoc(Sensor *s, bool full);
+JsonDocument sensorGetJSONDoc(Recurso *r, bool full);
 
 void sensoresAtualiza();

@@ -82,6 +82,7 @@ function regraOpenEditModal(regraID) {
   }
 
   regraEditando = regraID;
+  regraPopulaCombosHorario();
 
   document.getElementById("modalTitle").innerHTML =
     regraID > 0 ? "Editar Regra " + regraID : "Editar Nova Regra";

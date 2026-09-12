@@ -295,31 +295,24 @@ Recurso *recursoGet(const char *id)
   return NULL;
 }
 
-Recurso *recursoGetPorNome(const char *nome)
-{
-  int tot = recursosGetCount(RECURSO_TODOS);
-  for (int r = 0; r < tot; r++)
-  {
-    if (!strcmp(recursos[r].nome, nome))
-    {
-      return &recursos[r];
-    }
-  }
-  return NULL;
-}
-
 Rele *recursoGetRele(Recurso *recurso)
 {
+  if (recurso->tipo != RECURSO_RELE)
+    return nullptr;
   return recurso->remoto ? &recurso->recursoRemoto->rele : recurso->rele;
 }
 
 Sensor *recursoGetSensor(Recurso *recurso)
 {
+  if (recurso->tipo != RECURSO_SENSOR)
+    return nullptr;
   return recurso->remoto ? &recurso->recursoRemoto->sensor : recurso->sensor;
 }
 
 Botao *recursoGetBotao(Recurso *recurso)
 {
+  if (recurso->tipo != RECURSO_BOTAO)
+    return nullptr;
   return recurso->remoto ? &recurso->recursoRemoto->botao : recurso->botao;
 }
 
@@ -357,7 +350,7 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
     break;
 
   case RECURSO_SENSOR:
-    doc["device"] = sensorGetJSONDoc(recursoGetSensor(r), true);
+    doc["device"] = sensorGetJSONDoc(r, true);
     break;
 
   case RECURSO_BOTAO:
