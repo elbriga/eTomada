@@ -69,7 +69,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
         Regra *regra = &regras[r];
 
         // Descartar acao TOGGLE
-        if (regra->acao.comando == ACAO_TOGGLE)
+        if (regra->acao.comando == COMANDO_TOGGLE)
             continue;
 
         // Verificar se esta regra age em cima do recurso
@@ -87,7 +87,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
                 {
                     minutoUltimo = minutoRegra;
                     regraAtivadaOut = regra;
-                    *estadoAtualOut = (regra->acao.comando == ACAO_ON);
+                    *estadoAtualOut = (regra->acao.comando == COMANDO_ON);
                 }
             }
         }
@@ -170,17 +170,7 @@ String regraDisparaAcao(Regra *regra)
         if (rec->tipo != RECURSO_RELE)
             return "dispAcaoESTADO : Nao eh RELE!";
 
-        switch (acao->comando)
-        {
-        case ACAO_ON:
-            return recursoSet(rec, "ON");
-        case ACAO_OFF:
-            return recursoSet(rec, "OFF");
-        case ACAO_TOGGLE:
-            return recursoSet(rec, "TOGGLE");
-        case ACAO_PULSE:
-            return recursoSet(rec, "PULSE");
-        }
+        return recursoSet(rec, acao->comando);
     }
     break;
 
@@ -190,7 +180,7 @@ String regraDisparaAcao(Regra *regra)
         if (rec->tipo != RECURSO_RELE)
             return "dispAcaoTIMER : Nao eh RELE!";
 
-        String ret = recursoSet(rec, "ON");
+        String ret = recursoSet(rec, COMANDO_ON);
         // Agendar o OFF
         // TODO :: no recursoSet cancelar os agendamentos
         agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, rec->id, false);
@@ -335,23 +325,6 @@ static const char *regraTipoAcaoTxt(TipoAcao acao)
     }
 }
 
-static const char *regraAcaoRecursoTxt(AcaoRecurso comando)
-{
-    switch (comando)
-    {
-    case ACAO_ON:
-        return "ON";
-    case ACAO_OFF:
-        return "OFF";
-    case ACAO_TOGGLE:
-        return "TOGGLE";
-    case ACAO_PULSE:
-        return "PULSE";
-    default:
-        return "?";
-    }
-}
-
 String regraGetTxt(Regra *r)
 {
     String ret;
@@ -403,7 +376,7 @@ String regraGetTxt(Regra *r)
     case ACAO_ESTADO:
         ret += r->acao.recursoID;
         ret += ":";
-        ret += regraAcaoRecursoTxt(r->acao.comando);
+        ret += comandoRecursoGetString(r->acao.comando);
         break;
 
     case ACAO_TIMER:
@@ -458,7 +431,7 @@ JsonDocument regraGetAcaoJSONDoc(Regra *r)
     {
     case ACAO_ESTADO:
         doc["recurso"] = a->recursoID;
-        doc["comando"] = regraAcaoRecursoTxt(a->comando);
+        doc["comando"] = comandoRecursoGetString(a->comando);
         break;
 
     case ACAO_TIMER:
@@ -658,19 +631,7 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
                     doc["acao"]["recurso"].as<const char *>(),
                     sizeof(regra->acao.recursoID));
             String acaoStr = doc["acao"]["comando"];
-            if (acaoStr == "ON")
-                regra->acao.comando = ACAO_ON;
-            else if (acaoStr == "OFF")
-                regra->acao.comando = ACAO_OFF;
-            else if (acaoStr == "TOGGLE")
-                regra->acao.comando = ACAO_TOGGLE;
-            else if (acaoStr == "PULSE")
-                regra->acao.comando = ACAO_PULSE;
-            else
-            {
-                logaM(LOG_CRITICO, "AcaoRecurso %s ??? Inativando regra[%d]", acaoStr.c_str(), regra->id);
-                regra->ativa = false;
-            }
+            regra->acao.comando = comandoRecursoGetFromString(acaoStr);
         }
         else if (tipoAcaoStr == "TIMER")
         {

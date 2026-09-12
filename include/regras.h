@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 
 #include "eventos.h"
+#include "tipoRecurso.h"
 
 #define REGRAS_PATH "/automacoes.json"
 #define REGRAS_PATH_DEFAULT "/config/automacoesDefault.json"
@@ -21,14 +22,6 @@ enum TipoAcao
     ACAO_TIMER = 20,
     ACAO_DELAY = 30, // TODO
     ACAO_SCRIPT = 40 // TODO
-};
-
-enum AcaoRecurso
-{
-    ACAO_ON = 10,
-    ACAO_OFF = 20,
-    ACAO_TOGGLE = 30,
-    ACAO_PULSE = 40
 };
 
 enum Operador // TODO
@@ -73,8 +66,8 @@ struct Acao
 
     union
     {
-        AcaoRecurso comando; // ACAO_ESTADO
-        uint32_t timer;      // ACAO_TIMER
+        ComandoRecurso comando; // ACAO_ESTADO
+        uint32_t timer;         // ACAO_TIMER
     };
 };
 

@@ -9,3 +9,15 @@ typedef enum
   RECURSO_UMIDIFICADOR = 4,
   RECURSO_INVALIDO = 250,
 } TipoRecurso;
+
+enum ComandoRecurso
+{
+  COMANDO_NENHUM = 0,
+  COMANDO_ON = 10,
+  COMANDO_OFF = 20,
+  COMANDO_TOGGLE = 30,
+  COMANDO_PULSE = 40
+};
+
+ComandoRecurso comandoRecursoGetFromString(String comando);
+const char *comandoRecursoGetString(ComandoRecurso comando);

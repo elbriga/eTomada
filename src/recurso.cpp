@@ -165,7 +165,9 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
 
   recursoOut = recurso;
 
-  return recursoSet(recurso, estado, enviaMestre);
+  ComandoRecurso comando = comandoRecursoGetFromString(estado);
+
+  return recursoSet(recurso, comando, enviaMestre);
 }
 
 String recursoSetLocked(Recurso *recurso, int estado, bool enviaMestre)
@@ -200,7 +202,7 @@ String recursoSetLocked(Recurso *recurso, int estado, bool enviaMestre)
   return msg;
 }
 
-String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
+String recursoSet(Recurso *recurso, ComandoRecurso comando, bool enviaMestre)
 {
   if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
     return "recursoSet: Recurso nao eh RELE nem UMID";
@@ -212,7 +214,9 @@ String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
   }
 
   bool estado;
-  if (estadoStr == "TOGGLE")
+  switch (comando)
+  {
+  case COMANDO_TOGGLE:
   {
     if (recurso->tipo != RECURSO_RELE)
       return "recursoSet: Recurso nao eh RELE";
@@ -222,19 +226,20 @@ String recursoSet(Recurso *recurso, String estadoStr, bool enviaMestre)
       return "recursoToggle : RELE invalido";
     estado = !r->estado;
   }
-  else if (estadoStr == "PULSE")
-  {
+  break;
+
+  case COMANDO_PULSE:
     estado = true;
-  }
-  else
-  {
-    estado = (estadoStr == "ON");
+    break;
+
+  default:
+    estado = (comando == COMANDO_ON);
   }
 
   String msg = recursoSetLocked(recurso, estado, enviaMestre);
   // TODO :: como saber se setou ok?
 
-  if (estadoStr == "PULSE")
+  if (comando == COMANDO_PULSE)
   {
     // Agendar o OFF = pulso de 1000ms
     agendamentosAdd(AGEND_RECURSO, 1000, recurso->id, false);

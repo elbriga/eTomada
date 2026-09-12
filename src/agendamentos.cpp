@@ -93,7 +93,7 @@ void agendamentosProcessaTask(void *)
                         break;
                     }
 
-                    recursoSet(r, acao->estado ? "ON" : "OFF");
+                    recursoSet(r, acao->estado ? COMANDO_ON : COMANDO_OFF);
                 }
                 break;
 
