@@ -81,70 +81,44 @@
       <div class="modalContent">
         <label>Nome</label>
         <input id="modalNome" maxlength="31" />
-        <br /><br />
+        
         <div id="modalDivRegra">
-          <label>Condição</label>
-          Tipo:
-          <select id="modalRegraCondicao" onchange="regrasOCModalCondicao()">
-            <option value="EVENTO">Eventos</option>
-            <option value="HORARIO">Horário</option>
-            <option value="SENSOR">Sensores</option>
-          </select>
-          <div id="divRegraEvento">
-            Recurso:
-            <select id="modalRegraRecursoEvento"></select>
-            Evento:
-            <select id="modalRegraEvento">
-              <option value="ON">Ligou</option>
-              <option value="OFF">Desligou</option>
-              <option value="TOGGLE">Mudou</option>
-              <option value="CLICK">Click!</option>
-              <option value="DUPCLICK">Duplo Click!</option>
-            </select>
-          </div>
-          <div id="divRegraHorario">
-            Horário:
-            <select id="modalRegraHora"></select>
-            :
-            <select id="modalRegraMinuto"></select>
-          </div>
-          <div id="divRegraSensor">
-            TODO!
-            <div class="formCondicional">
-              <select id="modalCondSensorLiga"></select>
-              <select id="modalCondOpLiga">
-                <option value="+">&gt;</option>
-                <option value="-">&lt;</option>
-              </select>
-              <input id="modalCondValTesteLiga" maxlength="5" />
-            </div>
-          </div>
+          <label>Condições</label>
+          <div id="modalRegraCondicoes"></div>
 
-          <br /><br />
           <label>Ação</label>
-          Tipo:
-          <select id="modalRegraAcao" onchange="regrasOCModalAcao()">
-            <option value="ESTADO">Mudar Estado</option>
-            <option value="TIMER">Timer</option>
-          </select>
-          <div id="divRegraAcaoEstado">
-            Recurso:
-            <select id="modalRegraAcaoEstadoRecurso"></select>
-            Comando:
-            <select id="modalRegraAcaoEstadoComando">
-              <option value="ON">Ligar</option>
-              <option value="OFF">Desligar</option>
-              <option value="TOGGLE">Mudar Estado</option>
+          <span class="emLinha">
+            Tipo: 
+            <select id="modalRegraAcao" onchange="regrasOCModalAcao()">
+              <option value="ESTADO">Mudar Estado</option>
+              <option value="TIMER">Timer</option>
             </select>
+          </span>
+          <div id="divRegraAcaoEstado">
+            <span class="emLinha">
+              Recurso:
+              <select id="modalRegraAcaoEstadoRecurso"></select>
+            </span>
+            <span class="emLinha">
+              Comando:
+              <select id="modalRegraAcaoEstadoComando">
+                <option value="ON">Ligar</option>
+                <option value="OFF">Desligar</option>
+                <option value="TOGGLE">Mudar Estado</option>
+              </select>
+            </span>
           </div>
           <div id="divRegraAcaoTimer">
-            Recurso:
-            <select id="modalRegraAcaoTimerRecurso"></select>
-            Timer:
-            <input id="modalRegraAcaoTimerTempo" maxlength="10" />
+            <span class="emLinha">
+              Recurso:
+              <select id="modalRegraAcaoTimerRecurso"></select>
+            </span>
+            <span class="emLinha">
+              Timer:
+              <input id="modalRegraAcaoTimerTempo" maxlength="10" />
+            </span>
           </div>
         </div>
-        <br /><br />
         <button id="modalSalvarBtn">💾 Salvar</button>
       </div>
     </div>

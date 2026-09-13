@@ -21,7 +21,7 @@ void TESTES()
     if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
     {
         // Carrega os JSON de testes
-        carregaArquivosJsonTeste();
+        // carregaArquivosJsonTeste();
     }
 }
 

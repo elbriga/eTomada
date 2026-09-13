@@ -367,6 +367,8 @@ static const char *regraTipoCondicaoTxt(TipoCondicao condicao)
         return "EVENTO";
     case COND_HORARIO:
         return "HORARIO";
+    case COND_EXPRESSAO:
+        return "EXPRESSAO";
     default:
         return "COND??";
     }
@@ -477,7 +479,8 @@ String regraGetTxt(Regra *r)
 
 JsonDocument regraGetCondicoesJSONDoc(Regra *r)
 {
-    JsonArray doc;
+    JsonDocument doc;
+    JsonArray arr = doc.to<JsonArray>();
 
     for (int i = 0; i < REGRAS_MAX_CONDICOES; i++)
     {
@@ -485,7 +488,8 @@ JsonDocument regraGetCondicoesJSONDoc(Regra *r)
         if (c->tipo == COND_NENHUMA)
             break;
 
-        JsonObject condicao;
+        JsonObject condicao = arr.add<JsonObject>();
+
         condicao["tipo"] = regraTipoCondicaoTxt(c->tipo);
         switch (c->tipo)
         {
@@ -508,8 +512,6 @@ JsonDocument regraGetCondicoesJSONDoc(Regra *r)
         default:
             logaM(LOG_AVISO, "regraGetCondicoesJSONDoc[%s] :: tipoCondicao[%d] invalido", r->nome, c->tipo);
         }
-
-        doc.add(condicao);
     }
 
     return doc;
@@ -538,16 +540,16 @@ JsonDocument regraGetAcaoJSONDoc(Regra *r)
     return doc;
 }
 
-void regraGetJS(Regra *r, JsonObject &doc)
+void regraGetJS(Regra *r, JsonObject &obj)
 {
-    doc["id"] = r->id;
-    doc["nome"] = r->nome;
-    doc["ativa"] = r->ativa;
+    obj["id"] = r->id;
+    obj["nome"] = r->nome;
+    obj["ativa"] = r->ativa;
 
-    doc["descricao"] = regraGetTxt(r);
+    obj["descricao"] = regraGetTxt(r);
 
-    doc["quando"] = regraGetCondicoesJSONDoc(r);
-    doc["acao"] = regraGetAcaoJSONDoc(r);
+    obj["quando"] = regraGetCondicoesJSONDoc(r);
+    obj["acao"] = regraGetAcaoJSONDoc(r);
 }
 
 void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra)
@@ -672,79 +674,82 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
     if (!regra->id)
         regra->id = regraFindNextID();
 
-    if (doc["nome"])
+    if (!doc["nome"].isNull())
         strlcpy(regra->nome, doc["nome"].as<const char *>(), sizeof(regra->nome));
 
-    if (doc["ativa"])
+    if (!doc["ativa"].isNull())
         regra->ativa = doc["ativa"].as<bool>();
 
     // preencher condicao
-    JsonArray condicoes = doc["quando"];
-    if (!condicoes.size())
+    if (!doc["quando"].isNull())
     {
-        logaM(LOG_CRITICO, "Sem condicoes! Inativando regra[%d]", regra->id);
-        regra->ativa = false;
-    }
-    else
-    {
-        int idxCondicao = 0;
-        for (JsonObject condicao : condicoes)
+        JsonArray condicoes = doc["quando"];
+        if (!condicoes.size())
         {
-            if (idxCondicao >= REGRAS_MAX_CONDICOES)
+            logaM(LOG_CRITICO, "Sem condicoes! Inativando regra[%d]", regra->id);
+            regra->ativa = false;
+        }
+        else
+        {
+            int idxCondicao = 0;
+            for (JsonObject condicao : condicoes)
             {
-                logaM(LOG_AVISO, "Regra[%d] com muitas condicoes! Cortando!", regra->id);
-                break;
-            }
-
-            Condicao *condPtr = &regra->condicao[idxCondicao++];
-
-            String tipoCondicaoStr = condicao["tipo"].as<String>();
-            if (tipoCondicaoStr == "EVENTO")
-            {
-                condPtr->tipo = COND_EVENTO;
-                strlcpy(condPtr->evento.recursoID, condicao["recurso"].as<const char *>(), sizeof(condPtr->evento.recursoID));
-
-                String eventoStr = condicao["evento"].as<String>();
-                if (eventoStr == "TOGGLE")
-                    condPtr->evento.tipo = EVENTO_TOGGLE;
-                else if (eventoStr == "CLICK")
-                    condPtr->evento.tipo = EVENTO_CLICK;
-                else if (eventoStr == "LIGOU")
-                    condPtr->evento.tipo = EVENTO_LIGOU;
-                else if (eventoStr == "DESLIGOU")
-                    condPtr->evento.tipo = EVENTO_DESLIGOU;
-                else if (eventoStr == "DUPCLICK")
-                    condPtr->evento.tipo = EVENTO_DOUBLE_CLICK;
-                else
-                // TODO :: outros eventos
+                if (idxCondicao >= REGRAS_MAX_CONDICOES)
                 {
-                    logaM(LOG_CRITICO, "TipoEvento %s ??? Inativando regra[%d]", eventoStr.c_str(), regra->id);
+                    logaM(LOG_AVISO, "Regra[%d] com muitas condicoes! Cortando!", regra->id);
+                    break;
+                }
+
+                Condicao *condPtr = &regra->condicao[idxCondicao++];
+
+                String tipoCondicaoStr = condicao["tipo"].as<String>();
+                if (tipoCondicaoStr == "EVENTO")
+                {
+                    condPtr->tipo = COND_EVENTO;
+                    strlcpy(condPtr->evento.recursoID, condicao["recurso"].as<const char *>(), sizeof(condPtr->evento.recursoID));
+
+                    String eventoStr = condicao["evento"].as<String>();
+                    if (eventoStr == "TOGGLE")
+                        condPtr->evento.tipo = EVENTO_TOGGLE;
+                    else if (eventoStr == "CLICK")
+                        condPtr->evento.tipo = EVENTO_CLICK;
+                    else if (eventoStr == "LIGOU")
+                        condPtr->evento.tipo = EVENTO_LIGOU;
+                    else if (eventoStr == "DESLIGOU")
+                        condPtr->evento.tipo = EVENTO_DESLIGOU;
+                    else if (eventoStr == "DUPCLICK")
+                        condPtr->evento.tipo = EVENTO_DOUBLE_CLICK;
+                    else
+                    // TODO :: outros eventos
+                    {
+                        logaM(LOG_CRITICO, "TipoEvento %s ??? Inativando regra[%d]", eventoStr.c_str(), regra->id);
+                        regra->ativa = false;
+                    }
+                }
+                else if (tipoCondicaoStr == "HORARIO")
+                {
+                    condPtr->tipo = COND_HORARIO;
+                    condPtr->horario.hora = condicao["hora"].as<int>();
+                    condPtr->horario.minuto = condicao["minuto"].as<int>();
+                }
+                else if (tipoCondicaoStr == "EXPRESSAO")
+                {
+                    condPtr->tipo = COND_EXPRESSAO;
+                    strlcpy(condPtr->expressao.variavel, condicao["variavel"].as<const char *>(), sizeof(condPtr->expressao.variavel));
+                    strlcpy(condPtr->expressao.op, condicao["operacao"].as<const char *>(), sizeof(condPtr->expressao.op));
+                    condPtr->expressao.valor = condicao["valor"].as<int>();
+                }
+                else
+                {
+                    logaM(LOG_CRITICO, "TipoCondicao %s ??? Inativando regra[%d]", tipoCondicaoStr.c_str(), regra->id);
                     regra->ativa = false;
                 }
-            }
-            else if (tipoCondicaoStr == "HORARIO")
-            {
-                condPtr->tipo = COND_HORARIO;
-                condPtr->horario.hora = condicao["hora"].as<int>();
-                condPtr->horario.minuto = condicao["minuto"].as<int>();
-            }
-            else if (tipoCondicaoStr == "EXPRESSAO")
-            {
-                condPtr->tipo = COND_EXPRESSAO;
-                strlcpy(condPtr->expressao.variavel, condicao["variavel"].as<const char *>(), sizeof(condPtr->expressao.variavel));
-                strlcpy(condPtr->expressao.op, condicao["operacao"].as<const char *>(), sizeof(condPtr->expressao.op));
-                condPtr->expressao.valor = condicao["valor"].as<int>();
-            }
-            else
-            {
-                logaM(LOG_CRITICO, "TipoCondicao %s ??? Inativando regra[%d]", tipoCondicaoStr.c_str(), regra->id);
-                regra->ativa = false;
             }
         }
     }
 
     // preencher acao
-    if (doc["acao"]["tipo"])
+    if (!doc["acao"].isNull())
     {
         String tipoAcaoStr = doc["acao"]["tipo"];
         if (tipoAcaoStr == "ESTADO")
