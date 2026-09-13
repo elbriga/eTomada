@@ -44,7 +44,7 @@ void nodoRemotoInit()
   if (msgLoad != "OK")
     logaM(LOG_AVISO, ">> nodosRemotosLoad: [%s]", msgLoad.c_str());
 
-  // nodosRemotosRefreshTask(nullptr);
+  nodosRemotosRefreshTask(nullptr);
 
   for (int nr = 0; nr < totNodosRemotos; nr++)
     nodoRemotoPrint(nodoRemotoGetPorIndice(nr));
@@ -102,41 +102,32 @@ void nodosRemotosRefreshTask(void *args)
   // Verificar por novos nodos
   for (int nd = 0; nd < totND; nd++)
   {
-    bool achei = false;
-    for (int nr = 0; nr < totNR; nr++)
-    {
-      NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
-      if (!strcmp(MDNS.hostname(nd).c_str(), nodoRemoto->id))
+    NodoRemoto *temNodo = nodoRemotoGet(MDNS.hostname(nd).c_str());
+    if (temNodo)
+      continue;
+
+    // Ver se já demos msg para esse novo nodo
+    bool jaAvisei = false;
+    for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+      if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, MDNS.hostname(nd).c_str()))
       {
-        achei = true;
+        jaAvisei = true;
         break;
       }
-    }
-    if (!achei)
+
+    if (!jaAvisei)
     {
-      // Ver se já demos msg para esse novo nodo
-      bool jaAvisei = false;
       for (int i = 0; i < MAX_NOVOS_NODOS; i++)
-        if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, MDNS.hostname(nd).c_str()))
+        if (!novosNodos[i].ativo)
         {
-          jaAvisei = true;
+          novosNodos[i].ativo = true;
+          strlcpy(novosNodos[i].nome, MDNS.hostname(nd).c_str(), sizeof(novosNodos[i].nome));
           break;
         }
 
-      if (!jaAvisei)
-      {
-        for (int i = 0; i < MAX_NOVOS_NODOS; i++)
-          if (!novosNodos[i].ativo)
-          {
-            novosNodos[i].ativo = true;
-            strlcpy(novosNodos[i].nome, MDNS.hostname(nd).c_str(), sizeof(novosNodos[i].nome));
-            break;
-          }
-
-        logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em [%s]. Avisar na interface",
-              MDNS.hostname(nd).c_str(), MDNS.IP(nd).toString().c_str());
-        // TODO
-      }
+      logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em [%s]. Avisar na interface",
+            MDNS.hostname(nd).c_str(), MDNS.IP(nd).toString().c_str());
+      // TODO
     }
   }
 
@@ -146,36 +137,55 @@ void nodosRemotosRefreshTask(void *args)
     NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
 
     // Buscar este deviceID nos nodos escaneados
-    bool achei = false;
     IPAddress ipScan;
+    String apiScan;
     for (int nd = 0; nd < totND; nd++)
     {
       if (!strcmp(MDNS.hostname(nd).c_str(), nodoRemoto->id))
       {
         ipScan = MDNS.IP(nd);
-        achei = true;
+        apiScan = MDNS.txt(nd, "api");
         break;
       }
     }
 
-    if (achei)
+    if (!ipScan)
     {
-      if (nodoRemoto->ip != ipScan)
+      // TODO ? msg?
+      continue;
+    }
+
+    // Verificar o IP
+    if (nodoRemoto->ip != ipScan)
+    {
+      nodoRemoto->ip = ipScan;
+      logaM(LOG_AVISO, "Nodo Remoto [%s] Novo IP: %s",
+            nodoRemoto->id, nodoRemoto->ip.toString().c_str());
+    }
+
+    // Verificar o Tipo
+    if (nodoRemoto->tipo == TIPO_NODO_DESCONHECIDO)
+    {
+      TipoNodoRemoto tipoScan = TIPO_NODO_DESCONHECIDO;
+      if (apiScan == "Full")
+        tipoScan = TIPO_NODO_FULL;
+      else if (apiScan == "Lite")
+        tipoScan = TIPO_NODO_LITE;
+
+      if (tipoScan == TIPO_NODO_DESCONHECIDO)
+        logaM(LOG_CRITICO, "Nodo [%s] nao informa o TIPO!", nodoRemoto->id);
+      else
       {
-        nodoRemoto->ip = ipScan;
-        logaM(LOG_AVISO, "Nodo Remoto [%s] Novo IP: %s",
-              nodoRemoto->id, nodoRemoto->ip.toString().c_str());
+        nodoRemoto->tipo = tipoScan;
+        logaM(LOG_AVISO, "Nodo Remoto [%s] API inicializada: %s",
+              nodoRemoto->id, apiScan);
       }
-
-      // Atualizar os RecursoRemoto com o snapshot do discover
-      // JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->mac);
-
-      // recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
     }
-    else
-    {
-      // ?
-    }
+
+    // Atualizar os RecursoRemoto com o snapshot do discover
+    // JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->mac);
+
+    // recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
   }
 
   if (ehTask)

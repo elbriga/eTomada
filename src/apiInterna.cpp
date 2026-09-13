@@ -13,6 +13,7 @@
 #define logaM(nivel, fmt, ...) loga("APIINT", nivel, fmt, ##__VA_ARGS__)
 
 #define API_INTERNA_TIMEOUT 1000
+#define API_INTERNA_RESPONSE_MAXLEN 512
 
 int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
 
@@ -31,21 +32,52 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
   }
 
   RecursoRemoto *rr = recurso->recursoRemoto;
-  JsonDocument request, resposta;
+  NodoRemoto *nodo = rr->nodo;
+  JsonDocument resposta;
+  int code = 0;
 
-  request["id"] = String(rr->idRemoto);
-  request["estado"] = estado;
+  String estadoStr =
+      estado == "1" ||
+              estado == "on" ||
+              estado == "ON" ||
+              estado == "true"
+          ? "ON"
+          : "OFF";
 
-  int code = apiInterna(rr->nodo->ip, "setRecurso", "PUT", &request, &resposta);
+  switch (nodo->tipo)
+  {
+  case TIPO_NODO_FULL:
+  {
+    JsonDocument request;
+    request["id"] = String(rr->idRemoto);
+    request["estado"] = estadoStr;
+
+    code = apiInterna(rr->nodo->ip, "setRecurso", "PUT", &request, &resposta);
+  }
+  break;
+
+  case TIPO_NODO_LITE:
+  {
+    code = apiInterna(rr->nodo->ip, "setRele?estado=" + estadoStr, "GET", nullptr, &resposta);
+  }
+  break;
+
+  default:
+    return "Nodo não inicializado!";
+  }
+
   if (code != 200)
   {
     logaM(LOG_CRITICO, "Erro API Interna: %d", code);
     // TODO ??
   }
 
-  // String out;
-  // serializeJson(resposta, out);
-  // logaM("ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
+  if (resposta.isNull())
+    return "Resposta vazia!";
+
+  String out;
+  serializeJson(resposta, out);
+  logaM(LOG_AVISO, "ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
 
   switch (recurso->tipo)
   {
@@ -66,7 +98,7 @@ String apiInternaEnviaEvento(IPAddress ip, JsonDocument *body)
   return code == 200 ? "OK" : String(code);
 }
 
-int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *response)
+int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *responseOut)
 {
   String url = "http://" + ip.toString() + "/api/" + endpoint;
 
@@ -100,12 +132,63 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
 
   if (code == 200)
   {
-    // TODO http.getString() é perigoso !!! usar o stream
-    String respBody = http.getString();
-    logaM(LOG_DEBUG, " >> RESP: %s", respBody.c_str());
+    char response[API_INTERNA_RESPONSE_MAXLEN] = {0};
 
-    if (response)
-      utilLeJson("apiInterna", *response, respBody);
+    WiFiClient *stream = http.getStreamPtr();
+    if (stream)
+    {
+      size_t pos = 0;
+      int restante = http.getSize();
+      uint32_t ultimoDado = millis();
+
+      while (pos < API_INTERNA_RESPONSE_MAXLEN - 1)
+      {
+        int disponivel = stream->available();
+        if (disponivel > 0)
+        {
+          size_t tamanho = min(
+              (size_t)disponivel,
+              (size_t)(API_INTERNA_RESPONSE_MAXLEN - 1 - pos));
+
+          if (restante >= 0 && tamanho > (size_t)restante)
+            tamanho = restante;
+
+          if (!tamanho)
+            break;
+
+          size_t lido = stream->readBytes(response + pos, tamanho);
+          if (!lido)
+            break;
+
+          pos += lido;
+
+          if (restante >= 0)
+          {
+            restante -= lido;
+
+            if (!restante)
+              break;
+          }
+
+          ultimoDado = millis();
+          continue;
+        }
+
+        if (restante == 0 || !http.connected())
+          break;
+
+        if (millis() - ultimoDado >= API_INTERNA_TIMEOUT)
+          break;
+
+        delay(1);
+      }
+      response[pos] = '\0';
+
+      logaM(LOG_DEBUG, " >> RESP: %s", response);
+
+      if (responseOut)
+        utilLeJson("apiInterna", *responseOut, response);
+    }
   }
 
   http.end();

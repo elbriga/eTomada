@@ -8,6 +8,8 @@
 void utilDIE(const char *msg);
 void utilRestart(const char *msg, bool now = false);
 
+int min(int v1, int v2);
+
 int utilCopiaArquivo(const char *pathOrigem, const char *pathDestino);
 
 const char *utilGetDiaSemana(struct tm timeinfo);

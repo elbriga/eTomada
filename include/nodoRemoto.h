@@ -5,9 +5,17 @@
 
 #define NODOS_PATH "/nodosRemotos.json"
 
+enum TipoNodoRemoto
+{
+  TIPO_NODO_DESCONHECIDO = 0,
+  TIPO_NODO_LITE = 13,
+  TIPO_NODO_FULL = 33
+};
+
 struct NodoRemoto
 {
   char id[32];
+  TipoNodoRemoto tipo;
   IPAddress ip;
 };
 

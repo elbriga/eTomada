@@ -43,6 +43,11 @@ void utilRestart(const char *msg, bool now)
     recoveryReboot();
 }
 
+int min(int v1, int v2)
+{
+  return v1 < v2 ? v1 : v2;
+}
+
 int utilVersionToInt(const char *ver)
 {
   int v1, v2, v3;
