@@ -114,7 +114,7 @@ JsonDocument sensorGetJSONDoc(Recurso *r, bool full)
   {
     doc["pino"] = s->pino;
 
-    if (!strcmp(r->id, "CHUVA"))
+    if (!strcmp(r->id, "HORASSECO"))
     {
       doc["valor"] = sensorChuvaGetHorasSemChuva();
     }
@@ -232,7 +232,7 @@ void sensoresAtualizaTask(void *args)
     if (!atual[rs].mudou)
       continue;
     // Sensor de chuva tem os eventos postados pelo modulo sensorChuva.cpp
-    if (!strcmp(atual[rs].rec->nome, "CHUVA"))
+    if (!strcmp(atual[rs].rec->id, "HORASSECO"))
       continue;
 
     // recursoEnviaSSE(atual[rb].rec) e mestreEnviaEvento(atual[rb].rec) em outra thread

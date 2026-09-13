@@ -46,7 +46,7 @@ struct Condicao
 
         struct
         {
-            char variavel[32]; // R1, S2, B1, CHUVA...
+            char variavel[32]; // R1, S2, B1, HORASSECO...
             char op[3];        // >, <, =, !=, >=, <=
             int valor;
         } expressao;

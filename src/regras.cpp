@@ -201,7 +201,7 @@ String regraDisparaAcao(Regra *regra)
 
 int regrasGetValorPorNome(const char *nomeVar)
 {
-    if (!strcmp(nomeVar, "CHUVA"))
+    if (!strcmp(nomeVar, "HORASSECO"))
         return sensorChuvaGetHorasSemChuva();
 
     Recurso *r = recursoGet(nomeVar);

@@ -86,19 +86,19 @@
       "quando": [
         {
           "tipo": "HORARIO",
-          "hora": 0,
-          "minuto": 26
+          "hora": 20,
+          "minuto": 30
         },
         {
           "tipo": "EXPRESSAO",
-          "variavel": "CHUVA",
+          "variavel": "HORASSECO",
           "operacao": ">",
           "valor": 12
         }
       ],
       "acao": {
         "tipo": "TIMER",
-        "recurso": "RELEAGUAQUARTO",
+        "recurso": "AGUAQUARTO",
         "timer": 15
       }
     }

@@ -12,6 +12,7 @@ function sensorGetCard(recurso) {
   }
   const tsOK = recurso.remoto || tipoSensor.status == "OK";
   const card = document.createElement("div");
+  const nomeSensor = recurso.id == "HORASSECO" ? "de Chuva" : recurso.id;
   card.id = `recursoCard-${recurso.id}`;
   card.className =
     `card cardSensor${!tsOK ? " cardSensorInativo" : ""}` +
@@ -20,7 +21,7 @@ function sensorGetCard(recurso) {
 <div class="headerTop">
   <div>
     <div class="medio">
-      Sensor ${recurso.id}
+      Sensor ${nomeSensor}
       ${tipoSensor.nome != undefined ? " - " + tipoSensor.nome : ""}
       ${tipoSensor.tipo != undefined ? " - " + tipoSensor.tipo : ""}
       ${recurso.remoto ? ` em ${recurso.nodo}` : ""}
@@ -31,7 +32,7 @@ function sensorGetCard(recurso) {
 </div>
 <br>
 ${
-  recurso.id == "CHUVA"
+  recurso.id == "HORASSECO"
     ? `<div class="status ${!sensor.valor ? "on" : "off"}">
         ${!sensor.valor ? "MOLHADO" : `horas sem chuva: ${sensor.valor}`}
       </div>`

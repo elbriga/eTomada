@@ -39,13 +39,13 @@
     {
       "tipo": "SENSOR",
       "nodo": "QUARTO",
-      "idLocal": "CHUVA",
+      "idLocal": "HORASSECO",
       "idRemoto": "S1"
     },
     {
       "tipo": "RELE",
       "nodo": "QUARTO",
-      "idLocal": "RELEAGUAQUARTO",
+      "idLocal": "AGUAQUARTO",
       "idRemoto": "R1"
     }
   ]
