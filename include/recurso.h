@@ -52,4 +52,5 @@ String recursoAtualizaConfigFromJSON(uint8_t *json);
 
 void recursoEnviaSSE(Recurso *recurso);
 
+int recursoGetValor(Recurso *r);
 void recursoPrint(Recurso *recurso);

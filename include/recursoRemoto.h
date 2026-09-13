@@ -15,8 +15,8 @@
 struct RecursoRemoto
 {
   TipoRecurso tipo;
-  char idLocal[8];  // ID Local do recurso dentro do tipo. ex.: R10
-  char idRemoto[8]; // ID Remoto do recurso dentro do tipo. ex.: R2
+  char idLocal[32];  // ID Local do recurso dentro do tipo. ex.: R10
+  char idRemoto[32]; // ID Remoto do recurso dentro do tipo. ex.: R2
   NodoRemoto *nodo;
   union
   {

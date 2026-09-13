@@ -41,6 +41,12 @@
       "nodo": "QUARTO",
       "idLocal": "CHUVA",
       "idRemoto": "S1"
+    },
+    {
+      "tipo": "RELE",
+      "nodo": "QUARTO",
+      "idLocal": "RELEAGUAQUARTO",
+      "idRemoto": "R1"
     }
   ]
 }

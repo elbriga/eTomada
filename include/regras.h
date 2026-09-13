@@ -8,12 +8,14 @@
 #define REGRAS_PATH "/automacoes.json"
 #define REGRAS_PATH_DEFAULT "/config/automacoesDefault.json"
 
+#define REGRAS_MAX_CONDICOES 3
+
 enum TipoCondicao
 {
+    COND_NENHUMA = 0,
     COND_EVENTO = 10,
     COND_HORARIO = 20,
-    COND_ESTADO = 30,   // TODO
-    COND_EXPRESSAO = 40 // TODO
+    COND_EXPRESSAO = 30
 };
 
 enum TipoAcao
@@ -24,37 +26,30 @@ enum TipoAcao
     ACAO_SCRIPT = 40 // TODO
 };
 
-enum Operador // TODO
-{
-    OP_EQ = 1,
-    OP_NE = 2,
-    OP_GT = 3,
-    OP_LT = 4,
-    OP_GE = 5,
-    OP_LE = 6
-};
-
 struct Condicao
 {
     TipoCondicao tipo;
 
-    char recursoID[8]; // R1, S2, B1...
-
     union
     {
-        TipoEvento evento;
-
-        struct // TODO
+        struct
         {
-            Operador op;
-            float valor;
-        } estado;
+            TipoEvento tipo;
+            char recursoID[32]; // R1, S2, B1...
+        } evento;
 
         struct
         {
             uint8_t hora;
             uint8_t minuto;
         } horario;
+
+        struct
+        {
+            char variavel[32]; // R1, S2, B1, CHUVA...
+            char op[3];        // >, <, =, !=, >=, <=
+            int valor;
+        } expressao;
     };
 };
 
@@ -62,7 +57,7 @@ struct Acao
 {
     TipoAcao tipo;
 
-    char recursoID[8];
+    char recursoID[32];
 
     union
     {
@@ -74,9 +69,10 @@ struct Acao
 struct Regra
 {
     uint16_t id;
+    char nome[64];
     bool ativa;
 
-    Condicao condicao;
+    Condicao condicao[REGRAS_MAX_CONDICOES];
     Acao acao;
 };
 

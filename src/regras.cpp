@@ -11,6 +11,7 @@
 #include "util.h"
 #include "recurso.h"
 #include "agendamentos.h"
+#include "sensorChuva.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("REGRA", nivel, fmt, ##__VA_ARGS__)
@@ -25,6 +26,7 @@ String regrasLoad(const char *path);
 String regraGetTxt(Regra *r);
 void regraLoadFromJSON(Regra *regra, JsonObject &doc);
 String regrasPersiste(Regra *novaRegra);
+String regraGetCondicaoTxt(Condicao *c);
 
 void regrasInit()
 {
@@ -68,27 +70,29 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
     {
         Regra *regra = &regras[r];
 
-        // Descartar acao TOGGLE
-        if (regra->acao.comando == COMANDO_TOGGLE)
+        // Trabalhar com regras de HORARIO
+        Condicao *cond = &regra->condicao[0]; // TODO fixo na condição 1
+        if (cond->tipo != COND_HORARIO)
+            continue;
+
+        // Trabalhar em cima de ON e OFF
+        if (regra->acao.comando != COMANDO_ON && regra->acao.comando != COMANDO_OFF)
             continue;
 
         // Verificar se esta regra age em cima do recurso
         if (strcmp(regra->acao.recursoID, recursoIn->id))
             continue;
 
-        if (regra->condicao.tipo == COND_HORARIO)
+        // Verificar se ja passou esse HORARIO
+        int minutoRegra = cond->horario.hora * 60 + cond->horario.minuto;
+        if (minutoRegra < minutoAtual)
         {
-            // Verificar se ja passou esse HORARIO
-            int minutoRegra = regra->condicao.horario.hora * 60 + regra->condicao.horario.minuto;
-            if (minutoRegra < minutoAtual)
+            // Salvar o estado da ultima regra aplicavel
+            if (minutoRegra > minutoUltimo)
             {
-                // Salvar o estado da ultima regra aplicavel
-                if (minutoRegra > minutoUltimo)
-                {
-                    minutoUltimo = minutoRegra;
-                    regraAtivadaOut = regra;
-                    *estadoAtualOut = (regra->acao.comando == COMANDO_ON);
-                }
+                minutoUltimo = minutoRegra;
+                regraAtivadaOut = regra;
+                *estadoAtualOut = (regra->acao.comando == COMANDO_ON);
             }
         }
     }
@@ -123,7 +127,7 @@ void regrasBoot()
         if (regraAtivada)
         {
             logaM(LOG_NORMAL, "Conferir estado do recurso [%s][%s] para %d pela regra [%s]",
-                  recurso->id, recurso->nome, estadoAtual, regraGetTxt(regraAtivada).c_str());
+                  recurso->id, recurso->nome, estadoAtual, regraAtivada->nome);
             String msg = recursoCheck(recurso, estadoAtual);
             if (msg != "")
                 logaM(LOG_AVISO, ">> recursoCheck :: [%s]", msg.c_str());
@@ -167,7 +171,7 @@ String regraDisparaAcao(Regra *regra)
     case ACAO_ESTADO:
     {
         Recurso *rec = recursoGet(acao->recursoID);
-        if (rec->tipo != RECURSO_RELE)
+        if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoESTADO : Nao eh RELE!";
 
         return recursoSet(rec, acao->comando);
@@ -177,7 +181,7 @@ String regraDisparaAcao(Regra *regra)
     case ACAO_TIMER:
     {
         Recurso *rec = recursoGet(acao->recursoID);
-        if (rec->tipo != RECURSO_RELE)
+        if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoTIMER : Nao eh RELE!";
 
         String ret = recursoSet(rec, COMANDO_ON);
@@ -195,6 +199,18 @@ String regraDisparaAcao(Regra *regra)
     return "ToDo!";
 }
 
+int regrasGetValorPorNome(const char *nomeVar)
+{
+    if (!strcmp(nomeVar, "CHUVA"))
+        return sensorChuvaGetHorasSemChuva();
+
+    Recurso *r = recursoGet(nomeVar);
+    if (r)
+        return recursoGetValor(r);
+
+    return -1;
+}
+
 void regrasProcessaEvento(Evento e)
 {
     if (eTomadaGetModoOperacao() != MODO_CONTROLADOR)
@@ -210,52 +226,96 @@ void regrasProcessaEvento(Evento e)
         if (!regra->ativa)
             continue;
 
-        // Verificar se foi o recurso da regra que gerou o evento
-        if (e.recurso && strcmp(regra->condicao.recursoID, e.recurso->id))
-            continue;
-
         bool disparaAcao = false;
-        switch (regra->condicao.tipo)
-        {
-        case COND_EVENTO:
-            if (e.tipo == regra->condicao.evento)
-                disparaAcao = true;
-            break;
 
-        case COND_HORARIO:
-            if (e.tipo == EVENTO_HORARIO)
+        // Verificas as condicoes
+        for (int i = 0; i < REGRAS_MAX_CONDICOES; i++)
+        {
+            Condicao *c = &regra->condicao[i];
+            if (c->tipo == COND_NENHUMA) // FIM
+                break;
+
+            switch (c->tipo)
             {
+            case COND_EVENTO:
+                // Verificar se foi o recurso da regra que gerou o evento
+                if (e.recurso && strcmp(c->evento.recursoID, e.recurso->id))
+                    continue;
+
+                if (e.tipo == c->evento.tipo)
+                    disparaAcao = true;
+                break;
+
+            case COND_HORARIO:
+                if (e.tipo != EVENTO_HORARIO)
+                    break;
+
                 // Obter horario
                 struct tm timeinfo;
                 sysGetTime(&timeinfo);
 
-                if (timeinfo.tm_hour == regra->condicao.horario.hora && timeinfo.tm_min == regra->condicao.horario.minuto)
+                if (timeinfo.tm_hour == c->horario.hora && timeinfo.tm_min == c->horario.minuto)
                 {
                     if (timeinfo.tm_year + 1900 < 2026)
                     {
                         // Sem data/hora não processa regras de HORARIO
-                        logaM(LOG_AVISO, "Pulando regra[%d] : estamos sem HORA!", r);
+                        logaM(LOG_AVISO, "Pulando regra[%s] : estamos sem HORA!", regra->nome);
                         break;
                     }
                     disparaAcao = true;
                 }
+                break;
+
+            case COND_EXPRESSAO:
+            {
+                int valorVar = regrasGetValorPorNome(c->expressao.variavel);
+                if (c->expressao.op[0] == '>')
+                    disparaAcao = (c->expressao.op[1] == '=')
+                                      ? valorVar >= c->expressao.valor
+                                      : valorVar > c->expressao.valor;
+                else if (c->expressao.op[0] == '<')
+                    disparaAcao = (c->expressao.op[1] == '=')
+                                      ? valorVar <= c->expressao.valor
+                                      : valorVar < c->expressao.valor;
+                else if (c->expressao.op[0] == '!')
+                    disparaAcao = valorVar != c->expressao.valor;
+                else if (c->expressao.op[0] == '=')
+                    disparaAcao = valorVar == c->expressao.valor;
+                else
+                {
+                    logaM(LOG_CRITICO, "regrasProcessaEvento[%d] condicao.op (%s) DESCONHECIDA", regra->id, c->expressao.op);
+                    disparaAcao = false;
+                }
             }
             break;
 
-        default:
-            logaM(LOG_CRITICO, "TODO :: regrasProcessaEvento[%d] condicao.tipo (%d)", regra->id, regra->condicao.tipo);
-            break;
+            default:
+                logaM(LOG_CRITICO, "TODO :: regrasProcessaEvento[%d] condicao.tipo (%d) DESCONHECIDA", regra->id, c->tipo);
+                disparaAcao = false;
+                break;
+            }
+
+            // As condicionais são concatenadas com "E", se uma falhar já era!
+            if (!disparaAcao)
+            {
+                // Dar mensagem se falhar depois da primeira condicional
+                if (i)
+                    logaM(LOG_NORMAL, "Regra[%s]: nao disparou pela condicional [%s]",
+                          regra->nome, regraGetCondicaoTxt(c).c_str());
+                break;
+            }
         }
 
         if (disparaAcao)
+        {
             // Executar!
             msgDisplay = regraDisparaAcao(regra);
+            logaM(LOG_NORMAL, "Resultado da Regra[%s]: [%s]", regra->nome, msgDisplay.c_str());
+        }
     }
 
     if (msgDisplay != "")
-    {
         displayMostraMsg(msgDisplay.c_str(), 5000, false);
-    }
 }
 
 String regraValida(String regra)
@@ -325,6 +385,48 @@ static const char *regraTipoAcaoTxt(TipoAcao acao)
     }
 }
 
+String regraGetCondicaoTxt(Condicao *c)
+{
+    String ret;
+    ret.reserve(64);
+
+    switch (c->tipo)
+    {
+    case COND_EVENTO:
+        ret += "QUANDO ";
+        ret += c->evento.recursoID;
+        ret += ":";
+        ret += regraTipoEventoTxt(c->evento.tipo);
+        break;
+
+    case COND_HORARIO:
+        ret += "AS ";
+        if (c->horario.hora < 10)
+            ret += "0";
+        ret += c->horario.hora;
+        ret += ":";
+        if (c->horario.minuto < 10)
+            ret += "0";
+        ret += c->horario.minuto;
+        break;
+
+    case COND_EXPRESSAO:
+        ret += "SE ";
+        ret += c->expressao.variavel;
+        ret += " ";
+        ret += c->expressao.op;
+        ret += " ";
+        ret += c->expressao.valor;
+        break;
+
+    default:
+        ret += "CONDICAO?";
+        break;
+    }
+
+    return ret;
+}
+
 String regraGetTxt(Regra *r)
 {
     String ret;
@@ -332,40 +434,16 @@ String regraGetTxt(Regra *r)
     ret.reserve(96);
 
     // Condição
-    switch (r->condicao.tipo)
+    for (int i = 0; i < REGRAS_MAX_CONDICOES; i++)
     {
-    case COND_EVENTO:
-        ret += "SE ";
-        ret += r->condicao.recursoID;
-        ret += ":";
-        ret += regraTipoEventoTxt(r->condicao.evento);
-        break;
+        Condicao *c = &r->condicao[i];
+        if (c->tipo == COND_NENHUMA)
+            break;
 
-    case COND_HORARIO:
-        ret += "AS ";
-        if (r->condicao.horario.hora < 10)
-            ret += "0";
-        ret += r->condicao.horario.hora;
-        ret += ":";
-        if (r->condicao.horario.minuto < 10)
-            ret += "0";
-        ret += r->condicao.horario.minuto;
-        break;
+        if (i)
+            ret += ",";
 
-    case COND_ESTADO:
-        ret += "ESTADO ";
-        ret += r->condicao.recursoID;
-        ret += " ";
-        ret += r->condicao.estado.valor;
-        break;
-
-    case COND_EXPRESSAO:
-        ret += "EXPRESSAO";
-        break;
-
-    default:
-        ret += "CONDICAO?";
-        break;
+        ret += regraGetCondicaoTxt(c);
     }
 
     ret += " -> ";
@@ -397,24 +475,41 @@ String regraGetTxt(Regra *r)
     return ret;
 }
 
-JsonDocument regraGetCondicaoJSONDoc(Regra *r)
+JsonDocument regraGetCondicoesJSONDoc(Regra *r)
 {
-    JsonDocument doc;
-    Condicao *c = &r->condicao;
+    JsonArray doc;
 
-    doc["tipo"] = regraTipoCondicaoTxt(c->tipo);
-
-    switch (c->tipo)
+    for (int i = 0; i < REGRAS_MAX_CONDICOES; i++)
     {
-    case COND_EVENTO:
-        doc["recurso"] = c->recursoID;
-        doc["evento"] = regraTipoEventoTxt(c->evento);
-        break;
+        Condicao *c = &r->condicao[i];
+        if (c->tipo == COND_NENHUMA)
+            break;
 
-    case COND_HORARIO:
-        doc["hora"] = c->horario.hora;
-        doc["minuto"] = c->horario.minuto;
-        break;
+        JsonObject condicao;
+        condicao["tipo"] = regraTipoCondicaoTxt(c->tipo);
+        switch (c->tipo)
+        {
+        case COND_EVENTO:
+            condicao["recurso"] = c->evento.recursoID;
+            condicao["evento"] = regraTipoEventoTxt(c->evento.tipo);
+            break;
+
+        case COND_HORARIO:
+            condicao["hora"] = c->horario.hora;
+            condicao["minuto"] = c->horario.minuto;
+            break;
+
+        case COND_EXPRESSAO:
+            condicao["variavel"] = c->expressao.variavel;
+            condicao["operacao"] = c->expressao.op;
+            condicao["valor"] = c->expressao.valor;
+            break;
+
+        default:
+            logaM(LOG_AVISO, "regraGetCondicoesJSONDoc[%s] :: tipoCondicao[%d] invalido", r->nome, c->tipo);
+        }
+
+        doc.add(condicao);
     }
 
     return doc;
@@ -446,11 +541,12 @@ JsonDocument regraGetAcaoJSONDoc(Regra *r)
 void regraGetJS(Regra *r, JsonObject &doc)
 {
     doc["id"] = r->id;
+    doc["nome"] = r->nome;
     doc["ativa"] = r->ativa;
 
     doc["descricao"] = regraGetTxt(r);
 
-    doc["quando"] = regraGetCondicaoJSONDoc(r);
+    doc["quando"] = regraGetCondicoesJSONDoc(r);
     doc["acao"] = regraGetAcaoJSONDoc(r);
 }
 
@@ -576,47 +672,74 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
     if (!regra->id)
         regra->id = regraFindNextID();
 
+    if (doc["nome"])
+        strlcpy(regra->nome, doc["nome"].as<const char *>(), sizeof(regra->nome));
+
     if (doc["ativa"])
         regra->ativa = doc["ativa"].as<bool>();
 
     // preencher condicao
-    if (doc["quando"]["tipo"])
+    JsonArray condicoes = doc["quando"];
+    if (!condicoes.size())
     {
-        String tipoCondicaoStr = doc["quando"]["tipo"].as<String>();
-        if (tipoCondicaoStr == "EVENTO")
+        logaM(LOG_CRITICO, "Sem condicoes! Inativando regra[%d]", regra->id);
+        regra->ativa = false;
+    }
+    else
+    {
+        int idxCondicao = 0;
+        for (JsonObject condicao : condicoes)
         {
-            regra->condicao.tipo = COND_EVENTO;
-            strlcpy(regra->condicao.recursoID,
-                    doc["quando"]["recurso"].as<const char *>(),
-                    sizeof(regra->condicao.recursoID));
-            String eventoStr = doc["quando"]["evento"].as<String>();
-            if (eventoStr == "TOGGLE")
-                regra->condicao.evento = EVENTO_TOGGLE;
-            else if (eventoStr == "CLICK")
-                regra->condicao.evento = EVENTO_CLICK;
-            else if (eventoStr == "LIGOU")
-                regra->condicao.evento = EVENTO_LIGOU;
-            else if (eventoStr == "DESLIGOU")
-                regra->condicao.evento = EVENTO_DESLIGOU;
-            else if (eventoStr == "DUPCLICK")
-                regra->condicao.evento = EVENTO_DOUBLE_CLICK;
-            else
-            // TODO :: outros eventos
+            if (idxCondicao >= REGRAS_MAX_CONDICOES)
             {
-                logaM(LOG_CRITICO, "TipoEvento %s ??? Inativando regra[%d]", eventoStr.c_str(), regra->id);
+                logaM(LOG_AVISO, "Regra[%d] com muitas condicoes! Cortando!", regra->id);
+                break;
+            }
+
+            Condicao *condPtr = &regra->condicao[idxCondicao++];
+
+            String tipoCondicaoStr = condicao["tipo"].as<String>();
+            if (tipoCondicaoStr == "EVENTO")
+            {
+                condPtr->tipo = COND_EVENTO;
+                strlcpy(condPtr->evento.recursoID, condicao["recurso"].as<const char *>(), sizeof(condPtr->evento.recursoID));
+
+                String eventoStr = condicao["evento"].as<String>();
+                if (eventoStr == "TOGGLE")
+                    condPtr->evento.tipo = EVENTO_TOGGLE;
+                else if (eventoStr == "CLICK")
+                    condPtr->evento.tipo = EVENTO_CLICK;
+                else if (eventoStr == "LIGOU")
+                    condPtr->evento.tipo = EVENTO_LIGOU;
+                else if (eventoStr == "DESLIGOU")
+                    condPtr->evento.tipo = EVENTO_DESLIGOU;
+                else if (eventoStr == "DUPCLICK")
+                    condPtr->evento.tipo = EVENTO_DOUBLE_CLICK;
+                else
+                // TODO :: outros eventos
+                {
+                    logaM(LOG_CRITICO, "TipoEvento %s ??? Inativando regra[%d]", eventoStr.c_str(), regra->id);
+                    regra->ativa = false;
+                }
+            }
+            else if (tipoCondicaoStr == "HORARIO")
+            {
+                condPtr->tipo = COND_HORARIO;
+                condPtr->horario.hora = condicao["hora"].as<int>();
+                condPtr->horario.minuto = condicao["minuto"].as<int>();
+            }
+            else if (tipoCondicaoStr == "EXPRESSAO")
+            {
+                condPtr->tipo = COND_EXPRESSAO;
+                strlcpy(condPtr->expressao.variavel, condicao["variavel"].as<const char *>(), sizeof(condPtr->expressao.variavel));
+                strlcpy(condPtr->expressao.op, condicao["operacao"].as<const char *>(), sizeof(condPtr->expressao.op));
+                condPtr->expressao.valor = condicao["valor"].as<int>();
+            }
+            else
+            {
+                logaM(LOG_CRITICO, "TipoCondicao %s ??? Inativando regra[%d]", tipoCondicaoStr.c_str(), regra->id);
                 regra->ativa = false;
             }
-        }
-        else if (tipoCondicaoStr == "HORARIO")
-        {
-            regra->condicao.tipo = COND_HORARIO;
-            regra->condicao.horario.hora = doc["quando"]["hora"].as<int>();
-            regra->condicao.horario.minuto = doc["quando"]["minuto"].as<int>();
-        }
-        else
-        {
-            logaM(LOG_CRITICO, "TipoCondicao %s ??? Inativando regra[%d]", tipoCondicaoStr.c_str(), regra->id);
-            regra->ativa = false;
         }
     }
 
@@ -698,7 +821,7 @@ String regrasLoad(const char *path)
 
 void regraPrint(Regra *r)
 {
-    logaM(LOG_NORMAL, "Regra[%d][%s] > [%s]", r->id,
-          r->ativa ? "ON" : "OFF",
+    logaM(LOG_NORMAL, "Regra[%d][%s][%s] > [%s]",
+          r->id, r->ativa ? "ON" : "OFF", r->nome,
           regraGetTxt(r).c_str());
 }

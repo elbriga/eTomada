@@ -560,6 +560,33 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   return "OK";
 }
 
+int recursoGetValor(Recurso *r)
+{
+  switch (r->tipo)
+  {
+  case RECURSO_RELE:
+  {
+    Rele *rele = recursoGetRele(r);
+    return rele->estado;
+  }
+
+  case RECURSO_SENSOR:
+  {
+    Sensor *sensor = recursoGetSensor(r);
+    return sensor->valor;
+  }
+
+  case RECURSO_BOTAO:
+  {
+    Botao *botao = recursoGetBotao(r);
+    return botao->estado;
+  }
+
+  default:
+    return -999;
+  }
+}
+
 void recursoPrint(Recurso *recurso)
 {
   logaM(LOG_NORMAL, "Recurso%s %s: %s [%s]",
