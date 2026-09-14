@@ -24,7 +24,7 @@ struct NovoNodo
   bool ativo;
   char nome[32];
   IPAddress ip;
-  TipoNodoRemoto tipo;
+  char tipo[8];
 };
 static NovoNodo novosNodos[MAX_NOVOS_NODOS] = {};
 
@@ -154,13 +154,7 @@ void nodosRemotosRefreshTask(void *args)
           novosNodos[i].ativo = true;
           strlcpy(novosNodos[i].nome, MDNS.hostname(nd).c_str(), sizeof(novosNodos[i].nome));
           novosNodos[i].ip = MDNS.IP(nd);
-          String apiScan = MDNS.txt(nd, "api");
-          if (apiScan == "Full")
-            novosNodos[i].tipo = TIPO_NODO_FULL;
-          else if (apiScan == "Lite")
-            novosNodos[i].tipo = TIPO_NODO_LITE;
-          else
-            novosNodos[i].tipo = TIPO_NODO_DESCONHECIDO;
+          strlcpy(novosNodos[i].tipo, MDNS.txt(nd, "api").c_str(), sizeof(novosNodos[i].tipo));
           break;
         }
 
@@ -205,11 +199,7 @@ void nodosRemotosRefreshTask(void *args)
     // Verificar o Tipo
     if (nodoRemoto->tipo == TIPO_NODO_DESCONHECIDO)
     {
-      TipoNodoRemoto tipoScan = TIPO_NODO_DESCONHECIDO;
-      if (apiScan == "Full")
-        tipoScan = TIPO_NODO_FULL;
-      else if (apiScan == "Lite")
-        tipoScan = TIPO_NODO_LITE;
+      TipoNodoRemoto tipoScan = nodoRemotoGetTipoFromStr(apiScan);
 
       if (tipoScan == TIPO_NODO_DESCONHECIDO)
         logaM(LOG_CRITICO, "Nodo [%s] nao informa o TIPO!", nodoRemoto->id);
@@ -291,11 +281,29 @@ JsonDocument nodosRemotosGetJSON()
     NodoRemoto *nodo = nodoRemotoGetPorIndice(n);
     JsonObject nodoJS = nodos.add<JsonObject>();
     nodoJS["id"] = nodo->id;
-    nodoJS["tipo"] = nodo->tipo;
+    nodoJS["tipo"] = nodoRemotoGetTipoStr(nodo->tipo);
     nodoJS["ip"] = nodo->ip.toString();
   }
 
   return doc;
+}
+
+const char *nodoRemotoGetTipoStr(TipoNodoRemoto tipo)
+{
+  if (tipo == TIPO_NODO_FULL)
+    return "Full";
+  if (tipo == TIPO_NODO_LITE)
+    return "Lite";
+  return "?";
+}
+
+TipoNodoRemoto nodoRemotoGetTipoFromStr(String tipo)
+{
+  if (tipo == "Full")
+    return TIPO_NODO_FULL;
+  if (tipo == "Lite")
+    return TIPO_NODO_LITE;
+  return TIPO_NODO_DESCONHECIDO;
 }
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto)

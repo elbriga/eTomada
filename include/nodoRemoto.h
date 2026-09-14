@@ -33,3 +33,6 @@ JsonDocument nodosRemotosGetJSON();
 
 int nodosRemotosGetNovosCount();
 JsonDocument nodosRemotosGetNovosJSON();
+
+const char *nodoRemotoGetTipoStr(TipoNodoRemoto tipo);
+TipoNodoRemoto nodoRemotoGetTipoFromStr(String tipo);

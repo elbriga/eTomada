@@ -19,13 +19,23 @@ function closeConfig() {
 function renderConfig() {
   const container = document.getElementById("configContent");
 
-  let html = "confAdd?";
+  let html = "<h2>Nodos Remotos</h2>";
+  eTomadaData.nodosRemotos.forEach((nodo) => {
+    html += `> @ ${nodo.ip} > ${nodo.id} (${nodo.tipo})<br>\n`;
+  });
+
+  if (eTomadaData.novosNodos) {
+    html += "<h2>Novos eTomada!</h2>";
+    eTomadaData.novosNodos.forEach((nodo) => {
+      html += `> @ ${nodo.ip} > ${nodo.id} (${nodo.tipo})<br>\n`;
+    });
+  }
 
   container.innerHTML = html;
 }
 
 async function salvarConfigGeral() {
-  statusMsg("Configuração salva");
+  statusMsg("TODO :: Configuração salva");
 
   closeConfig();
 
