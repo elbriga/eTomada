@@ -15,7 +15,6 @@ enum TipoCondicao
     COND_NENHUMA = 0,
     COND_EVENTO = 10,
     COND_HORARIO = 20,
-    COND_EXPRESSAO = 30
 };
 
 enum TipoAcao
@@ -29,7 +28,6 @@ enum TipoAcao
 struct Condicao
 {
     TipoCondicao tipo;
-
     union
     {
         struct
@@ -43,14 +41,13 @@ struct Condicao
             uint8_t hora;
             uint8_t minuto;
         } horario;
-
-        struct
-        {
-            char variavel[32]; // R1, S2, B1, HORASSECO...
-            char op[3];        // >, <, =, !=, >=, <=
-            int valor;
-        } expressao;
     };
+    struct
+    {
+        char variavel[32]; // R1, S2, B1, HORASSECO...
+        char op[3];        // >, <, =, !=, >=, <=
+        int valor;
+    } check;
 };
 
 struct Acao
@@ -72,7 +69,7 @@ struct Regra
     char nome[64];
     bool ativa;
 
-    Condicao condicao[REGRAS_MAX_CONDICOES];
+    Condicao condicao;
     Acao acao;
 };
 

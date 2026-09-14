@@ -47,98 +47,16 @@ function regraPopulaComboRecursos(comboID, filtro) {
   document.getElementById(comboID).innerHTML = options;
 }
 
-function regraPopulaCombosHorario(idx) {
+function regraPopulaCombosHorario() {
   var options = "<option value=''>Escolha uma Hora</option>\n";
   for (let h = 0; h < 24; h++)
     options += `<option value='${h}'>${String(h).padStart(2, "0")}</option>\n`;
-  document.getElementById(`modalRegraHora${idx}`).innerHTML = options;
+  document.getElementById("modalRegraHora").innerHTML = options;
 
   options = "<option value=''>Escolha um Minuto</option>\n";
   for (let m = 0; m < 60; m++)
     options += `<option value='${m}'>${String(m).padStart(2, "0")}</option>\n`;
-  document.getElementById(`modalRegraMinuto${idx}`).innerHTML = options;
-}
-
-function regraAddFormCondicao(idx, condicao) {
-  let divCondicoes = document.getElementById("modalRegraCondicoes");
-
-  let novaDiv = document.createElement("div");
-  novaDiv.innerHTML = `${idx > 1 ? "<br><b>E</b><br><br>" : ""}
-          <span class="emLinha">
-            Tipo:
-            <select id="modalRegraCondicao${idx}" onchange="regrasOCModalCondicao(${idx})">
-              <option value="">Escolha um Tipo</option>
-              <option value="EVENTO">Eventos</option>
-              <option value="HORARIO">Horário</option>
-              <option value="EXPRESSAO">Expressão</option>
-            </select>
-          </span>
-          <div id="divRegraEvento${idx}">
-            <span class="emLinha">
-              Recurso:
-              <select id="modalRegraRecursoEvento${idx}"></select>
-            </span>
-            <span class="emLinha">
-              Evento:
-              <select id="modalRegraEvento${idx}">
-                <option value="">Escolha um Evento</option>
-                <option value="ON">Ligou</option>
-                <option value="OFF">Desligou</option>
-                <option value="TOGGLE">Mudou</option>
-                <option value="CLICK">Click!</option>
-                <option value="DUPCLICK">Duplo Click!</option>
-              </select>
-            </span>
-          </div>
-          <div id="divRegraHorario${idx}">
-            <span class="emLinha">
-              Horário:
-              <select id="modalRegraHora${idx}"></select>
-              :
-              <select id="modalRegraMinuto${idx}"></select>
-            </span>
-          </div>
-          <div id="divRegraExpressao${idx}">
-            <span class="emLinha">
-              Expressão:
-              <select id="modalRegraVar${idx}"></select>
-              <select id="modalRegraOperacao${idx}" style="width: 60px">
-                <option value="=">=</option>
-                <option value="!=">!=</option>
-                <option value="&gt;">&gt;</option>
-                <option value="&gt;=">&gt;=</option>
-                <option value="&lt;">&lt;</option>
-                <option value="&lt;=">&lt;=</option>
-              </select>
-              <input id="modalRegraVal${idx}" maxlength="5" style="width: 60px" />
-            </span>
-          </div>`;
-  divCondicoes.appendChild(novaDiv);
-
-  regraPopulaCombosHorario(idx);
-  regraPopulaComboRecursos(
-    `modalRegraRecursoEvento${idx}`,
-    (r) => r.tipo != "SENSOR",
-  );
-  regraPopulaComboRecursos(`modalRegraVar${idx}`);
-
-  document.getElementById(`modalRegraCondicao${idx}`).value = condicao.tipo;
-  regrasOCModalCondicao(idx);
-
-  if (condicao.tipo == "EVENTO") {
-    document.getElementById(`modalRegraRecursoEvento${idx}`).value =
-      condicao.recurso;
-    document.getElementById(`modalRegraEvento${idx}`).value = condicao.evento;
-  } else if (condicao.tipo == "HORARIO") {
-    document.getElementById(`modalRegraHora${idx}`).value = condicao.hora | 0;
-    document.getElementById(`modalRegraMinuto${idx}`).value =
-      condicao.minuto | 0;
-  } else if (condicao.tipo == "EXPRESSAO") {
-    document.getElementById(`modalRegraVar${idx}`).value = condicao.variavel;
-    document.getElementById(`modalRegraOperacao${idx}`).value =
-      condicao.operacao;
-    document.getElementById(`modalRegraVal${idx}`).value = condicao.valor;
-  }
+  document.getElementById("modalRegraMinuto").innerHTML = options;
 }
 
 function regraOpenEditModal(regraID) {
@@ -147,12 +65,10 @@ function regraOpenEditModal(regraID) {
     regra = {
       id: 0,
       nome: "Nova Regra",
-      quando: [
-        {
-          tipo: "EVENTO",
-          recurso: "",
-        },
-      ],
+      quando: {
+        tipo: "EVENTO",
+        recurso: "",
+      },
       acao: {
         tipo: "ESTADO",
         recurso: "",
@@ -166,19 +82,46 @@ function regraOpenEditModal(regraID) {
     }
   }
 
+  regraPopulaCombosHorario();
+  regraPopulaComboRecursos(
+    "modalRegraRecursoEvento",
+    (r) => r.tipo != "SENSOR",
+  );
+  regraPopulaComboRecursos("modalRegraVar");
+
   regraEditando = regraID;
   document.getElementById("modalTitle").innerHTML =
     regraID > 0 ? "Editar Regra " + regraID : "Editar Nova Regra";
 
   document.getElementById("modalNome").value = regra.nome || "";
 
-  // Criar a interface das condicoes
-  document.getElementById("modalRegraCondicoes").innerHTML = "";
-  var idxCondicao = 0;
-  regra.quando.forEach((condicao) => {
-    idxCondicao++;
-    regraAddFormCondicao(idxCondicao, condicao);
-  });
+  document.getElementById("modalRegraCondicao").value = regra.quando.tipo || "";
+  if (regra.quando.tipo == "EVENTO") {
+    document.getElementById("modalRegraRecursoEvento").value =
+      regra.quando.recurso || "";
+    document.getElementById("modalRegraEvento").value =
+      regra.quando.evento || "";
+  } else if (regra.quando.tipo == "HORARIO") {
+    document.getElementById("modalRegraHora").value = regra.quando.hora || 0;
+    document.getElementById("modalRegraMinuto").value =
+      regra.quando.minuto || 0;
+  }
+  if (regra.quando.check != undefined) {
+    document.getElementById("modalRegraVar").value =
+      regra.quando.check.variavel || "";
+    document.getElementById("modalRegraOperacao").value =
+      regra.quando.check.operacao || "";
+    document.getElementById("modalRegraVal").value =
+      regra.quando.check.valor || "";
+  }
+
+  document.getElementById("modalRegraCheck").checked =
+    regra.quando.check &&
+    regra.quando.check.variavel &&
+    regra.quando.check.variavel != "";
+
+  regrasOCModalCondicao();
+  regrasOCModalCheck();
 
   document.getElementById("modalRegraAcao").value = regra.acao.tipo;
   regrasOCModalAcao();
@@ -210,15 +153,20 @@ function regraOpenEditModal(regraID) {
   editModalOpen(true);
 }
 
-function regrasOCModalCondicao(idx) {
-  const condicao = document.getElementById(`modalRegraCondicao${idx}`).value;
+function regrasOCModalCheck() {
+  const mostra = document.getElementById("modalRegraCheck").checked;
+  document.getElementById("divRegraCheck").style.display = mostra
+    ? "block"
+    : "none";
+}
 
-  document.getElementById(`divRegraEvento${idx}`).style.display =
+function regrasOCModalCondicao() {
+  const condicao = document.getElementById("modalRegraCondicao").value;
+
+  document.getElementById("divRegraEvento").style.display =
     condicao == "EVENTO" ? "block" : "none";
-  document.getElementById(`divRegraHorario${idx}`).style.display =
+  document.getElementById("divRegraHorario").style.display =
     condicao == "HORARIO" ? "block" : "none";
-  document.getElementById(`divRegraExpressao${idx}`).style.display =
-    condicao == "EXPRESSAO" ? "block" : "none";
 }
 
 function regrasOCModalAcao() {
@@ -233,8 +181,6 @@ function regrasOCModalAcao() {
 async function regraSalvarFromModal() {
   if (regraEditando == null) return;
 
-  const REGRAS_MAX_CONDICOES = 3; // Acompanha regras.h do backend
-
   const btn = document.getElementById("modalSalvarBtn");
 
   btn.disabled = true;
@@ -243,68 +189,62 @@ async function regraSalvarFromModal() {
   let body = {
     id: regraEditando,
     nome: document.getElementById("modalNome").value,
-    quando: [],
+    quando: {
+      tipo: document.getElementById("modalRegraCondicao").value,
+      check: {},
+    },
     acao: {
       tipo: document.getElementById("modalRegraAcao").value,
     },
   };
 
-  for (var idx = 1; idx <= REGRAS_MAX_CONDICOES; idx++) {
-    var tipo = document.getElementById(`modalRegraCondicao${idx}`);
-    if (!tipo) break;
-
-    tipo = tipo.value;
-    if (tipo == "") {
-      alert("Escolha o tipo da Condição!");
+  if (body.quando.tipo == "") {
+    alert("Escolha o tipo da Condição!");
+    return;
+  }
+  if (body.quando.tipo == "EVENTO") {
+    body.quando.recurso = document.getElementById(
+      "modalRegraRecursoEvento",
+    ).value;
+    if (body.quando.recurso == "") {
+      alert("Escolha o Recurso!");
       return;
     }
-
-    var condicao = { tipo: tipo };
-    if (tipo == "EVENTO") {
-      condicao.recurso = document.getElementById(
-        `modalRegraRecursoEvento${idx}`,
-      ).value;
-      if (condicao.recurso == "") {
-        alert("Escolha o Recurso!");
-        return;
-      }
-      condicao.evento = document.getElementById(`modalRegraEvento${idx}`).value;
-      if (condicao.evento == "") {
-        alert("Escolha o Evento!");
-        return;
-      }
-    } else if (tipo == "HORARIO") {
-      condicao.hora = document.getElementById(`modalRegraHora${idx}`).value;
-      if (condicao.hora == "") {
-        alert("Escolha a Hora!");
-        return;
-      }
-      condicao.minuto = document.getElementById(`modalRegraMinuto${idx}`).value;
-      if (condicao.minuto == "") {
-        alert("Escolha o Minuto!");
-        return;
-      }
-    } else if (tipo == "EXPRESSAO") {
-      condicao.variavel = document.getElementById(`modalRegraVar${idx}`).value;
-      if (condicao.variaval == "") {
-        alert("Escolha a Variável!");
-        return;
-      }
-      condicao.operacao = document.getElementById(
-        `modalRegraOperacao${idx}`,
-      ).value;
-      if (condicao.operacao == "") {
-        alert("Escolha a Operação!");
-        return;
-      }
-      condicao.valor = document.getElementById(`modalRegraVal${idx}`).value;
-      if (condicao.valor == "") {
-        alert("Escolha o Valor!");
-        return;
-      }
+    body.quando.evento = document.getElementById("modalRegraEvento").value;
+    if (body.quando.evento == "") {
+      alert("Escolha o Evento!");
+      return;
     }
+  } else if (body.quando.tipo == "HORARIO") {
+    body.quando.hora = document.getElementById("modalRegraHora").value;
+    if (body.quando.hora == "") {
+      alert("Escolha a Hora!");
+      return;
+    }
+    body.quando.minuto = document.getElementById("modalRegraMinuto").value;
+    if (body.quando.minuto == "") {
+      alert("Escolha o Minuto!");
+      return;
+    }
+  }
 
-    body.quando.push(condicao);
+  if (document.getElementById("modalRegraCheck").checked) {
+    body.quando.check.variavel = document.getElementById("modalRegraVar").value;
+    if (body.quando.check.variaval == "") {
+      alert("Escolha a Variável!");
+      return;
+    }
+    body.quando.check.operacao =
+      document.getElementById("modalRegraOperacao").value;
+    if (body.quando.check.operacao == "") {
+      alert("Escolha a Operação!");
+      return;
+    }
+    body.quando.check.valor = document.getElementById("modalRegraVal").value;
+    if (body.quando.check.valor == "") {
+      alert("Digite o Valor!");
+      return;
+    }
   }
 
   if (body.acao.tipo == "ESTADO") {

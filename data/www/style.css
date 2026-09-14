@@ -100,7 +100,6 @@ footer {
 }
 
 input {
-  width: 100%;
   border-radius: 6px;
   margin-bottom: 10px;
   background: #0f172a;
@@ -108,7 +107,6 @@ input {
 }
 
 select {
-  width: 100%;
   border-radius: 6px;
   padding: 8px;
   background: #0f172a;
@@ -279,9 +277,5 @@ button:hover {
 
 .modalContent input {
   box-sizing: border-box;
-  padding: 10px;
-}
-
-.emLinha {
-  display: flex;
+  padding: 6px;
 }

@@ -3,13 +3,11 @@
     {
       "nome": "Teste Timer 10",
       "ativa": true,
-      "quando": [
-        {
-          "tipo": "EVENTO",
-          "recurso": "B1",
-          "evento": "CLICK"
-        }
-      ],
+      "quando": {
+        "tipo": "EVENTO",
+        "recurso": "B1",
+        "evento": "CLICK"
+      },
       "acao": {
         "tipo": "TIMER",
         "recurso": "R1",
@@ -19,13 +17,11 @@
     {
       "nome": "Luz do Terrario",
       "ativa": true,
-      "quando": [
-        {
-          "tipo": "EVENTO",
-          "recurso": "B3",
-          "evento": "TOGGLE"
-        }
-      ],
+      "quando": {
+        "tipo": "EVENTO",
+        "recurso": "B3",
+        "evento": "TOGGLE"
+      },
       "acao": {
         "tipo": "ESTADO",
         "comando": "TOGGLE",
@@ -35,13 +31,11 @@
     {
       "nome": "5 Minutos de umidificador",
       "ativa": true,
-      "quando": [
-        {
-          "tipo": "EVENTO",
-          "recurso": "B3",
-          "evento": "CLICK"
-        }
-      ],
+      "quando": {
+        "tipo": "EVENTO",
+        "recurso": "B3",
+        "evento": "CLICK"
+      },
       "acao": {
         "tipo": "TIMER",
         "recurso": "R9",
@@ -51,13 +45,11 @@
     {
       "nome": "Liga R2 as 8h",
       "ativa": true,
-      "quando": [
-        {
-          "tipo": "HORARIO",
-          "hora": 8,
-          "minuto": 0
-        }
-      ],
+      "quando": {
+        "tipo": "HORARIO",
+        "hora": 8,
+        "minuto": 0
+      },
       "acao": {
         "tipo": "ESTADO",
         "comando": "ON",
@@ -67,13 +59,11 @@
     {
       "nome": "Desliga R2 as 18:30h",
       "ativa": true,
-      "quando": [
-        {
-          "tipo": "HORARIO",
-          "hora": 18,
-          "minuto": 30
-        }
-      ],
+      "quando": {
+        "tipo": "HORARIO",
+        "hora": 18,
+        "minuto": 30
+      },
       "acao": {
         "tipo": "ESTADO",
         "comando": "OFF",
@@ -83,19 +73,16 @@
     {
       "nome": "Irrigação do Quarto",
       "ativa": true,
-      "quando": [
-        {
-          "tipo": "HORARIO",
-          "hora": 20,
-          "minuto": 30
-        },
-        {
-          "tipo": "EXPRESSAO",
+      "quando": {
+        "tipo": "HORARIO",
+        "hora": 20,
+        "minuto": 30,
+        "check": {
           "variavel": "HORASSECO",
           "operacao": ">",
           "valor": 12
         }
-      ],
+      },
       "acao": {
         "tipo": "TIMER",
         "recurso": "AGUAQUARTO",

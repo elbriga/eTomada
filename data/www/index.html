@@ -79,44 +79,67 @@
       </div>
 
       <div class="modalContent">
-        <label>Nome</label>
-        <input id="modalNome" maxlength="31" />
-        
+        Nome: <input id="modalNome" maxlength="31" size="40" />
         <div id="modalDivRegra">
-          <label>Condições</label>
-          <div id="modalRegraCondicoes"></div>
+          <label>Condição</label>
+          Tipo:
+          <select id="modalRegraCondicao" onchange="regrasOCModalCondicao()">
+            <option value="">Escolha um Tipo</option>
+            <option value="EVENTO">Eventos</option>
+            <option value="HORARIO">Horário</option>
+            <option value="EXPRESSAO">Expressão</option>
+          </select><br>
+          <div id="divRegraEvento">
+            Recurso: <select id="modalRegraRecursoEvento"></select><br />
+            Evento:
+            <select id="modalRegraEvento">
+              <option value="">Escolha um Evento</option>
+              <option value="ON">Ligou</option>
+              <option value="OFF">Desligou</option>
+              <option value="TOGGLE">Mudou</option>
+              <option value="CLICK">Click!</option>
+              <option value="DUPCLICK">Duplo Click!</option>
+            </select><br>
+          </div>
+          <div id="divRegraHorario">
+            Horário:
+            <select id="modalRegraHora"></select>
+            :
+            <select id="modalRegraMinuto"></select>
+          </div>
+
+          <input type="checkbox" id="modalRegraCheck" onchange="regrasOCModalCheck()"/> Checagem Adicional<br />
+          <div id="divRegraCheck">
+            <select id="modalRegraVar"></select>
+            <select id="modalRegraOperacao" style="width: 60px">
+              <option value="=">=</option>
+              <option value="!=">!=</option>
+              <option value="&gt;">&gt;</option>
+              <option value="&gt;=">&gt;=</option>
+              <option value="&lt;">&lt;</option>
+              <option value="&lt;=">&lt;=</option>
+            </select>
+            <input id="modalRegraVal" maxlength="5" style="width: 60px" />
+          </div>
 
           <label>Ação</label>
-          <span class="emLinha">
-            Tipo: 
-            <select id="modalRegraAcao" onchange="regrasOCModalAcao()">
-              <option value="ESTADO">Mudar Estado</option>
-              <option value="TIMER">Timer</option>
-            </select>
-          </span>
+          Tipo: 
+          <select id="modalRegraAcao" onchange="regrasOCModalAcao()">
+            <option value="ESTADO">Mudar Estado</option>
+            <option value="TIMER">Timer</option>
+          </select>
           <div id="divRegraAcaoEstado">
-            <span class="emLinha">
-              Recurso:
-              <select id="modalRegraAcaoEstadoRecurso"></select>
-            </span>
-            <span class="emLinha">
-              Comando:
-              <select id="modalRegraAcaoEstadoComando">
-                <option value="ON">Ligar</option>
-                <option value="OFF">Desligar</option>
-                <option value="TOGGLE">Mudar Estado</option>
-              </select>
-            </span>
+            Recurso: <select id="modalRegraAcaoEstadoRecurso"></select><br />
+            Comando:
+            <select id="modalRegraAcaoEstadoComando">
+              <option value="ON">Ligar</option>
+              <option value="OFF">Desligar</option>
+              <option value="TOGGLE">Mudar Estado</option>
+            </select>
           </div>
           <div id="divRegraAcaoTimer">
-            <span class="emLinha">
-              Recurso:
-              <select id="modalRegraAcaoTimerRecurso"></select>
-            </span>
-            <span class="emLinha">
-              Timer:
-              <input id="modalRegraAcaoTimerTempo" maxlength="10" />
-            </span>
+            Recurso: <select id="modalRegraAcaoTimerRecurso"></select><br>
+            Timer: <input id="modalRegraAcaoTimerTempo" maxlength="10" /><br>
           </div>
         </div>
         <button id="modalSalvarBtn">💾 Salvar</button>
