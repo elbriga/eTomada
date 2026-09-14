@@ -18,10 +18,13 @@
 NodoRemoto *nodosRemotos = nullptr;
 static int totNodosRemotos = 0;
 
+// Array para guardar o nome dos novos eTomada encontrados
 struct NovoNodo
 {
   bool ativo;
   char nome[32];
+  IPAddress ip;
+  TipoNodoRemoto tipo;
 };
 static NovoNodo novosNodos[MAX_NOVOS_NODOS] = {};
 
@@ -86,6 +89,34 @@ void nodosRemotosRefresh()
       NULL);
 }
 
+int nodosRemotosGetNovosCount()
+{
+  int ret = 0;
+  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+    if (novosNodos[i].ativo)
+      ret++;
+  return ret;
+}
+
+JsonDocument nodosRemotosGetNovosJSON()
+{
+  JsonDocument doc;
+  JsonArray nodos = doc.to<JsonArray>();
+
+  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+  {
+    if (!novosNodos[i].ativo)
+      continue;
+
+    JsonObject novoJS = nodos.add<JsonObject>();
+    novoJS["id"] = novosNodos[i].nome;
+    novoJS["tipo"] = novosNodos[i].tipo;
+    novoJS["ip"] = novosNodos[i].ip.toString();
+  }
+
+  return doc;
+}
+
 void nodosRemotosLimpaCacheNovosNodos()
 {
   memset(novosNodos, 0, sizeof(novosNodos));
@@ -122,6 +153,14 @@ void nodosRemotosRefreshTask(void *args)
         {
           novosNodos[i].ativo = true;
           strlcpy(novosNodos[i].nome, MDNS.hostname(nd).c_str(), sizeof(novosNodos[i].nome));
+          novosNodos[i].ip = MDNS.IP(nd);
+          String apiScan = MDNS.txt(nd, "api");
+          if (apiScan == "Full")
+            novosNodos[i].tipo = TIPO_NODO_FULL;
+          else if (apiScan == "Lite")
+            novosNodos[i].tipo = TIPO_NODO_LITE;
+          else
+            novosNodos[i].tipo = TIPO_NODO_DESCONHECIDO;
           break;
         }
 
@@ -239,6 +278,24 @@ String nodosRemotosLoad(const char *path)
   doc.clear();
 
   return "OK";
+}
+
+JsonDocument nodosRemotosGetJSON()
+{
+  JsonDocument doc;
+  JsonArray nodos = doc.to<JsonArray>();
+
+  int totNR = nodosRemotosGetCount();
+  for (int n = 0; n < totNR; n++)
+  {
+    NodoRemoto *nodo = nodoRemotoGetPorIndice(n);
+    JsonObject nodoJS = nodos.add<JsonObject>();
+    nodoJS["id"] = nodo->id;
+    nodoJS["tipo"] = nodo->tipo;
+    nodoJS["ip"] = nodo->ip.toString();
+  }
+
+  return doc;
 }
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto)

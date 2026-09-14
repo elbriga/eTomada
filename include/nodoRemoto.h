@@ -28,3 +28,8 @@ void nodoRemotoPrint(NodoRemoto *nodoRemoto);
 
 void nodosRemotosRefresh();
 void nodosRemotosLimpaCacheNovosNodos();
+
+JsonDocument nodosRemotosGetJSON();
+
+int nodosRemotosGetNovosCount();
+JsonDocument nodosRemotosGetNovosJSON();

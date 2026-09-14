@@ -216,6 +216,12 @@ String eTomadaGetSnapshotJSON()
   regrasGetJSONDoc(regrasJS);
   doc["regras"] = regrasJS;
 
+  if (nodosRemotosGetCount())
+    doc["nodosRemotos"] = nodosRemotosGetJSON();
+
+  if (nodosRemotosGetNovosCount())
+    doc["novosNodos"] = nodosRemotosGetNovosJSON();
+
   if (sensorChuvaAtivo())
     doc["horasSemChuva"] = sensorChuvaGetHorasSemChuva();
 
