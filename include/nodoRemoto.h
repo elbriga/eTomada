@@ -17,6 +17,7 @@ struct NodoRemoto
   char id[32];
   TipoNodoRemoto tipo;
   IPAddress ip;
+  char descricao[64];
 };
 
 void nodoRemotoInit();

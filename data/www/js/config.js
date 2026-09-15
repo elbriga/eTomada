@@ -21,13 +21,13 @@ function renderConfig() {
 
   let html = "<h2>Nodos Remotos</h2>";
   eTomadaData.nodosRemotos.forEach((nodo) => {
-    html += `> @ ${nodo.ip} > ${nodo.id} (${nodo.tipo})<br>\n`;
+    html += `<button onclick="nodoInfo('${nodo.id}')">${nodo.ip == "0.0.0.0" ? "🔴" : "🟢"} ${nodo.id} (${nodo.tipo})</button><br>\n`;
   });
 
   if (eTomadaData.novosNodos) {
     html += "<h2>Novos eTomada!</h2>";
     eTomadaData.novosNodos.forEach((nodo) => {
-      html += `> @ ${nodo.ip} > ${nodo.id} (${nodo.tipo})<br>\n`;
+      html += `<button onclick="nodoAdd('${nodo.id}')">🚨 ${nodo.id} (${nodo.tipo})</button><br>\n`;
     });
   }
 

@@ -9,6 +9,7 @@
 #include "nodoRemoto.h"
 #include "recursoRemoto.h"
 #include "util.h"
+#include "apiInterna.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("NODORMT", nivel, fmt, ##__VA_ARGS__)
@@ -125,22 +126,30 @@ void nodosRemotosLimpaCacheNovosNodos()
 void nodosRemotosRefreshTask(void *args)
 {
   bool ehTask = args && !strncmp((char *)args, "TASK", 4);
+  int totNR = nodosRemotosGetCount();
 
   // Escanear
   int totND = MDNS.queryService("etomada", "tcp");
-  int totNR = nodosRemotosGetCount();
+  if (!totND && !ehTask)
+  {
+    // Tentar de novo no boot
+    delay(500);
+    totND = MDNS.queryService("etomada", "tcp");
+  }
 
   // Verificar por novos nodos
   for (int nd = 0; nd < totND; nd++)
   {
-    NodoRemoto *temNodo = nodoRemotoGet(MDNS.hostname(nd).c_str());
+    String novoIDStr = MDNS.hostname(nd);
+    const char *novoID = novoIDStr.c_str();
+    NodoRemoto *temNodo = nodoRemotoGet(novoID);
     if (temNodo)
       continue;
 
     // Ver se já demos msg para esse novo nodo
     bool jaAvisei = false;
     for (int i = 0; i < MAX_NOVOS_NODOS; i++)
-      if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, MDNS.hostname(nd).c_str()))
+      if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, novoID))
       {
         jaAvisei = true;
         break;
@@ -152,14 +161,14 @@ void nodosRemotosRefreshTask(void *args)
         if (!novosNodos[i].ativo)
         {
           novosNodos[i].ativo = true;
-          strlcpy(novosNodos[i].nome, MDNS.hostname(nd).c_str(), sizeof(novosNodos[i].nome));
+          strlcpy(novosNodos[i].nome, novoID, sizeof(novosNodos[i].nome));
           novosNodos[i].ip = MDNS.IP(nd);
           strlcpy(novosNodos[i].tipo, MDNS.txt(nd, "api").c_str(), sizeof(novosNodos[i].tipo));
           break;
         }
 
       logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em [%s]. Avisar na interface",
-            MDNS.hostname(nd).c_str(), MDNS.IP(nd).toString().c_str());
+            novoID, MDNS.IP(nd).toString().c_str());
       // TODO
     }
   }
@@ -195,27 +204,24 @@ void nodosRemotosRefreshTask(void *args)
       logaM(LOG_AVISO, "Nodo Remoto [%s] Novo IP: %s",
             nodoRemoto->id, nodoRemoto->ip.toString().c_str());
     }
-
-    // Verificar o Tipo
-    if (nodoRemoto->tipo == TIPO_NODO_DESCONHECIDO)
-    {
-      TipoNodoRemoto tipoScan = nodoRemotoGetTipoFromStr(apiScan);
-
-      if (tipoScan == TIPO_NODO_DESCONHECIDO)
-        logaM(LOG_CRITICO, "Nodo [%s] nao informa o TIPO!", nodoRemoto->id);
-      else
-      {
-        nodoRemoto->tipo = tipoScan;
-        logaM(LOG_AVISO, "Nodo Remoto [%s] API inicializada: %s",
-              nodoRemoto->id, apiScan);
-      }
-    }
-
-    // Atualizar os RecursoRemoto com o snapshot do discover
-    // JsonDocument *snapshot = discoverGetNodoSnapshot(nodoRemoto->mac);
-
-    // recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
   }
+
+  // TODO :: Fazer esse "pooling"?
+  if (false)
+    for (int nr = 0; nr < totNR; nr++)
+    {
+      NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
+
+      if (!nodoRemoto->ip)
+        continue;
+
+      // Atualizar os Recurso Remoto do nodo
+      JsonDocument snapshot;
+      if (apiInternaGetSnapshot(nodoRemoto, snapshot) != "OK")
+        continue;
+
+      recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
+    }
 
   if (ehTask)
     vTaskDelete(NULL);
@@ -260,7 +266,8 @@ String nodosRemotosLoad(const char *path)
     }
 
     strlcpy(nodo->id, nodoJson["id"].as<const char *>(), sizeof(nodo->id));
-    // strlcpy(nodo->desc, nodoJson["desc"].as<const char *>(), sizeof(nodo->desc));
+    nodo->tipo = nodoRemotoGetTipoFromStr(nodoJson["tipo"].as<String>());
+    strlcpy(nodo->descricao, nodoJson["desc"].as<const char *>(), sizeof(nodo->descricao));
 
     totNodosRemotos++;
   }
@@ -283,6 +290,7 @@ JsonDocument nodosRemotosGetJSON()
     nodoJS["id"] = nodo->id;
     nodoJS["tipo"] = nodoRemotoGetTipoStr(nodo->tipo);
     nodoJS["ip"] = nodo->ip.toString();
+    nodoJS["descricao"] = nodo->descricao;
   }
 
   return doc;

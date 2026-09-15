@@ -2,18 +2,22 @@
   "nodos": [
     {
       "id": "TERRARIO",
+      "tipo": "Full",
       "desc": "Embaixo da Escada"
     },
     {
       "id": "UMID-TERRARIO",
+      "tipo": "Full",
       "desc": "Embaixo da escada na tomada do TERRARIO"
     },
     {
       "id": "DEV",
+      "tipo": "Lite",
       "desc": "8266 sem USB"
     },
     {
       "id": "QUARTO",
+      "tipo": "Lite",
       "desc": "Sensor de Chuva e irrigação da sacada"
     }
   ]
