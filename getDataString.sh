@@ -8,9 +8,19 @@ for ARQ in `ls data/`; do
     if [ -d "data/$ARQ" ]; then
         # 1 nivel de recursao manual
         for ARQ2 in `ls data/$ARQ/`; do
-            echo "/$ARQ/$ARQ2"
-            echo "==="
-            cat "data/$ARQ/$ARQ2"
+            if [ -d "data/$ARQ/$ARQ2" ]; then
+                # 2 nivel de recursao manual
+                for ARQ3 in `ls data/$ARQ/$ARQ2/`; do
+                    echo "/$ARQ/$ARQ2/$ARQ3"
+                    echo "==="
+                    cat "data/$ARQ/$ARQ2/$ARQ3"
+                    echo
+                done
+            else
+                echo "/$ARQ/$ARQ2"
+                echo "==="
+                cat "data/$ARQ/$ARQ2"
+            fi
             echo
         done
     else
