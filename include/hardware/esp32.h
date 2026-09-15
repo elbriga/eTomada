@@ -15,5 +15,9 @@ const HardwareProfile hardwareProfile = {
     .botoes = {
         {255}, // FIM
     },
-    .umidificador = {27, 13}, // Ativando Umidificador
+    .umidificador = {
+        .onPin = 27,
+        .umidPin = 13,
+        .fanPin = 255,
+    }, // Ativando Umidificador sem FAN
 };

@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "2.0.1"
+#define ETOMADA_VERSAO "2.0.2"
 // 1.3.19 - Rede 10 com log server, mac no mDNS,
 // 1.3.20 - endpoint de UPLOAD de Firmware
 // 1.3.21 - sensor de corrent com task propria
@@ -11,6 +11,7 @@
 // 1.3.24 - btn reset
 // 2.0.0  - recovery.cpp
 // 2.0.1  - sensor de Chuva!
+// 2.0.2  - umidificador com ventilador
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -168,7 +169,11 @@ String eTomadaGetSnapshotJSON()
   doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
 
   if (umidificadorAtivo())
+  {
     doc["umidPower"] = umidificadorGetEstado();
+    if (umidificadorFanAtivo())
+      doc["umidFanPower"] = umidificadorFanGetEstado();
+  }
 
   doc["uptime"] = millis();
   time_t now = 0;

@@ -24,5 +24,5 @@ const HardwareProfile hardwareProfile = {
         {17},
         {255}, // FIM
     },
-    .umidificador = {0, 0}, // Ativando Umidificador
+    .umidificador = {.onPin = 255},
 };

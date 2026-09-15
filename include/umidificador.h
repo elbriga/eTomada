@@ -8,9 +8,22 @@ enum UmidificadorEstado
     UMID_POWER5 = 3,
 };
 
+enum UmidificadorFanEstado
+{
+    UMIDFAN_DESLIGADO = 0,
+    UMIDFAN_POWER1 = 1,
+    UMIDFAN_POWER2 = 2,
+    UMIDFAN_POWER3 = 3,
+};
+
 void umidificadorInit();
 bool umidificadorAtivo();
-UmidificadorEstado umidificadorGetEstado();
+bool umidificadorFanAtivo();
+
 void umidificadorSetEstado(UmidificadorEstado estado);
 String umidificadorSetFromJSON(uint8_t *json);
 JsonDocument umidificadorGetJSONDoc();
+
+// TODO :: transformar o umidificador em recurso
+UmidificadorEstado umidificadorGetEstado();
+UmidificadorFanEstado umidificadorFanGetEstado();

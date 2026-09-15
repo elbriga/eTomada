@@ -51,18 +51,18 @@
     "arquivos": {
       "/favicon.ico": "5d3e7c96ac156eeeb5653b6dd9098fc299b2040956d02e17bd07f7dd6bba299b",
       "/favicon.ico.gz": "19272c35bf71a25275e396b8f519884115eaebfc27c5b221b54fb6118c0503c7",
-      "/index.html": "b1d9b0c1f35ecf4153ad34fc10248cf746eb3d6bbe4be08df1ad07b48b32a6a1",
+      "/index.html": "d5cac5a43c6fa594f423770fe6215e83cc84ec1f3d877d968c6d8919becc5637",
       "/portal.html": "509b1e30a57d4a92f3996c4bdf1bb2ede0fa7f5047a73a54cb731f02052a3d49",
-      "/style.css": "2059202d6102f62fa50aa6eaa5ad3ec84a7bac3cc1b777c8935babf355fd4706",
+      "/style.css": "df8dd99f6e54b01d0394da92d61efb0d5cd3b6bd1cfcc50243b14cb8c0977e56",
       "/js/api.js": "bfdc71a7bc780e50c223d539e6e0927f492c9415dbc9abbc06b86dbd5b0272e8",
-      "/js/botoes.js": "67655db515da245326b34acf453d0d42f9d0f15a668b3df9fe6087be2d7c2bd0",
-      "/js/config.js": "fcb004fe43a2cdd6023bf37f087424aa04412b70c511e462e4431230698bd584",
-      "/js/eTomada.js": "bb6951615888ae48872f8c173bc04f73a16a39c912f2c5cad386919d4347bd42",
+      "/js/botoes.js": "85298c8d94df793ee83e3a0b099e71d2873ab962b5a9180c417d1288d404de42",
+      "/js/config.js": "025c93b8556f396e02f7eb8f5ec29ee7eae182fb29278dd9f5615cefd23a8b02",
+      "/js/eTomada.js": "19b3d82f920e4bfa0bc9b7c36f6794c636c003b5d7a8e7cffc1498f994ff24aa",
       "/js/recurso.js": "c8963aacb4dbf8b407196d5a26216d242538e762e1113688666243c31b69e53f",
-      "/js/regras.js": "860930b0f28af356f20cae1999eebb73e12df1545fdcd0e299e30d66012d0d86",
-      "/js/reles.js": "3dbac5942f35a79d05eb6e4ef8d7638876b5b599b74a7460dbbd7b5e0206d66d",
-      "/js/sensores.js": "f74d36c3b1e914a5e8a9fbbcf6cb97aa3796f8730bfdc8f07f9aa0ca03b6e7cc",
-      "/js/umid.js": "59412c7a6890344f06e7a050376356dbc9548b5b7b3903a0bad99bc843708e17",
+      "/js/regras.js": "3728f18fa3a73066553ff8591ae836114f99ac2d4644cbea4f0e119bd4600be6",
+      "/js/reles.js": "d33dce57b659d943fea131eb4330ef73a25930761897c5e69c8c80a6de36dd74",
+      "/js/sensores.js": "61fbf12d946fb7de9fbd4361b292e8e6faa7e5759d543bba182439a1d1fb9524",
+      "/js/umid.js": "8cd23b942f15fea92a04049ccad57f6469b7fa65a1600bcb3d9605acc2885190",
       "/js/util.js": "9407dc12b6a48438151a4a9d364edbc139ed4dff209897daff0efb49c1b7ca50"
     }
   }

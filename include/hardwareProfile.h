@@ -25,6 +25,13 @@ typedef struct
 
 typedef struct
 {
+    int onPin;
+    int umidPin;
+    int fanPin;
+} UmidificadorHW;
+
+typedef struct
+{
     const char *modelo; // Modelo do eTomada - config de reles, sensores e botoes
     const char *board;  // board do esp
     int ledPin;
@@ -32,7 +39,7 @@ typedef struct
     ReleHW reles[MAX_RELES];
     SensorHW sensores[MAX_SENSORES];
     BotaoHW botoes[MAX_BOTOES];
-    uint8_t umidificador[2]; // se os 2 != 0 > eTomada Umidificador!
+    UmidificadorHW umidificador; // se onPin != 255 && umidPin != 255 => eTomada Umidificador!
 } HardwareProfile;
 
 #ifdef HW_LOLIN
