@@ -133,7 +133,7 @@ void nodosRemotosRefreshTask(void *args)
   if (!totND && !ehTask)
   {
     // Tentar de novo no boot
-    delay(500);
+    delay(2500);
     totND = MDNS.queryService("etomada", "tcp");
   }
 
