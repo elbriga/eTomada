@@ -36,13 +36,14 @@ Botao *recursoGetBotao(Recurso *recurso);
 
 // Altera o recurso > acoes
 String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre = true);
-String recursoSet(Recurso *recurso, ComandoRecurso comando, bool enviaMestre = true);
+String recursoSet(Recurso *recurso, String estado, bool enviaMestre = true);
 String recursoCheck(Recurso *recurso, bool estadoDesejado);
 
 // Atualiza o recurso > eventos
 String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento = "");
 
 const char *recursoGetTipoStr(TipoRecurso tipo);
+TipoRecurso recursoGetTipoFromStr(String tipoStr);
 JsonDocument recursoGetJSONDoc(Recurso *r);
 
 JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento);

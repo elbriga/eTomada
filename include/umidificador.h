@@ -21,6 +21,8 @@ bool umidificadorAtivo();
 bool umidificadorFanAtivo();
 
 void umidificadorSetEstado(UmidificadorEstado estado);
+bool umidificadorFanSetEstado(UmidificadorFanEstado estado);
+
 String umidificadorSetFromJSON(uint8_t *json);
 JsonDocument umidificadorGetJSONDoc();
 

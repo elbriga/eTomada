@@ -88,7 +88,7 @@ void httpServerInitModoAPI()
     String msg = recursoSetFromJSON(data, rec, !fromMestre);
 
     JsonDocument resposta;
-    resposta["msg"] = (fromMestre ? "SIM MESTRE:": "") + msg;
+    resposta["msg"] = (fromMestre ? "SIM MESTRE!:": "") + msg;
     if (rec)
       resposta["recurso"] = recursoGetJSONDoc(rec);
     String payload;

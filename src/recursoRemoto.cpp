@@ -80,17 +80,9 @@ String recursosRemotosLoad(const char *path)
     String tipo = rrJson["tipo"].as<String>();
     String nodo = rrJson["nodo"].as<String>();
 
-    if (tipo == "RELE")
-      recursoRemoto->tipo = RECURSO_RELE;
-    else if (tipo == "SENSOR")
-      recursoRemoto->tipo = RECURSO_SENSOR;
-    else if (tipo == "BOTAO")
-      recursoRemoto->tipo = RECURSO_BOTAO;
-    else
-    {
+    recursoRemoto->tipo = recursoGetTipoFromStr(tipo);
+    if (recursoRemoto->tipo == RECURSO_INVALIDO)
       logaM(LOG_CRITICO, ">>> recursoRemoto com tipo [%s] invalido!!", tipo.c_str());
-      recursoRemoto->tipo = RECURSO_INVALIDO;
-    }
 
     strlcpy(recursoRemoto->idLocal, idLocal.c_str(), sizeof(recursoRemoto->idLocal));
     strlcpy(recursoRemoto->idRemoto, idRemoto.c_str(), sizeof(recursoRemoto->idRemoto));

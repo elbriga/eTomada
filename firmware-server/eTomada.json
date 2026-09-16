@@ -51,18 +51,18 @@
     "arquivos": {
       "/favicon.ico": "5d3e7c96ac156eeeb5653b6dd9098fc299b2040956d02e17bd07f7dd6bba299b",
       "/favicon.ico.gz": "19272c35bf71a25275e396b8f519884115eaebfc27c5b221b54fb6118c0503c7",
-      "/index.html": "d5cac5a43c6fa594f423770fe6215e83cc84ec1f3d877d968c6d8919becc5637",
+      "/index.html": "e6f426df86036d2c64222d677ab68f5419e7405b6ddd36f822062ca048f396be",
       "/portal.html": "509b1e30a57d4a92f3996c4bdf1bb2ede0fa7f5047a73a54cb731f02052a3d49",
       "/style.css": "df8dd99f6e54b01d0394da92d61efb0d5cd3b6bd1cfcc50243b14cb8c0977e56",
       "/js/api.js": "bfdc71a7bc780e50c223d539e6e0927f492c9415dbc9abbc06b86dbd5b0272e8",
       "/js/botoes.js": "85298c8d94df793ee83e3a0b099e71d2873ab962b5a9180c417d1288d404de42",
       "/js/config.js": "025c93b8556f396e02f7eb8f5ec29ee7eae182fb29278dd9f5615cefd23a8b02",
-      "/js/eTomada.js": "19b3d82f920e4bfa0bc9b7c36f6794c636c003b5d7a8e7cffc1498f994ff24aa",
+      "/js/eTomada.js": "9e138c5fc25dd6f8ac7d286a59856207ff9193230d0a3463a01a6c73c6d508e9",
       "/js/recurso.js": "c8963aacb4dbf8b407196d5a26216d242538e762e1113688666243c31b69e53f",
       "/js/regras.js": "3728f18fa3a73066553ff8591ae836114f99ac2d4644cbea4f0e119bd4600be6",
       "/js/reles.js": "d33dce57b659d943fea131eb4330ef73a25930761897c5e69c8c80a6de36dd74",
       "/js/sensores.js": "61fbf12d946fb7de9fbd4361b292e8e6faa7e5759d543bba182439a1d1fb9524",
-      "/js/umid.js": "8cd23b942f15fea92a04049ccad57f6469b7fa65a1600bcb3d9605acc2885190",
+      "/js/umid.js": "00615f9a25761b93de8287b1334abb4a0db05b5b34a6e01c6994cbcab2b6a8ba",
       "/js/util.js": "9407dc12b6a48438151a4a9d364edbc139ed4dff209897daff0efb49c1b7ca50"
     }
   }

@@ -76,7 +76,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
             continue;
 
         // Trabalhar em cima de ON e OFF
-        if (regra->acao.comando != COMANDO_ON && regra->acao.comando != COMANDO_OFF)
+        if (regra->acao.comando != "ON" && regra->acao.comando != "OFF")
             continue;
 
         // Verificar se esta regra age em cima do recurso
@@ -92,7 +92,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
             {
                 minutoUltimo = minutoRegra;
                 regraAtivadaOut = regra;
-                *estadoAtualOut = (regra->acao.comando == COMANDO_ON);
+                *estadoAtualOut = (regra->acao.comando == "ON");
             }
         }
     }
@@ -184,7 +184,7 @@ String regraDisparaAcao(Regra *regra)
         if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoTIMER : Nao eh RELE!";
 
-        String ret = recursoSet(rec, COMANDO_ON);
+        String ret = recursoSet(rec, "ON");
         // Agendar o OFF
         // TODO :: no recursoSet cancelar os agendamentos
         agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, rec->id, false);
@@ -421,7 +421,7 @@ String regraGetTxt(Regra *r)
     case ACAO_ESTADO:
         ret += r->acao.recursoID;
         ret += ":";
-        ret += comandoRecursoGetString(r->acao.comando);
+        ret += r->acao.comando;
         break;
 
     case ACAO_TIMER:
@@ -486,7 +486,7 @@ JsonDocument regraGetAcaoJSONDoc(Regra *r)
     {
     case ACAO_ESTADO:
         doc["recurso"] = a->recursoID;
-        doc["comando"] = comandoRecursoGetString(a->comando);
+        doc["comando"] = a->comando;
         break;
 
     case ACAO_TIMER:
@@ -696,8 +696,7 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
             strlcpy(regra->acao.recursoID,
                     doc["acao"]["recurso"].as<const char *>(),
                     sizeof(regra->acao.recursoID));
-            String acaoStr = doc["acao"]["comando"];
-            regra->acao.comando = comandoRecursoGetFromString(acaoStr);
+            regra->acao.comando = doc["acao"]["comando"].as<String>();
         }
         else if (tipoAcaoStr == "TIMER")
         {

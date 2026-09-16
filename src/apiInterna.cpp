@@ -36,21 +36,13 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
   JsonDocument resposta;
   int code = 0;
 
-  String estadoStr =
-      estado == "1" ||
-              estado == "on" ||
-              estado == "ON" ||
-              estado == "true"
-          ? "ON"
-          : "OFF";
-
   switch (nodo->tipo)
   {
   case TIPO_NODO_FULL:
   {
     JsonDocument request;
     request["id"] = String(rr->idRemoto);
-    request["estado"] = estadoStr;
+    request["estado"] = estado;
 
     code = apiInterna(rr->nodo->ip, "setRecurso", "PUT", &request, &resposta);
   }
@@ -58,7 +50,7 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
 
   case TIPO_NODO_LITE:
   {
-    code = apiInterna(rr->nodo->ip, "setRele?estado=" + estadoStr, "GET", nullptr, &resposta);
+    code = apiInterna(rr->nodo->ip, "setRele?estado=" + estado, "GET", nullptr, &resposta);
   }
   break;
 
@@ -88,7 +80,7 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
   }
 
   // TODO localizar a msg para os params locais
-  return resposta["msg"].as<String>();
+  return "API:" + resposta["msg"].as<String>();
 }
 
 String apiInternaEnviaEvento(IPAddress ip, JsonDocument *body)

@@ -154,23 +154,22 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
 
   String id = jsonIN["id"].as<String>();
   String estado = jsonIN["estado"].as<String>();
+  logaM(LOG_CRITICO, ">>>>>>>>>>>>>>> [%s]", estado.c_str());
+  String estadoFan = jsonIN["estadoFan"].as<String>();
   jsonIN.clear();
+
+  if (estadoFan)
+    estado += ":" + estadoFan;
 
   Recurso *recurso = recursoGet(id.c_str());
   if (!recurso)
-    return "Recurso invalido";
-
-  if (recurso->tipo != RECURSO_RELE)
-    return "Recurso nao eh RELE";
-
+    return "Recurso invalidooo!";
   recursoOut = recurso;
 
-  ComandoRecurso comando = comandoRecursoGetFromString(estado);
-
-  return recursoSet(recurso, comando, enviaMestre);
+  return recursoSet(recurso, estado, enviaMestre);
 }
 
-String recursoSetLocked(Recurso *recurso, int estado, bool enviaMestre)
+String recursoSetLocked(Recurso *recurso, String estado, bool enviaMestre)
 {
   if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
     return "recursoSetLocked: Recurso nao eh RELE nem UMID";
@@ -180,19 +179,36 @@ String recursoSetLocked(Recurso *recurso, int estado, bool enviaMestre)
   if (recurso->remoto)
   {
     // API
-    msg = apiInternaSetRecurso(recurso, estado ? "ON" : "OFF");
+    msg = apiInternaSetRecurso(recurso, estado);
   }
   else
   {
-    if (recurso->tipo == RECURSO_RELE)
-      msg = releControlaLocked(recurso->rele, estado);
-    else
+    switch (recurso->tipo)
     {
-      if (estado < UMID_DESLIGADO || estado > UMID_POWER5)
+    case RECURSO_RELE:
+    {
+      msg = releControlaLocked(recurso->rele, estado == "ON");
+    }
+    break;
+
+    case RECURSO_UMIDIFICADOR:
+    {
+      UmidificadorEstado umidEstado = (UmidificadorEstado)estado.toInt();
+      UmidificadorFanEstado estadoFan;
+      if (umidEstado < UMID_DESLIGADO || umidEstado > UMID_POWER5)
         return "resursoSetLocked: Estado UMID invalido";
 
-      msg = estado ? "Umid Ligando no POWER " + estado : "Desliando Umid";
-      umidificadorSetEstado((UmidificadorEstado)estado);
+      int temEstadoFan = estado.indexOf(':');
+      if (temEstadoFan >= 0)
+      {
+        estadoFan = (UmidificadorFanEstado)estado.substring(temEstadoFan + 1).toInt();
+        umidificadorFanSetEstado(estadoFan);
+      }
+      umidificadorSetEstado(umidEstado);
+
+      msg = umidEstado ? "Umid Ligando no POWER " + umidEstado + String(temEstadoFan >= 0 ? " [fan:" + estadoFan + String("]") : "") : "Desligando Umid";
+    }
+    break;
     }
   }
 
@@ -202,47 +218,55 @@ String recursoSetLocked(Recurso *recurso, int estado, bool enviaMestre)
   return msg;
 }
 
-String recursoSet(Recurso *recurso, ComandoRecurso comando, bool enviaMestre)
+String recursoSet(Recurso *recurso, String estado, bool enviaMestre)
 {
+  if (!recurso)
+    return "recursoSet: Recurso NULL!";
+
   if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
     return "recursoSet: Recurso nao eh RELE nem UMID";
 
   MutexLock lock(recursosMutex);
   if (!lock)
-  {
     return "recursoSet: mutex timeout";
-  }
 
-  bool estado;
-  switch (comando)
+  String msg = "OK";
+  switch (recurso->tipo)
   {
-  case COMANDO_TOGGLE:
-  {
-    if (recurso->tipo != RECURSO_RELE)
-      return "recursoSet: Recurso nao eh RELE";
+  case RECURSO_UMIDIFICADOR:
+    msg = recursoSetLocked(recurso, estado, enviaMestre);
+    break;
 
-    Rele *r = recursoGetRele(recurso);
-    if (!r)
-      return "recursoToggle : RELE invalido";
-    estado = !r->estado;
-  }
-  break;
+  case RECURSO_RELE:
+    bool estadoOut;
+    if (estado == "TOGGLE")
+    {
+      Rele *r = recursoGetRele(recurso);
+      if (!r)
+        return "recursoToggle : RELE invalido";
+      estadoOut = !r->estado;
+    }
+    else if (estado == "PULSE")
+    {
+      estadoOut = true;
+    }
+    else
+    {
+      estadoOut = (estado == "ON");
+    }
 
-  case COMANDO_PULSE:
-    estado = true;
+    msg = recursoSetLocked(recurso, estadoOut ? "ON" : "OFF", enviaMestre);
+    // TODO :: como saber se setou ok?
+
+    if (estado == "PULSE")
+    {
+      // Agendar o OFF = pulso de 1000ms
+      agendamentosAdd(AGEND_RECURSO, 1000, recurso->id, false);
+    }
     break;
 
   default:
-    estado = (comando == COMANDO_ON);
-  }
-
-  String msg = recursoSetLocked(recurso, estado, enviaMestre);
-  // TODO :: como saber se setou ok?
-
-  if (comando == COMANDO_PULSE)
-  {
-    // Agendar o OFF = pulso de 1000ms
-    agendamentosAdd(AGEND_RECURSO, 1000, recurso->id, false);
+    msg = "TIPO INVALIDO!!";
   }
 
   return msg;
@@ -261,7 +285,7 @@ String recursoCheck(Recurso *recurso, bool estadoDesejado)
 
   Rele *r = recursoGetRele(recurso);
   if (r->estado != estadoDesejado)
-    return recursoSetLocked(recurso, estadoDesejado, false);
+    return recursoSetLocked(recurso, estadoDesejado ? "ON" : "OFF", false);
 
   return "";
 }
@@ -331,6 +355,20 @@ const char *recursoGetTipoStr(TipoRecurso tipo)
   default:
     return "TIPORECURSODESCONHECIDO";
   }
+}
+
+TipoRecurso recursoGetTipoFromStr(String tipoStr)
+{
+  if (tipoStr == "RELE")
+    return RECURSO_RELE;
+  if (tipoStr == "SENSOR")
+    return RECURSO_SENSOR;
+  if (tipoStr == "BOTAO")
+    return RECURSO_BOTAO;
+  if (tipoStr == "UMIDIFICADOR")
+    return RECURSO_UMIDIFICADOR;
+
+  return RECURSO_INVALIDO;
 }
 
 JsonDocument recursoGetJSONDoc(Recurso *r)

@@ -271,7 +271,7 @@ void eTomadaRoleta()
   for (int r = 0; r < totRelesLocais; r++)
   {
     Recurso *recurso = relesLocais[r];
-    recursoSet(recurso, COMANDO_OFF);
+    recursoSet(recurso, "OFF");
   }
 
   int delay = 25, delta = 2;
@@ -289,8 +289,8 @@ void eTomadaRoleta()
     {
       num = 0;
     }
-    recursoSet(relesLocais[oldNum], COMANDO_OFF);
-    recursoSet(relesLocais[num], COMANDO_ON);
+    recursoSet(relesLocais[oldNum], "OFF");
+    recursoSet(relesLocais[num], "ON");
 
     loop++;
     if (loop > 40)
