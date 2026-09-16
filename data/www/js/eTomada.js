@@ -49,10 +49,9 @@ async function eTomadaRender(snapshot) {
     sensoresRenderFromRecursos();
     relesRenderFromRecursos();
     botoesRenderFromRecursos();
+    umidificadorRenderFromRecursos();
 
     regrasRenderFromSnapshot();
-
-    umidificadorRenderFromSnapshot();
   }
 
   _eTomadaLoading = false;

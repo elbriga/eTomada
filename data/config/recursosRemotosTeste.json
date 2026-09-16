@@ -47,6 +47,18 @@
       "nodo": "QUARTO",
       "idLocal": "AGUAQUARTO",
       "idRemoto": "R1"
+    },
+    {
+      "tipo": "UMIDIFICADOR",
+      "nodo": "UMID-GROW",
+      "idLocal": "U1",
+      "idRemoto": "U1"
+    },
+    {
+      "tipo": "UMIDIFICADOR",
+      "nodo": "UMID-TERRARIO",
+      "idLocal": "U2",
+      "idRemoto": "U1"
     }
   ]
 }

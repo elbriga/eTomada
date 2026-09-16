@@ -8,7 +8,12 @@
     {
       "id": "UMID-TERRARIO",
       "tipo": "Full",
-      "desc": "Embaixo da escada na tomada do TERRARIO"
+      "desc": "Na tomada do TERRARIO"
+    },
+    {
+      "id": "UMID-GROW",
+      "tipo": "Full",
+      "desc": "Umid com Fan do Grow"
     },
     {
       "id": "DEV",
