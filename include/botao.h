@@ -26,6 +26,6 @@ void botoesInit();
 int botoesGetCount();
 Botao *botaoGet(int numBotao);
 
-JsonDocument botaoGetJSONDoc(Botao *s, bool full);
+JsonDocument botaoGetJSONDoc(Recurso *r, bool full);
 
 void botoesAtualiza();

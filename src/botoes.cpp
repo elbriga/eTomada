@@ -86,9 +86,12 @@ Botao *botaoGet(int num)
 }
 
 // REQUIRE recursosMutex locked
-JsonDocument botaoGetJSONDoc(Botao *b, bool full)
+JsonDocument botaoGetJSONDoc(Recurso *r, bool full)
 {
   JsonDocument doc;
+  Botao *b = recursoGetBotao(r);
+  if (!b)
+    return doc;
 
   doc["num"] = b->num;
   // TODO :: nome botao
@@ -102,16 +105,6 @@ JsonDocument botaoGetJSONDoc(Botao *b, bool full)
   }
 
   return doc;
-}
-
-// REQUIRE recursosMutex locked
-String botaoGetJSONString(Botao *b)
-{
-  String out;
-  JsonDocument doc = botaoGetJSONDoc(b, true);
-
-  serializeJson(doc, out);
-  return out;
 }
 
 void botoesAtualiza()

@@ -9,6 +9,7 @@
 #include "rele.h"
 #include "sensor.h"
 #include "botao.h"
+#include "umidificador.h"
 
 #define RECURSOS_REMOTOS_PATH "/recursosRemotos.json"
 
@@ -23,6 +24,7 @@ struct RecursoRemoto
     Rele rele;
     Sensor sensor;
     Botao botao;
+    Umidificador umid;
   };
 };
 

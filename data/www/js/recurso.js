@@ -22,6 +22,10 @@ function recursoAtualiza(recurso) {
       newCard = botaoGetCard(recurso);
       break;
 
+    case "UMIDIFICADOR":
+      newCard = umidGetCard(recurso);
+      break;
+
     default:
       break;
   }

@@ -19,7 +19,7 @@ void relesInit();
 int relesGetCount();
 Rele *releGet(int numRele);
 
-JsonDocument releGetJSONDoc(Rele *r, bool full);
+JsonDocument releGetJSONDoc(Recurso *r, bool full);
 
 String releControlaLocked(Rele *r, bool estado);
 String releControla(Rele *r, bool estado);

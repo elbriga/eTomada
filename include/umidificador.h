@@ -1,5 +1,7 @@
 #pragma once
 
+struct Recurso; // Forward declaration
+
 enum UmidificadorEstado
 {
     UMID_DESLIGADO = 0,
@@ -16,16 +18,20 @@ enum UmidificadorFanEstado
     UMIDFAN_POWER3 = 3,
 };
 
+struct Umidificador
+{
+    UmidificadorEstado estado;
+    UmidificadorFanEstado estadoFan;
+};
+
 void umidificadorInit();
 bool umidificadorAtivo();
 bool umidificadorFanAtivo();
 
-void umidificadorSetEstado(UmidificadorEstado estado);
-bool umidificadorFanSetEstado(UmidificadorFanEstado estado);
+Umidificador *umidificadorGet(); // Somente 1 por eTomada
+
+String umidificadorSetEstado(UmidificadorEstado estado);
+String umidificadorFanSetEstado(UmidificadorFanEstado estado);
 
 String umidificadorSetFromJSON(uint8_t *json);
-JsonDocument umidificadorGetJSONDoc();
-
-// TODO :: transformar o umidificador em recurso
-UmidificadorEstado umidificadorGetEstado();
-UmidificadorFanEstado umidificadorFanGetEstado();
+JsonDocument umidificadorGetJSONDoc(Recurso *r, bool full);

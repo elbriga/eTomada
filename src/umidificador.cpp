@@ -7,6 +7,7 @@
 #include "hardwareProfile.h"
 #include "agendamentos.h"
 #include "util.h"
+#include "recurso.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("UMIDIFC", nivel, fmt, ##__VA_ARGS__)
@@ -14,11 +15,19 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
-static UmidificadorEstado estadoAtual = UMID_DESLIGADO;
-static UmidificadorFanEstado estadoFanAtual = UMIDFAN_DESLIGADO;
+// Apenas 1 por eTomada
+static Umidificador umid = {
+    .estado = UMID_DESLIGADO,
+    .estadoFan = UMIDFAN_DESLIGADO,
+};
 
 void umidificadorSetEstadoTask(void *args);
 void umidSendClick(int pin);
+
+Umidificador *umidificadorGet()
+{
+  return &umid;
+}
 
 void umidificadorInit()
 {
@@ -35,7 +44,11 @@ void umidificadorInit()
 
   UmidificadorEstado ultimoEstado = (UmidificadorEstado)prefs.getUChar("umidPower");
   if (ultimoEstado < UMID_DESLIGADO || ultimoEstado > UMID_POWER5)
-    ultimoEstado = UMID_POWER3; // Default
+    ultimoEstado = UMID_POWER1; // Default
+
+  UmidificadorFanEstado ultimoEstadoFan = (UmidificadorFanEstado)prefs.getUChar("umidFanPower");
+  if (ultimoEstadoFan < UMIDFAN_DESLIGADO || ultimoEstadoFan > UMIDFAN_POWER3)
+    ultimoEstadoFan = UMIDFAN_DESLIGADO; // Default
 
   prefs.end();
 
@@ -49,10 +62,12 @@ void umidificadorInit()
   {
     pinMode(hardwareProfile.umidificador.fanPin, OUTPUT);
     digitalWrite(hardwareProfile.umidificador.fanPin, LOW);
+
+    umidificadorFanSetEstado(ultimoEstadoFan);
   }
 
-  logaM(LOG_NORMAL, "Umidificador Encontrado! Ligar em Power [%d]", ultimoEstado);
-  umidificadorSetEstado(ultimoEstado);
+  String msgInit = umidificadorSetEstado(ultimoEstado);
+  logaM(LOG_NORMAL, "Umidificador Encontrado! [%s]", msgInit.c_str());
 }
 
 bool umidificadorAtivo()
@@ -65,65 +80,41 @@ bool umidificadorFanAtivo()
   return hardwareProfile.umidificador.fanPin != 255;
 }
 
-UmidificadorEstado umidificadorGetEstado()
-{
-  return estadoAtual;
-}
-
-UmidificadorFanEstado umidificadorFanGetEstado()
-{
-  return estadoFanAtual;
-}
-
-bool umidificadorFanSetEstado(UmidificadorFanEstado estado)
+String umidificadorFanSetEstado(UmidificadorFanEstado estado)
 {
   if (!umidificadorFanAtivo())
-  {
-    logaM(LOG_AVISO, "umidificadorFanSetEstado sem Umidificador FAN??");
-    return false;
-  }
+    return "umidificadorFanSetEstado sem Umidificador FAN??";
 
   if (estado < UMIDFAN_DESLIGADO || estado > UMIDFAN_POWER3)
-  {
-    logaM(LOG_AVISO, "umidificadorFanSetEstado Abortando estado invalido [%d]!", estado);
-    return false;
-  }
+    return "umidificadorFanSetEstado Abortando estado invalido";
 
-  estadoFanAtual = estado;
+  umid.estadoFan = estado;
 
-  // Deve chamar umidificadorSetEstado() depois que le estadoFanAtual
-  return true;
+  // Deve chamar umidificadorSetEstado() depois que le estadoFan
+  return "OK";
 }
 
 static volatile bool umidTaskRodando = false;
-void umidificadorSetEstado(UmidificadorEstado estado)
+String umidificadorSetEstado(UmidificadorEstado estado)
 {
   if (!umidificadorAtivo())
-  {
-    logaM(LOG_AVISO, "umidificadorSetEstado sem Umidificador??");
-    return;
-  }
+    return "umidificadorSetEstado sem Umidificador??";
 
   if (umidTaskRodando)
-  {
-    logaM(LOG_AVISO, "umidificadorSetEstado Abortando Task Dupla!");
-    return;
-  }
+    return "umidificadorSetEstado Abortando Task Dupla!";
 
   if (estado < UMID_DESLIGADO || estado > UMID_POWER5)
-  {
-    logaM(LOG_AVISO, "umidificadorSetEstado Abortando estado invalido [%d]!", estado);
-    return;
-  }
+    return "umidificadorSetEstado Abortando estado invalido";
 
   umidTaskRodando = true;
 
-  estadoAtual = estado;
+  umid.estado = estado;
 
   char msgFan[20] = {0};
   if (umidificadorFanAtivo())
-    sprintf(msgFan, "[fan:%d]", estadoFanAtual);
-  logaM(LOG_NORMAL, "Umidificador > Ligar em Power [%d]%s", estadoAtual, msgFan);
+    sprintf(msgFan, "[fan:%d]", umid.estadoFan);
+  String msg = "Umidificador > Ligar em Power [" + String(umid.estado) + "]" + msgFan;
+  logaM(LOG_NORMAL, "%s", msg.c_str());
 
   if (xTaskCreate(
           umidificadorSetEstadoTask,
@@ -136,6 +127,8 @@ void umidificadorSetEstado(UmidificadorEstado estado)
     umidTaskRodando = false;
     logaM(LOG_CRITICO, "Falha ao criar task umidSet");
   }
+
+  return msg;
 }
 
 void umidificadorSetEstadoTask(void *args)
@@ -143,10 +136,10 @@ void umidificadorSetEstadoTask(void *args)
   // Salvar ultimo estado
   Preferences prefs;
   prefs.begin("eTomada", false);
-  if (prefs.getUChar("umidPower") != estadoAtual)
-    prefs.putUChar("umidPower", estadoAtual);
-  if (prefs.getUChar("umidFanPower") != estadoFanAtual)
-    prefs.putUChar("umidFanPower", estadoFanAtual);
+  if (prefs.getUChar("umidPower") != umid.estado)
+    prefs.putUChar("umidPower", umid.estado);
+  if (prefs.getUChar("umidFanPower") != umid.estadoFan)
+    prefs.putUChar("umidFanPower", umid.estadoFan);
   prefs.end();
 
   // TODO :: mudar estado sem desligar
@@ -157,7 +150,7 @@ void umidificadorSetEstadoTask(void *args)
   if (umidificadorFanAtivo())
     digitalWrite(hardwareProfile.umidificador.fanPin, LOW);
 
-  if (estadoAtual > UMID_DESLIGADO || (umidificadorFanAtivo() && estadoFanAtual > UMIDFAN_DESLIGADO))
+  if (umid.estado > UMID_DESLIGADO || (umidificadorFanAtivo() && umid.estadoFan > UMIDFAN_DESLIGADO))
   {
     // Ligar
     vTaskDelay(pdMS_TO_TICKS(100));
@@ -169,10 +162,10 @@ void umidificadorSetEstadoTask(void *args)
   else
     logaM(LOG_NORMAL, "Desligando Umidificador");
 
-  if (estadoAtual > UMID_DESLIGADO)
+  if (umid.estado > UMID_DESLIGADO)
   {
     // Enviar [1-3] clicks no botao de nevoa
-    for (int i = 0; i < estadoAtual; i++)
+    for (int i = 0; i < umid.estado; i++)
     {
       vTaskDelay(pdMS_TO_TICKS(1500));
 
@@ -180,18 +173,18 @@ void umidificadorSetEstadoTask(void *args)
       logaM(LOG_NORMAL, "Click!");
     }
 
-    logaM(LOG_NORMAL, "Umidificador ligado no POWER[%d]", (int)estadoAtual);
+    logaM(LOG_NORMAL, "Umidificador ligado no POWER[%d]", (int)umid.estado);
 
-    int minutosOff = (4 - estadoAtual) * 30; // timer de 30, 60 ou 90 minutos, conforme o power
+    int minutosOff = (4 - umid.estado) * 30; // timer de 30, 60 ou 90 minutos, conforme o power
     agendamentosLimpa(AGEND_RECURSO, "UMIDIFICADOR");
     agendamentosAdd(AGEND_RECURSO, minutosOff * 60 * 1000, "UMIDIFICADOR", 0);
     logaM(LOG_NORMAL, "Agendado desligamento para daqui [%d] minutos", minutosOff);
   }
 
-  if (umidificadorFanAtivo() && estadoFanAtual > UMIDFAN_DESLIGADO)
+  if (umidificadorFanAtivo() && umid.estadoFan > UMIDFAN_DESLIGADO)
   {
     // Enviar [1-3] clicks no botao do ventilador
-    for (int i = 0; i < estadoFanAtual; i++)
+    for (int i = 0; i < umid.estadoFan; i++)
     {
       vTaskDelay(pdMS_TO_TICKS(1500));
 
@@ -199,7 +192,7 @@ void umidificadorSetEstadoTask(void *args)
       logaM(LOG_NORMAL, "Click Fan!");
     }
 
-    logaM(LOG_NORMAL, "Umidificador FAN ligado no POWER[%d]", (int)estadoFanAtual);
+    logaM(LOG_NORMAL, "Umidificador FAN ligado no POWER[%d]", (int)umid.estadoFan);
   }
 
   umidTaskRodando = false;
@@ -228,7 +221,7 @@ String umidificadorSetFromJSON(uint8_t *json)
   int novoEstadoFan = !doc["estadoFan"].isNull() ? doc["estadoFan"].as<int>() : -1;
   doc.clear();
 
-  UmidificadorEstado estadoFinal = estadoAtual;
+  UmidificadorEstado estadoFinal = umid.estado;
   if (novoEstado != -1)
   {
     if (novoEstado < 0 || novoEstado > UMID_POWER5)
@@ -237,25 +230,33 @@ String umidificadorSetFromJSON(uint8_t *json)
       estadoFinal = (UmidificadorEstado)novoEstado;
   }
 
-  bool setFanOK = false;
+  String setFanMsg = "";
   if (novoEstadoFan != -1)
-    setFanOK = umidificadorFanSetEstado((UmidificadorFanEstado)novoEstadoFan);
+  {
+    // Aqui só muda a variavel de controle
+    setFanMsg = umidificadorFanSetEstado((UmidificadorFanEstado)novoEstadoFan);
+    if (setFanMsg != "OK")
+      logaM(LOG_CRITICO, "umidSetFromJson FAN > %s", setFanMsg.c_str());
+  }
 
-  if (novoEstado != -1 || setFanOK)
-    umidificadorSetEstado(estadoFinal);
+  String ret = "Sem Alteração";
+  if (novoEstado != -1 || setFanMsg == "OK")
+    // Aqui faz o acionamento do Umid e do Fan
+    ret = umidificadorSetEstado(estadoFinal);
 
-  return "OK";
+  return ret;
 }
 
-JsonDocument umidificadorGetJSONDoc()
+JsonDocument umidificadorGetJSONDoc(Recurso *r, bool full)
 {
   JsonDocument doc;
 
-  doc["num"] = 1;
-  doc["estado"] = umidificadorGetEstado();
+  Umidificador *u = recursoGetUmidificador(r);
+  if (!u)
+    return doc;
 
-  if (umidificadorFanAtivo())
-    doc["estadoFan"] = umidificadorFanGetEstado();
+  doc["estado"] = u->estado;
+  doc["estadoFan"] = u->estadoFan;
 
   return doc;
 }

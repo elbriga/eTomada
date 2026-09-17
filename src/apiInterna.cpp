@@ -13,7 +13,7 @@
 #define logaM(nivel, fmt, ...) loga("APIINT", nivel, fmt, ##__VA_ARGS__)
 
 #define API_INTERNA_TIMEOUT 1000
-#define API_INTERNA_RESPONSE_MAXLEN 512
+#define API_INTERNA_RESPONSE_MAXLEN 8192
 
 int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
 
@@ -74,9 +74,20 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
   switch (recurso->tipo)
   {
   case RECURSO_RELE:
+  {
     Rele *rele = &rr->rele;
     rele->estado = resposta["recurso"]["device"]["estado"].as<bool>();
-    break;
+  }
+  break;
+
+  case RECURSO_UMIDIFICADOR:
+  {
+    Umidificador *umid = &rr->umid;
+    umid->estado = (UmidificadorEstado)resposta["recurso"]["device"]["estado"].as<int>();
+    umid->estadoFan = (UmidificadorFanEstado)resposta["recurso"]["device"]["estadoFan"].as<int>();
+  }
+
+  break;
   }
 
   // TODO localizar a msg para os params locais

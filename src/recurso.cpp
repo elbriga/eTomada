@@ -76,10 +76,14 @@ void recursosInit()
 
   if (umidificadorAtivo())
   {
-    recursoAdd(prefs, RECURSO_UMIDIFICADOR, "UMIDIFICADOR", false);
+    Recurso *r = recursoAdd(prefs, RECURSO_UMIDIFICADOR, "UMIDIFICADOR", false);
+    r->umid = umidificadorGet();
   }
 
   prefs.end();
+
+  // Inicializa nodo->recursosCount
+  nodoRemotoCalcRecursos();
 
   int tot = recursosGetCount(RECURSO_TODOS);
   for (int r = 0; r < tot; r++)
@@ -154,11 +158,10 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
 
   String id = jsonIN["id"].as<String>();
   String estado = jsonIN["estado"].as<String>();
-  logaM(LOG_CRITICO, ">>>>>>>>>>>>>>> [%s]", estado.c_str());
   String estadoFan = jsonIN["estadoFan"].as<String>();
   jsonIN.clear();
 
-  if (estadoFan)
+  if (estadoFan != "" && estadoFan != "null")
     estado += ":" + estadoFan;
 
   Recurso *recurso = recursoGet(id.c_str());
@@ -204,9 +207,7 @@ String recursoSetLocked(Recurso *recurso, String estado, bool enviaMestre)
         estadoFan = (UmidificadorFanEstado)estado.substring(temEstadoFan + 1).toInt();
         umidificadorFanSetEstado(estadoFan);
       }
-      umidificadorSetEstado(umidEstado);
-
-      msg = umidEstado ? "Umid Ligando no POWER " + umidEstado + String(temEstadoFan >= 0 ? " [fan:" + estadoFan + String("]") : "") : "Desligando Umid";
+      msg = umidificadorSetEstado(umidEstado);
     }
     break;
     }
@@ -340,6 +341,13 @@ Botao *recursoGetBotao(Recurso *recurso)
   return recurso->remoto ? &recurso->recursoRemoto->botao : recurso->botao;
 }
 
+Umidificador *recursoGetUmidificador(Recurso *recurso)
+{
+  if (recurso->tipo != RECURSO_UMIDIFICADOR)
+    return nullptr;
+  return recurso->remoto ? &recurso->recursoRemoto->umid : recurso->umid;
+}
+
 const char *recursoGetTipoStr(TipoRecurso tipo)
 {
   switch (tipo)
@@ -384,7 +392,7 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
   switch (r->tipo)
   {
   case RECURSO_RELE:
-    doc["device"] = releGetJSONDoc(recursoGetRele(r), true);
+    doc["device"] = releGetJSONDoc(r, true);
     break;
 
   case RECURSO_SENSOR:
@@ -392,11 +400,11 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
     break;
 
   case RECURSO_BOTAO:
-    doc["device"] = botaoGetJSONDoc(recursoGetBotao(r), true);
+    doc["device"] = botaoGetJSONDoc(r, true);
     break;
 
   case RECURSO_UMIDIFICADOR:
-    doc["device"] = umidificadorGetJSONDoc();
+    doc["device"] = umidificadorGetJSONDoc(r, true);
     break;
 
   default:
@@ -429,7 +437,8 @@ JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
     device["estado"] = recursoGetBotao(r)->estado;
     break;
   case RECURSO_UMIDIFICADOR:
-    device["estado"] = umidificadorGetEstado();
+    device["estado"] = recursoGetUmidificador(r)->estado;
+    device["estadoFan"] = recursoGetUmidificador(r)->estadoFan;
     break;
   }
 
@@ -464,7 +473,7 @@ String recursoEventoRecebido(uint8_t *json)
       continue;
 
     logaM(LOG_DEBUG0, "Evento recebido! Atualizar recurso [%s]", rec->id);
-    String ret = recursoAtualizaFromJson(rec, doc["device"], doc["evento"].as<String>());
+    String ret = recursoAtualizaFromJson(rec, doc["device"], true);
 
     doc.clear();
     return ret;
@@ -474,7 +483,7 @@ String recursoEventoRecebido(uint8_t *json)
   return "Recurso nao encontrado";
 }
 
-String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento)
+String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEventos)
 {
   MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
   if (!lock)
@@ -490,10 +499,8 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento
     bool novoEstado = doc["estado"].as<bool>();
     bool mudou = (rele->estado != novoEstado);
     rele->estado = novoEstado;
-    if (mudou)
-    {
+    if (enviaEventos && mudou)
       eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
-    }
   }
   break;
 
@@ -510,10 +517,8 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento
     int novoValor = doc["valor"].as<int>();
     bool mudou = (sensor->valor != novoValor);
     sensor->valor = novoValor;
-    if (mudou)
-    {
+    if (enviaEventos && mudou)
       eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
-    }
   }
   break;
 
@@ -523,7 +528,7 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento
     bool novoEstado = doc["estado"].as<bool>();
     bool mudou = (botao->estado != novoEstado);
     botao->estado = novoEstado;
-    if (mudou || evento == "TOGGLE")
+    if (enviaEventos && mudou)
     {
       eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso, true, true);
       eventoPost(EVENTO_TOGGLE, recurso, true, true);
@@ -533,14 +538,28 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento
 
   case RECURSO_UMIDIFICADOR:
   {
+    Umidificador *umid = recursoGetUmidificador(recurso);
     int novoEstado = doc["estado"].as<int>();
+    int novoEstadoFan = doc["estadoFan"].as<int>();
+
+    bool mudou = false;
+
     if (novoEstado >= UMID_DESLIGADO && novoEstado <= UMID_POWER5)
     {
-      bool mudou = (umidificadorGetEstado() != novoEstado);
-      umidificadorSetEstado((UmidificadorEstado)novoEstado);
-      if (mudou)
-        eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
+      if (umid->estado != novoEstado)
+        mudou = true;
+      umid->estado = (UmidificadorEstado)novoEstado;
     }
+
+    if (novoEstadoFan >= UMIDFAN_DESLIGADO && novoEstadoFan <= UMIDFAN_POWER3)
+    {
+      if (umid->estadoFan != novoEstadoFan)
+        mudou = true;
+      umid->estadoFan = (UmidificadorFanEstado)novoEstadoFan;
+    }
+
+    if (enviaEventos && mudou)
+      eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
   }
   break;
   }
@@ -618,6 +637,13 @@ int recursoGetValor(Recurso *r)
   {
     Botao *botao = recursoGetBotao(r);
     return botao->estado;
+  }
+
+  case RECURSO_UMIDIFICADOR:
+  {
+    Umidificador *umid = recursoGetUmidificador(r);
+    return umid->estado;
+    // TODO :: e estadoFan?
   }
 
   default:

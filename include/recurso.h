@@ -21,6 +21,7 @@ struct Recurso
     Rele *rele;
     Sensor *sensor;
     Botao *botao;
+    Umidificador *umid;
     RecursoRemoto *recursoRemoto;
   };
 };
@@ -33,6 +34,7 @@ Recurso *recursoGetPorIndice(int posicao);
 Rele *recursoGetRele(Recurso *r);
 Sensor *recursoGetSensor(Recurso *r);
 Botao *recursoGetBotao(Recurso *recurso);
+Umidificador *recursoGetUmidificador(Recurso *recurso);
 
 // Altera o recurso > acoes
 String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre = true);
@@ -40,7 +42,7 @@ String recursoSet(Recurso *recurso, String estado, bool enviaMestre = true);
 String recursoCheck(Recurso *recurso, bool estadoDesejado);
 
 // Atualiza o recurso > eventos
-String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, String evento = "");
+String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEventos);
 
 const char *recursoGetTipoStr(TipoRecurso tipo);
 TipoRecurso recursoGetTipoFromStr(String tipoStr);

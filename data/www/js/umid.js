@@ -6,7 +6,7 @@ function umidGetCard(recurso) {
     recurso.device.estadoFan == undefined ? -1 : recurso.device.estadoFan;
 
   const card = document.createElement("div");
-  card.id = `umid-01`;
+  card.id = `recursoCard-${recurso.id}`;
   card.className = "card cardUmidificador";
   card.innerHTML = `
 <div class="headerTop">

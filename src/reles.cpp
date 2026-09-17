@@ -70,9 +70,12 @@ Rele *releGet(int numRele)
 }
 
 // REQUIRE releMutex locked
-JsonDocument releGetJSONDoc(Rele *r, bool full)
+JsonDocument releGetJSONDoc(Recurso *rec, bool full)
 {
   JsonDocument doc;
+  Rele *r = recursoGetRele(rec);
+  if (!r)
+    return doc;
 
   doc["num"] = r->num;
 
@@ -83,16 +86,6 @@ JsonDocument releGetJSONDoc(Rele *r, bool full)
   }
 
   return doc;
-}
-
-// REQUIRE releMutex locked
-String releGetJSONString(Rele *r)
-{
-  String out;
-  JsonDocument doc = releGetJSONDoc(r, true);
-
-  serializeJson(doc, out);
-  return out;
 }
 
 String releControla(Rele *rele, bool estado)

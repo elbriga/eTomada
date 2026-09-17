@@ -168,13 +168,6 @@ String eTomadaGetSnapshotJSON()
   doc["ssid"] = WiFi.SSID();
   doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
 
-  if (umidificadorAtivo())
-  {
-    doc["umidPower"] = umidificadorGetEstado();
-    if (umidificadorFanAtivo())
-      doc["umidFanPower"] = umidificadorFanGetEstado();
-  }
-
   doc["uptime"] = millis();
   time_t now = 0;
   time(&now);
