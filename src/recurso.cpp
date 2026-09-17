@@ -161,13 +161,13 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
   String estadoFan = jsonIN["estadoFan"].as<String>();
   jsonIN.clear();
 
-  if (estadoFan != "" && estadoFan != "null")
-    estado += ":" + estadoFan;
-
   Recurso *recurso = recursoGet(id.c_str());
   if (!recurso)
     return "Recurso invalidooo!";
   recursoOut = recurso;
+
+  if (estadoFan != "" && estadoFan != "null")
+    estado += ":" + estadoFan;
 
   return recursoSet(recurso, estado, enviaMestre);
 }
@@ -197,14 +197,13 @@ String recursoSetLocked(Recurso *recurso, String estado, bool enviaMestre)
     case RECURSO_UMIDIFICADOR:
     {
       UmidificadorEstado umidEstado = (UmidificadorEstado)estado.toInt();
-      UmidificadorFanEstado estadoFan;
       if (umidEstado < UMID_DESLIGADO || umidEstado > UMID_POWER5)
         return "resursoSetLocked: Estado UMID invalido";
 
       int temEstadoFan = estado.indexOf(':');
       if (temEstadoFan >= 0)
       {
-        estadoFan = (UmidificadorFanEstado)estado.substring(temEstadoFan + 1).toInt();
+        UmidificadorFanEstado estadoFan = (UmidificadorFanEstado)estado.substring(temEstadoFan + 1).toInt();
         umidificadorFanSetEstado(estadoFan);
       }
       msg = umidificadorSetEstado(umidEstado);
