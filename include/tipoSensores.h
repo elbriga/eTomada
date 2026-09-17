@@ -19,4 +19,3 @@ void tipoSensorInit();
 int tipoSensorGetCount();
 TipoSensor *tipoSensorGet(const char *nome);
 TipoSensor *tipoSensorGetPorIndice(int i);
-JsonDocument tipoSensorGetJSONDoc(TipoSensor *ts);

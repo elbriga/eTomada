@@ -184,21 +184,6 @@ String eTomadaGetSnapshotJSON()
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
   doc["datahorastr"] = formattedTime;
 
-  // TODO :: Enviar estes dados no RECURSO_SENSOR, mesmo que duplicados, assim o sensor fica auto-suficiente e pode ser mostrado no nodo pai
-  {
-    TipoSensor *ts;
-    int totTS = tipoSensorGetCount();
-    JsonArray tipoSensores = doc["tipoSensores"].to<JsonArray>();
-    for (int i = 0; i < totTS; i++)
-    {
-      ts = tipoSensorGetPorIndice(i);
-      if (!ts)
-        continue;
-
-      tipoSensores.add(tipoSensorGetJSONDoc(ts));
-    }
-  }
-
   Recurso *recurso;
   int totRecursos = recursosGetCount();
   JsonArray recursos = doc["recursos"].to<JsonArray>();

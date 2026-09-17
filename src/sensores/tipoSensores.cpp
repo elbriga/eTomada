@@ -86,15 +86,3 @@ TipoSensor *tipoSensorGetPorIndice(int i)
 
   return &sensoresDisponiveis[i];
 }
-
-JsonDocument tipoSensorGetJSONDoc(TipoSensor *ts)
-{
-  JsonDocument doc;
-
-  doc["num"] = ts->num;
-  doc["nome"] = ts->nome;
-  doc["tipo"] = ts->tipo;
-  doc["status"] = ts->status;
-
-  return doc;
-}

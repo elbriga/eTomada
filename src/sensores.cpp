@@ -114,17 +114,13 @@ JsonDocument sensorGetJSONDoc(Recurso *r, bool full)
   {
     doc["pino"] = s->pino;
 
-    if (!strcmp(r->id, "HORASSECO"))
-    {
-      doc["valor"] = sensorChuvaGetHorasSemChuva();
-    }
-    else
-    {
-      doc["valor"] = s->valor;
-      TipoSensor *ts = tipoSensorGet(s->tipo);
-      doc["categoria"] = ts ? ts->tipo : "???";
-      doc["unidade"] = ts ? ts->unidade : "?-?";
-    }
+    int valor = !strcmp(r->id, "HORASSECO") ? sensorChuvaGetHorasSemChuva() : s->valor;
+    doc["valor"] = valor;
+
+    TipoSensor *ts = tipoSensorGet(s->tipo);
+    doc["categoria"] = ts ? ts->tipo : "???";
+    doc["unidade"] = ts ? ts->unidade : "?-?";
+    doc["status"] = ts ? ts->status : "-?-";
   }
 
   return doc;

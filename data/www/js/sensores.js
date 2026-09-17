@@ -4,15 +4,12 @@ function sensorGetCard(recurso) {
   if (recurso.tipo != "SENSOR") return null;
 
   let sensor = recurso.device;
-  let tipoSensor = eTomadaData.tipoSensores.find(
-    (ts) => ts.nome == sensor.tipo,
-  );
-  if (!tipoSensor) {
-    tipoSensor = { status: "TipoSensor Invalido" };
-  }
-  const tsOK = recurso.remoto || tipoSensor.status == "OK";
+  const tsOK = sensor.status == "OK";
   const card = document.createElement("div");
-  const nomeSensor = recurso.id == "HORASSECO" ? "de Chuva" : recurso.id;
+  const nomeSensor =
+    recurso.id == "HORASSECO"
+      ? "de Chuva"
+      : `${recurso.id} de ${sensor.categoria} ${sensor.tipo}`;
   card.id = `recursoCard-${recurso.id}`;
   card.className =
     `card cardSensor${!tsOK ? " cardSensorInativo" : ""}` +
@@ -22,8 +19,6 @@ function sensorGetCard(recurso) {
   <div>
     <div class="medio">
       Sensor ${nomeSensor}
-      ${tipoSensor.nome != undefined ? " - " + tipoSensor.nome : ""}
-      ${tipoSensor.tipo != undefined ? " - " + tipoSensor.tipo : ""}
       ${recurso.remoto ? ` em ${recurso.nodo}` : ""}
     </div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
@@ -37,7 +32,7 @@ ${
         ${!sensor.valor ? "MOLHADO" : `horas sem chuva: ${sensor.valor}`}
       </div>`
     : `<div class="status on">
-        ${!tsOK ? tipoSensor.status : `${sensor.valor} ${sensor.unidade}`}
+        ${!tsOK ? sensor.status : `${sensor.valor} ${sensor.unidade}`}
       </div>`
 }
 `;
