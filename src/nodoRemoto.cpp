@@ -10,6 +10,7 @@
 #include "recursoRemoto.h"
 #include "util.h"
 #include "apiInterna.h"
+#include "recurso.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("NODORMT", nivel, fmt, ##__VA_ARGS__)
@@ -30,7 +31,6 @@ struct NovoNodo
 static NovoNodo novosNodos[MAX_NOVOS_NODOS] = {};
 
 NodoRemoto *nodoRemotoGetPorIndice(int i);
-void nodosRemotosRefreshTask(void *args);
 String nodosRemotosLoad(const char *path);
 
 void nodoRemotoInit()
@@ -48,7 +48,7 @@ void nodoRemotoInit()
   if (msgLoad != "OK")
     logaM(LOG_AVISO, ">> nodosRemotosLoad: [%s]", msgLoad.c_str());
 
-  nodosRemotosRefreshTask(nullptr);
+  // nodosRemotosRefresh();
 
   for (int nr = 0; nr < totNodosRemotos; nr++)
     nodoRemotoPrint(nodoRemotoGetPorIndice(nr));
@@ -76,18 +76,6 @@ NodoRemoto *nodoRemotoGetPorIndice(int i)
   if (i >= 0 && i < nodosRemotosGetCount())
     return &nodosRemotos[i];
   return NULL;
-}
-
-void nodosRemotosRefresh()
-{
-  const char *argsFlagTask = "TASK";
-  xTaskCreate(
-      nodosRemotosRefreshTask,
-      "nrRefresh",
-      4096,
-      (void *)argsFlagTask,
-      1,
-      NULL);
 }
 
 int nodosRemotosGetNovosCount()
@@ -123,19 +111,43 @@ void nodosRemotosLimpaCacheNovosNodos()
   memset(novosNodos, 0, sizeof(novosNodos));
 }
 
+void nodoRemotoCalcRecursos()
+{
+  // Zerar
+  int totNR = nodosRemotosGetCount();
+  for (int n = 0; n < totNR; n++)
+  {
+    NodoRemoto *nr = nodoRemotoGetPorIndice(n);
+    nr->recursosCount = 0;
+  }
+
+  // Contar
+  int totR = recursosGetCount();
+  for (int r = 0; r < totR; r++)
+  {
+    Recurso *rec = recursoGetPorIndice(r);
+    if (!rec->remoto)
+      continue;
+
+    if (!rec->recursoRemoto->nodo)
+    {
+      logaM(LOG_CRITICO, "Recurso Remoto [%s] SEM NODO!!!", rec->id);
+      continue;
+    }
+    rec->recursoRemoto->nodo->recursosCount++;
+  }
+}
+
+/**
+ * Task para buscar o IP dos Nodos Remotos e buscar o snapshot
+ * chamado a cada 10s
+ */
 void nodosRemotosRefreshTask(void *args)
 {
-  bool ehTask = args && !strncmp((char *)args, "TASK", 4);
   int totNR = nodosRemotosGetCount();
 
   // Escanear
   int totND = MDNS.queryService("etomada", "tcp");
-  if (!totND && !ehTask)
-  {
-    // Tentar de novo no boot
-    delay(2500);
-    totND = MDNS.queryService("etomada", "tcp");
-  }
 
   // Verificar por novos nodos
   for (int nd = 0; nd < totND; nd++)
@@ -203,28 +215,44 @@ void nodosRemotosRefreshTask(void *args)
       nodoRemoto->ip = ipScan;
       logaM(LOG_AVISO, "Nodo Remoto [%s] Novo IP: %s",
             nodoRemoto->id, nodoRemoto->ip.toString().c_str());
+
+      if (nodoRemoto->recursosCount > 0)
+        nodoRemoto->refreshPendente = true;
     }
   }
 
-  // TODO :: Fazer esse "pooling"?
-  if (false)
-    for (int nr = 0; nr < totNR; nr++)
-    {
-      NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
+  for (int nr = 0; nr < totNR; nr++)
+  {
+    NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
 
-      if (!nodoRemoto->ip)
-        continue;
+    if (!nodoRemoto->ip)
+      continue;
+    if (!nodoRemoto->refreshPendente)
+      continue;
 
-      // Atualizar os Recurso Remoto do nodo
-      JsonDocument snapshot;
-      if (apiInternaGetSnapshot(nodoRemoto, snapshot) != "OK")
-        continue;
+    // Atualizar os Recurso Remoto do nodo
+    JsonDocument snapshot;
+    if (apiInternaGetSnapshot(nodoRemoto, snapshot) != "OK")
+      continue;
 
-      recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
-    }
+    recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
+    snapshot.clear();
 
-  if (ehTask)
-    vTaskDelete(NULL);
+    nodoRemoto->refreshPendente = false;
+  }
+
+  vTaskDelete(NULL);
+}
+
+void nodosRemotosRefresh()
+{
+  xTaskCreate(
+      nodosRemotosRefreshTask,
+      "nrRefresh",
+      8192 * 2,
+      nullptr,
+      1,
+      NULL);
 }
 
 String nodosRemotosLoad(const char *path)

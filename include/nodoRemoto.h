@@ -18,6 +18,8 @@ struct NodoRemoto
   TipoNodoRemoto tipo;
   IPAddress ip;
   char descricao[64];
+  int recursosCount;
+  bool refreshPendente;
 };
 
 void nodoRemotoInit();
@@ -29,6 +31,7 @@ void nodoRemotoPrint(NodoRemoto *nodoRemoto);
 
 void nodosRemotosRefresh();
 void nodosRemotosLimpaCacheNovosNodos();
+void nodoRemotoCalcRecursos();
 
 JsonDocument nodosRemotosGetJSON();
 

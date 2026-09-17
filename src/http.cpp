@@ -89,7 +89,7 @@ void httpServerInitModoAPI()
 
     JsonDocument resposta;
     resposta["msg"] = (fromMestre ? "SIM MESTRE!:": "") + msg;
-    if (rec)
+    if (fromMestre && rec)
       resposta["recurso"] = recursoGetJSONDoc(rec);
     String payload;
     serializeJson(resposta, payload);
