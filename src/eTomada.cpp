@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "2.0.2"
+#define ETOMADA_VERSAO "2.0.3"
 // 1.3.19 - Rede 10 com log server, mac no mDNS,
 // 1.3.20 - endpoint de UPLOAD de Firmware
 // 1.3.21 - sensor de corrent com task propria
@@ -12,6 +12,7 @@
 // 2.0.0  - recovery.cpp
 // 2.0.1  - sensor de Chuva!
 // 2.0.2  - umidificador com ventilador
+// 2.0.3  - umidificador remoto e refactor del mestre.online
 
 #include "eTomada.h"
 #include "mestre.h"

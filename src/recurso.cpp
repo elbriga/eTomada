@@ -213,7 +213,6 @@ String recursoSetLocked(Recurso *recurso, String estado, bool enviaMestre)
     }
   }
 
-  // anunciar: recursoEnviaSSE(a.recurso); E mestreEnviaEvento(a.recurso);
   eventoPost(EVENTO_VALOR_MUDOU, recurso, true, enviaMestre);
 
   return msg;
@@ -609,10 +608,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   doc.clear();
 
   if (mudou)
-  {
-    // recursoEnviaSSE(recurso) e mestreEnviaEvento(recurso) em outra thread
     eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
-  }
 
   return "OK";
 }

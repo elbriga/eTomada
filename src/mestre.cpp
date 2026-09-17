@@ -38,7 +38,6 @@ void mestreInit()
     if (mestreAtivo())
         logaM(LOG_AVISO, "Nodo Mestre: %s", mestre.deviceID.c_str());
 
-    mestre.online = false;
     mestreCheckOnline();
 }
 
@@ -52,18 +51,11 @@ void mestreCheckOnline()
 
     // Procurar nosso mestre
     IPAddress ipMestre = MDNS.queryHost(mestre.deviceID);
-
-    if (ipMestre != IPAddress())
+    if (ipMestre)
     {
-        if (!mestre.online)
-            logaM(LOG_AVISO, "Mestre Online!");
-        mestre.online = true;
-
         if (mestre.ip != ipMestre)
             logaM(LOG_AVISO, "Mestre novo IP [%s]", ipMestre.toString().c_str());
         mestre.ip = ipMestre;
-
-        mestre.ultimoHeartbeat = millis();
     }
 }
 
@@ -73,13 +65,6 @@ void mestreLoop()
         return;
 
     mestreCheckOnline();
-
-    if (millis() - mestre.ultimoHeartbeat > MESTRE_HEARTBEAT_TIMEOUT)
-    {
-        if (mestre.online)
-            logaM(LOG_AVISO, "Mestre - OFFLINE!");
-        mestre.online = false;
-    }
 }
 
 void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento)
@@ -87,7 +72,7 @@ void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento)
     if (!mestreAtivo()) // Sem mestre retorna
         return;
 
-    if (!mestre.online)
+    if (!mestre.ip)
     {
         logaM(LOG_AVISO, "Mestre OFFLINE. Descartando evento [%d]", tipoEvento);
         return;

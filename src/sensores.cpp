@@ -235,7 +235,6 @@ void sensoresAtualizaTask(void *args)
     if (!strcmp(atual[rs].rec->id, "HORASSECO"))
       continue;
 
-    // recursoEnviaSSE(atual[rb].rec) e mestreEnviaEvento(atual[rb].rec) em outra thread
     eventoPost(EVENTO_VALOR_MUDOU, atual[rs].rec, true, true);
   }
 

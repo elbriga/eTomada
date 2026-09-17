@@ -8,12 +8,10 @@ struct Mestre
 {
     String deviceID;
     IPAddress ip;
-    bool online;
-    uint32_t ultimoHeartbeat;
 };
 
 void mestreInit();
-void mestreCheckOnline();
+void mestreCheckOnline(); // Remover ??
 
 void mestreLoop();
 bool mestreAtivo();
