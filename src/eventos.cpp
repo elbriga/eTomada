@@ -24,14 +24,17 @@ void eventosInit()
     if (!filaEventos)
         utilDIE(">>>>>> ERRO filaEventos!!!!");
 
-    xTaskCreatePinnedToCore(
-        eventosProcessaTask,
-        "filaDeEventos",
-        4096,
-        NULL,
-        1,
-        NULL,
-        1);
+    if (xTaskCreatePinnedToCore(
+            eventosProcessaTask,
+            "filaDeEventos",
+            4096 * 4,
+            NULL,
+            1,
+            NULL,
+            1) != pdTRUE)
+    {
+        utilDIE(">>>>>> ERRO filaEventosTask!!!!");
+    }
 }
 
 const char *eventoGetTipoTxt(TipoEvento tipo)
