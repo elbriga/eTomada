@@ -33,5 +33,4 @@ Umidificador *umidificadorGet(); // Somente 1 por eTomada
 String umidificadorSetEstado(UmidificadorEstado estado);
 String umidificadorFanSetEstado(UmidificadorFanEstado estado);
 
-String umidificadorSetFromJSON(uint8_t *json);
 JsonDocument umidificadorGetJSONDoc(Recurso *r, bool full);

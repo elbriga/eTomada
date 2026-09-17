@@ -211,42 +211,6 @@ void umidSendClick(int pin)
   vTaskDelay(pdMS_TO_TICKS(10));
 }
 
-String umidificadorSetFromJSON(uint8_t *json)
-{
-  JsonDocument doc;
-  if (utilLeJson("umidificadorSetFromJSON", doc, json))
-    return "JSON Invalido";
-
-  int novoEstado = !doc["estado"].isNull() ? doc["estado"].as<int>() : -1;
-  int novoEstadoFan = !doc["estadoFan"].isNull() ? doc["estadoFan"].as<int>() : -1;
-  doc.clear();
-
-  UmidificadorEstado estadoFinal = umid.estado;
-  if (novoEstado != -1)
-  {
-    if (novoEstado < 0 || novoEstado > UMID_POWER5)
-      return "Estado Invalido";
-    else
-      estadoFinal = (UmidificadorEstado)novoEstado;
-  }
-
-  String setFanMsg = "";
-  if (novoEstadoFan != -1)
-  {
-    // Aqui só muda a variavel de controle
-    setFanMsg = umidificadorFanSetEstado((UmidificadorFanEstado)novoEstadoFan);
-    if (setFanMsg != "OK")
-      logaM(LOG_CRITICO, "umidSetFromJson FAN > %s", setFanMsg.c_str());
-  }
-
-  String ret = "Sem Alteração";
-  if (novoEstado != -1 || setFanMsg == "OK")
-    // Aqui faz o acionamento do Umid e do Fan
-    ret = umidificadorSetEstado(estadoFinal);
-
-  return ret;
-}
-
 JsonDocument umidificadorGetJSONDoc(Recurso *r, bool full)
 {
   JsonDocument doc;
