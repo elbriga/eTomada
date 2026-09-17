@@ -113,7 +113,7 @@ String umidificadorSetEstado(UmidificadorEstado estado)
   char msgFan[20] = {0};
   if (umidificadorFanAtivo())
     sprintf(msgFan, "[fan:%d]", umid.estadoFan);
-  String msg = "Umidificador > Ligar em Power [" + String(umid.estado) + "]" + msgFan;
+  String msg = "Umidificador > Set Power [" + String(umid.estado) + "]" + msgFan;
   logaM(LOG_NORMAL, "%s", msg.c_str());
 
   if (xTaskCreate(

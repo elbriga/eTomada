@@ -85,7 +85,7 @@ void logaInit()
     logLevel = LOG_TESTE;
     break;
   default:
-    logaM(LOG_NORMAL, "Nivel de log: NORMAL");
+    logaM(LOG_NORMAL, "Nivel de log: NORMAL!!!");
     logLevel = LOG_NORMAL;
     break;
   }

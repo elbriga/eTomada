@@ -74,7 +74,7 @@ void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento)
 
     if (!mestre.ip)
     {
-        logaM(LOG_AVISO, "Mestre OFFLINE. Descartando evento [%d]", tipoEvento);
+        logaM(LOG_AVISO, "Mestre sem IP! Descartando evento [%d]", tipoEvento);
         return;
     }
 
