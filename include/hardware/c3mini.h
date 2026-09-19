@@ -1,10 +1,11 @@
 #pragma once
 #include "hardwareProfile.h"
 
+// C3-mini Novo Mestre sem recursos locais
 const HardwareProfile hardwareProfile = {
-    .modelo = "UV1",
+    .modelo = "CONTROLE",
     .board = "esp32c3",
-    .ledPin = 255,
+    .ledPin = 8,
     .ledInvertido = false,
     .reles = {
         {255, true}, // FIM
@@ -15,9 +16,5 @@ const HardwareProfile hardwareProfile = {
     .botoes = {
         {255}, // FIM
     },
-    .umidificador = {
-        .onPin = 2,
-        .umidPin = 4,
-        .fanPin = 3,
-    }, // Ativando umid com fan
+    .umidificador = {.onPin = 255}, // Sem
 };
