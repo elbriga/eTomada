@@ -196,11 +196,7 @@ void appLoop()
       ntpSyncOKFlag = false;
       logaM(LOG_AVISO, "NTP SYNC OK. Sync RTC");
       rtcStoreSystemClock();
-      if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
-      {
-        // TODO : verificar se deve rodar sempre
-        regrasBoot();
-      }
+      regrasBoot();
     }
 
 #ifdef TELA_COLORIDA
@@ -235,7 +231,7 @@ void appLoop()
         if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
           nodosRemotosRefresh();
 
-        // Usado no NODO_NO para verificar se o mestre ficou offline
+        // Usado no NODO_NO para verificar o ip do mestre
         if (eTomadaGetModoOperacao() == MODO_NO)
           mestreLoop();
       }
@@ -245,8 +241,7 @@ void appLoop()
       {
         lastMinute = timeinfo.tm_min;
 
-        if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
-          eventoPost(EVENTO_HORARIO, nullptr, false, false);
+        eventoPost(EVENTO_HORARIO, nullptr, false, false);
 
         int dbm = WiFi.RSSI();
         if (dbm < -70)

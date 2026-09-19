@@ -30,9 +30,6 @@ String regraGetCondicaoTxt(Condicao *c);
 
 void regrasInit()
 {
-    if (eTomadaGetModoOperacao() != MODO_CONTROLADOR)
-        return;
-
     if (!LittleFS.exists(REGRAS_PATH))
     {
         if (LittleFS.exists(REGRAS_PATH_DEFAULT))
@@ -213,11 +210,6 @@ int regrasGetValorPorNome(const char *nomeVar)
 
 void regrasProcessaEvento(Evento e)
 {
-    if (eTomadaGetModoOperacao() != MODO_CONTROLADOR)
-    {
-        return;
-    }
-
     String msgDisplay = "";
     for (int r = 0; r < regrasTotal; r++)
     {

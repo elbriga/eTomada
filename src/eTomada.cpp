@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "2.0.3"
+#define ETOMADA_VERSAO "2.0.4"
 // 1.3.19 - Rede 10 com log server, mac no mDNS,
 // 1.3.20 - endpoint de UPLOAD de Firmware
 // 1.3.21 - sensor de corrent com task propria
@@ -102,11 +102,8 @@ void eTomadaInit()
   logaM(LOG_NORMAL, "Inicializando Recursos:");
   recursosInit();
 
-  if (modoOperacao == MODO_CONTROLADOR)
-  {
-    logaM(LOG_NORMAL, "Inicializando Regras:");
-    regrasInit();
-  }
+  logaM(LOG_NORMAL, "Inicializando Regras:");
+  regrasInit();
 
   // Drivers
   sensorChuvaInit();

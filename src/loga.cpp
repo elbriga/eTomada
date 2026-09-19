@@ -299,7 +299,7 @@ static void logRemotoTask(void *param)
 
     if (status != 200)
     {
-      Serial.printf(">>>> POST de log remoto FALHOU! [%d]\n", status);
+      Serial.printf(">>>> POST de log remoto FALHOU! [%d][%s][%s]\n", status, log.modulo, log.message);
 
       String respBody = http.getString(); // TODO :: perigoso!
 

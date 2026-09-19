@@ -2,7 +2,7 @@
 #include "hardwareProfile.h"
 
 const HardwareProfile hardwareProfile = {
-    .modelo = "R8S3B1", // :)
+    .modelo = "R8S3B2",
     .board = "esp32s3",
     .ledPin = 48, // LED RGB
     .ledInvertido = false,
