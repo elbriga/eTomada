@@ -80,6 +80,7 @@ void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento)
 
     JsonDocument payload = recursoGetJSONEvento(rec, tipoEvento);
 
+    // TODO :: mecanismo de re-envio caso falha, limitado a Xs de atraso
     apiInternaEnviaEvento(mestre.ip, &payload);
 }
 
