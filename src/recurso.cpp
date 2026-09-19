@@ -506,11 +506,14 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEve
   {
     Sensor *sensor = recursoGetSensor(recurso);
 
-    // Inicializar sensor?
-    if (!strlen(sensor->tipo) && !doc["tipo"].isNull())
-    {
-      strcpy(sensor->tipo, doc["tipo"].as<const char *>());
-    }
+    if (!doc["tipo"].isNull())
+      strlcpy(sensor->tipo, doc["tipo"].as<const char *>(), sizeof(sensor->tipo));
+    if (!doc["categoria"].isNull())
+      strlcpy(sensor->categoria, doc["categoria"].as<const char *>(), sizeof(sensor->categoria));
+    if (!doc["unidade"].isNull())
+      strlcpy(sensor->unidade, doc["unidade"].as<const char *>(), sizeof(sensor->unidade));
+    if (!doc["status"].isNull())
+      strlcpy(sensor->status, doc["status"].as<const char *>(), sizeof(sensor->status));
 
     int novoValor = doc["valor"].as<int>();
     bool mudou = (sensor->valor != novoValor);

@@ -44,7 +44,7 @@ void sensorChuvaInit()
 {
   memset(&sensorChuva, 0, sizeof(SensorChuva));
 
-  // Verificar se temos um sensor chamado CHUVA!
+  // Verificar se temos um sensor de CHUVA
   Recurso *rChuva = recursoGet("HORASSECO");
   if (!rChuva)
     return;

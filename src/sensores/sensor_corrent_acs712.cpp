@@ -10,6 +10,7 @@ void sensorCorrenteACS712Task(void *args);
 static String sensorCorrenteACS712Init(int pino)
 {
   sensorCorrenteACS712Pino = pino;
+  pinMode(sensorCorrenteACS712Pino, INPUT);
 
   xTaskCreatePinnedToCore(
       sensorCorrenteACS712Task,

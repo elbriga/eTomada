@@ -58,25 +58,18 @@ void sensoresInit()
     sensor->valor = 0;
 
     SensorHW sHW = hardwareProfile.sensores[s - 1];
-    TipoSensor *tipoSensor = NULL;
     if (strlen(sHW.sensorID))
     {
       strcpy(sensor->tipo, sHW.sensorID);
       sensor->pino = sHW.pino;
 
-      tipoSensor = tipoSensorGet(sensor->tipo);
-    }
-
-    if (tipoSensor->status != "OK")
-    {
-      logaM(LOG_CRITICO, "Erro ao inicializar sensor: %s", tipoSensor->status.c_str());
-    }
-    else
-    {
-      // Sensores que usam os ADCs
-      if (!strcmp(sensor->tipo, "ACS712"))
+      TipoSensor *ts = tipoSensorGet(sensor->tipo);
+      if (ts)
       {
-        pinMode(sensor->pino, INPUT);
+        strlcpy(sensor->categoria, ts->tipo, sizeof(sensor->categoria));
+        strlcpy(sensor->unidade, ts->unidade, sizeof(sensor->unidade));
+        // TODO : Atualizar quando o status mudar!
+        strlcpy(sensor->status, ts->status.c_str(), sizeof(sensor->status));
       }
     }
   }
@@ -117,10 +110,9 @@ JsonDocument sensorGetJSONDoc(Recurso *r, bool full)
     int valor = !strcmp(r->id, "HORASSECO") ? sensorChuvaGetHorasSemChuva() : s->valor;
     doc["valor"] = valor;
 
-    TipoSensor *ts = tipoSensorGet(s->tipo);
-    doc["categoria"] = ts ? ts->tipo : "???";
-    doc["unidade"] = ts ? ts->unidade : "?-?";
-    doc["status"] = ts ? ts->status : "-?-";
+    doc["categoria"] = s->categoria;
+    doc["unidade"] = s->unidade;
+    doc["status"] = s->status;
   }
 
   return doc;

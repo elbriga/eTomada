@@ -11,8 +11,12 @@ struct Sensor
 {
     int num;
     int pino;
-    char tipo[32];
     int valor;
+
+    char tipo[32];
+    char unidade[8];
+    char categoria[32];
+    char status[32];
 };
 
 void sensoresInit();
