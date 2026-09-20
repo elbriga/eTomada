@@ -112,6 +112,14 @@ void apiSetRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size
   logaRequest(request, "200 " + atzCfgOK);
 }
 
+void apiDelRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+{
+  String atzCfgOK = regraDeleteFromJSON(data);
+
+  request->send(200, "application/json", "{\"msg\": \"" + atzCfgOK + "\"}");
+  logaRequest(request, "200 " + atzCfgOK);
+}
+
 void apiFactoryReset(AsyncWebServerRequest *request)
 {
   eTomadaFactoryReset();
@@ -131,7 +139,7 @@ void apiResetWifiConfig(AsyncWebServerRequest *request, uint8_t *data, size_t le
   utilRestart("reset WiFi");
 }
 
-void apiSetWifiConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+void apiConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
   JsonDocument doc;
   if (utilLeJson("/api/setWiFiConfig", doc, data))
@@ -141,33 +149,48 @@ void apiSetWifiConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len,
     return;
   }
 
-  String ssid = doc["ssid"] | "";
-  bool temPass = !doc["pass"].isNull();
-  String pass = doc["pass"] | "";
-  doc.clear();
-
-  if (ssid == "")
+  if (!doc["ssid"].isNull())
   {
-    logaRequest(request, "400 SSID Invalido");
-    request->send(400, "application/json", R"({"msg":"SSID Invalido"})");
-    return;
-  }
+    String ssid = doc["ssid"] | "";
+    bool temPass = !doc["pass"].isNull();
+    String pass = doc["pass"] | "";
+    doc.clear();
 
-  if (!temPass)
+    if (ssid == "")
+    {
+      logaRequest(request, "400 SSID Invalido");
+      request->send(400, "application/json", R"({"msg":"SSID Invalido"})");
+      return;
+    }
+
+    if (!temPass)
+    {
+      logaRequest(request, "400 sem PASS");
+      request->send(400, "application/json", R"({"msg":"PASS Invalido"})");
+      return;
+    }
+
+    WiFiSalvaConfig(ssid, pass);
+
+    // TODO :: mudar WiFi sem reiniciar??
+
+    request->send(200, "application/json", R"({"msg":"OK - vou reinicar"})");
+    logaRequest(request, "200 OK");
+
+    utilRestart("WiFi Change");
+  }
+  else if (!doc["mestre"].isNull())
   {
-    logaRequest(request, "400 sem PASS");
-    request->send(400, "application/json", R"({"msg":"PASS Invalido"})");
-    return;
+    String mestre = doc["mestre"] | "";
+
+    Preferences prefs;
+    prefs.begin("eTomada", false);
+    prefs.putString("mestre1", mestre);
+    prefs.end();
+
+    request->send(200, "application/json", R"({"msg":"OK"})");
+    logaRequest(request, "200 OK");
   }
-
-  WiFiSalvaConfig(ssid, pass);
-
-  // TODO :: mudar WiFi sem reiniciar??
-
-  request->send(200, "application/json", R"({"msg":"OK - vou reinicar"})");
-  logaRequest(request, "200 OK");
-
-  utilRestart("WiFi Change");
 }
 
 void apiCheckWWW(AsyncWebServerRequest *request)

@@ -5,4 +5,5 @@
 
 void httpServerInit();
 void httpEnviaSSE(String msg, String tipo);
+void httpEnviaSSERefresh();
 void logaRequest(AsyncWebServerRequest *request, String resultado);
