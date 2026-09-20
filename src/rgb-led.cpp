@@ -58,7 +58,7 @@ static Adafruit_NeoPixel led;
 void rgbLedProcessaTask(void *);
 void rgbLedInit()
 {
-    led = Adafruit_NeoPixel(1, RGB_LED_PIN, NEO_GRB + NEO_KHZ800);
+    led = Adafruit_NeoPixel(1, hardwareProfile.ledPin, NEO_GRB + NEO_KHZ800);
 
     led.begin();
     led.clear();
@@ -88,29 +88,38 @@ void rgbLedOff()
 
 static uint8_t Anim = 0;
 static uint8_t BaseAnim = 0;
-static uint8_t Frame = 0;
+static uint8_t Frame = 100;
 static uint8_t ZeroCount = 0;
 void rgbLedProcessaTask(void *)
 {
     while (true)
     {
+        // Sincronizado com o segundo!
+        struct timeval tv;
+        gettimeofday(&tv, nullptr);
+        int ms = (tv.tv_usec / 1000);
+
+        int newFrame = (ms * animacoes[Anim].totalFrames) / 1000;
+
+        if (newFrame == Frame)
+        {
+            vTaskDelay(pdMS_TO_TICKS(25));
+            continue;
+        }
+
+        int oldFrame = Frame;
+        Frame = newFrame;
+
         rgbLedWrite(animacoes[Anim].frames[Frame].r,
                     animacoes[Anim].frames[Frame].g,
                     animacoes[Anim].frames[Frame].b);
 
-        Frame++;
-        if (Frame >= animacoes[Anim].totalFrames || Frame >= MAX_FRAMES)
+        if (!Frame && oldFrame && ZeroCount)
         {
-            Frame = 0;
-            if (ZeroCount)
-            {
-                ZeroCount--;
-                if (!ZeroCount)
-                    rgbLedSetAnim(BaseAnim);
-            }
+            ZeroCount--;
+            if (!ZeroCount)
+                rgbLedSetAnim(BaseAnim);
         }
-
-        vTaskDelay(pdMS_TO_TICKS(250));
     }
 }
 

@@ -4,8 +4,9 @@
 const HardwareProfile hardwareProfile = {
     .modelo = "R8S3B2",
     .board = "esp32s3",
-    .ledPin = 48, // LED RGB
+    .ledPin = 48,
     .ledInvertido = false,
+    .ledRGB = true,
     .reles = {
         {21, false},
         {47, false},

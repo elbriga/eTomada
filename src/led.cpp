@@ -18,14 +18,17 @@ void ledInit()
   if (!ledAtivo())
     return;
 
-  logaM(LOG_NORMAL, "Ativando led de status em [%d]", hardwareProfile.ledPin);
-  pinMode(hardwareProfile.ledPin, OUTPUT);                             // Led Azul do MINI
-  digitalWrite(hardwareProfile.ledPin, !hardwareProfile.ledInvertido); // No MINI LOW = Aceso!
+  logaM(LOG_NORMAL, "Ativando led%s de status em [%d]", (hardwareProfile.ledRGB ? " RGB" : ""), hardwareProfile.ledPin);
+  pinMode(hardwareProfile.ledPin, OUTPUT);
 
-  if (hardwareProfile.ledPin == RGB_LED_PIN)
+  if (hardwareProfile.ledRGB)
   {
     rgbLedInit();
     rgbLedSetAnim(1); // Azul == Boot!
+  }
+  else
+  {
+    digitalWrite(hardwareProfile.ledPin, !hardwareProfile.ledInvertido);
   }
 }
 
@@ -36,7 +39,7 @@ bool ledAtivo()
 
 void ledProcessa()
 {
-  if (!ledAtivo())
+  if (!ledAtivo() || hardwareProfile.ledRGB)
     return;
 
   // Sincronizado com o segundo!

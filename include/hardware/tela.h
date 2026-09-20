@@ -6,6 +6,7 @@ const HardwareProfile hardwareProfile = {
     .board = "esp32dev",
     .ledPin = 2,
     .ledInvertido = false,
+    .ledRGB = false,
     .reles = {
         {27, false},
         {26, false},

@@ -36,6 +36,7 @@ typedef struct
     const char *board;  // board do esp
     int ledPin;
     bool ledInvertido;
+    bool ledRGB;
     ReleHW reles[MAX_RELES];
     SensorHW sensores[MAX_SENSORES];
     BotaoHW botoes[MAX_BOTOES];

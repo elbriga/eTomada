@@ -1,8 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-#define RGB_LED_PIN 48
-
 #define RGB_LED_ANIM_GREEN 0
 #define RGB_LED_ANIM_BLUE 1
 #define RGB_LED_ANIM_RED 2
