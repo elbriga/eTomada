@@ -63,6 +63,7 @@ struct Regra
     uint16_t id;
     char nome[64];
     bool ativa;
+    bool remover;
 
     Condicao condicao;
     Acao acao;
@@ -76,6 +77,7 @@ int regrasCount();
 void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra = nullptr);
 
 String regraAtualizaFromJSON(uint8_t *json);
+String regraDeleteFromJSON(uint8_t *json);
 
 void regrasProcessaEvento(Evento e);
 

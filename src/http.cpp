@@ -64,6 +64,7 @@ void httpServerInitModoAPI()
   httpServer.on("/api/mock", HTTP_POST, funcVazia, NULL, apiMock);
   httpServer.on("/api/getFile", HTTP_GET, apiGetFile);
   httpServer.on("/api/setRegra", HTTP_PUT, funcVazia, NULL, apiSetRegra);
+  httpServer.on("/api/delRegra", HTTP_PUT, funcVazia, NULL, apiDelRegra);
   httpServer.on("/api/factoryReset", HTTP_POST, apiFactoryReset);
   httpServer.on("/api/resetWiFiConfig", HTTP_POST, funcVazia, NULL, apiResetWifiConfig);
   httpServer.on("/api/setWiFiConfig", HTTP_POST, funcVazia, NULL, apiSetWifiConfig);
@@ -107,6 +108,12 @@ void httpServerInitModoAP()
 void httpEnviaSSE(String msg, String tipo)
 {
   sse.send(msg, tipo);
+}
+
+void httpEnviaSSERefresh()
+{
+  String body = eTomadaGetSnapshotJSON();
+  httpEnviaSSE(body, "sse_snapshot");
 }
 
 void logaRequest(AsyncWebServerRequest *request, String resultado)

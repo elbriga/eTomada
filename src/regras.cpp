@@ -12,6 +12,7 @@
 #include "recurso.h"
 #include "agendamentos.h"
 #include "sensorChuva.h"
+#include "http.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("REGRA", nivel, fmt, ##__VA_ARGS__)
@@ -25,7 +26,7 @@ void regrasBoot();
 String regrasLoad(const char *path);
 String regraGetTxt(Regra *r);
 void regraLoadFromJSON(Regra *regra, JsonObject &doc);
-String regrasPersiste(Regra *novaRegra);
+String regrasPersiste(Regra *novaRegra = nullptr);
 String regraGetCondicaoTxt(Condicao *c);
 
 void regrasInit()
@@ -510,6 +511,9 @@ void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra)
     for (int r = 0; r < totRegras; r++)
     {
         Regra *regra = regraGetPorIndice(r);
+        if (regra->remover)
+            continue;
+
         JsonObject obj = regrasOut.add<JsonObject>();
         regraGetJS(regra, obj);
     }
@@ -564,6 +568,37 @@ String regraAtualizaFromJSON(uint8_t *json)
         if (msg != "OK")
             return msg;
     }
+
+    return "OK";
+}
+
+String regraDeleteFromJSON(uint8_t *json)
+{
+    JsonDocument doc;
+    if (utilLeJson("regraDeleteFromJSON", doc, json))
+        return "JSON Invalido";
+
+    int id = doc["id"].as<int>();
+    doc.clear();
+
+    Regra *regra = regraGet(id);
+    if (!regra)
+        return "Regra Invalida";
+
+    // DEL
+    regra->remover = true;
+
+    // Le regra->remover
+    String msg = regrasPersiste();
+    if (msg != "OK")
+        return msg;
+
+    // Recarregar as regras
+    msg = regrasLoad(REGRAS_PATH);
+    if (msg != "OK")
+        return "regrasLoad():" + msg;
+
+    httpEnviaSSERefresh();
 
     return "OK";
 }
