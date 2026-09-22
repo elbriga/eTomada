@@ -9,6 +9,7 @@
 #include "wifi.h"
 #include "util.h"
 #include "ota.h"
+#include "apiInterna.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("API", nivel, fmt, ##__VA_ARGS__)
@@ -104,6 +105,39 @@ void apiGetFile(AsyncWebServerRequest *request)
   logaRequest(request, "200 OK");
 }
 
+void apiGetNodo(AsyncWebServerRequest *request)
+{
+  JsonDocument ret;
+
+  if (!request->hasParam("id"))
+  {
+    ret["msg"] = "Informe o ID";
+  }
+  else
+  {
+    String id = request->getParam("id")->value();
+    NodoRemoto *nr = nodoRemotoGet(id.c_str());
+    if (!nr)
+    {
+      ret["msg"] = "Nodo Invalido";
+    }
+    else
+    {
+      ret["msg"] = "OK";
+
+      JsonDocument snapshot;
+      apiInternaGetSnapshot(nr, snapshot);
+      ret["nodo"] = snapshot;
+    }
+  }
+
+  int code = ret["msg"] == "OK" ? 200 : 400;
+  String body;
+  serializeJson(ret, body);
+  request->send(code, "application/json", body);
+  logaRequest(request, String(code) + " " + ret["msg"].as<String>());
+}
+
 void apiSetRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
   String atzCfgOK = regraAtualizaFromJSON(data);
@@ -139,7 +173,7 @@ void apiResetWifiConfig(AsyncWebServerRequest *request, uint8_t *data, size_t le
   utilRestart("reset WiFi");
 }
 
-void apiConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
   JsonDocument doc;
   if (utilLeJson("/api/setWiFiConfig", doc, data))
@@ -189,6 +223,11 @@ void apiConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t
     prefs.end();
 
     request->send(200, "application/json", R"({"msg":"OK"})");
+    logaRequest(request, "200 OK");
+  }
+  else
+  {
+    request->send(200, "application/json", R"({"msg":"config quem?"})");
     logaRequest(request, "200 OK");
   }
 }

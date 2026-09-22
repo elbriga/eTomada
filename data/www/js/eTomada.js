@@ -2,7 +2,7 @@ const API_BASE =
   window.location.host == "localhost" ||
   window.location.host == "pi" ||
   window.location.host == "pi.casa"
-    ? "http://10.0.2.200" // IP do ESP quando o frontend esta hospedado para DEV
+    ? "http://10.0.2.1" // IP do ESP quando o frontend esta hospedado para DEV
     : window.location.origin;
 
 let eTomadaData = null;
