@@ -64,6 +64,8 @@ void httpServerInitModoAPI()
   httpServer.on("/api/mock", HTTP_POST, funcVazia, NULL, apiMock);
   httpServer.on("/api/getFile", HTTP_GET, apiGetFile);
   httpServer.on("/api/getNodo", HTTP_GET, apiGetNodo);
+  httpServer.on("/api/addNodo", HTTP_PUT, funcVazia, NULL, apiAddNodo);
+  httpServer.on("/api/delNodo", HTTP_PUT, funcVazia, NULL, apiDelNodo);
   httpServer.on("/api/setRegra", HTTP_PUT, funcVazia, NULL, apiSetRegra);
   httpServer.on("/api/delRegra", HTTP_PUT, funcVazia, NULL, apiDelRegra);
   httpServer.on("/api/factoryReset", HTTP_POST, apiFactoryReset);

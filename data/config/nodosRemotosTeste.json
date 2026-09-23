@@ -3,27 +3,27 @@
     {
       "id": "TERRARIO",
       "tipo": "Full",
-      "desc": "Embaixo da Escada"
+      "descricao": "Embaixo da Escada"
     },
     {
       "id": "UMID-TERRARIO",
       "tipo": "Full",
-      "desc": "Na tomada do TERRARIO"
+      "descricao": "Na tomada do TERRARIO"
     },
     {
       "id": "UMID-GROW",
       "tipo": "Full",
-      "desc": "Umid com Fan do Grow"
+      "descricao": "Umid com Fan do Grow"
     },
     {
       "id": "DEV",
       "tipo": "Lite",
-      "desc": "8266 sem USB"
+      "descricao": "8266 sem USB"
     },
     {
       "id": "QUARTO",
       "tipo": "Lite",
-      "desc": "Sensor de Chuva e irrigação da sacada"
+      "descricao": "Sensor de Chuva e irrigação da sacada"
     }
   ]
 }

@@ -48,8 +48,6 @@ void nodoRemotoInit()
   if (msgLoad != "OK")
     logaM(LOG_AVISO, ">> nodosRemotosLoad: [%s]", msgLoad.c_str());
 
-  // nodosRemotosRefresh();
-
   for (int nr = 0; nr < totNodosRemotos; nr++)
     nodoRemotoPrint(nodoRemotoGetPorIndice(nr));
 }
@@ -295,7 +293,7 @@ String nodosRemotosLoad(const char *path)
 
     strlcpy(nodo->id, nodoJson["id"].as<const char *>(), sizeof(nodo->id));
     nodo->tipo = nodoRemotoGetTipoFromStr(nodoJson["tipo"].as<String>());
-    strlcpy(nodo->descricao, nodoJson["desc"].as<const char *>(), sizeof(nodo->descricao));
+    strlcpy(nodo->descricao, nodoJson["descricao"].as<const char *>(), sizeof(nodo->descricao));
 
     totNodosRemotos++;
   }
@@ -305,7 +303,17 @@ String nodosRemotosLoad(const char *path)
   return "OK";
 }
 
-JsonDocument nodosRemotosGetJSON()
+void nodoRemotoGetJS(NodoRemoto *nodo, JsonObject &obj, bool full)
+{
+  obj["id"] = nodo->id;
+  obj["tipo"] = nodoRemotoGetTipoStr(nodo->tipo);
+  obj["descricao"] = nodo->descricao;
+
+  if (full)
+    obj["ip"] = nodo->ip.toString();
+}
+
+JsonDocument nodosRemotosGetJSON(NodoRemoto *novoNodo, bool full)
 {
   JsonDocument doc;
   JsonArray nodos = doc.to<JsonArray>();
@@ -314,14 +322,139 @@ JsonDocument nodosRemotosGetJSON()
   for (int n = 0; n < totNR; n++)
   {
     NodoRemoto *nodo = nodoRemotoGetPorIndice(n);
+    if (nodo->del)
+      continue;
     JsonObject nodoJS = nodos.add<JsonObject>();
-    nodoJS["id"] = nodo->id;
-    nodoJS["tipo"] = nodoRemotoGetTipoStr(nodo->tipo);
-    nodoJS["ip"] = nodo->ip.toString();
-    nodoJS["descricao"] = nodo->descricao;
+    nodoRemotoGetJS(nodo, nodoJS, full);
+  }
+
+  if (novoNodo)
+  {
+    // Add!
+    JsonObject obj = doc.add<JsonObject>();
+    nodoRemotoGetJS(novoNodo, obj, full);
   }
 
   return doc;
+}
+
+String nodosRemotosPersiste(NodoRemoto *novoNodo)
+{
+  File file = LittleFS.open("/nodosRemotos.json.tmp", "w");
+  if (!file)
+    return "ERRO: ao abrir nodosRemotos.json.tmp para escrita";
+
+  JsonDocument nodos = nodosRemotosGetJSON(novoNodo, false);
+
+  JsonDocument doc;
+  doc["nodos"] = nodos;
+
+  String out;
+  if (!serializeJson(doc, out))
+  {
+    file.close();
+    return "ERRO: nodosRemotosPersiste:serializeJson";
+  }
+
+  logaM(LOG_AVISO, "nodosRemotosPersiste: [%s]", out.c_str());
+
+  if (!serializeJson(doc, file))
+  {
+    file.close();
+    return "ERRO: nodosRemotosPersiste:serializeJson FILE";
+  }
+
+  file.close();
+
+  LittleFS.rename("/nodosRemotos.json.tmp", "/nodosRemotos.json");
+
+  logaM(LOG_NORMAL, "Nodos Remotos Salvos!");
+
+  return "OK";
+}
+
+static void nodosRemotosReInit()
+{
+  if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
+  {
+    nodosRemotosLimpaCacheNovosNodos();
+
+    logaM(LOG_NORMAL, "(RE)Inicializando Nodos Remotos:");
+    nodoRemotoInit();
+
+    logaM(LOG_NORMAL, "(RE)Inicializando Recursos Remotos:");
+    recursosRemotosInit();
+
+    nodosRemotosRefresh();
+  }
+}
+
+String nodoRemotoAddFromJSON(uint8_t *json)
+{
+  JsonDocument doc;
+  if (utilLeJson("nodoRemotoAddFromJSON", doc, json))
+    return "JSON Invalido";
+
+  if (doc["id"].isNull())
+    return "Informe o ID!";
+
+  const char *novoID = doc["id"].as<const char *>();
+  NodoRemoto novoNodo = {};
+  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+    if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, novoID))
+    {
+      novoNodo.ip = novosNodos[i].ip;
+      novoNodo.tipo = nodoRemotoGetTipoFromStr(novosNodos[i].tipo);
+      break;
+    }
+
+  if (!novoNodo.ip)
+    return "Novo Nodo não encontrado!";
+
+  strlcpy(novoNodo.id, novoID, sizeof(novoNodo.id));
+  if (!doc["desc"].isNull())
+    strlcpy(novoNodo.descricao, doc["desc"].as<const char *>(), sizeof(novoNodo.descricao));
+  else
+    strlcpy(novoNodo.descricao, novoID, sizeof(novoNodo.descricao));
+
+  doc.clear();
+
+  String msg = nodosRemotosPersiste(&novoNodo);
+  if (msg != "OK")
+    return msg;
+
+  nodosRemotosReInit();
+
+  return "OK";
+}
+
+String nodoRemotoDelFromJSON(uint8_t *json)
+{
+  JsonDocument doc;
+  if (utilLeJson("nodoRemotoDelFromJSON", doc, json))
+    return "JSON Invalido";
+
+  if (doc["id"].isNull())
+  {
+    doc.clear();
+    return "Informe o ID!";
+  }
+
+  NodoRemoto *nodoDel = nodoRemotoGet(doc["id"].as<const char *>());
+  doc.clear();
+
+  if (!nodoDel)
+    return "Nodo Inválido";
+
+  nodoDel->del = true;
+
+  String msg = nodosRemotosPersiste(nullptr);
+  if (msg != "OK")
+    return msg;
+
+  nodosRemotosReInit();
+
+  return "OK";
 }
 
 const char *nodoRemotoGetTipoStr(TipoNodoRemoto tipo)

@@ -20,6 +20,7 @@ struct NodoRemoto
   char descricao[64];
   int recursosCount;
   bool refreshPendente;
+  bool del;
 };
 
 void nodoRemotoInit();
@@ -33,7 +34,9 @@ void nodosRemotosRefresh();
 void nodosRemotosLimpaCacheNovosNodos();
 void nodoRemotoCalcRecursos();
 
-JsonDocument nodosRemotosGetJSON();
+JsonDocument nodosRemotosGetJSON(NodoRemoto *novoNodo = nullptr, bool full = true);
+String nodoRemotoAddFromJSON(uint8_t *json);
+String nodoRemotoDelFromJSON(uint8_t *json);
 
 int nodosRemotosGetNovosCount();
 JsonDocument nodosRemotosGetNovosJSON();

@@ -104,6 +104,7 @@ async function nodoInfo(id) {
   <button class="editBtn" onclick="closeCard('${card.id}')">✖</button>
 </div>
 <div id="${nodoInfoID}"></div>
+<button onclick="nodoDel('${id}')">🔴 Remover</button>
 `;
 
   const painel = document.getElementById("painel");
@@ -142,9 +143,20 @@ async function nodoAdd(id) {
   const desc = document.getElementById(`descNodo-${id}`).value;
 
   try {
-    await eTomadaAPI("addNodo", { id: id, desc: desc }, "PUT");
-    closeCard(id);
+    let msg = await eTomadaAPI("addNodo", { id: id, desc: desc }, "PUT");
+    if (msg.msg != undefined && msg.msg != "OK") statusMsg(msg.msg);
+    closeCard("nodoCard-" + id);
   } catch (e) {
     statusMsg("Erro ao adicionar nodo: " + e);
+  }
+}
+
+async function nodoDel(id) {
+  try {
+    let msg = await eTomadaAPI("delNodo", { id: id }, "PUT");
+    if (msg.msg != undefined && msg.msg != "OK") statusMsg(msg.msg);
+    closeCard("nodoCard-" + id);
+  } catch (e) {
+    statusMsg("Erro ao remover nodo: " + e);
   }
 }

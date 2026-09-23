@@ -105,6 +105,22 @@ void apiGetFile(AsyncWebServerRequest *request)
   logaRequest(request, "200 OK");
 }
 
+void apiAddNodo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+{
+  String addNodoOK = nodoRemotoAddFromJSON(data);
+
+  request->send(200, "application/json", "{\"msg\": \"" + addNodoOK + "\"}");
+  logaRequest(request, "200 " + addNodoOK);
+}
+
+void apiDelNodo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+{
+  String delNodoOK = nodoRemotoDelFromJSON(data);
+
+  request->send(200, "application/json", "{\"msg\": \"" + delNodoOK + "\"}");
+  logaRequest(request, "200 " + delNodoOK);
+}
+
 void apiGetNodo(AsyncWebServerRequest *request)
 {
   JsonDocument ret;
