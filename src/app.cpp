@@ -16,7 +16,7 @@
 #include "util.h"
 #include "rtc-hw.h"
 #include "hardwareProfile.h"
-#include "rgb-led.h"
+#include "led.h"
 #include "ota.h"
 #include "memoria.h"
 #include "shaCache.h"
@@ -159,7 +159,7 @@ void appInit()
   lastMinute = timeinfo.tm_min; // TODO :: Esse impede que dispare um EVENTO_HORARIO para o minuto atual do boot
   lastHour = timeinfo.tm_hour; */
 
-  rgbLedSetAnim(0); // Verde == Loop
+  ledSetAnim(RGB_LED_ANIM_GREEN); // Verde == Loop
 }
 
 static uint32_t tsMdnsChuncho = 0;
@@ -221,7 +221,7 @@ void appLoop()
 
       if (!wifiModoAP)
       {
-        rgbLedSetAnim(3, 3);
+        ledSetAnim(RGB_LED_ANIM_PISCA, 3);
         sensoresAtualiza();
 
         // Keepalive para a interface web
