@@ -36,7 +36,6 @@ String nodosRemotosLoad(const char *path);
 void nodoRemotoInit()
 {
   totNodosRemotos = 0;
-  nodosRemotos = nullptr;
 
   if (!LittleFS.exists(NODOS_PATH))
   {

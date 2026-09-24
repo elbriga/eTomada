@@ -26,7 +26,6 @@ JsonObject recursoRemotoGetFromSnapshot(JsonDocument &snapshot, String id);
 void recursosRemotosInit()
 {
   totRecursosRemotos = 0;
-  recursosRemotos = nullptr;
 
   if (!LittleFS.exists(RECURSOS_REMOTOS_PATH))
   {
