@@ -134,22 +134,18 @@ void sensoresAtualiza()
       NULL);
 }
 
-// struct temporaria
-struct AtualizacaoSensor
-{
-  Recurso *rec;
-  int novoValor;
-  bool mudou;
-  // bool desativar;
-};
-
-static AtualizacaoSensor atual[MAX_SENSORES] = {};
 void sensoresAtualizaTask(void *args)
 {
-  memset(atual, 0, sizeof(atual));
+  sensorChuvaLoop();
 
-  // Ler os sensores sem o Lock
-  int totSensoresOK = 0;
+  MutexLock lock(recursosMutex);
+  if (!lock)
+  {
+    logaM(LOG_CRITICO, "sensorAtualiza: mutex timeout");
+    vTaskDelete(NULL);
+    return;
+  }
+
   int totRecursos = recursosGetCount();
   for (int r = 0; r < totRecursos; r++)
   {
@@ -172,58 +168,19 @@ void sensoresAtualizaTask(void *args)
       logaM(LOG_CRITICO, "Sensor[%s] tipo invalido [%p]", rec->id, sensor->tipo);
       continue;
     }
-
-    int idx = totSensoresOK++;
-    atual[idx].rec = rec;
-
-    /* removido sensor->!ativo!
-        if (tipoSensor->status != "OK")
-        {
-          logaM(LOG_AVISO, "Sensor[%s] tipo inativo [%s]. Inativando sensor", rec->id, tipoSensor->nome);
-          atual[idx].desativar = true;
-          continue;
-        }
-    */
-
-    atual[idx].novoValor = tipoSensor->lerSensor(sensor);
-  }
-
-  // Atualizar os recrusos SENSORES COM LOCK
-  {
-    MutexLock lock(recursosMutex);
-    if (!lock)
+    if (tipoSensor->status != "OK")
     {
-      logaM(LOG_CRITICO, "sensorAtualiza: mutex timeout");
-      vTaskDelete(NULL);
-      return;
-    }
-
-    for (int rs = 0; rs < totSensoresOK; rs++)
-    {
-      Recurso *rec = atual[rs].rec;
-      Sensor *sensor = rec->sensor;
-
-      /*if (atual[rs].desativar)
-      {
-        sensor->!ativo! = false;
-        continue;
-      }*/
-
-      atual[rs].mudou = (sensor->valor != atual[rs].novoValor);
-      sensor->valor = atual[rs].novoValor;
-    }
-  }
-
-  // Enviar os Eventos e os SSE sem Lock
-  for (int rs = 0; rs < totSensoresOK; rs++)
-  {
-    if (!atual[rs].mudou)
+      logaM(LOG_AVISO, "Sensor[%s] tipo inativo [%s]. Pulando sensor", rec->id, tipoSensor->nome);
       continue;
+    }
+
+    int novoValor = tipoSensor->lerSensor(sensor);
+    bool mudou = (sensor->valor != novoValor);
+    sensor->valor = novoValor;
+
     // Sensor de chuva tem os eventos postados pelo modulo sensorChuva.cpp
-    if (!strcmp(atual[rs].rec->id, "HORASSECO"))
-      continue;
-
-    eventoPost(EVENTO_VALOR_MUDOU, atual[rs].rec->id, true, true);
+    if (mudou && strcmp(rec->id, "HORASSECO"))
+      eventoPost(EVENTO_VALOR_MUDOU, rec->id, true, true);
   }
 
   vTaskDelete(NULL);
