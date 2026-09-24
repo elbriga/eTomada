@@ -481,6 +481,10 @@ String recursoEventoRecebido(uint8_t *json)
   if (utilLeJson("recursoEventoRecebido", doc, json))
     return "JSON Invalido";
 
+  MutexLock lock(recursosMutex);
+  if (!lock)
+    return "Erro de LOCK!";
+
   NodoRemoto *nr = nodoRemotoGet(doc["origem"].as<const char *>());
   if (!nr)
   {
@@ -501,7 +505,7 @@ String recursoEventoRecebido(uint8_t *json)
       continue;
 
     logaM(LOG_DEBUG0, "Evento recebido! Atualizar recurso [%s]", rec->id);
-    String ret = recursoAtualizaFromJson(rec, doc["device"], true);
+    String ret = recursoAtualizaFromJsonLocked(rec, doc["device"], true);
 
     doc.clear();
     return ret;
@@ -511,14 +515,8 @@ String recursoEventoRecebido(uint8_t *json)
   return "Recurso nao encontrado";
 }
 
-String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEventos)
+String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool enviaEventos)
 {
-  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
-  if (!lock)
-  {
-    return "mutex timeout";
-  }
-
   switch (recurso->tipo)
   {
   case RECURSO_RELE:
@@ -604,19 +602,19 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   if (utilLeJson("recursoAtualizaConfigFromJSON", doc, json))
     return "JSON Invalido";
 
+  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
+  if (!lock)
+  {
+    doc.clear();
+    return "mutex timeout";
+  }
+
   String id = doc["id"];
   Recurso *recurso = recursoGet(id.c_str());
   if (!recurso)
   {
     doc.clear();
     return "Recurso Invalido";
-  }
-
-  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
-  if (!lock)
-  {
-    doc.clear();
-    return "mutex timeout";
   }
 
   bool mudou = false;

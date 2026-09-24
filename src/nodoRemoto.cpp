@@ -11,6 +11,7 @@
 #include "util.h"
 #include "apiInterna.h"
 #include "recurso.h"
+#include "mutex.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("NODORMT", nivel, fmt, ##__VA_ARGS__)
@@ -141,8 +142,6 @@ void nodoRemotoCalcRecursos()
  */
 void nodosRemotosRefreshTask(void *args)
 {
-  int totNR = nodosRemotosGetCount();
-
   // Escanear
   int totND = MDNS.queryService("etomada", "tcp");
 
@@ -183,59 +182,103 @@ void nodosRemotosRefreshTask(void *args)
   }
 
   // Atualizar os nodos encontrados
-  for (int nr = 0; nr < totNR; nr++)
   {
-    NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
-
-    // Buscar este deviceID nos nodos escaneados
-    IPAddress ipScan;
-    String apiScan;
-    for (int nd = 0; nd < totND; nd++)
+    MutexLock lock(recursosMutex);
+    if (!lock)
     {
-      if (!strcmp(MDNS.hostname(nd).c_str(), nodoRemoto->id))
+      logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de Mutex!");
+      return;
+    }
+
+    int totNR = nodosRemotosGetCount();
+    for (int nr = 0; nr < totNR; nr++)
+    {
+      NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
+
+      // Buscar este deviceID nos nodos escaneados
+      IPAddress ipScan;
+      String apiScan;
+      for (int nd = 0; nd < totND; nd++)
       {
-        ipScan = MDNS.IP(nd);
-        apiScan = MDNS.txt(nd, "api");
-        break;
+        if (!strcmp(MDNS.hostname(nd).c_str(), nodoRemoto->id))
+        {
+          ipScan = MDNS.IP(nd);
+          apiScan = MDNS.txt(nd, "api");
+          break;
+        }
       }
-    }
 
-    if (!ipScan)
-    {
-      // TODO ? msg?
-      continue;
-    }
+      if (!ipScan)
+      {
+        // TODO ? msg?
+        continue;
+      }
 
-    // Verificar o IP
-    if (nodoRemoto->ip != ipScan)
-    {
-      nodoRemoto->ip = ipScan;
-      logaM(LOG_AVISO, "Nodo Remoto [%s] Novo IP: %s",
-            nodoRemoto->id, nodoRemoto->ip.toString().c_str());
+      // Verificar o IP
+      if (nodoRemoto->ip != ipScan)
+      {
+        nodoRemoto->ip = ipScan;
+        logaM(LOG_AVISO, "Nodo Remoto [%s] Novo IP: %s",
+              nodoRemoto->id, nodoRemoto->ip.toString().c_str());
 
-      if (nodoRemoto->recursosCount > 0)
-        nodoRemoto->refreshPendente = true;
+        if (nodoRemoto->recursosCount > 0)
+          nodoRemoto->refreshPendente = true;
+      }
     }
   }
 
-  for (int nr = 0; nr < totNR; nr++)
+  for (int nr = 0;; nr++)
   {
-    NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
+    char nodoID[32];
+    IPAddress ip;
+    bool refreshPendente;
 
-    if (!nodoRemoto->ip)
-      continue;
-    if (!nodoRemoto->refreshPendente)
+    // Pegar os dados com LOCK
+    {
+      MutexLock lock(recursosMutex);
+      if (!lock)
+      {
+        logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 2!");
+        continue;
+      }
+
+      NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
+      if (!nodoRemoto)
+        break;
+
+      strlcpy(nodoID, nodoRemoto->id, sizeof(nodoID));
+      ip = nodoRemoto->ip;
+      refreshPendente = nodoRemoto->refreshPendente;
+    }
+
+    if (!ip || !refreshPendente)
       continue;
 
-    // Atualizar os Recurso Remoto do nodo
+    // HTTP sem o LOCK
     JsonDocument snapshot;
-    if (apiInternaGetSnapshot(nodoRemoto, snapshot) != "OK")
+    if (apiInternaGetSnapshot(ip, snapshot) != "OK")
+    {
+      snapshot.clear();
       continue;
+    }
 
-    recursoRemotoAtualizaFromSnapshot(nodoRemoto, snapshot);
+    {
+      MutexLock lock(recursosMutex);
+      if (!lock)
+      {
+        logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 3!");
+        continue;
+      }
+
+      NodoRemoto *nodoRemoto = nodoRemotoGet(nodoID);
+      if (!nodoRemoto)
+        continue;
+
+      recursoRemotoAtualizaFromSnapshotLocked(nodoRemoto, snapshot);
+      nodoRemoto->refreshPendente = false;
+    }
+
     snapshot.clear();
-
-    nodoRemoto->refreshPendente = false;
   }
 
   vTaskDelete(NULL);
@@ -337,7 +380,7 @@ JsonDocument nodosRemotosGetJSON(NodoRemoto *novoNodo, bool full)
   return doc;
 }
 
-String nodosRemotosPersiste(NodoRemoto *novoNodo)
+String nodosRemotosPersisteLocked(NodoRemoto *novoNodo)
 {
   File file = LittleFS.open("/nodosRemotos.json.tmp", "w");
   if (!file)
@@ -402,9 +445,15 @@ String nodoRemotoAddFromJSON(uint8_t *json)
 
   doc.clear();
 
-  String msg = nodosRemotosPersiste(&novoNodo);
-  if (msg != "OK")
-    return msg;
+  {
+    MutexLock lock(recursosMutex);
+    if (!lock)
+      return "nodoRemotoAddFromJSON :: Lock!";
+
+    String msg = nodosRemotosPersisteLocked(&novoNodo);
+    if (msg != "OK")
+      return msg;
+  }
 
   // ReLoad config
   eTomadaLoadConfig();
@@ -424,26 +473,32 @@ String nodoRemotoDelFromJSON(uint8_t *json)
     return "Informe o ID!";
   }
 
-  NodoRemoto *nodoDel = nodoRemotoGet(doc["id"].as<const char *>());
-  doc.clear();
-
-  if (!nodoDel)
-    return "Nodo Inválido";
-
-  // Verificar se temos RecursoRemoto que são desse nodo
-  int totRR = recursosRemotosGetCount();
-  for (int i = 0; i < totRR; i++)
   {
-    RecursoRemoto *rr = recursoRemotoGetPorIndice(i);
-    if (rr->nodo == nodoDel)
-      return "Nodo em Uso";
+    MutexLock lock(recursosMutex);
+    if (!lock)
+      return "nodoRemotoDelFromJSON :: Lock!";
+
+    NodoRemoto *nodoDel = nodoRemotoGet(doc["id"].as<const char *>());
+    doc.clear();
+
+    if (!nodoDel)
+      return "Nodo Inválido";
+
+    // Verificar se temos RecursoRemoto que são desse nodo
+    int totRR = recursosRemotosGetCount();
+    for (int i = 0; i < totRR; i++)
+    {
+      RecursoRemoto *rr = recursoRemotoGetPorIndice(i);
+      if (rr->nodo == nodoDel)
+        return "Nodo em Uso";
+    }
+
+    nodoDel->del = true;
+
+    String msg = nodosRemotosPersisteLocked(nullptr);
+    if (msg != "OK")
+      return msg;
   }
-
-  nodoDel->del = true;
-
-  String msg = nodosRemotosPersiste(nullptr);
-  if (msg != "OK")
-    return msg;
 
   // ReLoad config
   eTomadaLoadConfig();

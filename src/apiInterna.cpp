@@ -17,9 +17,9 @@
 
 int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
 
-String apiInternaGetSnapshot(NodoRemoto *nodo, JsonDocument &doc)
+String apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc)
 {
-  int code = apiInterna(nodo->ip, "getSnapshot", "GET", nullptr, &doc);
+  int code = apiInterna(ip, "getSnapshot", "GET", nullptr, &doc);
 
   return code == 200 ? "OK" : String(code);
 }

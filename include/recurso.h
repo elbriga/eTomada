@@ -44,7 +44,7 @@ String recursoSet(Recurso *recurso, String estado, bool enviaMestre = true);
 String recursoCheckLocked(Recurso *recurso, bool estadoDesejado);
 
 // Atualiza o recurso > eventos
-String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEventos);
+String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool enviaEventos);
 
 bool recursoSetNextID(RecursoRemoto *rr);
 const char *recursoGetTipoStr(TipoRecurso tipo);

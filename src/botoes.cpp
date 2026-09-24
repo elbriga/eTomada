@@ -17,17 +17,9 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
-static Botao botoes[MAX_BOTOES];
+static Botao botoes[MAX_BOTOES]; // TODO :: Alocação dinamica
 
 static int boardBotaoCount = 0;
-
-// struct temporaria usada em botoesAtualiza
-struct AtualizacaoBotao
-{
-  Recurso *rec;
-  int novoEstado;
-  uint32_t duracaoAnterior;
-};
 
 void botoesInit()
 {
@@ -112,12 +104,14 @@ void botoesAtualiza()
   if (!botoesGetCount())
     return;
 
-  int totRecursos = recursosGetCount();
+  MutexLock lock(recursosMutex);
+  if (!lock)
+  {
+    logaM(LOG_CRITICO, "botoesAtualiza: mutex timeout");
+    return;
+  }
 
-  AtualizacaoBotao atual[MAX_BOTOES] = {};
-
-  // Ler os botoes sem o Lock
-  int totBotoesParaAtualizar = 0;
+  int totRecursos = recursosGetCount(), duracaoAnterior;
   for (int r = 0; r < totRecursos; r++)
   {
     Recurso *rec = recursoGetPorIndice(r);
@@ -143,55 +137,30 @@ void botoesAtualiza()
       botao->ultimoEstado = leitura;
     }
 
-    if (millis() - botao->debounce > BOTAO_DEBOUCE_TIME_MS)
+    uint32_t agora = millis();
+    if (agora - botao->debounce > BOTAO_DEBOUCE_TIME_MS)
     {
       if (botao->estado != leitura)
       {
         logaM(LOG_NORMAL, "BOTAO [%s][%s] MUDOU [%s]",
               rec->id, rec->nome, leitura ? "ON" : "OFF");
-        int idx = totBotoesParaAtualizar++;
-        atual[idx].rec = rec;
-        atual[idx].novoEstado = leitura;
+
+        duracaoAnterior = agora - botao->ultimoToggle;
+
+        botao->estado = leitura;
+        botao->ultimoToggle = agora;
+
+        eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, rec->id, true, true);
+        eventoPost(EVENTO_TOGGLE, rec->id, true, true);
+
+        // Detectar CLICK, em qualquer direcao
+        if (duracaoAnterior < BOTAO_TEMPO_CLICK_MS)
+          eventoPost(EVENTO_CLICK, rec->id, true, true);
+
+        // Detectar longPress e bigPress ao desligar
+        if (!botao->estado && duracaoAnterior > BOTAO_TEMPO_LONGP_MS)
+          eventoPost(EVENTO_LONG_PRESS, rec->id, true, true);
       }
     }
-  }
-
-  // Atualizar os recursos BOTAO COM LOCK
-  {
-    MutexLock lock(recursosMutex);
-    if (!lock)
-    {
-      logaM(LOG_CRITICO, "botoesAtualiza: mutex timeout");
-      return;
-    }
-
-    uint32_t agora = millis();
-    for (int rb = 0; rb < totBotoesParaAtualizar; rb++)
-    {
-      Recurso *rec = atual[rb].rec;
-      Botao *botao = rec->botao;
-
-      botao->estado = atual[rb].novoEstado;
-      atual[rb].duracaoAnterior = agora - botao->ultimoToggle;
-      botao->ultimoToggle = agora;
-    }
-  }
-
-  // Enviar os Eventos e os SSE sem Lock
-  for (int rb = 0; rb < totBotoesParaAtualizar; rb++)
-  {
-    Recurso *rec = atual[rb].rec;
-    Botao *botao = rec->botao;
-
-    eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, atual[rb].rec->id, true, true);
-    eventoPost(EVENTO_TOGGLE, atual[rb].rec->id, true, true);
-
-    // Detectar CLICK, em qualquer direcao
-    if (atual[rb].duracaoAnterior < BOTAO_TEMPO_CLICK_MS)
-      eventoPost(EVENTO_CLICK, atual[rb].rec->id, true, true);
-
-    // Detectar longPress e bigPress ao desligar
-    if (!botao->estado && atual[rb].duracaoAnterior > BOTAO_TEMPO_LONGP_MS)
-      eventoPost(EVENTO_LONG_PRESS, atual[rb].rec->id, true, true);
   }
 }

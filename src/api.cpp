@@ -142,7 +142,7 @@ void apiGetNodo(AsyncWebServerRequest *request)
       ret["msg"] = "OK";
 
       JsonDocument snapshot;
-      apiInternaGetSnapshot(nr, snapshot);
+      apiInternaGetSnapshot(nr->ip, snapshot);
       ret["nodo"] = snapshot;
     }
   }

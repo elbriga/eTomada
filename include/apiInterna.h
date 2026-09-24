@@ -3,6 +3,6 @@
 
 #include "nodoRemoto.h"
 
-String apiInternaGetSnapshot(NodoRemoto *nodo, JsonDocument &doc);
+String apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc);
 String apiInternaSetRecurso(Recurso *recurso, String estado);
 String apiInternaEnviaEvento(IPAddress ip, JsonDocument *body);

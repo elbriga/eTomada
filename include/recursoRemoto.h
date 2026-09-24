@@ -37,7 +37,7 @@ RecursoRemoto *recursoRemotoGetPorIndice(int i);
 String recursoRemotoAddFromJSON(uint8_t *json);
 String recursoRemotoDelFromJSON(uint8_t *json);
 
-void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument &snapshot);
-String recursosRemotosPersiste(RecursoRemoto *novoRecurso = nullptr);
+void recursoRemotoAtualizaFromSnapshotLocked(NodoRemoto *nodo, JsonDocument &snapshot);
+String recursosRemotosPersisteLocked(RecursoRemoto *novoRecurso = nullptr);
 
 void recursoRemotoPrint(RecursoRemoto *r);

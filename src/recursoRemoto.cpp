@@ -13,6 +13,7 @@
 #include "util.h"
 #include "apiInterna.h"
 #include "regras.h"
+#include "mutex.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RECRMT", nivel, fmt, ##__VA_ARGS__)
@@ -155,7 +156,7 @@ JsonObject recursoRemotoGetFromSnapshot(JsonDocument &snapshot, String id)
   return recurso;
 }
 
-void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument &snapshot)
+void recursoRemotoAtualizaFromSnapshotLocked(NodoRemoto *nodo, JsonDocument &snapshot)
 {
   Recurso *recurso;
   RecursoRemoto *rr;
@@ -179,7 +180,7 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument &snapshot)
     if (!deviceRemoto)
       continue;
 
-    recursoAtualizaFromJson(recurso, deviceRemoto, false);
+    recursoAtualizaFromJsonLocked(recurso, deviceRemoto, false);
   }
 }
 
@@ -196,31 +197,37 @@ String recursoRemotoAddFromJSON(uint8_t *json)
   String idRemotoStr = doc["idRemoto"];
   doc.clear();
 
-  NodoRemoto *nodo = nodoRemotoGet(nodoStr.c_str());
-  if (!nodo)
-    return "Nodo não encontrado!";
+  {
+    MutexLock lock(recursosMutex);
+    if (!lock)
+      return "recursoRemotoAddFromJSON :: Lock!";
 
-  JsonDocument snapshot;
-  apiInternaGetSnapshot(nodo, snapshot);
+    NodoRemoto *nodo = nodoRemotoGet(nodoStr.c_str());
+    if (!nodo)
+      return "Nodo não encontrado!";
 
-  JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, idRemotoStr);
-  if (!cacheRR)
-    return "Recurso não encontrado!";
+    JsonDocument snapshot;
+    apiInternaGetSnapshot(nodo->ip, snapshot); // TODO :: remover de dentro do LOCK!
 
-  RecursoRemoto rr;
+    JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, idRemotoStr);
+    if (!cacheRR)
+      return "Recurso não encontrado!";
 
-  rr.tipo = recursoGetTipoFromStr(cacheRR["tipo"]);
-  if (!recursoSetNextID(&rr))
-    return "Erro ao setar idLocal!";
+    RecursoRemoto rr;
 
-  rr.nodo = nodo;
-  strlcpy(rr.idRemoto, idRemotoStr.c_str(), sizeof(rr.idRemoto));
+    rr.tipo = recursoGetTipoFromStr(cacheRR["tipo"]);
+    if (!recursoSetNextID(&rr))
+      return "Erro ao setar idLocal!";
 
-  doc.clear();
+    rr.nodo = nodo;
+    strlcpy(rr.idRemoto, idRemotoStr.c_str(), sizeof(rr.idRemoto));
 
-  String msg = recursosRemotosPersiste(&rr);
-  if (msg != "OK")
-    return msg;
+    doc.clear();
+
+    String msg = recursosRemotosPersisteLocked(&rr);
+    if (msg != "OK")
+      return msg;
+  }
 
   // ReLoad config
   eTomadaLoadConfig();
@@ -241,23 +248,29 @@ String recursoRemotoDelFromJSON(uint8_t *json)
   String idRemotoStr = doc["idRemoto"];
   doc.clear();
 
-  NodoRemoto *nodo = nodoRemotoGet(nodoStr.c_str());
-  if (!nodo)
-    return "Nodo não encontrado!";
+  {
+    MutexLock lock(recursosMutex);
+    if (!lock)
+      return "recursoRemotoDelFromJSON :: Lock!";
 
-  RecursoRemoto *rr = recursoRemotoGetPorIDRemoto(nodo, idRemotoStr.c_str());
-  if (!rr)
-    return "RecursoRemoto não encontrado!";
+    NodoRemoto *nodo = nodoRemotoGet(nodoStr.c_str());
+    if (!nodo)
+      return "Nodo não encontrado!";
 
-  Regra *regra = regraGetPorRecurso(rr->idLocal);
-  if (regra)
-    return "Recurso em uso pela regra " + String(regra->id);
+    RecursoRemoto *rr = recursoRemotoGetPorIDRemoto(nodo, idRemotoStr.c_str());
+    if (!rr)
+      return "RecursoRemoto não encontrado!";
 
-  rr->del = true;
+    Regra *regra = regraGetPorRecurso(rr->idLocal);
+    if (regra)
+      return "Recurso em uso pela regra " + String(regra->id);
 
-  String msg = recursosRemotosPersiste();
-  if (msg != "OK")
-    return msg;
+    rr->del = true;
+
+    String msg = recursosRemotosPersisteLocked();
+    if (msg != "OK")
+      return msg;
+  }
 
   // ReLoad config
   eTomadaLoadConfig();
@@ -298,7 +311,7 @@ JsonDocument recursosRemotosGetJSON(RecursoRemoto *novo)
   return doc;
 }
 
-String recursosRemotosPersiste(RecursoRemoto *novoRecurso)
+String recursosRemotosPersisteLocked(RecursoRemoto *novoRecurso)
 {
   File file = LittleFS.open("/recursosRemotos.json.tmp", "w");
   if (!file)
