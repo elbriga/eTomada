@@ -112,7 +112,7 @@ void botoesAtualiza()
   if (!botoesGetCount())
     return;
 
-  int totRecursos = recursosGetCount(RECURSO_TODOS);
+  int totRecursos = recursosGetCount();
 
   AtualizacaoBotao atual[MAX_BOTOES] = {};
 
@@ -183,15 +183,15 @@ void botoesAtualiza()
     Recurso *rec = atual[rb].rec;
     Botao *botao = rec->botao;
 
-    eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, atual[rb].rec, true, true);
-    eventoPost(EVENTO_TOGGLE, atual[rb].rec, true, true);
+    eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, atual[rb].rec->id, true, true);
+    eventoPost(EVENTO_TOGGLE, atual[rb].rec->id, true, true);
 
     // Detectar CLICK, em qualquer direcao
     if (atual[rb].duracaoAnterior < BOTAO_TEMPO_CLICK_MS)
-      eventoPost(EVENTO_CLICK, atual[rb].rec, true, true);
+      eventoPost(EVENTO_CLICK, atual[rb].rec->id, true, true);
 
     // Detectar longPress e bigPress ao desligar
     if (!botao->estado && atual[rb].duracaoAnterior > BOTAO_TEMPO_LONGP_MS)
-      eventoPost(EVENTO_LONG_PRESS, atual[rb].rec, true, true);
+      eventoPost(EVENTO_LONG_PRESS, atual[rb].rec->id, true, true);
   }
 }

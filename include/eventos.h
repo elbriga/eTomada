@@ -25,14 +25,14 @@ enum TipoEvento
 typedef struct
 {
     TipoEvento tipo;
-    Recurso *recurso;
+    char recursoID[32];
     bool enviaSSE;
     bool enviaMestre;
 } Evento;
 
 void eventosInit();
 void eventoPost(TipoEvento tipo,
-                Recurso *recurso,
+                const char *recursoID,
                 bool enviaSSE,
                 bool enviaMestre);
 

@@ -65,7 +65,7 @@ const char *eventoGetTipoTxt(TipoEvento tipo)
 }
 
 void eventoPost(TipoEvento tipo,
-                Recurso *recurso,
+                const char *recursoID,
                 bool enviaSSE,
                 bool enviaMestre)
 {
@@ -77,10 +77,13 @@ void eventoPost(TipoEvento tipo,
 
     Evento evento = {
         .tipo = tipo,
-        .recurso = recurso,
+        .recursoID = {0},
         .enviaSSE = enviaSSE,
         .enviaMestre = enviaMestre,
     };
+    if (recursoID)
+        strlcpy(evento.recursoID, recursoID, sizeof(evento.recursoID));
+
     xQueueSend(filaEventos, &evento, 0);
 }
 
@@ -102,16 +105,16 @@ String eventoMockFromJson(uint8_t *json)
         return "Acao invalida";
     }
 
-    Recurso *recurso = recursoGet(doc["recursoID"].as<const char *>());
-
+    String recursoID = doc["recursoID"];
     doc.clear();
 
+    Recurso *recurso = recursoGet(recursoID.c_str());
     if (!recurso)
         return "Recurso Invalido";
     if (recurso->tipo != RECURSO_BOTAO)
         return "Recurso nao eh botao!";
 
-    eventoPost(mock, recurso, false, true);
+    eventoPost(mock, recursoID.c_str(), false, true);
 
     return "OK";
 }
@@ -124,7 +127,7 @@ void eventosProcessaTask(void *)
     {
         if (xQueueReceive(filaEventos, &evento, portMAX_DELAY))
         {
-            Recurso *recurso = evento.recurso;
+            Recurso *recurso = recursoGet(evento.recursoID);
             bool processaRegras = true;
             bool atualiza = true;
 
