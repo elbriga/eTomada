@@ -13,6 +13,7 @@
 // 2.0.1  - sensor de Chuva!
 // 2.0.2  - umidificador com ventilador
 // 2.0.3  - umidificador remoto e refactor del mestre.online
+// 2.0.4  - Interface de gerenciamento de Nodos e Recursos
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -90,23 +91,41 @@ void eTomadaInit()
   sensoresInit();
   botoesInit();
 
+  eTomadaLoadConfig();
+}
+
+static int configLoadCount = 0;
+void eTomadaLoadConfig()
+{
+  MutexLock lock(recursosMutex);
+  if (!lock)
+  {
+    logaM(LOG_CRITICO, "eTomadaLoadConfig: mutex timeout");
+    logaM(LOG_CRITICO, "eTomadaLoadConfig: mutex timeout");
+    logaM(LOG_CRITICO, "eTomadaLoadConfig: mutex timeout");
+  }
+
+  logaM(LOG_AVISO, ">>> eTomadaLoadConfig[%d]", configLoadCount);
+
   if (modoOperacao == MODO_CONTROLADOR) // TODO :: MODO_NO com nodo/recurso remoto?
   {
-    logaM(LOG_NORMAL, "Inicializando Nodos Remotos:");
+    logaM(LOG_NORMAL, "%sInicializando Nodos Remotos:", configLoadCount ? "(RE)" : "");
     nodoRemotoInit();
 
-    logaM(LOG_NORMAL, "Inicializando Recursos Remotos:");
+    logaM(LOG_NORMAL, "%sInicializando Recursos Remotos:", configLoadCount ? "(RE)" : "");
     recursosRemotosInit();
   }
 
-  logaM(LOG_NORMAL, "Inicializando Recursos:");
+  logaM(LOG_NORMAL, "%sInicializando Recursos:", configLoadCount ? "(RE)" : "");
   recursosInit();
 
-  logaM(LOG_NORMAL, "Inicializando Regras:");
+  logaM(LOG_NORMAL, "%sInicializando Regras:", configLoadCount ? "(RE)" : "");
   regrasInit();
 
   // Drivers
   sensorChuvaInit();
+
+  configLoadCount++;
 }
 
 ModoOperacao eTomadaGetModoOperacao()

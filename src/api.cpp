@@ -154,6 +154,26 @@ void apiGetNodo(AsyncWebServerRequest *request)
   logaRequest(request, String(code) + " " + ret["msg"].as<String>());
 }
 
+void apiAddRecursoRemoto(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+{
+  String addRROK = recursoRemotoAddFromJSON(data);
+
+  vTaskDelay(pdMS_TO_TICKS(1500)); // Dar tempo do refresh mDNS
+
+  request->send(200, "application/json", "{\"msg\": \"" + addRROK + "\"}");
+  logaRequest(request, "200 " + addRROK);
+}
+
+void apiDelRecursoRemoto(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+{
+  String delRROK = recursoRemotoDelFromJSON(data);
+
+  vTaskDelay(pdMS_TO_TICKS(1500)); // Dar tempo do refresh mDNS
+
+  request->send(200, "application/json", "{\"msg\": \"" + delRROK + "\"}");
+  logaRequest(request, "200 " + delRROK);
+}
+
 void apiSetRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
   String atzCfgOK = regraAtualizaFromJSON(data);

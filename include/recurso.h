@@ -27,7 +27,9 @@ struct Recurso
 };
 
 void recursosInit();
-int recursosGetCount(TipoRecurso tipo = RECURSO_TODOS);
+int recursosGetCount();
+void recursosZera();
+
 Recurso *recursoGet(const char *id);
 Recurso *recursoGetPorIndice(int posicao);
 
@@ -44,6 +46,7 @@ String recursoCheck(Recurso *recurso, bool estadoDesejado);
 // Atualiza o recurso > eventos
 String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEventos);
 
+bool recursoSetNextID(RecursoRemoto *rr);
 const char *recursoGetTipoStr(TipoRecurso tipo);
 TipoRecurso recursoGetTipoFromStr(String tipoStr);
 JsonDocument recursoGetJSONDoc(Recurso *r);

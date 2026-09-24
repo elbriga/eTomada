@@ -75,6 +75,7 @@ void regrasBoot();
 int regrasCount();
 
 void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra = nullptr);
+Regra *regraGetPorRecurso(const char *idLocalRecurso);
 
 String regraAtualizaFromJSON(uint8_t *json);
 String regraDeleteFromJSON(uint8_t *json);

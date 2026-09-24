@@ -35,6 +35,9 @@ void recursosInit()
   totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais + totRecursosRemotos +
                 (umidificadorAtivo() ? 1 : 0);
 
+  if (recursos)
+    delete[] recursos;
+
   recursos = new Recurso[totRecursos]();
   if (!recursos)
     utilDIE("RECURSOS");
@@ -46,6 +49,7 @@ void recursosInit()
   // prefs.putString("nomeR1", "Luz");
   // prefs.putString("nomeR2", "Humidificador");
 
+  recursoAddCount = 0;
   for (int r = 1; r <= totRelesLocais; r++)
   {
     String id = "R" + String(r);
@@ -85,7 +89,7 @@ void recursosInit()
   // Inicializa nodo->recursosCount
   nodoRemotoCalcRecursos();
 
-  int tot = recursosGetCount(RECURSO_TODOS);
+  int tot = recursosGetCount();
   for (int r = 0; r < tot; r++)
   {
     Recurso *recurso = &recursos[r];
@@ -119,23 +123,14 @@ Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id, bool r
   return r;
 }
 
-int recursosGetCount(TipoRecurso tipo)
+int recursosGetCount()
 {
-  if (tipo == RECURSO_TODOS)
-  {
-    return totRecursos;
-  }
+  return totRecursos;
+}
 
-  int ret = 0;
-  int tot = recursosGetCount();
-  for (int r = 0; r < tot; r++)
-  {
-    if (recursos[r].tipo == tipo)
-    {
-      ret++;
-    }
-  }
-  return ret;
+void recursosZera()
+{
+  totRecursos = 0;
 }
 
 // REQUIRE recursosMutex locked
@@ -212,7 +207,7 @@ String recursoSetLocked(Recurso *recurso, String estado, bool enviaMestre)
     }
   }
 
-  eventoPost(EVENTO_VALOR_MUDOU, recurso, true, enviaMestre);
+  eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, enviaMestre);
 
   return msg;
 }
@@ -307,7 +302,7 @@ Recurso *recursoGetPorIndice(int posicao)
 
 Recurso *recursoGet(const char *id)
 {
-  int tot = recursosGetCount(RECURSO_TODOS);
+  int tot = recursosGetCount();
   for (int r = 0; r < tot; r++)
   {
     if (!strcmp(recursos[r].id, id))
@@ -363,6 +358,46 @@ const char *recursoGetTipoStr(TipoRecurso tipo)
   }
 }
 
+char recursoGetTipoLetra(TipoRecurso tipo)
+{
+  switch (tipo)
+  {
+  case RECURSO_RELE:
+    return 'R';
+  case RECURSO_SENSOR:
+    return 'S';
+  case RECURSO_BOTAO:
+    return 'B';
+  case RECURSO_UMIDIFICADOR:
+    return 'U';
+  default:
+    return '0';
+  }
+}
+
+bool recursoSetNextID(RecursoRemoto *rr)
+{
+  char letra = recursoGetTipoLetra(rr->tipo);
+  char id[32] = {0};
+  Recurso *rec = nullptr;
+
+  for (int r = 1; r < 1000; r++)
+  {
+    sprintf(id, "%c%d", letra, r);
+    rec = recursoGet(id);
+    if (!rec)
+      break;
+  }
+  if (rec)
+  {
+    logaM(LOG_AVISO, "Mais de 1000 recursos?? Oha!");
+    return false;
+  }
+
+  strlcpy(rr->idLocal, id, sizeof(rr->idLocal));
+  return true;
+}
+
 TipoRecurso recursoGetTipoFromStr(String tipoStr)
 {
   if (tipoStr == "RELE")
@@ -386,6 +421,7 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
   doc["nome"] = r->nome;
   doc["remoto"] = r->remoto;
   doc["nodo"] = r->remoto ? r->recursoRemoto->nodo->id : "_LOCAL";
+  doc["idRemoto"] = r->remoto ? r->recursoRemoto->idRemoto : r->id;
 
   switch (r->tipo)
   {
@@ -458,7 +494,7 @@ String recursoEventoRecebido(uint8_t *json)
     return "Nodo Invalido!";
   }
 
-  int tot = recursosGetCount(RECURSO_TODOS);
+  int tot = recursosGetCount();
   for (int r = 0; r < tot; r++)
   {
     Recurso *rec = recursoGetPorIndice(r);
@@ -498,7 +534,7 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEve
     bool mudou = (rele->estado != novoEstado);
     rele->estado = novoEstado;
     if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
+      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true);
   }
   break;
 
@@ -519,7 +555,7 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEve
     bool mudou = (sensor->valor != novoValor);
     sensor->valor = novoValor;
     if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
+      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true);
   }
   break;
 
@@ -531,8 +567,8 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEve
     botao->estado = novoEstado;
     if (enviaEventos && mudou)
     {
-      eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso, true, true);
-      eventoPost(EVENTO_TOGGLE, recurso, true, true);
+      eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso->id, true, true);
+      eventoPost(EVENTO_TOGGLE, recurso->id, true, true);
     }
   }
   break;
@@ -560,7 +596,7 @@ String recursoAtualizaFromJson(Recurso *recurso, JsonDocument doc, bool enviaEve
     }
 
     if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
+      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true);
   }
   break;
   }
@@ -610,7 +646,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   doc.clear();
 
   if (mudou)
-    eventoPost(EVENTO_VALOR_MUDOU, recurso, true, true);
+    eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true);
 
   return "OK";
 }

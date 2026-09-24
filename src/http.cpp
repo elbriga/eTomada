@@ -66,6 +66,8 @@ void httpServerInitModoAPI()
   httpServer.on("/api/getNodo", HTTP_GET, apiGetNodo);
   httpServer.on("/api/addNodo", HTTP_PUT, funcVazia, NULL, apiAddNodo);
   httpServer.on("/api/delNodo", HTTP_PUT, funcVazia, NULL, apiDelNodo);
+  httpServer.on("/api/addRecursoRemoto", HTTP_PUT, funcVazia, NULL, apiAddRecursoRemoto);
+  httpServer.on("/api/delRecursoRemoto", HTTP_PUT, funcVazia, NULL, apiDelRecursoRemoto);
   httpServer.on("/api/setRegra", HTTP_PUT, funcVazia, NULL, apiSetRegra);
   httpServer.on("/api/delRegra", HTTP_PUT, funcVazia, NULL, apiDelRegra);
   httpServer.on("/api/factoryReset", HTTP_POST, apiFactoryReset);

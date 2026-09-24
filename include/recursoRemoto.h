@@ -19,6 +19,7 @@ struct RecursoRemoto
   char idLocal[32];  // ID Local do recurso dentro do tipo. ex.: R10
   char idRemoto[32]; // ID Remoto do recurso dentro do tipo. ex.: R2
   NodoRemoto *nodo;
+  bool del;
   union
   {
     Rele rele;
@@ -33,6 +34,10 @@ int recursosRemotosGetCount();
 RecursoRemoto *recursoRemotoGet(const char *id);
 RecursoRemoto *recursoRemotoGetPorIndice(int i);
 
+String recursoRemotoAddFromJSON(uint8_t *json);
+String recursoRemotoDelFromJSON(uint8_t *json);
+
 void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument &snapshot);
+String recursosRemotosPersiste(RecursoRemoto *novoRecurso = nullptr);
 
 void recursoRemotoPrint(RecursoRemoto *r);

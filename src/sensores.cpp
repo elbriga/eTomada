@@ -150,7 +150,7 @@ void sensoresAtualizaTask(void *args)
 
   // Ler os sensores sem o Lock
   int totSensoresOK = 0;
-  int totRecursos = recursosGetCount(RECURSO_TODOS);
+  int totRecursos = recursosGetCount();
   for (int r = 0; r < totRecursos; r++)
   {
     Recurso *rec = recursoGetPorIndice(r);
@@ -223,7 +223,7 @@ void sensoresAtualizaTask(void *args)
     if (!strcmp(atual[rs].rec->id, "HORASSECO"))
       continue;
 
-    eventoPost(EVENTO_VALOR_MUDOU, atual[rs].rec, true, true);
+    eventoPost(EVENTO_VALOR_MUDOU, atual[rs].rec->id, true, true);
   }
 
   vTaskDelete(NULL);

@@ -72,10 +72,20 @@ function closeCard(id) {
   }
 }
 
+function tenhoRecurso(nodo, id) {
+  if (eTomadaData.recursos == undefined) return false;
+
+  let rec = eTomadaData.recursos.find(
+    (r) => r.nodo == nodo && r.idRemoto == id,
+  );
+
+  return !!rec;
+}
+
 async function nodoInfo(id) {
   const cardID = `nodoCard-${id}`;
   const nodoInfoID = `nodoInfo-${id}`;
-  if (document.getElementById(cardID)) return;
+  const oldCard = document.getElementById(cardID);
 
   let nodo = eTomadaData.nodosRemotos.find((nr) => nr.id === id);
   if (!nodo) {
@@ -101,14 +111,18 @@ async function nodoInfo(id) {
     <div class="medio">Nodo ${id} ${msgOnline}</div>
     <div class="title">${nodo.descricao}</div>
   </div>
-  <button class="editBtn" onclick="closeCard('${card.id}')">✖</button>
+  <div>
+    <div id="btnDelNodo-${id}"></div>
+    <button class="editBtn" onclick="closeCard('${card.id}')">✖</button>
+  </div>
 </div>
 <div id="${nodoInfoID}"></div>
-<button onclick="nodoDel('${id}')">🔴 Remover</button>
 `;
 
   const painel = document.getElementById("painel");
-  painel.appendChild(card);
+  oldCard != undefined
+    ? painel.replaceChild(card, oldCard)
+    : painel.appendChild(card);
 
   var htmlInfo = `
 descrição: <input type="text" id="descNodo-${id}" value="${nodo.descricao}" /><br>
@@ -118,22 +132,34 @@ Modelo: ${nodo.tipo}<input type="hidden" id="tipoNodo-${id}" value="${nodo.tipo}
   if (nodo.novo) {
     htmlInfo += `<button onclick="nodoAdd('${id}')">🟢 Adicionar</button>`;
   } else {
-    if (!online) return;
+    const recursos = eTomadaData.recursos.filter((r) => r.nodo == id);
 
-    const nodoSnapshot = await eTomadaAPI("getNodo?id=" + id);
-    if (!nodoSnapshot.msg || nodoSnapshot.msg != "OK") return;
-
-    const snapshot = nodoSnapshot.nodo;
-    if (snapshot.recursos == undefined) snapshot.recursos = [];
-
-    htmlInfo += `WiFi: ${snapshot.ssid} (${snapshot.wifiPower} db)<br>
-Recursos:<br>
-<ul>
-`;
-    snapshot.recursos.forEach((r) => {
-      htmlInfo += `<li>${r.tipo} ${r.id}</li>`;
+    let htmlRecursos = "Recursos:<br><ul>";
+    recursos.forEach((r) => {
+      htmlRecursos += `<li>${r.tipo} ${r.id} (${r.idRemoto}) <button class="editBtn" onclick="recursoRemotoDel('${id}','${r.idRemoto}')">Del</button></li>`;
     });
-    htmlInfo += "</ul>";
+
+    if (online) {
+      const nodoSnapshot = await eTomadaAPI("getNodo?id=" + id);
+      if (nodoSnapshot.msg != undefined && nodoSnapshot.msg == "OK") {
+        const snapshot = nodoSnapshot.nodo;
+        htmlInfo += `WiFi: ${snapshot.ssid} (${snapshot.wifiPower} db)<br>`;
+
+        if (snapshot.recursos != undefined && snapshot.recursos.length > 0) {
+          snapshot.recursos.forEach((r) => {
+            if (tenhoRecurso(id, r.id)) return;
+            htmlRecursos += `<li>${r.tipo} (${r.id}) <button class="editBtn" onclick="recursoRemotoAdd('${id}','${r.id}')">Add</button></li>`;
+          });
+        }
+      }
+    }
+    htmlRecursos += "</ul>";
+
+    htmlInfo += htmlRecursos;
+
+    if (recursos.length == 0)
+      document.getElementById(`btnDelNodo-${id}`).innerHTML =
+        `<button class="editBtn" onclick="nodoDel('${id}')">🔴 del</button>`;
   }
 
   document.getElementById(nodoInfoID).innerHTML = htmlInfo;
@@ -145,7 +171,7 @@ async function nodoAdd(id) {
   try {
     let msg = await eTomadaAPI("addNodo", { id: id, desc: desc }, "PUT");
     if (msg.msg != undefined && msg.msg != "OK") statusMsg(msg.msg);
-    closeCard("nodoCard-" + id);
+    else closeCard("nodoCard-" + id);
   } catch (e) {
     statusMsg("Erro ao adicionar nodo: " + e);
   }
@@ -155,8 +181,38 @@ async function nodoDel(id) {
   try {
     let msg = await eTomadaAPI("delNodo", { id: id }, "PUT");
     if (msg.msg != undefined && msg.msg != "OK") statusMsg(msg.msg);
-    closeCard("nodoCard-" + id);
+    else closeCard("nodoCard-" + id);
   } catch (e) {
     statusMsg("Erro ao remover nodo: " + e);
+  }
+}
+
+async function recursoRemotoAdd(nodo, idRemoto) {
+  try {
+    let msg = await eTomadaAPI(
+      "addRecursoRemoto",
+      { nodo: nodo, idRemoto: idRemoto },
+      "PUT",
+    );
+    if (msg.msg != undefined) statusMsg(msg.msg);
+    await eTomadaRender();
+    nodoInfo(nodo); // Refresh
+  } catch (e) {
+    statusMsg("Erro ao adicionar recurso: " + e);
+  }
+}
+
+async function recursoRemotoDel(nodo, idRemoto) {
+  try {
+    let msg = await eTomadaAPI(
+      "delRecursoRemoto",
+      { nodo: nodo, idRemoto: idRemoto },
+      "PUT",
+    );
+    if (msg.msg != undefined) statusMsg(msg.msg);
+    await eTomadaRender();
+    nodoInfo(nodo); // Refresh
+  } catch (e) {
+    statusMsg("Erro ao remover recurso: " + e);
   }
 }

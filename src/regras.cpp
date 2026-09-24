@@ -152,6 +152,24 @@ Regra *regraGetPorIndice(int i)
     return NULL;
 }
 
+Regra *regraGetPorRecurso(const char *idLocal)
+{
+    int tot = regrasCount();
+    for (int r = 0; r < tot; r++)
+    {
+        Regra *regra = &regras[r];
+        if (regra->condicao.tipo == COND_EVENTO && !strcmp(regra->condicao.evento.recursoID, idLocal))
+            return regra;
+        if (regra->acao.tipo == ACAO_ESTADO && !strcmp(regra->acao.recursoID, idLocal))
+            return regra;
+        if (regra->acao.tipo == ACAO_TIMER && !strcmp(regra->acao.recursoID, idLocal))
+            return regra;
+        if (!strcmp(regra->condicao.check.variavel, idLocal))
+            return regra;
+    }
+    return NULL;
+}
+
 int regrasCount()
 {
     return regrasTotal;
@@ -230,7 +248,7 @@ void regrasProcessaEvento(Evento e)
         {
         case COND_EVENTO:
             // Verificar se foi o recurso da regra que gerou o evento
-            if (e.recurso && strcmp(c->evento.recursoID, e.recurso->id))
+            if (strcmp(c->evento.recursoID, e.recursoID))
                 continue;
 
             if (e.tipo == c->evento.tipo)

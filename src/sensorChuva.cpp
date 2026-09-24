@@ -101,5 +101,5 @@ void sensorChuvaLoop()
   }
 
   if (mudou)
-    eventoPost(EVENTO_VALOR_MUDOU, sensorChuva.recurso, true, true);
+    eventoPost(EVENTO_VALOR_MUDOU, sensorChuva.recurso->id, true, true);
 }

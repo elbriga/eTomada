@@ -11,6 +11,8 @@
 #include "sensor.h"
 #include "tipoRecurso.h"
 #include "util.h"
+#include "apiInterna.h"
+#include "regras.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RECRMT", nivel, fmt, ##__VA_ARGS__)
@@ -127,6 +129,16 @@ RecursoRemoto *recursoRemotoGetPorIndice(int i)
   return NULL;
 }
 
+RecursoRemoto *recursoRemotoGetPorIDRemoto(NodoRemoto *nodo, const char *idRemoto)
+{
+  int totRR = recursosRemotosGetCount();
+  for (int i = 0; i < totRR; i++)
+    if (recursosRemotos[i].nodo == nodo && !strcmp(recursosRemotos[i].idRemoto, idRemoto))
+      return &recursosRemotos[i];
+
+  return NULL;
+}
+
 JsonObject recursoRemotoGetFromSnapshot(JsonDocument &snapshot, String id)
 {
   JsonObject recurso;
@@ -170,6 +182,156 @@ void recursoRemotoAtualizaFromSnapshot(NodoRemoto *nodo, JsonDocument &snapshot)
 
     recursoAtualizaFromJson(recurso, deviceRemoto, false);
   }
+}
+
+String recursoRemotoAddFromJSON(uint8_t *json)
+{
+  JsonDocument doc;
+  if (utilLeJson("recursoRemotoAddFromJSON", doc, json))
+    return "JSON Invalido";
+
+  if (doc["nodo"].isNull() || doc["idRemoto"].isNull())
+    return "Informe o Nodo e o ID Remoto!";
+
+  String nodoStr = doc["nodo"];
+  String idRemotoStr = doc["idRemoto"];
+  doc.clear();
+
+  NodoRemoto *nodo = nodoRemotoGet(nodoStr.c_str());
+  if (!nodo)
+    return "Nodo não encontrado!";
+
+  JsonDocument snapshot;
+  apiInternaGetSnapshot(nodo, snapshot);
+
+  JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, idRemotoStr);
+  if (!cacheRR)
+    return "Recurso não encontrado!";
+
+  RecursoRemoto rr;
+
+  rr.tipo = recursoGetTipoFromStr(cacheRR["tipo"]);
+  if (!recursoSetNextID(&rr))
+    return "Erro ao setar idLocal!";
+
+  rr.nodo = nodo;
+  strlcpy(rr.idRemoto, idRemotoStr.c_str(), sizeof(rr.idRemoto));
+
+  doc.clear();
+
+  String msg = recursosRemotosPersiste(&rr);
+  if (msg != "OK")
+    return msg;
+
+  // ReLoad config
+  eTomadaLoadConfig();
+
+  return "OK";
+}
+
+String recursoRemotoDelFromJSON(uint8_t *json)
+{
+  JsonDocument doc;
+  if (utilLeJson("recursoRemotoDelFromJSON", doc, json))
+    return "JSON Invalido";
+
+  if (doc["nodo"].isNull() || doc["idRemoto"].isNull())
+    return "Informe o Nodo e o ID Remoto!";
+
+  String nodoStr = doc["nodo"];
+  String idRemotoStr = doc["idRemoto"];
+  doc.clear();
+
+  NodoRemoto *nodo = nodoRemotoGet(nodoStr.c_str());
+  if (!nodo)
+    return "Nodo não encontrado!";
+
+  RecursoRemoto *rr = recursoRemotoGetPorIDRemoto(nodo, idRemotoStr.c_str());
+  if (!rr)
+    return "RecursoRemoto não encontrado!";
+
+  Regra *regra = regraGetPorRecurso(rr->idLocal);
+  if (regra)
+    return "Recurso em uso pela regra " + String(regra->id);
+
+  rr->del = true;
+
+  String msg = recursosRemotosPersiste();
+  if (msg != "OK")
+    return msg;
+
+  // ReLoad config
+  eTomadaLoadConfig();
+
+  return "OK";
+}
+
+void recursoRemotoGetJS(RecursoRemoto *rr, JsonObject &obj)
+{
+  obj["tipo"] = recursoGetTipoStr(rr->tipo);
+  obj["nodo"] = rr->nodo->id;
+  obj["idLocal"] = rr->idLocal;
+  obj["idRemoto"] = rr->idRemoto;
+}
+
+JsonDocument recursosRemotosGetJSON(RecursoRemoto *novo)
+{
+  JsonDocument doc;
+  JsonArray RRs = doc.to<JsonArray>();
+
+  int totRR = recursosRemotosGetCount();
+  for (int rr = 0; rr < totRR; rr++)
+  {
+    RecursoRemoto *rec = recursoRemotoGetPorIndice(rr);
+    if (rec->del)
+      continue;
+    JsonObject recJS = RRs.add<JsonObject>();
+    recursoRemotoGetJS(rec, recJS);
+  }
+
+  if (novo)
+  {
+    // Add!
+    JsonObject obj = doc.add<JsonObject>();
+    recursoRemotoGetJS(novo, obj);
+  }
+
+  return doc;
+}
+
+String recursosRemotosPersiste(RecursoRemoto *novoRecurso)
+{
+  File file = LittleFS.open("/recursosRemotos.json.tmp", "w");
+  if (!file)
+    return "ERRO: ao abrir recursosRemotos.json.tmp para escrita";
+
+  JsonDocument recursos = recursosRemotosGetJSON(novoRecurso);
+
+  JsonDocument doc;
+  doc["recursosRemotos"] = recursos;
+
+  String out;
+  if (!serializeJson(doc, out))
+  {
+    file.close();
+    return "ERRO: recursosRemotosPersiste:serializeJson";
+  }
+
+  logaM(LOG_AVISO, "recursosRemotosPersiste: [%s]", out.c_str());
+
+  if (!serializeJson(doc, file))
+  {
+    file.close();
+    return "ERRO: recursosRemotosPersiste:serializeJson FILE";
+  }
+
+  file.close();
+
+  LittleFS.rename("/recursosRemotos.json.tmp", "/recursosRemotos.json");
+
+  logaM(LOG_NORMAL, "Recursos Remotos Salvos!");
+
+  return "OK";
 }
 
 void recursoRemotoPrint(RecursoRemoto *recursoRemoto)

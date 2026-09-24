@@ -11,6 +11,7 @@ typedef enum
 
 void eTomadaInit0();
 void eTomadaInit();
+void eTomadaLoadConfig();
 
 ModoOperacao eTomadaGetModoOperacao();
 const char *eTomadaGetModoOperacaoStr();

@@ -373,22 +373,6 @@ String nodosRemotosPersiste(NodoRemoto *novoNodo)
   return "OK";
 }
 
-static void nodosRemotosReInit()
-{
-  if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
-  {
-    nodosRemotosLimpaCacheNovosNodos();
-
-    logaM(LOG_NORMAL, "(RE)Inicializando Nodos Remotos:");
-    nodoRemotoInit();
-
-    logaM(LOG_NORMAL, "(RE)Inicializando Recursos Remotos:");
-    recursosRemotosInit();
-
-    nodosRemotosRefresh();
-  }
-}
-
 String nodoRemotoAddFromJSON(uint8_t *json)
 {
   JsonDocument doc;
@@ -423,7 +407,8 @@ String nodoRemotoAddFromJSON(uint8_t *json)
   if (msg != "OK")
     return msg;
 
-  nodosRemotosReInit();
+  // ReLoad config
+  eTomadaLoadConfig();
 
   return "OK";
 }
@@ -446,13 +431,23 @@ String nodoRemotoDelFromJSON(uint8_t *json)
   if (!nodoDel)
     return "Nodo Inválido";
 
+  // Verificar se temos RecursoRemoto que são desse nodo
+  int totRR = recursosRemotosGetCount();
+  for (int i = 0; i < totRR; i++)
+  {
+    RecursoRemoto *rr = recursoRemotoGetPorIndice(i);
+    if (rr->nodo == nodoDel)
+      return "Nodo em Uso";
+  }
+
   nodoDel->del = true;
 
   String msg = nodosRemotosPersiste(nullptr);
   if (msg != "OK")
     return msg;
 
-  nodosRemotosReInit();
+  // ReLoad config
+  eTomadaLoadConfig();
 
   return "OK";
 }
