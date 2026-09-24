@@ -217,13 +217,11 @@ void appLoop()
     {
       last10Second = timeinfo.tm_sec / 10;
 
-      sensorChuvaLoop();
+      ledSetAnim(RGB_LED_ANIM_PISCA, 3);
+      sensoresAtualiza();
 
       if (!wifiModoAP)
       {
-        ledSetAnim(RGB_LED_ANIM_PISCA, 3);
-        sensoresAtualiza();
-
         // Keepalive para a interface web
         httpEnviaSSE("{}", "sse_ping");
 
