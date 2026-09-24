@@ -136,8 +136,6 @@ void sensoresAtualiza()
 
 void sensoresAtualizaTask(void *args)
 {
-  sensorChuvaLoop();
-
   MutexLock lock(recursosMutex);
   if (!lock)
   {
@@ -145,6 +143,8 @@ void sensoresAtualizaTask(void *args)
     vTaskDelete(NULL);
     return;
   }
+
+  sensorChuvaLoop();
 
   int totRecursos = recursosGetCount();
   for (int r = 0; r < totRecursos; r++)
