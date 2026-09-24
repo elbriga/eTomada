@@ -27,7 +27,6 @@ String regrasLoad(const char *path);
 String regraGetTxt(Regra *r);
 void regraLoadFromJSON(Regra *regra, JsonObject &doc);
 String regrasPersiste(Regra *novaRegra = nullptr);
-String regraGetCondicaoTxt(Condicao *c);
 
 void regrasInit()
 {
@@ -49,7 +48,7 @@ void regrasInit()
     if (msg != "OK")
         logaM(LOG_AVISO, ">> regrasLoad: [%s]", msg.c_str());
 
-    regrasBoot();
+    regrasBootLocked();
 }
 
 Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
@@ -100,6 +99,18 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
 
 void regrasBoot()
 {
+    MutexLock lock(recursosMutex);
+    if (!lock)
+    {
+        logaM(LOG_CRITICO, "regrasBoot: mutex timeout");
+        return;
+    }
+
+    regrasBootLocked();
+}
+
+void regrasBootLocked()
+{
     // Obter horario
     struct tm timeinfo;
     sysGetTime(&timeinfo);
@@ -126,7 +137,7 @@ void regrasBoot()
         {
             logaM(LOG_NORMAL, "Conferir estado do recurso [%s][%s] para %d pela regra [%s]",
                   recurso->id, recurso->nome, estadoAtual, regraAtivada->nome);
-            String msg = recursoCheck(recurso, estadoAtual);
+            String msg = recursoCheckLocked(recurso, estadoAtual);
             if (msg != "")
                 logaM(LOG_AVISO, ">> recursoCheck :: [%s]", msg.c_str());
         }

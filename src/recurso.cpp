@@ -266,16 +266,10 @@ String recursoSet(Recurso *recurso, String estado, bool enviaMestre)
   return msg;
 }
 
-String recursoCheck(Recurso *recurso, bool estadoDesejado)
+String recursoCheckLocked(Recurso *recurso, bool estadoDesejado)
 {
   if (recurso->tipo != RECURSO_RELE)
     return "recursoCheck: Recurso nao eh RELE";
-
-  MutexLock lock(recursosMutex);
-  if (!lock)
-  {
-    return "recursoCheck: mutex timeout";
-  }
 
   Rele *r = recursoGetRele(recurso);
   if (r->estado != estadoDesejado)
