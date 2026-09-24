@@ -1,10 +1,11 @@
 #include <sys/time.h>
+#include <Arduino.h>
+#include <Adafruit_NeoPixel.h>
 
 #include "eTomada.h"
 #include "loga.h"
 #include "led.h"
 #include "hardwareProfile.h"
-#include "rgb-led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("LED", nivel, fmt, ##__VA_ARGS__)
@@ -12,6 +13,7 @@
 extern const HardwareProfile hardwareProfile;
 
 #define TOT_ANIMS 5
+#define INTENSIDADE 0.1
 
 typedef struct
 {
@@ -21,6 +23,7 @@ typedef struct
 } LedT;
 
 static LedT led = {};
+static Adafruit_NeoPixel rgbLed;
 
 void ledInit()
 {
@@ -32,7 +35,12 @@ void ledInit()
 
   if (hardwareProfile.ledRGB)
   {
-    rgbLedInit();
+    rgbLed = Adafruit_NeoPixel(1, hardwareProfile.ledPin, NEO_GRB + NEO_KHZ800);
+
+    rgbLed.begin();
+    rgbLed.clear();
+    rgbLed.show();
+
     ledSetAnim(1); // Azul == Boot!
   }
   else
@@ -53,6 +61,12 @@ void ledSetAnim(uint8_t num, uint8_t loop)
   if (loop > 0 && loop < 11)
     led.loop = loop;
   led.frame = 999; // Forçar mudança
+}
+
+void rgbLedWrite(uint8_t r, uint8_t g, uint8_t b)
+{
+  rgbLed.setPixelColor(0, r * INTENSIDADE, g * INTENSIDADE, b * INTENSIDADE);
+  rgbLed.show();
 }
 
 void ledProcessa()
