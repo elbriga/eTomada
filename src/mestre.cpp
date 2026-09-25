@@ -10,6 +10,7 @@
 #include "apiInterna.h"
 #include "eventos.h"
 #include "wifi.h"
+#include "mutex.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MESTRE", nivel, fmt, ##__VA_ARGS__)
@@ -67,7 +68,7 @@ void mestreLoop()
     mestreCheckOnline();
 }
 
-void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento)
+void mestreEnviaEvento(const char *recursoID, TipoEvento tipoEvento)
 {
     if (!mestreAtivo()) // Sem mestre retorna
         return;
@@ -78,7 +79,24 @@ void mestreEnviaEvento(Recurso *rec, TipoEvento tipoEvento)
         return;
     }
 
-    JsonDocument payload = recursoGetJSONEvento(rec, tipoEvento);
+    JsonDocument payload;
+    {
+        MutexLock lock(recursosMutex);
+        if (!lock)
+        {
+            logaM(LOG_CRITICO, "mestreEnviaEvento - Erro de Lock!");
+            return;
+        }
+
+        Recurso *recurso = recursoGet(recursoID);
+        if (!recurso)
+        {
+            logaM(LOG_CRITICO, "mestreEnviaEvento - Erro Recurso[%s] Invalido!", recursoID);
+            return;
+        }
+
+        payload = recursoGetJSONEvento(recurso, tipoEvento);
+    }
 
     // TODO :: mecanismo de re-envio caso falha, limitado a Xs de atraso
     apiInternaEnviaEvento(mestre.ip, &payload);

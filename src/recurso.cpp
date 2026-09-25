@@ -278,10 +278,26 @@ String recursoCheckLocked(Recurso *recurso, bool estadoDesejado)
   return "";
 }
 
-void recursoEnviaSSE(Recurso *recurso)
+void recursoEnviaSSE(const char *recursoID)
 {
   String recursoStr;
-  serializeJson(recursoGetJSONDoc(recurso), recursoStr);
+  {
+    MutexLock lock(recursosMutex);
+    if (!lock)
+    {
+      logaM(LOG_CRITICO, "recursoEnviaSSE - Erro de Lock!");
+      return;
+    }
+
+    Recurso *recurso = recursoGet(recursoID);
+    if (!recurso)
+    {
+      logaM(LOG_CRITICO, "recursoEnviaSSE - Erro Recurso[%s] Invalido!", recursoID);
+      return;
+    }
+
+    serializeJson(recursoGetJSONDoc(recurso), recursoStr);
+  }
   httpEnviaSSE(recursoStr, "sse_recurso");
 }
 
