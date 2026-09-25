@@ -10,11 +10,9 @@ void mutexInit();
 class MutexLock
 {
 public:
-    MutexLock(SemaphoreHandle_t mutex,
-              TickType_t timeout = portMAX_DELAY)
-        : mutex(mutex), locked(false)
+    MutexLock(SemaphoreHandle_t mutex) : mutex(mutex), locked(false)
     {
-        locked = xSemaphoreTake(mutex, timeout);
+        locked = xSemaphoreTake(mutex, pdMS_TO_TICKS(2500));
     }
 
     ~MutexLock()
