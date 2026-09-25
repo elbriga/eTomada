@@ -4,6 +4,7 @@
 #include "loga.h"
 #include "recurso.h"
 #include "sensor.h"
+#include "sensorChuva.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("CHUVA", nivel, fmt, ##__VA_ARGS__)
@@ -16,7 +17,7 @@
 
 struct SensorChuva
 {
-  Recurso *recurso;
+  bool ativo;
   // debounce
   uint32_t debounce;
   bool ultimoEstado;
@@ -29,7 +30,7 @@ static SensorChuva sensorChuva = {};
 
 bool sensorChuvaAtivo()
 {
-  return sensorChuva.recurso != nullptr;
+  return sensorChuva.ativo;
 }
 
 int sensorChuvaGetHorasSemChuva()
@@ -45,30 +46,40 @@ void sensorChuvaInit()
   memset(&sensorChuva, 0, sizeof(SensorChuva));
 
   // Verificar se temos um sensor de CHUVA
-  Recurso *rChuva = recursoGet("HORASSECO");
+  Recurso *rChuva = recursoGet(SENSORCHUVA_RECURSOID);
   if (!rChuva)
     return;
   if (rChuva->tipo != RECURSO_SENSOR)
     return;
+  if (!rChuva->remoto) // Ainda não funciona com SENSOR local!
+    return;
 
   // Init
-  sensorChuva.recurso = rChuva;
+  sensorChuva.ativo = true;
   sensorChuva.estado = SENSORCHUVA_SECO;
   sensorChuva.ultimoEstado = SENSORCHUVA_SECO;
   sensorChuva.debounce = millis();
   sensorChuva.tsInicioSeco = millis() - (3 * 24 * 60 * 60 * 1000); // Nao chove a 72h!
 
-  logaM(LOG_NORMAL, "Inicializando sensor de CHUVA em [%s]", sensorChuva.recurso->id);
+  logaM(LOG_NORMAL, "Inicializando sensor de CHUVA em [%s @ %s]",
+        rChuva->recursoRemoto->idRemoto, rChuva->recursoRemoto->nodo->id);
 }
 
 // Chamado de 10s/10s
-void sensorChuvaLoop()
+void sensorChuvaLoopLocked()
 {
   if (!sensorChuvaAtivo())
     return;
 
+  Recurso *rChuva = recursoGet(SENSORCHUVA_RECURSOID);
+  if (!rChuva)
+  {
+    logaM(LOG_CRITICO, "Sensor de CHUVA sumiu!");
+    return;
+  }
+
   // Debounce
-  Sensor *s = recursoGetSensor(sensorChuva.recurso);
+  Sensor *s = recursoGetSensor(rChuva);
   bool leitura = !s->valor ? SENSORCHUVA_MOLHADO : SENSORCHUVA_SECO; // PINO LOW == CHUVA ON
   if (leitura != sensorChuva.ultimoEstado)
   {
@@ -101,5 +112,5 @@ void sensorChuvaLoop()
   }
 
   if (mudou)
-    eventoPost(EVENTO_VALOR_MUDOU, sensorChuva.recurso->id, true, true);
+    eventoPost(EVENTO_VALOR_MUDOU, SENSORCHUVA_RECURSOID, true, true);
 }

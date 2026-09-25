@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -107,7 +109,7 @@ JsonDocument sensorGetJSONDoc(Recurso *r, bool full)
   {
     doc["pino"] = s->pino;
 
-    int valor = !strcmp(r->id, "HORASSECO") ? sensorChuvaGetHorasSemChuva() : s->valor;
+    int valor = !strcmp(r->id, SENSORCHUVA_RECURSOID) ? sensorChuvaGetHorasSemChuva() : s->valor;
     doc["valor"] = valor;
 
     doc["categoria"] = s->categoria;
@@ -122,7 +124,7 @@ void sensoresAtualizaTask(void *args);
 
 void sensoresAtualiza()
 {
-  if (!sensoresGetCount())
+  if (!sensoresGetCount() && !sensorChuvaAtivo())
     return;
 
   xTaskCreate(
@@ -136,51 +138,53 @@ void sensoresAtualiza()
 
 void sensoresAtualizaTask(void *args)
 {
-  MutexLock lock(recursosMutex);
-  if (!lock)
-  {
-    logaM(LOG_CRITICO, "sensorAtualiza: mutex timeout");
-    vTaskDelete(NULL);
-    return;
-  }
-
-  sensorChuvaLoop();
-
-  int totRecursos = recursosGetCount();
-  for (int r = 0; r < totRecursos; r++)
-  {
-    Recurso *rec = recursoGetPorIndice(r);
-    if (rec->tipo != RECURSO_SENSOR)
-      continue;
-    if (rec->remoto)
-      continue;
-
-    Sensor *sensor = rec->sensor;
-
-    if (sensor->pino == -1)
+  { // Escopo para o lock (sem ele não chama o destrutor)
+    MutexLock lock(recursosMutex);
+    if (!lock)
     {
-      // Desativado
-      continue;
-    }
-    TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
-    if (!tipoSensor)
-    {
-      logaM(LOG_CRITICO, "Sensor[%s] tipo invalido [%p]", rec->id, sensor->tipo);
-      continue;
-    }
-    if (tipoSensor->status != "OK")
-    {
-      logaM(LOG_AVISO, "Sensor[%s] tipo inativo [%s]. Pulando sensor", rec->id, tipoSensor->nome);
-      continue;
+      logaM(LOG_CRITICO, "sensorAtualiza: mutex timeout");
+      vTaskDelete(NULL);
+      return;
     }
 
-    int novoValor = tipoSensor->lerSensor(sensor);
-    bool mudou = (sensor->valor != novoValor);
-    sensor->valor = novoValor;
+    sensorChuvaLoopLocked();
 
-    // Sensor de chuva tem os eventos postados pelo modulo sensorChuva.cpp
-    if (mudou && strcmp(rec->id, "HORASSECO"))
-      eventoPost(EVENTO_VALOR_MUDOU, rec->id, true, true);
+    int totRecursos = recursosGetCount();
+    for (int r = 0; r < totRecursos; r++)
+    {
+      Recurso *rec = recursoGetPorIndice(r);
+      if (rec->tipo != RECURSO_SENSOR)
+        continue;
+      if (rec->remoto)
+        continue;
+
+      Sensor *sensor = rec->sensor;
+
+      if (sensor->pino == -1)
+      {
+        // Desativado
+        continue;
+      }
+      TipoSensor *tipoSensor = tipoSensorGet(sensor->tipo);
+      if (!tipoSensor)
+      {
+        logaM(LOG_CRITICO, "Sensor[%s] tipo invalido [%p]", rec->id, sensor->tipo);
+        continue;
+      }
+      if (tipoSensor->status != "OK")
+      {
+        logaM(LOG_AVISO, "Sensor[%s] tipo inativo [%s]. Pulando sensor", rec->id, tipoSensor->nome);
+        continue;
+      }
+
+      int novoValor = tipoSensor->lerSensor(sensor);
+      bool mudou = (sensor->valor != novoValor);
+      sensor->valor = novoValor;
+
+      // Sensor de chuva tem os eventos postados pelo modulo sensorChuva.cpp
+      if (mudou && strcmp(rec->id, SENSORCHUVA_RECURSOID))
+        eventoPost(EVENTO_VALOR_MUDOU, rec->id, true, true);
+    }
   }
 
   vTaskDelete(NULL);
