@@ -1,6 +1,8 @@
 #pragma once
 
+#define SENSORCHUVA_RECURSOID "HORASSECO"
+
 void sensorChuvaInit();
 bool sensorChuvaAtivo();
-void sensorChuvaLoop();
+void sensorChuvaLoopLocked();
 int sensorChuvaGetHorasSemChuva();

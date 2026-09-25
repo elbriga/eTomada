@@ -306,7 +306,7 @@ void eTomadaRoleta()
 
 void eTomadaFactoryReset()
 {
-  MutexLock lockPrefs(prefsMutex, pdMS_TO_TICKS(2500));
+  MutexLock lockPrefs(prefsMutex);
   if (!lockPrefs)
   {
     logaM(LOG_CRITICO, "Erro de mutex no factory reset!");

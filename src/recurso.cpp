@@ -602,7 +602,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   if (utilLeJson("recursoAtualizaConfigFromJSON", doc, json))
     return "JSON Invalido";
 
-  MutexLock lock(recursosMutex, pdMS_TO_TICKS(2500));
+  MutexLock lock(recursosMutex);
   if (!lock)
   {
     doc.clear();
