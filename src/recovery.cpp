@@ -13,7 +13,7 @@
 // ============================================================
 
 #define RECOVERY_BOOT_COUNT 3
-#define RECOVERY_BOOT_TIMEOUT 15000
+#define RECOVERY_BOOT_TIMEOUT 25000
 
 #define RECOVERY_WIFI_TIMEOUT_MS 15000
 
