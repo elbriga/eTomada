@@ -183,7 +183,7 @@ void nodosRemotosRefreshTask(void *args)
 
   // Atualizar os nodos encontrados
   {
-    MutexLock lock(recursosMutex);
+    MutexLock lock(modeloMutex);
     if (!lock)
     {
       logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de Mutex!");
@@ -235,7 +235,7 @@ void nodosRemotosRefreshTask(void *args)
 
     // Pegar os dados com LOCK
     {
-      MutexLock lock(recursosMutex);
+      MutexLock lock(modeloMutex);
       if (!lock)
       {
         logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 2!");
@@ -263,7 +263,7 @@ void nodosRemotosRefreshTask(void *args)
     }
 
     {
-      MutexLock lock(recursosMutex);
+      MutexLock lock(modeloMutex);
       if (!lock)
       {
         logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 3!");
@@ -446,7 +446,7 @@ String nodoRemotoAddFromJSON(uint8_t *json)
   doc.clear();
 
   {
-    MutexLock lock(recursosMutex);
+    MutexLock lock(modeloMutex);
     if (!lock)
       return "nodoRemotoAddFromJSON :: Lock!";
 
@@ -474,7 +474,7 @@ String nodoRemotoDelFromJSON(uint8_t *json)
   }
 
   {
-    MutexLock lock(recursosMutex);
+    MutexLock lock(modeloMutex);
     if (!lock)
       return "nodoRemotoDelFromJSON :: Lock!";
 

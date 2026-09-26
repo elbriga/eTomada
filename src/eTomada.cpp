@@ -97,8 +97,15 @@ void eTomadaInit()
 static int configLoadCount = 0;
 void eTomadaLoadConfig()
 {
+  MutexLock configLock(configMutex);
+  if (!configLock)
   {
-    MutexLock lock(recursosMutex);
+    logaM(LOG_CRITICO, "eTomadaLoadConfig: CONFIG mutex timeout!");
+    return;
+  }
+
+  {
+    MutexLock lock(modeloMutex);
     if (!lock)
     {
       logaM(LOG_CRITICO, "eTomadaLoadConfig: mutex timeout");
@@ -128,7 +135,7 @@ void eTomadaLoadConfig()
     configLoadCount++;
   }
 
-  // Regras Boot fora do Lock
+  // Regras Boot fora do Lock de reursos, mas dentro do lock de config
   regrasBoot();
 }
 
@@ -205,7 +212,7 @@ String eTomadaGetSnapshotJSON()
   doc["datahorastr"] = formattedTime;
 
   {
-    MutexLock lock(recursosMutex);
+    MutexLock lock(modeloMutex);
     if (lock)
     {
       Recurso *recurso;
@@ -255,7 +262,7 @@ void eTomadaRoleta()
   String *relesLocais = nullptr;
 
   { // Lock para pegar os IDs dos relesLocais
-    MutexLock lock(recursosMutex);
+    MutexLock lock(modeloMutex);
     if (!lock)
     {
       logaM(LOG_CRITICO, "roleta :: ERRO DE LOCK!");
@@ -332,7 +339,7 @@ void eTomadaRoleta()
 void eTomadaFactoryReset()
 {
   {
-    MutexLock lockPrefs(prefsMutex);
+    MutexLock lockPrefs(configMutex);
     if (!lockPrefs)
     {
       logaM(LOG_CRITICO, "Erro de mutex no factory reset!");

@@ -198,7 +198,7 @@ String recursoRemotoAddFromJSON(uint8_t *json)
   doc.clear();
 
   {
-    MutexLock lock(recursosMutex);
+    MutexLock lock(modeloMutex);
     if (!lock)
       return "recursoRemotoAddFromJSON :: Lock!";
 
@@ -249,7 +249,7 @@ String recursoRemotoDelFromJSON(uint8_t *json)
   doc.clear();
 
   {
-    MutexLock lock(recursosMutex);
+    MutexLock lock(modeloMutex);
     if (!lock)
       return "recursoRemotoDelFromJSON :: Lock!";
 

@@ -2,8 +2,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
-extern SemaphoreHandle_t recursosMutex;
-extern SemaphoreHandle_t prefsMutex;
+extern SemaphoreHandle_t configMutex;
+extern SemaphoreHandle_t modeloMutex;
 
 void mutexInit();
 

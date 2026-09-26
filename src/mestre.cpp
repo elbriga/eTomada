@@ -81,7 +81,7 @@ void mestreEnviaEvento(const char *recursoID, TipoEvento tipoEvento)
 
     JsonDocument payload;
     {
-        MutexLock lock(recursosMutex);
+        MutexLock lock(modeloMutex);
         if (!lock)
         {
             logaM(LOG_CRITICO, "mestreEnviaEvento - Erro de Lock!");

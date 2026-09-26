@@ -208,7 +208,7 @@ String recursoSet(const char *recursoID, String estado, bool enviaMestre)
 
   String estadoFinal = estado;
   {
-    MutexLock lock(recursosMutex);
+    MutexLock lock(modeloMutex);
     if (!lock)
       return "recursoSet: mutex timeout";
 
@@ -265,7 +265,7 @@ String recursoSet(const char *recursoID, String estado, bool enviaMestre)
       serializeJson(resposta, out);
       logaM(LOG_AVISO, "ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
 
-      MutexLock lock(recursosMutex);
+      MutexLock lock(modeloMutex);
       if (!lock)
         return "recursoSet: mutex timeout";
 
@@ -308,7 +308,7 @@ void recursoEnviaSSE(const char *recursoID)
 {
   String recursoStr;
   {
-    MutexLock lock(recursosMutex);
+    MutexLock lock(modeloMutex);
     if (!lock)
     {
       logaM(LOG_CRITICO, "recursoEnviaSSE - Erro de Lock!");
@@ -485,7 +485,7 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
   return doc;
 }
 
-// REQUIRE recursosMutex locked
+// REQUIRE modeloMutex locked
 JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
 {
   JsonDocument doc;
@@ -523,7 +523,7 @@ String recursoEventoRecebido(uint8_t *json)
   if (utilLeJson("recursoEventoRecebido", doc, json))
     return "JSON Invalido";
 
-  MutexLock lock(recursosMutex);
+  MutexLock lock(modeloMutex);
   if (!lock)
     return "Erro de LOCK!";
 
@@ -644,7 +644,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   if (utilLeJson("recursoAtualizaConfigFromJSON", doc, json))
     return "JSON Invalido";
 
-  MutexLock lock(recursosMutex);
+  MutexLock lock(modeloMutex);
   if (!lock)
   {
     doc.clear();

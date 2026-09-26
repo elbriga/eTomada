@@ -90,7 +90,7 @@ JsonDocument releGetJSONDoc(Recurso *rec, bool full)
 
 String releControla(Rele *rele, bool estado)
 {
-  MutexLock lock(recursosMutex);
+  MutexLock lock(modeloMutex);
   if (!lock)
   {
     return "releControla: mutex timeout";
@@ -99,7 +99,7 @@ String releControla(Rele *rele, bool estado)
   return releControlaLocked(rele, estado);
 }
 
-// REQUIRE recursosMutex locked
+// REQUIRE modeloMutex locked
 String releControlaLocked(Rele *rele, bool estado)
 {
   if (!rele)

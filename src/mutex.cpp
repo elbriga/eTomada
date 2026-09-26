@@ -1,10 +1,12 @@
 #include "mutex.h"
 
-SemaphoreHandle_t recursosMutex = NULL;
-SemaphoreHandle_t prefsMutex = NULL;
+// Lock para mudanças de configuração no prefs e ReInit() do modelo
+SemaphoreHandle_t configMutex = NULL;
+// Lock do modelo
+SemaphoreHandle_t modeloMutex = NULL;
 
 void mutexInit()
 {
-    recursosMutex = xSemaphoreCreateMutex();
-    prefsMutex = xSemaphoreCreateMutex();
+    configMutex = xSemaphoreCreateMutex();
+    modeloMutex = xSemaphoreCreateMutex();
 }

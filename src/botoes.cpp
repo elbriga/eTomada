@@ -77,7 +77,7 @@ Botao *botaoGet(int num)
   return NULL;
 }
 
-// REQUIRE recursosMutex locked
+// REQUIRE modeloMutex locked
 JsonDocument botaoGetJSONDoc(Recurso *r, bool full)
 {
   JsonDocument doc;
@@ -104,7 +104,7 @@ void botoesAtualiza()
   if (!botoesGetCount())
     return;
 
-  MutexLock lock(recursosMutex);
+  MutexLock lock(modeloMutex);
   if (!lock)
   {
     logaM(LOG_CRITICO, "botoesAtualiza: mutex timeout");

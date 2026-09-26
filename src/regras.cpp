@@ -117,7 +117,7 @@ void regrasBoot()
     CacheAcao cache[REGRAS_BOOT_MAX_ACOES] = {};
 
     {
-        MutexLock lock(recursosMutex);
+        MutexLock lock(modeloMutex);
         if (!lock)
         {
             logaM(LOG_CRITICO, "regrasBoot: mutex timeout");
@@ -138,7 +138,7 @@ void regrasBoot()
             Regra *regraAtivada = regrasCalculaEstadoAtual(recurso, estadoAtual);
             if (regraAtivada)
             {
-                logaM(LOG_NORMAL, "Setar recurso [%s][%s] para %d pela regra [%s]",
+                logaM(LOG_NORMAL, "Setar recurso [%s][%s] para [%s] pela regra [%s]",
                       recurso->id, recurso->nome, estadoAtual.c_str(), regraAtivada->nome);
 
                 // Verificar se ja temos esse recurso no cache
