@@ -133,19 +133,9 @@ void recursosZera()
   totRecursos = 0;
 }
 
-// REQUIRE recursosMutex locked
-String recursoGetJSONString(Recurso *r)
+String recursoSetFromJSON(uint8_t *json, String &recursoIDOut, bool enviaMestre)
 {
-  String out;
-  JsonDocument doc = recursoGetJSONDoc(r);
-
-  serializeJson(doc, out);
-  return out;
-}
-
-String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
-{
-  recursoOut = nullptr;
+  recursoIDOut = "";
 
   JsonDocument jsonIN;
   if (utilLeJson("recursoSetFromJSON", jsonIN, json))
@@ -159,27 +149,23 @@ String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre)
   Recurso *recurso = recursoGet(id.c_str());
   if (!recurso)
     return "Recurso invalidooo!";
-  recursoOut = recurso;
+
+  recursoIDOut = id;
 
   if (estadoFan != "" && estadoFan != "null")
     estado += ":" + estadoFan;
-
-  return recursoSet(recurso, estado, enviaMestre);
+  return recursoSet(id.c_str(), estado, enviaMestre);
 }
 
-String recursoSetLocked(Recurso *recurso, String estado, bool enviaMestre)
+String recursoSetLocalLocked(Recurso *recurso, String estado, bool enviaMestre)
 {
   if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
-    return "recursoSetLocked: Recurso nao eh RELE nem UMID";
+    return "Erro recursoSetLocalLocked: Recurso nao eh RELE nem UMID";
+  if (recurso->remoto)
+    return "Erro recursoSetLocalLocked: recurso remoto!";
 
   String msg;
   // TODO colocar ponteiros de funcoes em Recurso para ler e escrever, ao inves desses ifs:
-  if (recurso->remoto)
-  {
-    // API
-    msg = apiInternaSetRecurso(recurso, estado);
-  }
-  else
   {
     switch (recurso->tipo)
     {
@@ -207,75 +193,115 @@ String recursoSetLocked(Recurso *recurso, String estado, bool enviaMestre)
     }
   }
 
-  eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, enviaMestre);
-
   return msg;
 }
 
-String recursoSet(Recurso *recurso, String estado, bool enviaMestre)
+String recursoSet(const char *recursoID, String estado, bool enviaMestre)
 {
-  if (!recurso)
-    return "recursoSet: Recurso NULL!";
-
-  if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
-    return "recursoSet: Recurso nao eh RELE nem UMID";
-
-  MutexLock lock(recursosMutex);
-  if (!lock)
-    return "recursoSet: mutex timeout";
-
   String msg = "OK";
-  switch (recurso->tipo)
-  {
-  case RECURSO_UMIDIFICADOR:
-    msg = recursoSetLocked(recurso, estado, enviaMestre);
-    break;
 
-  case RECURSO_RELE:
-    bool estadoOut;
-    if (estado == "TOGGLE")
+  // Buffer dos dados para não ficar com o Lock durante HTTP
+  bool remoto = false;
+  IPAddress ip;
+  TipoNodoRemoto tipoNodo;
+  char idRemoto[32];
+
+  String estadoFinal = estado;
+  {
+    MutexLock lock(recursosMutex);
+    if (!lock)
+      return "recursoSet: mutex timeout";
+
+    Recurso *recurso = recursoGet(recursoID);
+    if (!recurso)
+      return "recursoSet: recurso invalido";
+
+    if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
+      return "recursoSet: Recurso nao eh RELE nem UMID";
+
+    if (recurso->tipo == RECURSO_RELE)
     {
-      Rele *r = recursoGetRele(recurso);
-      if (!r)
-        return "recursoToggle : RELE invalido";
-      estadoOut = !r->estado;
+      if (estado == "TOGGLE")
+      {
+        Rele *r = recursoGetRele(recurso);
+        if (!r)
+          return "recursoToggle : RELE invalido";
+        estadoFinal = !r->estado ? "ON" : "OFF";
+      }
+      else if (estado == "PULSE")
+      {
+        estadoFinal = "ON";
+      }
+      else
+      {
+        estadoFinal = (estado == "ON") ? "ON" : "OFF";
+      }
     }
-    else if (estado == "PULSE")
+
+    remoto = recurso->remoto;
+    if (!recurso->remoto)
     {
-      estadoOut = true;
+      // Recursos locais: Tratar dentro do Lock
+      msg = recursoSetLocalLocked(recurso, estadoFinal, enviaMestre);
     }
     else
     {
-      estadoOut = (estado == "ON");
+      // Recursos remotos: guardar copia e soltar o Lock
+      ip = recurso->recursoRemoto->nodo->ip;
+      tipoNodo = recurso->recursoRemoto->nodo->tipo;
+      strlcpy(idRemoto, recurso->recursoRemoto->idRemoto, sizeof(idRemoto));
     }
-
-    msg = recursoSetLocked(recurso, estadoOut ? "ON" : "OFF", enviaMestre);
-    // TODO :: como saber se setou ok?
-
-    if (estado == "PULSE")
-    {
-      // Agendar o OFF = pulso de 1000ms
-      agendamentosAdd(AGEND_RECURSO, 1000, recurso->id, false);
-    }
-    break;
-
-  default:
-    msg = "TIPO INVALIDO!!";
   }
 
+  if (remoto)
+  {
+    // API
+    JsonDocument resposta;
+    msg = apiInternaSetRecurso(ip, tipoNodo, idRemoto, estadoFinal, resposta);
+
+    if (!resposta.isNull())
+    {
+      String out;
+      serializeJson(resposta, out);
+      logaM(LOG_AVISO, "ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
+
+      MutexLock lock(recursosMutex);
+      if (!lock)
+        return "recursoSet: mutex timeout";
+
+      Recurso *recurso = recursoGet(recursoID);
+      if (!recurso)
+        return "recursoSet: recurso sumiu!";
+
+      switch (recurso->tipo)
+      {
+      case RECURSO_RELE:
+      {
+        Rele *rele = recursoGetRele(recurso);
+        rele->estado = resposta["recurso"]["device"]["estado"].as<bool>();
+      }
+      break;
+
+      case RECURSO_UMIDIFICADOR:
+      {
+        Umidificador *umid = recursoGetUmidificador(recurso);
+        umid->estado = (UmidificadorEstado)resposta["recurso"]["device"]["estado"].as<int>();
+        umid->estadoFan = (UmidificadorFanEstado)resposta["recurso"]["device"]["estadoFan"].as<int>();
+      }
+      break;
+      }
+    }
+  }
+
+  if (estado == "PULSE")
+  {
+    // Agendar o OFF = pulso de 1000ms
+    agendamentosAdd(AGEND_RECURSO, 1000, recursoID, false);
+  }
+
+  eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre);
+
   return msg;
-}
-
-String recursoCheckLocked(Recurso *recurso, bool estadoDesejado)
-{
-  if (recurso->tipo != RECURSO_RELE)
-    return "recursoCheck: Recurso nao eh RELE";
-
-  Rele *r = recursoGetRele(recurso);
-  if (r->estado != estadoDesejado)
-    return recursoSetLocked(recurso, estadoDesejado ? "ON" : "OFF", false);
-
-  return "";
 }
 
 void recursoEnviaSSE(const char *recursoID)

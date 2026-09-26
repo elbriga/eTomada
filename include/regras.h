@@ -71,7 +71,6 @@ struct Regra
 
 void regrasInit();
 void regrasBoot();
-void regrasBootLocked();
 
 int regrasCount();
 

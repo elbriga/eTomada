@@ -47,11 +47,9 @@ void regrasInit()
     String msg = regrasLoad(REGRAS_PATH);
     if (msg != "OK")
         logaM(LOG_AVISO, ">> regrasLoad: [%s]", msg.c_str());
-
-    regrasBootLocked();
 }
 
-Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
+Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, String &estadoAtualOut)
 {
     // Tratando somente reles por enquanto
     if (recursoIn->tipo != RECURSO_RELE)
@@ -89,7 +87,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
             {
                 minutoUltimo = minutoRegra;
                 regraAtivadaOut = regra;
-                *estadoAtualOut = (regra->acao.comando == "ON");
+                estadoAtualOut = regra->acao.comando;
             }
         }
     }
@@ -97,19 +95,13 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, bool *estadoAtualOut)
     return regraAtivadaOut;
 }
 
-void regrasBoot()
+#define REGRAS_BOOT_MAX_ACOES 16
+typedef struct
 {
-    MutexLock lock(recursosMutex);
-    if (!lock)
-    {
-        logaM(LOG_CRITICO, "regrasBoot: mutex timeout");
-        return;
-    }
+    String recursoID, estado;
+} CacheAcao;
 
-    regrasBootLocked();
-}
-
-void regrasBootLocked()
+void regrasBoot()
 {
     // Obter horario
     struct tm timeinfo;
@@ -121,26 +113,66 @@ void regrasBootLocked()
         return;
     }
 
-    logaM(LOG_AVISO, "== regrasBoot() ==");
+    int totAcoes = 0;
+    CacheAcao cache[REGRAS_BOOT_MAX_ACOES] = {};
 
-    // Ajustar o estado dos RELEs conforme as regras de HORARIO para agora
-    int totRecursos = recursosGetCount();
-    for (int r = 0; r < totRecursos; r++)
     {
-        Recurso *recurso = recursoGetPorIndice(r);
-        if (recurso->tipo != RECURSO_RELE)
-            continue;
-
-        bool estadoAtual;
-        Regra *regraAtivada = regrasCalculaEstadoAtual(recurso, &estadoAtual);
-        if (regraAtivada)
+        MutexLock lock(recursosMutex);
+        if (!lock)
         {
-            logaM(LOG_NORMAL, "Conferir estado do recurso [%s][%s] para %d pela regra [%s]",
-                  recurso->id, recurso->nome, estadoAtual, regraAtivada->nome);
-            String msg = recursoCheckLocked(recurso, estadoAtual);
-            if (msg != "")
-                logaM(LOG_AVISO, ">> recursoCheck :: [%s]", msg.c_str());
+            logaM(LOG_CRITICO, "regrasBoot: mutex timeout");
+            return;
         }
+
+        logaM(LOG_AVISO, "== regrasBoot() ==");
+
+        // Ajustar o estado dos RELEs conforme as regras de HORARIO para agora
+        int totRecursos = recursosGetCount();
+        for (int r = 0; r < totRecursos; r++)
+        {
+            Recurso *recurso = recursoGetPorIndice(r);
+            if (recurso->tipo != RECURSO_RELE) // TODO Umid?
+                continue;
+
+            String estadoAtual;
+            Regra *regraAtivada = regrasCalculaEstadoAtual(recurso, estadoAtual);
+            if (regraAtivada)
+            {
+                logaM(LOG_NORMAL, "Setar recurso [%s][%s] para %d pela regra [%s]",
+                      recurso->id, recurso->nome, estadoAtual.c_str(), regraAtivada->nome);
+
+                // Verificar se ja temos esse recurso no cache
+                // Se houver o recurso ficara no estado da ultima regra ativada
+                bool temos = false;
+                for (int c = 0; c < totAcoes; c++)
+                {
+                    if (cache[c].recursoID == recurso->id)
+                    {
+                        cache[c].estado = estadoAtual;
+                        temos = true;
+                        break;
+                    }
+                }
+                if (temos)
+                    continue;
+
+                if (totAcoes >= REGRAS_BOOT_MAX_ACOES)
+                {
+                    logaM(LOG_CRITICO, "REGRAS_BOOT_MAX_ACOES atingido!!!");
+                    break;
+                }
+
+                cache[totAcoes].recursoID = recurso->id;
+                cache[totAcoes].estado = estadoAtual;
+                totAcoes++;
+            }
+        }
+    }
+
+    // Executar o cache fora do Lock
+    for (int c = 0; c < totAcoes; c++)
+    {
+        recursoSet(cache[c].recursoID.c_str(), cache[c].estado.c_str());
     }
 }
 
@@ -201,7 +233,7 @@ String regraDisparaAcao(Regra *regra)
         if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoESTADO : Nao eh RELE!";
 
-        return recursoSet(rec, acao->comando);
+        return recursoSet(acao->recursoID, acao->comando);
     }
     break;
 
@@ -211,10 +243,10 @@ String regraDisparaAcao(Regra *regra)
         if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoTIMER : Nao eh RELE!";
 
-        String ret = recursoSet(rec, "ON");
+        String ret = recursoSet(acao->recursoID, "ON");
         // Agendar o OFF
         // TODO :: no recursoSet cancelar os agendamentos
-        agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, rec->id, false);
+        agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, acao->recursoID, false);
     }
     break;
 

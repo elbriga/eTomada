@@ -10,6 +10,7 @@
 #include "util.h"
 #include "ota.h"
 #include "apiInterna.h"
+#include "mutex.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("API", nivel, fmt, ##__VA_ARGS__)
@@ -26,13 +27,20 @@ void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, si
 {
   bool fromMestre = mestreAtivo() && (request->client()->remoteIP() == mestreGetIP());
 
-  Recurso *rec = nullptr;
-  String msg = recursoSetFromJSON(data, rec, !fromMestre);
+  String recursoID;
+  String msg = recursoSetFromJSON(data, recursoID, !fromMestre);
 
   JsonDocument resposta;
   resposta["msg"] = (fromMestre ? "SIM MESTRE!:" : "") + msg;
-  if (fromMestre && rec)
-    resposta["recurso"] = recursoGetJSONDoc(rec);
+  if (fromMestre && recursoID != "")
+  {
+    MutexLock lock(recursosMutex);
+    if (lock)
+    {
+      Recurso *rec = recursoGet(recursoID.c_str());
+      resposta["recurso"] = recursoGetJSONDoc(rec);
+    }
+  }
 
   String payload;
   serializeJson(resposta, payload);
@@ -131,18 +139,33 @@ void apiGetNodo(AsyncWebServerRequest *request)
   }
   else
   {
+    IPAddress ip;
     String id = request->getParam("id")->value();
-    NodoRemoto *nr = nodoRemotoGet(id.c_str());
-    if (!nr)
     {
-      ret["msg"] = "Nodo Invalido";
+      MutexLock lock(recursosMutex);
+      if (!lock)
+      {
+        ret["msg"] = "Erro Mutex!";
+      }
+      else
+      {
+        NodoRemoto *nr = nodoRemotoGet(id.c_str());
+        if (!nr)
+        {
+          ret["msg"] = "Nodo Invalido";
+        }
+        else
+        {
+          ip = nr->ip;
+          ret["msg"] = "OK";
+        }
+      }
     }
-    else
-    {
-      ret["msg"] = "OK";
 
+    if (ip)
+    {
       JsonDocument snapshot;
-      apiInternaGetSnapshot(nr->ip, snapshot);
+      apiInternaGetSnapshot(ip, snapshot);
       ret["nodo"] = snapshot;
     }
   }

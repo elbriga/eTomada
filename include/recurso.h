@@ -39,9 +39,8 @@ Botao *recursoGetBotao(Recurso *recurso);
 Umidificador *recursoGetUmidificador(Recurso *recurso);
 
 // Altera o recurso > acoes
-String recursoSetFromJSON(uint8_t *json, Recurso *&recursoOut, bool enviaMestre = true);
-String recursoSet(Recurso *recurso, String estado, bool enviaMestre = true);
-String recursoCheckLocked(Recurso *recurso, bool estadoDesejado);
+String recursoSetFromJSON(uint8_t *json, String &recursoIDOut, bool enviaMestre = true);
+String recursoSet(const char *recursoID, String estado, bool enviaMestre = true);
 
 // Atualiza o recurso > eventos
 String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool enviaEventos);

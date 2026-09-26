@@ -97,35 +97,39 @@ void eTomadaInit()
 static int configLoadCount = 0;
 void eTomadaLoadConfig()
 {
-  MutexLock lock(recursosMutex);
-  if (!lock)
   {
-    logaM(LOG_CRITICO, "eTomadaLoadConfig: mutex timeout");
-    logaM(LOG_CRITICO, "eTomadaLoadConfig: mutex timeout");
-    logaM(LOG_CRITICO, "eTomadaLoadConfig: mutex timeout");
+    MutexLock lock(recursosMutex);
+    if (!lock)
+    {
+      logaM(LOG_CRITICO, "eTomadaLoadConfig: mutex timeout");
+      return;
+    }
+
+    logaM(LOG_AVISO, ">>> eTomadaLoadConfig[%d]", configLoadCount);
+
+    if (modoOperacao == MODO_CONTROLADOR) // TODO :: MODO_NO com nodo/recurso remoto?
+    {
+      logaM(LOG_NORMAL, "%sInicializando Nodos Remotos:", configLoadCount ? "(RE)" : "");
+      nodoRemotoInit();
+
+      logaM(LOG_NORMAL, "%sInicializando Recursos Remotos:", configLoadCount ? "(RE)" : "");
+      recursosRemotosInit();
+    }
+
+    logaM(LOG_NORMAL, "%sInicializando Recursos:", configLoadCount ? "(RE)" : "");
+    recursosInit();
+
+    logaM(LOG_NORMAL, "%sInicializando Regras:", configLoadCount ? "(RE)" : "");
+    regrasInit();
+
+    // Drivers
+    sensorChuvaInit();
+
+    configLoadCount++;
   }
 
-  logaM(LOG_AVISO, ">>> eTomadaLoadConfig[%d]", configLoadCount);
-
-  if (modoOperacao == MODO_CONTROLADOR) // TODO :: MODO_NO com nodo/recurso remoto?
-  {
-    logaM(LOG_NORMAL, "%sInicializando Nodos Remotos:", configLoadCount ? "(RE)" : "");
-    nodoRemotoInit();
-
-    logaM(LOG_NORMAL, "%sInicializando Recursos Remotos:", configLoadCount ? "(RE)" : "");
-    recursosRemotosInit();
-  }
-
-  logaM(LOG_NORMAL, "%sInicializando Recursos:", configLoadCount ? "(RE)" : "");
-  recursosInit();
-
-  logaM(LOG_NORMAL, "%sInicializando Regras:", configLoadCount ? "(RE)" : "");
-  regrasInit();
-
-  // Drivers
-  sensorChuvaInit();
-
-  configLoadCount++;
+  // Regras Boot fora do Lock
+  regrasBoot();
 }
 
 ModoOperacao eTomadaGetModoOperacao()
@@ -200,30 +204,42 @@ String eTomadaGetSnapshotJSON()
   strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
   doc["datahorastr"] = formattedTime;
 
-  Recurso *recurso;
-  int totRecursos = recursosGetCount();
-  JsonArray recursos = doc["recursos"].to<JsonArray>();
-  for (int i = 0; i < totRecursos; i++)
   {
-    recurso = recursoGetPorIndice(i);
-    if (!recurso)
-      continue;
+    MutexLock lock(recursosMutex);
+    if (lock)
+    {
+      Recurso *recurso;
+      int totRecursos = recursosGetCount();
+      JsonArray recursos = doc["recursos"].to<JsonArray>();
+      for (int i = 0; i < totRecursos; i++)
+      {
+        recurso = recursoGetPorIndice(i);
+        if (!recurso)
+          continue;
 
-    recursos.add(recursoGetJSONDoc(recurso));
+        recursos.add(recursoGetJSONDoc(recurso));
+      }
+
+      JsonDocument regrasJS;
+      regrasGetJSONDoc(regrasJS);
+      doc["regras"] = regrasJS;
+
+      if (nodosRemotosGetCount())
+        doc["nodosRemotos"] = nodosRemotosGetJSON();
+
+      if (nodosRemotosGetNovosCount())
+        doc["novosNodos"] = nodosRemotosGetNovosJSON();
+
+      if (sensorChuvaAtivo())
+        doc["horasSemChuva"] = sensorChuvaGetHorasSemChuva();
+    }
+    else
+    {
+      logaM(LOG_CRITICO, "getSnapshot :: Erro de lock!");
+      JsonArray recursosZerados = doc["recursos"].to<JsonArray>();
+      JsonArray regrasZeradas = doc["regras"].to<JsonArray>();
+    }
   }
-
-  JsonDocument regrasJS;
-  regrasGetJSONDoc(regrasJS);
-  doc["regras"] = regrasJS;
-
-  if (nodosRemotosGetCount())
-    doc["nodosRemotos"] = nodosRemotosGetJSON();
-
-  if (nodosRemotosGetNovosCount())
-    doc["novosNodos"] = nodosRemotosGetNovosJSON();
-
-  if (sensorChuvaAtivo())
-    doc["horasSemChuva"] = sensorChuvaGetHorasSemChuva();
 
   String out;
   serializeJson(doc, out);
@@ -236,38 +252,47 @@ void eTomadaRoleta()
   logaTitulo("ROLETA!");
 
   int totRelesLocais = 0;
-  int totRecursos = recursosGetCount();
-  for (int r = 0; r < totRecursos; r++)
-  {
-    Recurso *recurso = recursoGetPorIndice(r);
-    if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
+  String *relesLocais = nullptr;
+
+  { // Lock para pegar os IDs dos relesLocais
+    MutexLock lock(recursosMutex);
+    if (!lock)
     {
-      totRelesLocais++;
+      logaM(LOG_CRITICO, "roleta :: ERRO DE LOCK!");
+      return;
+    }
+
+    int totRecursos = recursosGetCount();
+    for (int r = 0; r < totRecursos; r++)
+    {
+      Recurso *recurso = recursoGetPorIndice(r);
+      if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
+      {
+        totRelesLocais++;
+      }
+    }
+
+    relesLocais = new String[totRelesLocais]();
+    if (!relesLocais)
+    {
+      logaTitulo("ROLETA :: ERRO DE MALLOC");
+      return;
+    }
+
+    int rli = 0;
+    for (int r = 0; r < totRecursos; r++)
+    {
+      Recurso *recurso = recursoGetPorIndice(r);
+      if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
+      {
+        relesLocais[rli++] = recurso->id;
+      }
     }
   }
 
-  Recurso **relesLocais = (Recurso **)calloc(sizeof(Recurso *), totRelesLocais);
-  if (!relesLocais)
-  {
-    logaTitulo("ROLETA :: ERRO DE MALLOC");
-    return;
-  }
-
-  int rli = 0;
-  for (int r = 0; r < totRecursos; r++)
-  {
-    Recurso *recurso = recursoGetPorIndice(r);
-    if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
-    {
-      relesLocais[rli++] = recurso;
-    }
-  }
-
+  // Zerar
   for (int r = 0; r < totRelesLocais; r++)
-  {
-    Recurso *recurso = relesLocais[r];
-    recursoSet(recurso, "OFF");
-  }
+    recursoSet(relesLocais[r].c_str(), "OFF");
 
   int delay = 25, delta = 2;
   int num = esp_random() % totRelesLocais;
@@ -284,8 +309,8 @@ void eTomadaRoleta()
     {
       num = 0;
     }
-    recursoSet(relesLocais[oldNum], "OFF");
-    recursoSet(relesLocais[num], "ON");
+    recursoSet(relesLocais[oldNum].c_str(), "OFF");
+    recursoSet(relesLocais[num].c_str(), "ON");
 
     loop++;
     if (loop > 40)
@@ -299,33 +324,37 @@ void eTomadaRoleta()
     vTaskDelay(pdMS_TO_TICKS(delay));
   }
 
-  free(relesLocais);
+  delete[] relesLocais;
 
   logaM(LOG_AVISO, "** Numero Sorteado: %d **", num + 1);
 }
 
 void eTomadaFactoryReset()
 {
-  MutexLock lockPrefs(prefsMutex);
-  if (!lockPrefs)
   {
-    logaM(LOG_CRITICO, "Erro de mutex no factory reset!");
-    return;
+    MutexLock lockPrefs(prefsMutex);
+    if (!lockPrefs)
+    {
+      logaM(LOG_CRITICO, "Erro de mutex no factory reset!");
+      return;
+    }
+
+    Preferences prefs;
+
+    prefs.begin("reles", false);
+    prefs.clear();
+    prefs.end();
+
+    prefs.begin("sensores", false);
+    prefs.clear();
+    prefs.end();
+
+    prefs.begin("recursosRemotos", false);
+    prefs.clear();
+    prefs.end();
   }
 
-  Preferences prefs;
-
-  prefs.begin("reles", false);
-  prefs.clear();
-  prefs.end();
-
-  prefs.begin("sensores", false);
-  prefs.clear();
-  prefs.end();
-
-  prefs.begin("recursosRemotos", false);
-  prefs.clear();
-  prefs.end();
+  // TODO :: Arquivo.json!
 
   logaTitulo("RESET!");
   ESP.restart();

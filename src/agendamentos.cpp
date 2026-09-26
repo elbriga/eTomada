@@ -13,7 +13,7 @@ struct AcaoAgendada
 
     // Para acao AGEND_RECURSO
     char recursoID[32];
-    int estado;
+    int estado; // TODO :: mudar para string comando
 };
 
 #define MAX_ACOES_AGENDADAS 16
@@ -86,14 +86,13 @@ void agendamentosProcessaTask(void *)
                 {
                 case AGEND_RECURSO:
                 {
-                    Recurso *r = recursoGet(acao->recursoID);
-                    if (!r)
+                    if (!recursoGet(acao->recursoID))
                     {
                         logaM(LOG_CRITICO, "agendamentosProcessaTask :: recurso invalido!");
                         break;
                     }
 
-                    recursoSet(r, acao->estado ? "ON" : "OFF");
+                    recursoSet(acao->recursoID, acao->estado ? "ON" : "OFF");
                 }
                 break;
 

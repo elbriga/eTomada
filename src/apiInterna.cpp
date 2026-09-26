@@ -24,33 +24,25 @@ String apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc)
   return code == 200 ? "OK" : String(code);
 }
 
-String apiInternaSetRecurso(Recurso *recurso, String estado)
+String apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta)
 {
-  if (!recurso->remoto)
-  {
-    return "Recurso nao Remoto";
-  }
-
-  RecursoRemoto *rr = recurso->recursoRemoto;
-  NodoRemoto *nodo = rr->nodo;
-  JsonDocument resposta;
   int code = 0;
 
-  switch (nodo->tipo)
+  switch (tipoNodo)
   {
   case TIPO_NODO_FULL:
   {
     JsonDocument request;
-    request["id"] = String(rr->idRemoto);
+    request["id"] = idRemoto;
     request["estado"] = estado;
 
-    code = apiInterna(rr->nodo->ip, "setRecurso", "PUT", &request, &resposta);
+    code = apiInterna(ip, "setRecurso", "PUT", &request, &resposta);
   }
   break;
 
   case TIPO_NODO_LITE:
   {
-    code = apiInterna(rr->nodo->ip, "setRele?estado=" + estado, "GET", nullptr, &resposta);
+    code = apiInterna(ip, "setRele?estado=" + estado, "GET", nullptr, &resposta);
   }
   break;
 
@@ -62,32 +54,6 @@ String apiInternaSetRecurso(Recurso *recurso, String estado)
   {
     logaM(LOG_CRITICO, "Erro API Interna: %d", code);
     // TODO ??
-  }
-
-  if (resposta.isNull())
-    return "Resposta vazia!";
-
-  String out;
-  serializeJson(resposta, out);
-  logaM(LOG_AVISO, "ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
-
-  switch (recurso->tipo)
-  {
-  case RECURSO_RELE:
-  {
-    Rele *rele = &rr->rele;
-    rele->estado = resposta["recurso"]["device"]["estado"].as<bool>();
-  }
-  break;
-
-  case RECURSO_UMIDIFICADOR:
-  {
-    Umidificador *umid = &rr->umid;
-    umid->estado = (UmidificadorEstado)resposta["recurso"]["device"]["estado"].as<int>();
-    umid->estadoFan = (UmidificadorFanEstado)resposta["recurso"]["device"]["estadoFan"].as<int>();
-  }
-
-  break;
   }
 
   // TODO localizar a msg para os params locais
