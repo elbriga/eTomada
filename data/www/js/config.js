@@ -76,7 +76,7 @@ function tenhoRecurso(nodo, id) {
   if (eTomadaData.recursos == undefined) return false;
 
   let rec = eTomadaData.recursos.find(
-    (r) => r.nodo == nodo && r.idRemoto == id,
+    (r) => r.remoto && r.nodo == nodo && r.idRemoto == id,
   );
 
   return !!rec;
@@ -132,7 +132,9 @@ Modelo: ${nodo.tipo}<input type="hidden" id="tipoNodo-${id}" value="${nodo.tipo}
   if (nodo.novo) {
     htmlInfo += `<button onclick="nodoAdd('${id}')">🟢 Adicionar</button>`;
   } else {
-    const recursos = eTomadaData.recursos.filter((r) => r.nodo == id);
+    const recursos = eTomadaData.recursos.filter(
+      (r) => r.remoto && r.nodo == id,
+    );
 
     let htmlRecursos = "Recursos:<br><ul>";
     recursos.forEach((r) => {
