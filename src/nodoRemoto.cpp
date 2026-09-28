@@ -12,6 +12,7 @@
 #include "apiInterna.h"
 #include "recurso.h"
 #include "mutex.h"
+#include "regras.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("NODORMT", nivel, fmt, ##__VA_ARGS__)
@@ -255,9 +256,11 @@ void nodosRemotosRefreshTask(void *args)
       continue;
 
     // HTTP sem o LOCK
+    String msg;
     JsonDocument snapshot;
-    if (apiInternaGetSnapshot(ip, snapshot) != "OK")
+    if (!apiInternaGetSnapshot(ip, snapshot, msg))
     {
+      logaM(LOG_AVISO, "nodosRemotosRefreshTask > apiIntGetSnapshot > [%s]", msg.c_str());
       snapshot.clear();
       continue;
     }
@@ -275,6 +278,25 @@ void nodosRemotosRefreshTask(void *args)
         continue;
 
       recursoRemotoAtualizaFromSnapshotLocked(nodoRemoto, snapshot);
+    }
+
+    // regrasBoot fora do Lock
+    if (regrasBoot(nodoID))
+    {
+      MutexLock lock(modeloMutex);
+      if (!lock)
+      {
+        logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 3!");
+        continue;
+      }
+
+      NodoRemoto *nodoRemoto = nodoRemotoGet(nodoID);
+      if (!nodoRemoto)
+      {
+        logaM(LOG_AVISO, "nodosRemotosRefreshTask :: nodo sumiu!");
+        continue;
+      }
+
       nodoRemoto->refreshPendente = false;
     }
 
