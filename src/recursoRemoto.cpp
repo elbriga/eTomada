@@ -197,6 +197,7 @@ String recursoRemotoAddFromJSON(uint8_t *json)
   String idRemotoStr = doc["idRemoto"];
   doc.clear();
 
+  IPAddress ip;
   {
     MutexLock lock(modeloMutex);
     if (!lock)
@@ -206,31 +207,46 @@ String recursoRemotoAddFromJSON(uint8_t *json)
     if (!nodo)
       return "Nodo não encontrado!";
 
-    JsonDocument snapshot;
-    apiInternaGetSnapshot(nodo->ip, snapshot); // TODO :: remover de dentro do LOCK!
-
-    JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, idRemotoStr);
-    if (!cacheRR)
-      return "Recurso não encontrado!";
-
-    RecursoRemoto rr;
-
-    rr.tipo = recursoGetTipoFromStr(cacheRR["tipo"]);
-    if (!recursoSetNextID(&rr))
-      return "Erro ao setar idLocal!";
-
-    rr.nodo = nodo;
-    strlcpy(rr.idRemoto, idRemotoStr.c_str(), sizeof(rr.idRemoto));
-
-    doc.clear();
-
-    String msg = recursosRemotosPersisteLocked(&rr);
-    if (msg != "OK")
-      return msg;
+    ip = nodo->ip;
   }
 
-  // ReLoad config
-  eTomadaLoadConfig();
+  String msg;
+  JsonDocument snapshot;
+  if (apiInternaGetSnapshot(ip, snapshot, msg)) // HTTP sem Lock
+  {
+    JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, idRemotoStr);
+    if (!cacheRR)
+      return "Cache Recurso não encontrado!";
+
+    RecursoRemoto rr;
+    rr.tipo = recursoGetTipoFromStr(cacheRR["tipo"]);
+
+    {
+      MutexLock lock(modeloMutex);
+      if (!lock)
+        return "recursoRemotoAddFromJSON :: Lock 2!";
+
+      if (!recursoSetNextID(&rr))
+        return "Erro ao setar idLocal!";
+
+      rr.nodo = nodoRemotoGet(nodoStr.c_str());
+      if (!rr.nodo)
+        return "Nodo não encontrado 2!";
+
+      strlcpy(rr.idRemoto, idRemotoStr.c_str(), sizeof(rr.idRemoto));
+
+      doc.clear();
+
+      String msg = recursosRemotosPersisteLocked(&rr);
+      if (msg != "OK")
+        return msg;
+    }
+
+    // ReLoad config sem Lock
+    eTomadaLoadConfig();
+  }
+  else
+    return msg;
 
   return "OK";
 }
