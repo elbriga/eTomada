@@ -69,7 +69,7 @@ bool apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *requ
   }
 
   String url = "http://" + ip.toString() + "/api/" + endpoint;
-  logaM(LOG_AVISO, "apiInterna: Acionando %s", url.c_str());
+  logaM(LOG_DEBUG0, "apiInterna: Acionando %s", url.c_str());
 
   HTTPClient http;
   http.begin(url);

@@ -31,7 +31,7 @@ void mestreInit()
     prefs.begin("eTomada", false);
 
     // Para testes
-    // prefs.putString("mestre1", "GROW"); // resolve por mDNS
+    // prefs.putString("mestre1", "MESTRE"); // resolve por mDNS
 
     mestre.deviceID = getPrefsAtr(prefs, "1", "mestre");
     prefs.end();
