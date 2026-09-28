@@ -197,6 +197,9 @@ String eTomadaGetSnapshotJSON()
   doc["ssid"] = WiFi.SSID();
   doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
 
+  if (mestreAtivo())
+    doc["mestre"] = mestreGetID();
+
   doc["uptime"] = millis();
   time_t now = 0;
   time(&now);

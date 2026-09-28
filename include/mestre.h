@@ -15,6 +15,8 @@ void mestreCheckOnline(); // Remover ??
 
 void mestreLoop();
 bool mestreAtivo();
+
 IPAddress mestreGetIP();
+const char *mestreGetID();
 
 void mestreEnviaEvento(const char *recursoID, TipoEvento tipoEvento);

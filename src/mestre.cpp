@@ -111,3 +111,8 @@ IPAddress mestreGetIP()
 {
     return mestre.ip;
 }
+
+const char *mestreGetID()
+{
+    return mestre.deviceID.c_str();
+}
