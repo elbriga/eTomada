@@ -16,6 +16,7 @@ enum LogLevel
 void logaInit();
 bool logaRemotoAtivo();
 String logaGetLogServer();
+void logaChangeLevel(int newLevel);
 
 // Funções novas
 void loga(const char *modulo, LogLevel nivel, const char *fmt, ...);

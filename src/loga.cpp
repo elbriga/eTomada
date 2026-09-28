@@ -48,17 +48,9 @@ bool logaRemotoAtivo()
   return (logServer != "");
 }
 
-void logaInit()
+void logaChangeLevel(int newLevel)
 {
-  Preferences prefs;
-  prefs.begin("eTomada", false); // usando o mesmo namespace de eTomada.cpp
-
-  // Para testes
-  // prefs.putString("logLevel", String(LOG_DEBUG));
-  // prefs.putString("logServer", "192.168.1.220:8080");
-
-  int levelPrefs = getPrefsAtr(prefs, "", "logLevel").toInt();
-  switch (levelPrefs)
+  switch (newLevel)
   {
   case LOG_CRITICO:
     logaM(LOG_NORMAL, "Nivel de log: CRITICO");
@@ -89,7 +81,18 @@ void logaInit()
     logLevel = LOG_NORMAL;
     break;
   }
+}
 
+void logaInit()
+{
+  Preferences prefs;
+  prefs.begin("eTomada", false); // usando o mesmo namespace de eTomada.cpp
+
+  // Para testes
+  // prefs.putString("logLevel", String(LOG_DEBUG0));
+  // prefs.putString("logServer", "192.168.1.220:8080");
+
+  logaChangeLevel(getPrefsAtr(prefs, "", "logLevel").toInt());
   logServer = LOG_SERVER; // getPrefsAtr(prefs, "", "logServer");
 
   prefs.end();
@@ -125,6 +128,7 @@ void logaInit()
       nullptr);
 
   logaM(LOG_NORMAL, "Log remoto inicializado em %s", logServer.c_str());
+  logaChangeLevel(logLevel); // Para msg
 }
 
 void loga(const char *modulo, LogLevel nivel, const char *fmt, ...)

@@ -84,7 +84,7 @@ bool apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *requ
     if (request != nullptr)
     {
       serializeJson(*request, body);
-      logaM(LOG_DEBUG, ">> BODY: %s", body.c_str());
+      logaM(LOG_DEBUG0, ">> BODY: %s", body.c_str());
     }
 
     http.addHeader("Content-Type", "application/json");
@@ -158,7 +158,7 @@ bool apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *requ
       }
       response[pos] = '\0';
 
-      logaM(LOG_DEBUG, " >> RESP: %s", response);
+      logaM(LOG_DEBUG0, " >> RESP: %s", response);
 
       if (responseOut)
         utilLeJson("apiInterna", *responseOut, response);

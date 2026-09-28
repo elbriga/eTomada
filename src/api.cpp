@@ -64,7 +64,9 @@ void apiEvento(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t
   String atzEventoOK = recursoEventoRecebido(data);
 
   request->send(200, "application/json", "{\"msg\": \"" + atzEventoOK + "\"}");
-  // removido por flood! logaRequest(request, "200 " + atzEventoOK);
+
+  if (atzEventoOK != "OK")
+    logaRequest(request, "200 " + atzEventoOK);
 }
 
 void apiMock(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
@@ -286,7 +288,13 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
     prefs.putString("mestre1", mestre);
     prefs.end();
 
-    request->send(200, "application/json", R"({"msg":"OK"})");
+    request->send(200, "application/json", R"({"msg":"Mestre Configurado"})");
+    logaRequest(request, "200 OK");
+  }
+  else if (!doc["logLevel"].isNull())
+  {
+    logaChangeLevel(doc["logLevel"].as<int>());
+    request->send(200, "application/json", R"({"msg":"logLevel configurado"})");
     logaRequest(request, "200 OK");
   }
   else
