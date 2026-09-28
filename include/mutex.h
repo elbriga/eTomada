@@ -2,6 +2,10 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
+#include "loga.h"
+
+#define MUTEX_TIMEOUT 2500
+
 extern SemaphoreHandle_t configMutex;
 extern SemaphoreHandle_t modeloMutex;
 
@@ -10,9 +14,12 @@ void mutexInit();
 class MutexLock
 {
 public:
-    MutexLock(SemaphoreHandle_t mutex) : mutex(mutex), locked(false)
+    MutexLock(SemaphoreHandle_t mutex, const char *quem) : mutex(mutex), locked(false)
     {
-        locked = xSemaphoreTake(mutex, pdMS_TO_TICKS(2500));
+        // loga("LOCK", LOG_DEBUG, "## Lock [%s] ##", quem);
+        locked = xSemaphoreTake(mutex, pdMS_TO_TICKS(MUTEX_TIMEOUT));
+        if (!locked)
+            loga("LOCK", LOG_CRITICO, "Erro de Lock em [%s]", quem);
     }
 
     ~MutexLock()

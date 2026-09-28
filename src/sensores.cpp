@@ -139,7 +139,7 @@ void sensoresAtualiza()
 void sensoresAtualizaTask(void *args)
 {
   { // Escopo para o lock (sem ele não chama o destrutor)
-    MutexLock lock(modeloMutex);
+    MutexLock lock(modeloMutex, "sensoresAtualizaTask");
     if (!lock)
     {
       logaM(LOG_CRITICO, "sensorAtualiza: mutex timeout");

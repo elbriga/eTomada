@@ -116,7 +116,7 @@ bool regrasBoot(const char *nodoID)
     CacheAcao cache[REGRAS_BOOT_MAX_ACOES] = {};
 
     {
-        MutexLock lock(modeloMutex);
+        MutexLock lock(modeloMutex, "regrasBoot");
         if (!lock)
         {
             logaM(LOG_CRITICO, "regrasBoot: mutex timeout");

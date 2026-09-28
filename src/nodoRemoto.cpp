@@ -184,7 +184,7 @@ void nodosRemotosRefreshTask(void *args)
 
   // Atualizar os nodos encontrados
   {
-    MutexLock lock(modeloMutex);
+    MutexLock lock(modeloMutex, "nodosRemotosRefreshTask");
     if (!lock)
     {
       logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de Mutex!");
@@ -232,11 +232,10 @@ void nodosRemotosRefreshTask(void *args)
   {
     char nodoID[32];
     IPAddress ip;
-    bool refreshPendente;
 
     // Pegar os dados com LOCK
     {
-      MutexLock lock(modeloMutex);
+      MutexLock lock(modeloMutex, "nodosRemotosRefreshTask2");
       if (!lock)
       {
         logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 2!");
@@ -247,12 +246,14 @@ void nodosRemotosRefreshTask(void *args)
       if (!nodoRemoto)
         break;
 
-      strlcpy(nodoID, nodoRemoto->id, sizeof(nodoID));
-      ip = nodoRemoto->ip;
-      refreshPendente = nodoRemoto->refreshPendente;
+      if (nodoRemoto->ip && nodoRemoto->refreshPendente)
+      {
+        strlcpy(nodoID, nodoRemoto->id, sizeof(nodoID));
+        ip = nodoRemoto->ip;
+      }
     }
 
-    if (!ip || !refreshPendente)
+    if (!ip)
       continue;
 
     // HTTP sem o LOCK
@@ -266,7 +267,7 @@ void nodosRemotosRefreshTask(void *args)
     }
 
     {
-      MutexLock lock(modeloMutex);
+      MutexLock lock(modeloMutex, "nodosRemotosRefreshTask3");
       if (!lock)
       {
         logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 3!");
@@ -283,7 +284,7 @@ void nodosRemotosRefreshTask(void *args)
     // regrasBoot fora do Lock
     if (regrasBoot(nodoID))
     {
-      MutexLock lock(modeloMutex);
+      MutexLock lock(modeloMutex, "nodosRemotosRefreshTask4");
       if (!lock)
       {
         logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 3!");
@@ -468,7 +469,7 @@ String nodoRemotoAddFromJSON(uint8_t *json)
   doc.clear();
 
   {
-    MutexLock lock(modeloMutex);
+    MutexLock lock(modeloMutex, "nodoRemotoAddFromJSON");
     if (!lock)
       return "nodoRemotoAddFromJSON :: Lock!";
 
@@ -496,7 +497,7 @@ String nodoRemotoDelFromJSON(uint8_t *json)
   }
 
   {
-    MutexLock lock(modeloMutex);
+    MutexLock lock(modeloMutex, "nodoRemotoDelFromJSON");
     if (!lock)
       return "nodoRemotoDelFromJSON :: Lock!";
 

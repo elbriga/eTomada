@@ -104,7 +104,7 @@ void botoesAtualiza()
   if (!botoesGetCount())
     return;
 
-  MutexLock lock(modeloMutex);
+  MutexLock lock(modeloMutex, "botoesAtualiza");
   if (!lock)
   {
     logaM(LOG_CRITICO, "botoesAtualiza: mutex timeout");

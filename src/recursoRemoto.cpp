@@ -199,7 +199,7 @@ String recursoRemotoAddFromJSON(uint8_t *json)
 
   IPAddress ip;
   {
-    MutexLock lock(modeloMutex);
+    MutexLock lock(modeloMutex, "recursoRemotoAddFromJSON");
     if (!lock)
       return "recursoRemotoAddFromJSON :: Lock!";
 
@@ -222,7 +222,7 @@ String recursoRemotoAddFromJSON(uint8_t *json)
     rr.tipo = recursoGetTipoFromStr(cacheRR["tipo"]);
 
     {
-      MutexLock lock(modeloMutex);
+      MutexLock lock(modeloMutex, "recursoRemotoAddFromJSON2");
       if (!lock)
         return "recursoRemotoAddFromJSON :: Lock 2!";
 
@@ -265,7 +265,7 @@ String recursoRemotoDelFromJSON(uint8_t *json)
   doc.clear();
 
   {
-    MutexLock lock(modeloMutex);
+    MutexLock lock(modeloMutex, "recursoRemotoDelFromJSON");
     if (!lock)
       return "recursoRemotoDelFromJSON :: Lock!";
 
