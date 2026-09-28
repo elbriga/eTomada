@@ -182,7 +182,7 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut, bool
     {
     case RECURSO_RELE:
     {
-      ret = releControlaLocked(recurso->rele, estado == "ON", msgOut);
+      ret = releControla(recurso, estado == "ON", msgOut);
     }
     break;
 

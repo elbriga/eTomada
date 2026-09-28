@@ -88,42 +88,36 @@ JsonDocument releGetJSONDoc(Recurso *rec, bool full)
   return doc;
 }
 
-bool releControla(Rele *rele, bool estado, String &msgOut)
+bool releControla(Recurso *r, bool estado, String &msgOut)
 {
-  MutexLock lock(modeloMutex);
-  if (!lock)
+  if (r->tipo != RECURSO_RELE)
   {
-    return "releControla: mutex timeout";
+    msgOut = "releControla: Recurso não é Rele!";
+    return false;
   }
 
-  return releControlaLocked(rele, estado, msgOut);
-}
-
-bool releControlaLocked(Rele *rele, bool estado, String &msgOut)
-{
+  Rele *rele = recursoGetRele(r);
   if (!rele)
   {
-    msgOut = "releControlaLocked: Rele invalido";
+    msgOut = "releControla: Rele invalido";
     return false;
   }
 
   if (rele->pino == -1)
   {
-    msgOut = "releControlaLocked: pino invalido";
+    msgOut = "releControla: pino invalido";
     return false;
   }
 
-  String ret = "";
   if (estado != rele->estado) // TODO :: remover esse if?
   {
     digitalWrite(rele->pino, rele->invertido ? !estado : estado);
     rele->estado = estado;
 
-    char msg[40];
-    snprintf(msg, sizeof(msg), "%s (rele %d, pino %d)", // TODO :: nome
-             (estado ? "Ligando" : "Desligando"), rele->num, rele->pino);
-    msgOut = msg;
+    msgOut = (estado ? "Ligando" : "Desligando") + String(" Rele ") + r->id;
   }
+  else
+    msgOut = "Rele " + String(r->id) + " já " + (estado ? "Ligado" : "Desligado");
 
   return true;
 }
