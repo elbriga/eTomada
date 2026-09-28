@@ -133,13 +133,16 @@ void recursosZera()
   totRecursos = 0;
 }
 
-String recursoSetFromJSON(uint8_t *json, String &recursoIDOut, bool enviaMestre)
+bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, bool enviaMestre)
 {
   recursoIDOut = "";
 
   JsonDocument jsonIN;
   if (utilLeJson("recursoSetFromJSON", jsonIN, json))
-    return "JSON Invalido";
+  {
+    msgOut = "JSON Invalido";
+    return false;
+  }
 
   String id = jsonIN["id"].as<String>();
   String estado = jsonIN["estado"].as<String>();
@@ -148,30 +151,38 @@ String recursoSetFromJSON(uint8_t *json, String &recursoIDOut, bool enviaMestre)
 
   Recurso *recurso = recursoGet(id.c_str());
   if (!recurso)
-    return "Recurso invalidooo!";
+  {
+    msgOut = "recursoSetFromJson : Recurso invalidooo!";
+    return false;
+  }
 
   recursoIDOut = id;
 
   if (estadoFan != "" && estadoFan != "null")
     estado += ":" + estadoFan;
-  return recursoSet(id.c_str(), estado, enviaMestre);
+  return recursoSet(id.c_str(), estado, msgOut, enviaMestre);
 }
 
-String recursoSetLocalLocked(Recurso *recurso, String estado, bool enviaMestre)
+bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut, bool enviaMestre)
 {
   if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
-    return "Erro recursoSetLocalLocked: Recurso nao eh RELE nem UMID";
+  {
+    msgOut = "Erro recursoSetLocalLocked: Recurso nao eh RELE nem UMID";
+    return false;
+  }
   if (recurso->remoto)
-    return "Erro recursoSetLocalLocked: recurso remoto!";
+  {
+    msgOut = "Erro recursoSetLocalLocked: recurso remoto!";
+    return false;
+  }
 
-  String msg;
-  // TODO colocar ponteiros de funcoes em Recurso para ler e escrever, ao inves desses ifs:
+  bool ret;
   {
     switch (recurso->tipo)
     {
     case RECURSO_RELE:
     {
-      msg = releControlaLocked(recurso->rele, estado == "ON");
+      ret = releControlaLocked(recurso->rele, estado == "ON", msgOut);
     }
     break;
 
@@ -187,18 +198,18 @@ String recursoSetLocalLocked(Recurso *recurso, String estado, bool enviaMestre)
         UmidificadorFanEstado estadoFan = (UmidificadorFanEstado)estado.substring(temEstadoFan + 1).toInt();
         umidificadorFanSetEstado(estadoFan);
       }
-      msg = umidificadorSetEstado(umidEstado);
+      ret = umidificadorSetEstado(umidEstado, msgOut);
     }
     break;
     }
   }
 
-  return msg;
+  return ret;
 }
 
-String recursoSet(const char *recursoID, String estado, bool enviaMestre)
+bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaMestre)
 {
-  String msg = "OK";
+  bool ret = false;
 
   // Buffer dos dados para não ficar com o Lock durante HTTP
   bool remoto = false;
@@ -210,14 +221,23 @@ String recursoSet(const char *recursoID, String estado, bool enviaMestre)
   {
     MutexLock lock(modeloMutex);
     if (!lock)
-      return "recursoSet: mutex timeout";
+    {
+      msgOut = "recursoSet: mutex timeout";
+      return false;
+    }
 
     Recurso *recurso = recursoGet(recursoID);
     if (!recurso)
-      return "recursoSet: recurso invalido";
+    {
+      msgOut = "recursoSet: recurso invalido";
+      return false;
+    }
 
     if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
-      return "recursoSet: Recurso nao eh RELE nem UMID";
+    {
+      msgOut = "recursoSet: Recurso nao eh RELE nem UMID";
+      return false;
+    }
 
     if (recurso->tipo == RECURSO_RELE)
     {
@@ -242,7 +262,7 @@ String recursoSet(const char *recursoID, String estado, bool enviaMestre)
     if (!recurso->remoto)
     {
       // Recursos locais: Tratar dentro do Lock
-      msg = recursoSetLocalLocked(recurso, estadoFinal, enviaMestre);
+      ret = recursoSetLocalLocked(recurso, estadoFinal, msgOut, enviaMestre);
     }
     else
     {
@@ -257,9 +277,9 @@ String recursoSet(const char *recursoID, String estado, bool enviaMestre)
   {
     // API
     JsonDocument resposta;
-    msg = apiInternaSetRecurso(ip, tipoNodo, idRemoto, estadoFinal, resposta);
+    ret = apiInternaSetRecurso(ip, tipoNodo, idRemoto, estadoFinal, resposta, msgOut);
 
-    if (!resposta.isNull())
+    if (ret && !resposta.isNull())
     {
       String out;
       serializeJson(resposta, out);
@@ -293,15 +313,18 @@ String recursoSet(const char *recursoID, String estado, bool enviaMestre)
     }
   }
 
-  if (estado == "PULSE")
+  if (ret)
   {
-    // Agendar o OFF = pulso de 1000ms
-    agendamentosAdd(AGEND_RECURSO, 1000, recursoID, false);
+    if (estado == "PULSE")
+    {
+      // Agendar o OFF = pulso de 1000ms
+      agendamentosAdd(AGEND_RECURSO, 1000, recursoID, false);
+    }
+
+    eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre);
   }
 
-  eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre);
-
-  return msg;
+  return ret;
 }
 
 void recursoEnviaSSE(const char *recursoID)

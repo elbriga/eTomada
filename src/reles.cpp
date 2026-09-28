@@ -88,7 +88,7 @@ JsonDocument releGetJSONDoc(Recurso *rec, bool full)
   return doc;
 }
 
-String releControla(Rele *rele, bool estado)
+bool releControla(Rele *rele, bool estado, String &msgOut)
 {
   MutexLock lock(modeloMutex);
   if (!lock)
@@ -96,27 +96,25 @@ String releControla(Rele *rele, bool estado)
     return "releControla: mutex timeout";
   }
 
-  return releControlaLocked(rele, estado);
+  return releControlaLocked(rele, estado, msgOut);
 }
 
-// REQUIRE modeloMutex locked
-String releControlaLocked(Rele *rele, bool estado)
+bool releControlaLocked(Rele *rele, bool estado, String &msgOut)
 {
   if (!rele)
   {
-    logaM(LOG_CRITICO, "releControlaLocked: Rele invalido!!!\n");
-    // TODO :: um metodo retorna erro e outro vazio! REVER
-    return "";
+    msgOut = "releControlaLocked: Rele invalido";
+    return false;
   }
 
   if (rele->pino == -1)
   {
-    logaM(LOG_AVISO, "releControlaLocked[%d]: pino invalido!\n", rele->num);
-    return "";
+    msgOut = "releControlaLocked: pino invalido";
+    return false;
   }
 
   String ret = "";
-  if (estado != rele->estado)
+  if (estado != rele->estado) // TODO :: remover esse if?
   {
     digitalWrite(rele->pino, rele->invertido ? !estado : estado);
     rele->estado = estado;
@@ -124,8 +122,8 @@ String releControlaLocked(Rele *rele, bool estado)
     char msg[40];
     snprintf(msg, sizeof(msg), "%s (rele %d, pino %d)", // TODO :: nome
              (estado ? "Ligando" : "Desligando"), rele->num, rele->pino);
-    ret = msg;
+    msgOut = msg;
   }
 
-  return ret;
+  return true;
 }

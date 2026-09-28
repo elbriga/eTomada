@@ -66,7 +66,9 @@ void umidificadorInit()
     umidificadorFanSetEstado(ultimoEstadoFan);
   }
 
-  String msgInit = umidificadorSetEstado(ultimoEstado);
+  String msgInit;
+  umidificadorSetEstado(ultimoEstado, msgInit);
+
   logaM(LOG_NORMAL, "Umidificador Encontrado! [%s]", msgInit.c_str());
 }
 
@@ -95,16 +97,25 @@ String umidificadorFanSetEstado(UmidificadorFanEstado estado)
 }
 
 static volatile bool umidTaskRodando = false;
-String umidificadorSetEstado(UmidificadorEstado estado)
+bool umidificadorSetEstado(UmidificadorEstado estado, String &msgOut)
 {
   if (!umidificadorAtivo())
-    return "umidificadorSetEstado sem Umidificador??";
+  {
+    msgOut = "umidificadorSetEstado sem Umidificador??";
+    return false;
+  }
 
   if (umidTaskRodando)
-    return "umidificadorSetEstado Abortando Task Dupla!";
+  {
+    msgOut = "umidificadorSetEstado Abortando Task Dupla!";
+    return false;
+  }
 
   if (estado < UMID_DESLIGADO || estado > UMID_POWER5)
-    return "umidificadorSetEstado Abortando estado invalido";
+  {
+    msgOut = "umidificadorSetEstado Abortando estado invalido";
+    return false;
+  }
 
   umidTaskRodando = true;
 
@@ -113,8 +124,8 @@ String umidificadorSetEstado(UmidificadorEstado estado)
   char msgFan[20] = {0};
   if (umidificadorFanAtivo())
     sprintf(msgFan, "[fan:%d]", umid.estadoFan);
-  String msg = "Umidificador > Set Power [" + String(umid.estado) + "]" + msgFan;
-  logaM(LOG_NORMAL, "%s", msg.c_str());
+  msgOut = "Umidificador > Set Power [" + String(umid.estado) + "]" + msgFan;
+  logaM(LOG_NORMAL, "%s", msgOut.c_str());
 
   if (xTaskCreate(
           umidificadorSetEstadoTask,
@@ -125,10 +136,11 @@ String umidificadorSetEstado(UmidificadorEstado estado)
           nullptr) != pdPASS)
   {
     umidTaskRodando = false;
-    logaM(LOG_CRITICO, "Falha ao criar task umidSet");
+    msgOut = "Falha ao criar task umidSet";
+    return false;
   }
 
-  return msg;
+  return true;
 }
 
 void umidificadorSetEstadoTask(void *args)

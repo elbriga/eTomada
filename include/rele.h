@@ -21,5 +21,5 @@ Rele *releGet(int numRele);
 
 JsonDocument releGetJSONDoc(Recurso *r, bool full);
 
-String releControlaLocked(Rele *r, bool estado);
-String releControla(Rele *r, bool estado);
+bool releControlaLocked(Rele *rele, bool estado, String &msgOut);
+bool releControla(Rele *rele, bool estado, String &msgOut);

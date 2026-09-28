@@ -297,9 +297,11 @@ void eTomadaRoleta()
     }
   }
 
+  String msg;
+
   // Zerar
   for (int r = 0; r < totRelesLocais; r++)
-    recursoSet(relesLocais[r].c_str(), "OFF");
+    recursoSet(relesLocais[r].c_str(), "OFF", msg);
 
   int delay = 25, delta = 2;
   int num = esp_random() % totRelesLocais;
@@ -316,8 +318,8 @@ void eTomadaRoleta()
     {
       num = 0;
     }
-    recursoSet(relesLocais[oldNum].c_str(), "OFF");
-    recursoSet(relesLocais[num].c_str(), "ON");
+    recursoSet(relesLocais[oldNum].c_str(), "OFF", msg);
+    recursoSet(relesLocais[num].c_str(), "ON", msg);
 
     loop++;
     if (loop > 40)

@@ -30,7 +30,7 @@ bool umidificadorFanAtivo();
 
 Umidificador *umidificadorGet(); // Somente 1 por eTomada
 
-String umidificadorSetEstado(UmidificadorEstado estado);
+bool umidificadorSetEstado(UmidificadorEstado estado, String &msgOut);
 String umidificadorFanSetEstado(UmidificadorFanEstado estado);
 
 JsonDocument umidificadorGetJSONDoc(Recurso *r, bool full);

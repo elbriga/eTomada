@@ -92,7 +92,9 @@ void agendamentosProcessaTask(void *)
                         break;
                     }
 
-                    recursoSet(acao->recursoID, acao->estado ? "ON" : "OFF");
+                    String msg;
+                    if (!recursoSet(acao->recursoID, acao->estado ? "ON" : "OFF", msg))
+                        logaM(LOG_AVISO, "agendamentosProcessaTask :: [%s]", msg.c_str());
                 }
                 break;
 

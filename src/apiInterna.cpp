@@ -15,18 +15,16 @@
 #define API_INTERNA_TIMEOUT 1000
 #define API_INTERNA_RESPONSE_MAXLEN 8192
 
-int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *response);
+bool apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *responseOut, String &msgOut);
 
-String apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc)
+bool apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc, String &msgOut)
 {
-  int code = apiInterna(ip, "getSnapshot", "GET", nullptr, &doc);
-
-  return code == 200 ? "OK" : String(code);
+  return apiInterna(ip, "getSnapshot", "GET", nullptr, &doc, msgOut);
 }
 
-String apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta)
+bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta, String &msgOut)
 {
-  int code = 0;
+  bool ret;
 
   switch (tipoNodo)
   {
@@ -36,42 +34,42 @@ String apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *i
     request["id"] = idRemoto;
     request["estado"] = estado;
 
-    code = apiInterna(ip, "setRecurso", "PUT", &request, &resposta);
+    ret = apiInterna(ip, "setRecurso", "PUT", &request, &resposta, msgOut);
   }
   break;
 
   case TIPO_NODO_LITE:
   {
-    code = apiInterna(ip, "setRele?estado=" + estado, "GET", nullptr, &resposta);
+    ret = apiInterna(ip, "setRele?estado=" + estado, "GET", nullptr, &resposta, msgOut);
   }
   break;
 
   default:
-    return "Nodo não inicializado!";
+    msgOut = "Nodo não inicializado!";
+    return false;
   }
 
-  if (code != 200)
+  return ret;
+}
+
+String apiInternaEnviaEvento(IPAddress ip, JsonDocument *body) // TODO :: retornar bool
+{
+  String msgOut;
+  bool ret = apiInterna(ip, "evento", "POST", body, nullptr, msgOut);
+
+  return ret ? "OK" : msgOut;
+}
+
+bool apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *responseOut, String &msgOut)
+{
+  if (!ip)
   {
-    logaM(LOG_CRITICO, "Erro API Interna: %d", code);
-    // TODO ??
+    msgOut = "apiInterna: abortando, sem IP";
+    return false;
   }
 
-  // TODO localizar a msg para os params locais
-  return "API:" + resposta["msg"].as<String>();
-}
-
-String apiInternaEnviaEvento(IPAddress ip, JsonDocument *body)
-{
-  int code = apiInterna(ip, "evento", "POST", body, nullptr);
-
-  return code == 200 ? "OK" : String(code);
-}
-
-int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *responseOut)
-{
   String url = "http://" + ip.toString() + "/api/" + endpoint;
-
-  logaM(LOG_DEBUG0, "apiInterna: Acionando %s", url.c_str());
+  logaM(LOG_AVISO, "apiInterna: Acionando %s", url.c_str());
 
   HTTPClient http;
   http.begin(url);
@@ -101,11 +99,18 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
 
   if (code == 200)
   {
-    char response[API_INTERNA_RESPONSE_MAXLEN] = {0};
-
     WiFiClient *stream = http.getStreamPtr();
     if (stream)
     {
+      char *response = (char *)malloc(API_INTERNA_RESPONSE_MAXLEN);
+      if (!response)
+      {
+        http.end();
+        msgOut = "apiInterna: sem memoria para response";
+        return false;
+      }
+      response[0] = '\0';
+
       size_t pos = 0;
       int restante = http.getSize();
       uint32_t ultimoDado = millis();
@@ -157,10 +162,15 @@ int apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *reque
 
       if (responseOut)
         utilLeJson("apiInterna", *responseOut, response);
+
+      free(response);
     }
   }
 
   http.end();
 
-  return code;
+  msgOut = responseOut && !(*responseOut)["msg"].isNull()
+               ? (*responseOut)["msg"].as<String>()
+               : (code == 200 ? "OK" : "Erro " + String(code));
+  return (code == 200);
 }

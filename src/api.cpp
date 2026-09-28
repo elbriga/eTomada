@@ -28,7 +28,9 @@ void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, si
   bool fromMestre = mestreAtivo() && (request->client()->remoteIP() == mestreGetIP());
 
   String recursoID;
-  String msg = recursoSetFromJSON(data, recursoID, !fromMestre);
+  String msg;
+  if (!recursoSetFromJSON(data, recursoID, msg, !fromMestre))
+    logaM(LOG_AVISO, "apiSetRecurso > recursoSetFromJSON > [%s]", msg.c_str());
 
   JsonDocument resposta;
   resposta["msg"] = (fromMestre ? "SIM MESTRE!:" : "") + msg;
@@ -164,9 +166,12 @@ void apiGetNodo(AsyncWebServerRequest *request)
 
     if (ip)
     {
+      String msg;
       JsonDocument snapshot;
-      apiInternaGetSnapshot(ip, snapshot);
-      ret["nodo"] = snapshot;
+      if (apiInternaGetSnapshot(ip, snapshot, msg))
+        ret["nodo"] = snapshot;
+      else
+        ret["msg"] = msg;
     }
   }
 
