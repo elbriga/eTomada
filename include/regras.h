@@ -70,7 +70,7 @@ struct Regra
 };
 
 void regrasInit();
-void regrasBoot();
+bool regrasBoot(const char *nodoID = nullptr);
 
 int regrasCount();
 

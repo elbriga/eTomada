@@ -22,7 +22,6 @@
 int regrasTotal = 0;
 Regra *regras = nullptr;
 
-void regrasBoot();
 String regrasLoad(const char *path);
 String regraGetTxt(Regra *r);
 void regraLoadFromJSON(Regra *regra, JsonObject &doc);
@@ -101,7 +100,7 @@ typedef struct
     String recursoID, estado;
 } CacheAcao;
 
-void regrasBoot()
+bool regrasBoot(const char *nodoID)
 {
     // Obter horario
     struct tm timeinfo;
@@ -110,7 +109,7 @@ void regrasBoot()
     {
         // Sem data/hora não processa regras de HORARIO
         logaM(LOG_AVISO, "Pulando Boot das regras!!! estamos sem HORA!!");
-        return;
+        return false;
     }
 
     int totAcoes = 0;
@@ -121,18 +120,27 @@ void regrasBoot()
         if (!lock)
         {
             logaM(LOG_CRITICO, "regrasBoot: mutex timeout");
-            return;
+            return false;
         }
 
-        logaM(LOG_AVISO, "== regrasBoot() ==");
+        logaM(LOG_AVISO, "== regrasBoot(%s) ==", nodoID ? nodoID : "all");
 
         // Ajustar o estado dos RELEs conforme as regras de HORARIO para agora
+        bool somenteNodo = nodoID && strlen(nodoID) > 0;
         int totRecursos = recursosGetCount();
         for (int r = 0; r < totRecursos; r++)
         {
             Recurso *recurso = recursoGetPorIndice(r);
             if (recurso->tipo != RECURSO_RELE) // TODO Umid?
                 continue;
+
+            if (somenteNodo) // Verificar as regras somente de 1 nodo se informado
+            {
+                if (!recurso->remoto)
+                    continue;
+                if (strcmp(recurso->recursoRemoto->nodo->id, nodoID))
+                    continue;
+            }
 
             String estadoAtual;
             Regra *regraAtivada = regrasCalculaEstadoAtual(recurso, estadoAtual);
@@ -170,10 +178,18 @@ void regrasBoot()
     }
 
     // Executar o cache fora do Lock
+    String msg;
+    bool ret = true;
     for (int c = 0; c < totAcoes; c++)
     {
-        recursoSet(cache[c].recursoID.c_str(), cache[c].estado.c_str());
+        if (!recursoSet(cache[c].recursoID.c_str(), cache[c].estado.c_str(), msg))
+        {
+            logaM(LOG_AVISO, "regrasBoot > recursoSet > [%s]", msg.c_str());
+            ret = false;
+        }
     }
+
+    return ret;
 }
 
 Regra *regraGet(int id)
@@ -225,6 +241,7 @@ String regraDisparaAcao(Regra *regra)
 
     logaM(LOG_NORMAL, ">> Ativando [%s]", regraGetTxt(regra).c_str());
 
+    String msg;
     switch (acao->tipo)
     {
     case ACAO_ESTADO:
@@ -233,7 +250,8 @@ String regraDisparaAcao(Regra *regra)
         if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoESTADO : Nao eh RELE!";
 
-        return recursoSet(acao->recursoID, acao->comando);
+        if (!recursoSet(acao->recursoID, acao->comando, msg))
+            return msg;
     }
     break;
 
@@ -243,7 +261,8 @@ String regraDisparaAcao(Regra *regra)
         if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoTIMER : Nao eh RELE!";
 
-        String ret = recursoSet(acao->recursoID, "ON");
+        if (!recursoSet(acao->recursoID, "ON", msg))
+            return msg;
         // Agendar o OFF
         // TODO :: no recursoSet cancelar os agendamentos
         agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, acao->recursoID, false);
@@ -255,7 +274,7 @@ String regraDisparaAcao(Regra *regra)
         break;
     }
 
-    return "ToDo!";
+    return "OK";
 }
 
 int regrasGetValorPorNome(const char *nomeVar)
