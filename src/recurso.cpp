@@ -575,6 +575,7 @@ String recursoEventoRecebido(uint8_t *json)
     return "Nodo Invalido!";
   }
 
+  String recursoID = doc["id"];
   int tot = recursosGetCount();
   for (int r = 0; r < tot; r++)
   {
@@ -584,10 +585,10 @@ String recursoEventoRecebido(uint8_t *json)
     if (rec->recursoRemoto->nodo != nr) // TODO :: Melhor testar por ID?
       continue;
 
-    if (strcmp(doc["id"].as<const char *>(), rec->recursoRemoto->idRemoto))
+    if (strcmp(recursoID.c_str(), rec->recursoRemoto->idRemoto))
       continue;
 
-    logaM(LOG_DEBUG0, "Evento recebido! Atualizar recurso [%s]", rec->id);
+    logaM(LOG_DEBUG, "Evento recebido! Atualizar recurso [%s @ %s]", rec->id, rec->recursoRemoto->nodo->id);
     String ret = recursoAtualizaFromJsonLocked(rec, doc["device"], true);
 
     doc.clear();
@@ -595,7 +596,7 @@ String recursoEventoRecebido(uint8_t *json)
   }
 
   doc.clear();
-  return "Recurso nao encontrado";
+  return "Recurso [" + recursoID + " @ " + String(nr->id) + "] nao encontrado";
 }
 
 String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool enviaEventos)
