@@ -99,9 +99,11 @@ void appInit()
   displayMostraString(145, 61, "Conectando");
   WiFiConnect();
 
-  // NTP somente no modo STA
+  // mDNS e NTP somente no modo STA
   if (!WiFiGetModoAP())
   {
+    mdnsInit(true);
+
     // Verificar se ja temos hora do RTC
     struct tm timeinfo;
     sysGetTime(&timeinfo);
@@ -144,10 +146,6 @@ void appInit()
   eTomadaInit();
 
   httpServerInit();
-
-  // mDNS somente no modo STA
-  if (!WiFiGetModoAP())
-    mdnsInit(true);
 
   logaTitulo("Setup OK!");
 
@@ -217,7 +215,7 @@ void appLoop()
     {
       last10Second = timeinfo.tm_sec / 10;
 
-      ledSetAnim(RGB_LED_ANIM_PISCA, 3);
+      ledSetAnim(RGB_LED_ANIM_COLOR, 3);
       sensoresAtualiza();
 
       if (!wifiModoAP)
