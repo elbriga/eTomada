@@ -60,14 +60,8 @@ void httpServerInitModoAPI()
   httpServer.on("/api/getSnapshot", HTTP_GET, apiSnapshot);
   httpServer.on("/api/setRecurso", HTTP_PUT, funcVazia, NULL, apiSetRecurso);
   httpServer.on("/api/setRecursoConfig", HTTP_PUT, funcVazia, NULL, apiSetRecursoConfig);
-  httpServer.on("/api/evento", HTTP_POST, funcVazia, NULL, apiEvento);
   httpServer.on("/api/mock", HTTP_POST, funcVazia, NULL, apiMock);
   httpServer.on("/api/getFile", HTTP_GET, apiGetFile);
-  httpServer.on("/api/getNodo", HTTP_GET, apiGetNodo);
-  httpServer.on("/api/addNodo", HTTP_PUT, funcVazia, NULL, apiAddNodo);
-  httpServer.on("/api/delNodo", HTTP_PUT, funcVazia, NULL, apiDelNodo);
-  httpServer.on("/api/addRecursoRemoto", HTTP_PUT, funcVazia, NULL, apiAddRecursoRemoto);
-  httpServer.on("/api/delRecursoRemoto", HTTP_PUT, funcVazia, NULL, apiDelRecursoRemoto);
   httpServer.on("/api/setRegra", HTTP_PUT, funcVazia, NULL, apiSetRegra);
   httpServer.on("/api/delRegra", HTTP_PUT, funcVazia, NULL, apiDelRegra);
   httpServer.on("/api/factoryReset", HTTP_POST, apiFactoryReset);
@@ -75,6 +69,16 @@ void httpServerInitModoAPI()
   httpServer.on("/api/setConfig", HTTP_POST, funcVazia, NULL, apiSetConfig);
   httpServer.on("/api/checkWWW", HTTP_GET, apiCheckWWW);
   httpServer.on("/api/roleta", HTTP_GET, apiRoleta);
+
+  if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
+  {
+    httpServer.on("/api/evento", HTTP_POST, funcVazia, NULL, apiEvento);
+    httpServer.on("/api/getNodo", HTTP_GET, apiGetNodo);
+    httpServer.on("/api/addNodo", HTTP_PUT, funcVazia, NULL, apiAddNodo);
+    httpServer.on("/api/delNodo", HTTP_PUT, funcVazia, NULL, apiDelNodo);
+    httpServer.on("/api/addRecursoRemoto", HTTP_PUT, funcVazia, NULL, apiAddRecursoRemoto);
+    httpServer.on("/api/delRecursoRemoto", HTTP_PUT, funcVazia, NULL, apiDelRecursoRemoto);
+  }
 
   recoveryAPIRegister();
 
