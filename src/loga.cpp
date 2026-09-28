@@ -262,6 +262,8 @@ static void logRemotoTask(void *param)
     // Sem WiFi : esperar
     if (WiFi.status() != WL_CONNECTED)
     {
+      Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>> LOG sem WIFI!!");
+      Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>> LOG sem WIFI!!");
       // Esperar pelo WiFi
       vTaskDelay(pdTICKS_TO_MS(5000));
       if (WiFi.status() != WL_CONNECTED)
