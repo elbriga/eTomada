@@ -219,7 +219,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
 
   String estadoFinal = estado;
   {
-    MutexLock lock(modeloMutex);
+    MutexLock lock(modeloMutex, "recursoSet");
     if (!lock)
     {
       msgOut = "recursoSet: mutex timeout";
@@ -285,7 +285,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
       serializeJson(resposta, out);
       logaM(LOG_AVISO, "ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
 
-      MutexLock lock(modeloMutex);
+      MutexLock lock(modeloMutex, "recursoSet2");
       if (!lock)
         return "recursoSet: mutex timeout";
 
@@ -297,6 +297,11 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
       {
       case RECURSO_RELE:
       {
+        if (resposta["recurso"]["device"]["estado"].isNull())
+        {
+          logaM(LOG_AVISO, "CacheJson sem dados do Rele");
+          break;
+        }
         Rele *rele = recursoGetRele(recurso);
         rele->estado = resposta["recurso"]["device"]["estado"].as<bool>();
       }
@@ -304,9 +309,15 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
 
       case RECURSO_UMIDIFICADOR:
       {
+        if (resposta["recurso"]["device"]["estado"].isNull())
+        {
+          logaM(LOG_AVISO, "CacheJson sem dados do Umid");
+          break;
+        }
         Umidificador *umid = recursoGetUmidificador(recurso);
         umid->estado = (UmidificadorEstado)resposta["recurso"]["device"]["estado"].as<int>();
-        umid->estadoFan = (UmidificadorFanEstado)resposta["recurso"]["device"]["estadoFan"].as<int>();
+        if (!resposta["recurso"]["device"]["estadoFan"].isNull())
+          umid->estadoFan = (UmidificadorFanEstado)resposta["recurso"]["device"]["estadoFan"].as<int>();
       }
       break;
       }
@@ -331,7 +342,7 @@ void recursoEnviaSSE(const char *recursoID)
 {
   String recursoStr;
   {
-    MutexLock lock(modeloMutex);
+    MutexLock lock(modeloMutex, "recursoEnviaSSE");
     if (!lock)
     {
       logaM(LOG_CRITICO, "recursoEnviaSSE - Erro de Lock!");
@@ -479,8 +490,11 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
   doc["tipo"] = recursoGetTipoStr(r->tipo);
   doc["nome"] = r->nome;
   doc["remoto"] = r->remoto;
-  doc["nodo"] = r->remoto ? r->recursoRemoto->nodo->id : "_LOCAL";
-  doc["idRemoto"] = r->remoto ? r->recursoRemoto->idRemoto : r->id;
+  if (r->remoto && r->recursoRemoto->nodo)
+  {
+    doc["nodo"] = r->recursoRemoto->nodo->id;
+    doc["idRemoto"] = r->recursoRemoto->idRemoto;
+  }
 
   switch (r->tipo)
   {
@@ -546,7 +560,7 @@ String recursoEventoRecebido(uint8_t *json)
   if (utilLeJson("recursoEventoRecebido", doc, json))
     return "JSON Invalido";
 
-  MutexLock lock(modeloMutex);
+  MutexLock lock(modeloMutex, "recursoEventoRecebido");
   if (!lock)
     return "Erro de LOCK!";
 
@@ -667,7 +681,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   if (utilLeJson("recursoAtualizaConfigFromJSON", doc, json))
     return "JSON Invalido";
 
-  MutexLock lock(modeloMutex);
+  MutexLock lock(modeloMutex, "recursoAtualizaConfigFromJSON");
   if (!lock)
   {
     doc.clear();
