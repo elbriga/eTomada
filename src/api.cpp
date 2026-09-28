@@ -34,9 +34,9 @@ void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, si
 
   JsonDocument resposta;
   resposta["msg"] = (fromMestre ? "SIM MESTRE!:" : "") + msg;
-  if (fromMestre && recursoID != "")
+  if (recursoID != "")
   {
-    MutexLock lock(modeloMutex);
+    MutexLock lock(modeloMutex, "apiSetRecurso");
     if (lock)
     {
       Recurso *rec = recursoGet(recursoID.c_str());
@@ -144,7 +144,7 @@ void apiGetNodo(AsyncWebServerRequest *request)
     IPAddress ip;
     String id = request->getParam("id")->value();
     {
-      MutexLock lock(modeloMutex);
+      MutexLock lock(modeloMutex, "apiGetNodo");
       if (!lock)
       {
         ret["msg"] = "Erro Mutex!";
