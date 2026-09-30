@@ -86,11 +86,7 @@ void agendamentosProcessaTask(void *)
                 {
                 case AGEND_RECURSO:
                 {
-                    if (!recursoGet(acao->recursoID))
-                    {
-                        logaM(LOG_CRITICO, "agendamentosProcessaTask :: recurso invalido!");
-                        break;
-                    }
+                    logaM(LOG_AVISO, "Agendamento recurso [%s] para [%s]", acao->recursoID, acao->estado ? "ON" : "OFF");
 
                     String msg;
                     if (!recursoSet(acao->recursoID, acao->estado ? "ON" : "OFF", msg))
