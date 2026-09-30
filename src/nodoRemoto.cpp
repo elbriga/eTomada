@@ -186,10 +186,7 @@ void nodosRemotosRefreshTask(void *args)
   {
     MutexLock lock(modeloMutex, "nodosRemotosRefreshTask");
     if (!lock)
-    {
-      logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de Mutex!");
       return;
-    }
 
     int totNR = nodosRemotosGetCount();
     for (int nr = 0; nr < totNR; nr++)
@@ -237,10 +234,7 @@ void nodosRemotosRefreshTask(void *args)
     {
       MutexLock lock(modeloMutex, "nodosRemotosRefreshTask2");
       if (!lock)
-      {
-        logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 2!");
         continue;
-      }
 
       NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
       if (!nodoRemoto)
@@ -269,10 +263,7 @@ void nodosRemotosRefreshTask(void *args)
     {
       MutexLock lock(modeloMutex, "nodosRemotosRefreshTask3");
       if (!lock)
-      {
-        logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 3!");
         continue;
-      }
 
       NodoRemoto *nodoRemoto = nodoRemotoGet(nodoID);
       if (!nodoRemoto)
@@ -286,10 +277,7 @@ void nodosRemotosRefreshTask(void *args)
     {
       MutexLock lock(modeloMutex, "nodosRemotosRefreshTask4");
       if (!lock)
-      {
-        logaM(LOG_CRITICO, "nodosRemotosRefreshTask :: Erro de LOCK 3!");
         continue;
-      }
 
       NodoRemoto *nodoRemoto = nodoRemotoGet(nodoID);
       if (!nodoRemoto)
