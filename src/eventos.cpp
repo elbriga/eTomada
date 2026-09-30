@@ -131,17 +131,12 @@ void eventosProcessaTask(void *)
             bool processaRegras = true;
             bool atualiza = true;
 
+            logaM(LOG_NORMAL, "Evento [%s] de [%s]",
+                  eventoGetTipoTxt(evento.tipo), evento.recursoID);
+
             switch (evento.tipo)
             {
-            case EVENTO_LONG_PRESS:
-                logaM(LOG_AVISO, "LONG PRESS!");
-                break;
-            case EVENTO_CLICK:
-                logaM(LOG_AVISO, "CLICK!");
-                break;
-
             case EVENTO_TOGGLE:
-                logaM(LOG_AVISO, "TOGGLE!");
                 // TODO :: agora o TOGGLE pode vir sozinho da interface: achar outra forma de nao duplicar
                 // atualiza = false; // Já será atualizado no EVENTO_ON / EVENTO_OFF, nao duplicar
                 break;
