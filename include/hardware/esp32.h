@@ -1,6 +1,7 @@
 #pragma once
 #include "hardwareProfile.h"
 
+// umid-terrario
 const HardwareProfile hardwareProfile = {
     .modelo = "U1",
     .board = "esp32",
