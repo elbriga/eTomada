@@ -15,11 +15,11 @@
 #define API_INTERNA_TIMEOUT 1000
 #define API_INTERNA_RESPONSE_MAXLEN 8192
 
-bool apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *responseOut, String &msgOut);
+bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, JsonDocument *request, JsonDocument *responseOut, String &msgOut);
 
 bool apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc, String &msgOut)
 {
-  return apiInterna(ip, "getSnapshot", "GET", nullptr, &doc, msgOut);
+  return apiInterna(ip, 80, "getSnapshot", "GET", nullptr, &doc, msgOut);
 }
 
 bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta, String &msgOut)
@@ -34,13 +34,13 @@ bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idR
     request["id"] = idRemoto;
     request["estado"] = estado;
 
-    ret = apiInterna(ip, "setRecurso", "PUT", &request, &resposta, msgOut);
+    ret = apiInterna(ip, 80, "setRecurso", "PUT", &request, &resposta, msgOut);
   }
   break;
 
   case TIPO_NODO_LITE:
   {
-    ret = apiInterna(ip, "setRele?estado=" + estado, "GET", nullptr, &resposta, msgOut);
+    ret = apiInterna(ip, 80, "setRele?estado=" + estado, "GET", nullptr, &resposta, msgOut);
   }
   break;
 
@@ -52,15 +52,39 @@ bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idR
   return ret;
 }
 
-String apiInternaEnviaEvento(IPAddress ip, JsonDocument *body) // TODO :: retornar bool
+String apiInternaEnviaEvento(IPAddress ip, JsonDocument *body, int port) // TODO :: retornar bool
 {
   String msgOut;
-  bool ret = apiInterna(ip, "evento", "POST", body, nullptr, msgOut);
+  bool ret = apiInterna(ip, port, "evento", "POST", body, nullptr, msgOut);
 
   return ret ? "OK" : msgOut;
 }
 
-bool apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *request, JsonDocument *responseOut, String &msgOut)
+String apiInternaEnviaEvento(String ipPort, JsonDocument *body)
+{
+  int port = 80;
+  String ipStr = ipPort;
+
+  const int pos = ipPort.indexOf(':');
+  if (pos >= 0)
+  {
+    String portStr = ipPort.substring(pos + 1);
+    int p = portStr.toInt();
+    if (p <= 0 || p > 65535)
+      return "Porta invalida";
+
+    ipStr = ipPort.substring(0, pos);
+    port = p;
+  }
+
+  IPAddress ip;
+  if (!ip.fromString(ipStr))
+    return "IP invalido";
+
+  return apiInternaEnviaEvento(ip, body, port);
+}
+
+bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, JsonDocument *request, JsonDocument *responseOut, String &msgOut)
 {
   if (!ip)
   {
@@ -68,7 +92,7 @@ bool apiInterna(IPAddress ip, String endpoint, String metodo, JsonDocument *requ
     return false;
   }
 
-  String url = "http://" + ip.toString() + "/api/" + endpoint;
+  String url = "http://" + ip.toString() + (port != 80 ? ":" + String(port) : "") + "/api/" + endpoint;
   logaM(LOG_DEBUG0, "apiInterna: Acionando %s", url.c_str());
 
   HTTPClient http;
