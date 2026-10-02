@@ -158,7 +158,7 @@ void botoesAtualiza()
           eventoPost(EVENTO_CLICK, rec->id, true, true);
 
         // Detectar longPress e bigPress ao desligar
-        if (!botao->estado && duracaoAnterior > BOTAO_TEMPO_LONGP_MS)
+        if (!botao->estado && duracaoAnterior > BOTAO_TEMPO_LONGP_MS && duracaoAnterior < BOTAO_TEMPO_LONGP_MAX_MS)
           eventoPost(EVENTO_LONG_PRESS, rec->id, true, true);
       }
     }

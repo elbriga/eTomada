@@ -10,6 +10,7 @@ struct Recurso; // Forward declaration
 #define BOTAO_DEBOUCE_TIME_MS 33
 #define BOTAO_TEMPO_CLICK_MS 333
 #define BOTAO_TEMPO_LONGP_MS 3333
+#define BOTAO_TEMPO_LONGP_MAX_MS 7777
 
 struct Botao
 {
