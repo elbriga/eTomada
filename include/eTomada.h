@@ -6,7 +6,8 @@ struct Recurso; // Forward declaration
 typedef enum
 {
     MODO_NO = 0,
-    MODO_CONTROLADOR = 1
+    MODO_CONTROLADOR = 1,
+    MODO_EM_OTA = 99,
 } ModoOperacao;
 
 void eTomadaInit0();

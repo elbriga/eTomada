@@ -171,8 +171,18 @@ void appLoop()
     WiFiModoAPLoop();
 
   // 5ms/5ms
-  botoesAtualiza();
   ledProcessa();
+
+  if (eTomadaGetModoOperacao() == MODO_EM_OTA)
+  {
+    // Congelar tudo menos o LED quando fazendo OTA
+    vTaskDelay(pdMS_TO_TICKS(50));
+    yield();
+    return;
+  }
+
+  // 5ms/5ms
+  botoesAtualiza();
 
   struct tm timeinfo;
   sysGetTime(&timeinfo);
@@ -194,6 +204,7 @@ void appLoop()
       ntpSyncOKFlag = false;
       logaM(LOG_AVISO, "NTP SYNC OK. Sync RTC");
       rtcStoreSystemClock();
+      // Dentro do regrasBoot: Só chamar somente 1 vez no boot, senão ele vai "se intrometer"
       regrasBoot();
     }
 
@@ -215,7 +226,7 @@ void appLoop()
     {
       last10Second = timeinfo.tm_sec / 10;
 
-      ledSetAnim(RGB_LED_ANIM_COLOR, 3);
+      ledSetAnim(RGB_LED_ANIM_PISCA, 3);
       sensoresAtualiza();
 
       if (!wifiModoAP)
