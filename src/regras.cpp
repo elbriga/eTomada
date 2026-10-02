@@ -99,9 +99,12 @@ typedef struct
 {
     String recursoID, estado;
 } CacheAcao;
-
+static bool regrasBootOK = false;
 bool regrasBoot(const char *nodoID)
 {
+    if (regrasBootOK && !nodoID) // Rodar o "all" somente uma vez, mas permitir boot por nodo
+        return true;
+
     // Obter horario
     struct tm timeinfo;
     sysGetTime(&timeinfo);
@@ -188,6 +191,9 @@ bool regrasBoot(const char *nodoID)
             ret = false;
         }
     }
+
+    if (ret && !nodoID)
+        regrasBootOK = true;
 
     return ret;
 }
