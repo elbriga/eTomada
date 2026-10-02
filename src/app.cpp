@@ -3,7 +3,7 @@
 #include <nvs.h>
 #include <nvs_flash.h>
 
-// #include "eTomada.h"
+#include "eTomada.h"
 #include "mestre.h"
 #include "loga.h"
 #include "wifi.h"
@@ -11,8 +11,6 @@
 #include "ntp.h"
 #include "http.h"
 #include "regras.h"
-// #include "sensor.h"
-// #include "botao.h"
 #include "util.h"
 #include "rtc-hw.h"
 #include "hardwareProfile.h"
@@ -24,6 +22,7 @@
 #include "mdns-gs.h"
 #include "led.h"
 #include "sensorChuva.h"
+#include "nodoRemoto.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("APP", nivel, fmt, ##__VA_ARGS__)
@@ -99,6 +98,8 @@ void appInit()
   displayMostraString(145, 61, "Conectando");
   WiFiConnect();
 
+  logsFlush();
+
   // mDNS e NTP somente no modo STA
   if (!WiFiGetModoAP())
   {
@@ -144,6 +145,8 @@ void appInit()
 
   logaM(LOG_NORMAL, "== eTomada Init() ==");
   eTomadaInit();
+
+  logsFlush(4000);
 
   httpServerInit();
 
@@ -248,7 +251,7 @@ void appLoop()
       {
         lastMinute = timeinfo.tm_min;
 
-        eventoPost(EVENTO_HORARIO, nullptr, false, false);
+        eventoPost(EVENTO_HORARIO, nullptr, false, false, false);
 
         int dbm = WiFi.RSSI();
         if (dbm < -70)

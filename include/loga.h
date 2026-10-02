@@ -14,6 +14,8 @@ enum LogLevel
 };
 
 void logaInit();
+void logsFlush(time_t maxWaitMS = 1000, time_t minWait = 25);
+
 bool logaRemotoAtivo();
 String logaGetLogServer();
 void logaChangeLevel(int newLevel);
