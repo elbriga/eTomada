@@ -50,7 +50,8 @@ const char *recursoGetTipoStr(TipoRecurso tipo);
 TipoRecurso recursoGetTipoFromStr(String tipoStr);
 JsonDocument recursoGetJSONDoc(Recurso *r);
 
-JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento);
+JsonDocument recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento);
+JsonDocument recursoGetJSONEventoLocked(Recurso *r, TipoEvento tipoEvento);
 String recursoEventoRecebido(uint8_t *json);
 
 String recursoAtualizaConfigFromJSON(uint8_t *json);

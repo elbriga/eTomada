@@ -332,7 +332,8 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
       agendamentosAdd(AGEND_RECURSO, 1000, recursoID, false);
     }
 
-    eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre);
+    // Enviar para o Server somente dos recursos Locais
+    eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre, !remoto);
   }
 
   return ret;
@@ -482,6 +483,7 @@ TipoRecurso recursoGetTipoFromStr(String tipoStr)
   return RECURSO_INVALIDO;
 }
 
+// TODO Unificar o metodo abaixo somente com este
 JsonDocument recursoGetJSONDoc(Recurso *r)
 {
   JsonDocument doc;
@@ -523,7 +525,25 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
 }
 
 // REQUIRE modeloMutex locked
-JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
+JsonDocument recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento)
+{
+  JsonDocument ret;
+  {
+    MutexLock lock(modeloMutex, "recursoGetJSONEvento");
+    if (!lock)
+      return ret;
+
+    Recurso *r = recursoGet(recursoID);
+    if (!r)
+      return ret;
+
+    ret = recursoGetJSONEventoLocked(r, tipoEvento);
+  }
+
+  return ret;
+}
+
+JsonDocument recursoGetJSONEventoLocked(Recurso *r, TipoEvento tipoEvento)
 {
   JsonDocument doc;
 
@@ -558,6 +578,7 @@ JsonDocument recursoGetJSONEvento(Recurso *r, TipoEvento tipoEvento)
   return doc;
 }
 
+// Nao manda os eventos recebidos para o Server, quem faz são os nodos remotos
 String recursoEventoRecebido(uint8_t *json)
 {
   JsonDocument doc;
@@ -610,7 +631,7 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     bool mudou = (rele->estado != novoEstado);
     rele->estado = novoEstado;
     if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true);
+      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false);
   }
   break;
 
@@ -631,7 +652,7 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     bool mudou = (sensor->valor != novoValor);
     sensor->valor = novoValor;
     if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true);
+      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false);
   }
   break;
 
@@ -643,8 +664,8 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     botao->estado = novoEstado;
     if (enviaEventos && mudou)
     {
-      eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso->id, true, true);
-      eventoPost(EVENTO_TOGGLE, recurso->id, true, true);
+      eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso->id, true, true, false);
+      eventoPost(EVENTO_TOGGLE, recurso->id, true, true, false);
     }
   }
   break;
@@ -672,7 +693,7 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     }
 
     if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true);
+      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false);
   }
   break;
   }
@@ -722,7 +743,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   doc.clear();
 
   if (mudou)
-    eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true);
+    eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false); // Nao enviar para o server alteração de config
 
   return "OK";
 }

@@ -68,34 +68,16 @@ void mestreLoop()
     mestreCheckOnline();
 }
 
-void mestreEnviaEvento(const char *recursoID, TipoEvento tipoEvento)
+void mestreEnviaEvento(JsonDocument payload)
 {
     if (!mestreAtivo()) // Sem mestre retorna
         return;
 
     if (!mestre.ip)
     {
-        logaM(LOG_AVISO, "Mestre sem IP! Descartando evento [%d]", tipoEvento);
+        String tipo = payload["evento"].as<String>();
+        logaM(LOG_AVISO, "Mestre sem IP! Descartando evento [%d]", tipo.c_str());
         return;
-    }
-
-    JsonDocument payload;
-    {
-        MutexLock lock(modeloMutex, "mestreEnviaEvento");
-        if (!lock)
-        {
-            logaM(LOG_CRITICO, "mestreEnviaEvento - Erro de Lock!");
-            return;
-        }
-
-        Recurso *recurso = recursoGet(recursoID);
-        if (!recurso)
-        {
-            logaM(LOG_CRITICO, "mestreEnviaEvento - Erro Recurso[%s] Invalido!", recursoID);
-            return;
-        }
-
-        payload = recursoGetJSONEvento(recurso, tipoEvento);
     }
 
     // TODO :: mecanismo de re-envio caso falha, limitado a Xs de atraso

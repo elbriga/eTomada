@@ -150,16 +150,16 @@ void botoesAtualiza()
         botao->estado = leitura;
         botao->ultimoToggle = agora;
 
-        eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, rec->id, true, true);
-        eventoPost(EVENTO_TOGGLE, rec->id, true, true);
+        eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, rec->id, true, true, true);
+        eventoPost(EVENTO_TOGGLE, rec->id, true, true, true);
 
         // Detectar CLICK, em qualquer direcao
         if (duracaoAnterior < BOTAO_TEMPO_CLICK_MS)
-          eventoPost(EVENTO_CLICK, rec->id, true, true);
+          eventoPost(EVENTO_CLICK, rec->id, true, true, true);
 
         // Detectar longPress e bigPress ao desligar
         if (!botao->estado && duracaoAnterior > BOTAO_TEMPO_LONGP_MS && duracaoAnterior < BOTAO_TEMPO_LONGP_MAX_MS)
-          eventoPost(EVENTO_LONG_PRESS, rec->id, true, true);
+          eventoPost(EVENTO_LONG_PRESS, rec->id, true, true, true);
       }
     }
   }

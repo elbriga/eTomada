@@ -9,6 +9,7 @@
 #include "util.h"
 #include "loga.h"
 #include "rtc-hw.h"
+#include "server.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("EVENTOS", nivel, fmt, ##__VA_ARGS__)
@@ -64,10 +65,8 @@ const char *eventoGetTipoTxt(TipoEvento tipo)
     }
 }
 
-void eventoPost(TipoEvento tipo,
-                const char *recursoID,
-                bool enviaSSE,
-                bool enviaMestre)
+void eventoPost(TipoEvento tipo, const char *recursoID,
+                bool enviaSSE, bool enviaMestre, bool enviaServer)
 {
     if (!filaEventos)
     {
@@ -80,6 +79,7 @@ void eventoPost(TipoEvento tipo,
         .recursoID = {0},
         .enviaSSE = enviaSSE,
         .enviaMestre = enviaMestre,
+        .enviaServer = enviaServer,
     };
     if (recursoID)
         strlcpy(evento.recursoID, recursoID, sizeof(evento.recursoID));
@@ -114,7 +114,7 @@ String eventoMockFromJson(uint8_t *json)
     if (recurso->tipo != RECURSO_BOTAO)
         return "Recurso nao eh botao!";
 
-    eventoPost(mock, recursoID.c_str(), false, true);
+    eventoPost(mock, recursoID.c_str(), false, true, true);
 
     return "OK";
 }
@@ -131,8 +131,9 @@ void eventosProcessaTask(void *)
             bool processaRegras = true;
             bool atualiza = true;
 
-            logaM(LOG_NORMAL, "Evento [%s] de [%s]",
-                  eventoGetTipoTxt(evento.tipo), evento.recursoID);
+            if (evento.tipo != EVENTO_HORARIO && evento.tipo != EVENTO_VALOR_MUDOU)
+                logaM(LOG_NORMAL, "Evento [%s] de [%s]",
+                      eventoGetTipoTxt(evento.tipo), evento.recursoID);
 
             switch (evento.tipo)
             {
@@ -150,8 +151,16 @@ void eventosProcessaTask(void *)
                 if (evento.enviaSSE)
                     recursoEnviaSSE(evento.recursoID);
 
-                if (evento.enviaMestre)
-                    mestreEnviaEvento(evento.recursoID, evento.tipo);
+                if (evento.enviaMestre || evento.enviaServer)
+                {
+                    JsonDocument eventoJSON = recursoGetJSONEvento(evento.recursoID, evento.tipo);
+
+                    if (evento.enviaMestre)
+                        mestreEnviaEvento(eventoJSON);
+
+                    if (evento.enviaServer)
+                        serverEnviaEvento(eventoJSON);
+                }
             }
         }
     }

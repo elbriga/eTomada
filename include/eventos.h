@@ -28,13 +28,12 @@ typedef struct
     char recursoID[32];
     bool enviaSSE;
     bool enviaMestre;
+    bool enviaServer;
 } Evento;
 
 void eventosInit();
-void eventoPost(TipoEvento tipo,
-                const char *recursoID,
-                bool enviaSSE,
-                bool enviaMestre);
+void eventoPost(TipoEvento tipo, const char *recursoID,
+                bool enviaSSE, bool enviaMestre, bool enviaServer);
 
 String eventoMockFromJson(uint8_t *json);
 

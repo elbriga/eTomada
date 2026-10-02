@@ -1,8 +1,6 @@
 #pragma once
 #include <Arduino.h>
-#include <Preferences.h>
-
-#include "recurso.h"
+#include <ArduinoJson.h>
 
 struct Mestre
 {
@@ -11,7 +9,7 @@ struct Mestre
 };
 
 void mestreInit();
-void mestreCheckOnline(); // Remover ??
+void mestreCheckOnline(); // TODO Remover ??
 
 void mestreLoop();
 bool mestreAtivo();
@@ -19,4 +17,4 @@ bool mestreAtivo();
 IPAddress mestreGetIP();
 const char *mestreGetID();
 
-void mestreEnviaEvento(const char *recursoID, TipoEvento tipoEvento);
+void mestreEnviaEvento(JsonDocument payload);
