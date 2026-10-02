@@ -83,6 +83,16 @@ void logaChangeLevel(int newLevel)
   }
 }
 
+void logsFlush(time_t maxWaitMS, time_t minWait)
+{
+  time_t inicio = millis();
+  while (uxQueueMessagesWaiting(logQueue) > 0 && millis() - inicio < maxWaitMS)
+    vTaskDelay(pdMS_TO_TICKS(minWait));
+
+  if (uxQueueMessagesWaiting(logQueue) > 0)
+    logaM(LOG_AVISO, "Mensagens no buffer apos o FLUSH!");
+}
+
 void logaInit()
 {
   Preferences prefs;
@@ -268,8 +278,12 @@ static void logRemotoTask(void *param)
     {
       Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>> LOG sem WIFI!!");
       Serial.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>> LOG sem WIFI!!");
+
       // Esperar pelo WiFi
-      vTaskDelay(pdTICKS_TO_MS(5000));
+      time_t inicio = millis();
+      while (WiFi.status() != WL_CONNECTED && millis() - inicio < 5000)
+        vTaskDelay(pdTICKS_TO_MS(50));
+
       if (WiFi.status() != WL_CONNECTED)
       {
         Serial.println("Descartando log remoto - sem wifi!!");
