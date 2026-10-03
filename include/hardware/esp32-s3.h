@@ -1,10 +1,11 @@
 #pragma once
 #include "hardwareProfile.h"
 
+// grow
 const HardwareProfile hardwareProfile = {
     .modelo = "R8S3B2",
     .board = "esp32s3",
-    .ledPin = 48,
+    .ledPin = 255, // é 48 o RGB
     .ledInvertido = false,
     .ledRGB = true,
     .reles = {
