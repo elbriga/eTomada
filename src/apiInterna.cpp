@@ -98,6 +98,7 @@ bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, JsonDocu
   HTTPClient http;
   http.begin(url);
   http.setTimeout(API_INTERNA_TIMEOUT);
+  http.setUserAgent("eTomada Full " + eTomadaDeviceID() + " v" + eTomadaGetVersao());
 
   esp_task_wdt_reset(); // alimenta o watchdog
 

@@ -9,7 +9,7 @@ struct Recurso; // Forward declaration
 
 struct Sensor
 {
-    int num;
+    int num; // TODO : remover?
     int pino;
     int valor;
 
@@ -17,6 +17,8 @@ struct Sensor
     char unidade[8];
     char categoria[32];
     char status[32];
+
+    bool gravarEventos;
 };
 
 void sensoresInit();

@@ -11,6 +11,7 @@
 #include "ota.h"
 #include "apiInterna.h"
 #include "mutex.h"
+#include "recurso.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("API", nivel, fmt, ##__VA_ARGS__)

@@ -49,7 +49,7 @@ void sensoresInit()
   prefs.begin("sensores", false);
 
   // Para testes
-  // prefs.putString("nome1", "Temp de Fora");
+  // prefs.putString("naoGravarS1", "NAO");
 
   int totSensores = sensoresGetCount();
   for (int s = 1; s <= totSensores; s++)
@@ -58,6 +58,9 @@ void sensoresInit()
 
     sensor->num = s;
     sensor->valor = 0;
+
+    String key = "naoGravarS" + String(sensor->num);
+    sensor->gravarEventos = prefs.getString(key.c_str()) != "NAO";
 
     SensorHW sHW = hardwareProfile.sensores[s - 1];
     if (strlen(sHW.sensorID))
@@ -183,7 +186,7 @@ void sensoresAtualizaTask(void *args)
 
       // Sensor de chuva tem os eventos postados pelo modulo sensorChuva.cpp
       if (mudou && strcmp(rec->id, SENSORCHUVA_RECURSOID))
-        eventoPost(EVENTO_VALOR_MUDOU, rec->id, true, true);
+        eventoPost(EVENTO_VALOR_MUDOU, rec->id, true, true, sensor->gravarEventos);
     }
   }
 
