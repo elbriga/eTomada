@@ -42,9 +42,10 @@ void sensorCorrenteACS712Task(void *args)
 
       vTaskDelay(pdTICKS_TO_MS(1));
     }
-    sensorCorrenteACS712Leitura = max - min;
 
-    // Serial.printf(">>>>> Lido ACS712: %d\n", sensorCorrenteACS712Leitura);
+    // Transformar para Watts
+    int range = max - min;
+    sensorCorrenteACS712Leitura = range / 6.42;
 
     vTaskDelay(pdTICKS_TO_MS(8000));
   }
@@ -57,7 +58,7 @@ static int sensorCorrenteACS712Ler(Sensor *s)
 
 TipoSensor sensorCorrenteACS712 = {
     "ACS712",
-    "Corrente",
-    "A",
+    "Potencia",
+    "W",
     sensorCorrenteACS712Init,
     sensorCorrenteACS712Ler};
