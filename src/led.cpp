@@ -125,8 +125,8 @@ void ledProcessa()
     if (led.frame == 0 && oldFrame > 0 && led.loop > 0)
     {
       led.loop--;
-      if (!led.loop)
-        ledSetAnim(0); // BaseAnim
+      if (!led.loop && led.anim != RGB_LED_ANIM_RED) // eTomadaEmAlerta()!
+        ledSetAnim(0);                               // BaseAnim
     }
   }
   else
