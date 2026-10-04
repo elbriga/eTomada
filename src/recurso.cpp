@@ -15,7 +15,6 @@
 #include "util.h"
 #include "umidificador.h"
 #include "eventos.h"
-#include "led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RECURSO", nivel, fmt, ##__VA_ARGS__)
@@ -218,6 +217,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
   TipoNodoRemoto tipoNodo;
   char idRemoto[32];
 
+  bool enviaToggle = false;
   String estadoFinal = estado;
   {
     MutexLock lock(modeloMutex, "recursoSet");
@@ -242,6 +242,8 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
 
     if (recurso->tipo == RECURSO_RELE)
     {
+      enviaToggle = true;
+
       if (estado == "TOGGLE")
       {
         Rele *r = recursoGetRele(recurso);
@@ -335,6 +337,8 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
 
     // Enviar para o Server somente dos recursos Locais
     eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre, !remoto);
+    if (enviaToggle)
+      eventoPost(EVENTO_TOGGLE, recursoID, false, false, false); // RELES: Nao envia atualizacoes, mas serve para as regras
   }
 
   return ret;
@@ -604,7 +608,7 @@ String recursoEventoRecebido(uint8_t *json)
     if (strcmp(recursoID.c_str(), rec->recursoRemoto->idRemoto))
       continue;
 
-    logaM(LOG_DEBUG, "Evento recebido! Atualizar recurso [%s @ %s]", rec->id, rec->recursoRemoto->nodo->id);
+    // logaM(LOG_DEBUG, "Evento recebido! Atualizar recurso [%s @ %s]", rec->id, rec->recursoRemoto->nodo->id);
     String ret = recursoAtualizaFromJsonLocked(rec, doc["device"], true);
 
     doc.clear();
@@ -626,7 +630,10 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     bool mudou = (rele->estado != novoEstado);
     rele->estado = novoEstado;
     if (enviaEventos && mudou)
+    {
       eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false);
+      eventoPost(EVENTO_TOGGLE, recurso->id, false, true, false);
+    }
   }
   break;
 
@@ -660,7 +667,7 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     if (enviaEventos && mudou)
     {
       eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso->id, true, true, false);
-      eventoPost(EVENTO_TOGGLE, recurso->id, true, true, false);
+      eventoPost(EVENTO_TOGGLE, recurso->id, false, true, false);
     }
   }
   break;
@@ -691,13 +698,6 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
       eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false);
   }
   break;
-  }
-
-  // TODO :: Parametrizar o recurso que liga o eTomadaEmAlerta()
-  if (recurso->remoto && !strcmp(recurso->recursoRemoto->nodo->id, "GROW") && !strcmp(recurso->recursoRemoto->idRemoto, "R1"))
-  {
-    int estado = recursoGetValor(recurso); // TODO :: eTomadaEmAlerta()
-    ledSetAnim((estado == 1) ? RGB_LED_ANIM_RED : RGB_LED_ANIM_GREEN);
   }
 
   return "OK";
