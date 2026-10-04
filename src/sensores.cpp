@@ -50,6 +50,7 @@ void sensoresInit()
 
   // Para testes
   // prefs.putString("naoGravarS1", "NAO");
+  // prefs.putString("deltaS3", "10");
 
   int totSensores = sensoresGetCount();
   for (int s = 1; s <= totSensores; s++)
@@ -61,6 +62,21 @@ void sensoresInit()
 
     String key = "naoGravarS" + String(sensor->num);
     sensor->gravarEventos = prefs.getString(key.c_str()) != "NAO";
+
+    // default
+    sensor->delta = 1;
+    sensor->maxSilencioSecs = 3600; // 1 hora
+    sensor->ultimoValorServer = 0;
+
+    key = "deltaS" + String(sensor->num);
+    if (prefs.isKey(key.c_str()))
+    {
+      sensor->delta = prefs.getString(key.c_str()).toInt();
+      logaM(LOG_AVISO, "Sensor[S%d] com delta ativado: [%d]", sensor->num, sensor->delta);
+    }
+    key = "maxSilencioS" + String(sensor->num);
+    if (prefs.isKey(key.c_str()))
+      sensor->maxSilencioSecs = prefs.getString(key.c_str()).toInt();
 
     SensorHW sHW = hardwareProfile.sensores[s - 1];
     if (strlen(sHW.sensorID))
@@ -180,13 +196,24 @@ void sensoresAtualizaTask(void *args)
         continue;
       }
 
-      int novoValor = tipoSensor->lerSensor(sensor);
-      bool mudou = (sensor->valor != novoValor);
-      sensor->valor = novoValor;
+      sensor->valor = tipoSensor->lerSensor(sensor);
 
       // Sensor de chuva tem os eventos postados pelo modulo sensorChuva.cpp
-      if (mudou && strcmp(rec->id, SENSORCHUVA_RECURSOID))
-        eventoPost(EVENTO_VALOR_MUDOU, rec->id, true, true, sensor->gravarEventos);
+      if (strcmp(rec->id, SENSORCHUVA_RECURSOID))
+      {
+        uint32_t agora = millis();
+
+        // Verificar delta e maxSilencio
+        bool gravarEvento = sensor->gravarEventos &&
+                            (abs(sensor->ultimoValorServer - sensor->valor) >= sensor->delta || (agora - sensor->ultimoEventoServer > sensor->maxSilencioSecs * 1000));
+        if (gravarEvento)
+        {
+          sensor->ultimoValorServer = sensor->valor;
+          sensor->ultimoEventoServer = agora;
+        }
+
+        eventoPost(EVENTO_VALOR_MUDOU, rec->id, true, true, gravarEvento);
+      }
     }
   }
 

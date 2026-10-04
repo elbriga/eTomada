@@ -19,6 +19,13 @@ struct Sensor
     char status[32];
 
     bool gravarEventos;
+    // Variação minima para gerar evento
+    int delta;
+    // Tempo(s) maximo sem gerar eventos:
+    // gerar evento a cada X segundos, mesmo que não tenha a variação minima
+    int maxSilencioSecs;
+    int ultimoValorServer;
+    uint32_t ultimoEventoServer;
 };
 
 void sensoresInit();
