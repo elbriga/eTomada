@@ -68,20 +68,19 @@ void mestreLoop()
     mestreCheckOnline();
 }
 
-void mestreEnviaEvento(JsonDocument payload)
+void mestreEnviaEvento(String payloadJson)
 {
     if (!mestreAtivo()) // Sem mestre retorna
         return;
 
     if (!mestre.ip)
     {
-        String tipo = payload["evento"].as<String>();
-        logaM(LOG_AVISO, "Mestre sem IP! Descartando evento [%d]", tipo.c_str());
+        logaM(LOG_AVISO, "Mestre sem IP! Descartando evento [%d]", payloadJson.c_str());
         return;
     }
 
     // TODO :: mecanismo de re-envio caso falha, limitado a Xs de atraso
-    apiInternaEnviaEvento(mestre.ip, &payload);
+    apiInternaEnviaJSON(mestre.ip, "evento", payloadJson, 80);
 }
 
 bool mestreAtivo()

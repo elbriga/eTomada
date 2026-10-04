@@ -17,4 +17,4 @@ bool mestreAtivo();
 IPAddress mestreGetIP();
 const char *mestreGetID();
 
-void mestreEnviaEvento(JsonDocument payload);
+void mestreEnviaEvento(String payloadJson);

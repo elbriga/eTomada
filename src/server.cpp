@@ -17,7 +17,13 @@ void serverInit()
     logaM(LOG_AVISO, "eTomada Server: %s", ETOMADA_SERVER);
 }
 
-void serverEnviaEvento(JsonDocument payload)
+void serverEnviaEvento(String payloadJSON)
 {
-    apiInternaEnviaEvento(ETOMADA_SERVER, &payload);
+    apiInternaEnviaJSON(ETOMADA_SERVER, "evento", payloadJSON);
+}
+
+void serverEnviaSnapshot()
+{
+    String snapshotStr = eTomadaGetSnapshotJSON();
+    apiInternaEnviaJSON(ETOMADA_SERVER, "snapshot", snapshotStr);
 }

@@ -525,10 +525,9 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
   return doc;
 }
 
-// REQUIRE modeloMutex locked
-JsonDocument recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento)
+String recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento)
 {
-  JsonDocument ret;
+  String ret = "{}";
   {
     MutexLock lock(modeloMutex, "recursoGetJSONEvento");
     if (!lock)
@@ -538,45 +537,40 @@ JsonDocument recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento)
     if (!r)
       return ret;
 
-    ret = recursoGetJSONEventoLocked(r, tipoEvento);
+    JsonDocument doc;
+
+    doc["origem"] = eTomadaDeviceID();
+    doc["id"] = String(r->id);
+    doc["evento"] = eventoGetTipoTxt(tipoEvento);
+
+    JsonDocument device;
+    switch (r->tipo)
+    {
+    case RECURSO_RELE:
+      device["estado"] = recursoGetRele(r)->estado;
+      break;
+    case RECURSO_SENSOR:
+    {
+      Sensor *s = recursoGetSensor(r);
+      device["valor"] = s->valor;
+      device["status"] = s->status;
+    }
+    break;
+    case RECURSO_BOTAO:
+      device["estado"] = recursoGetBotao(r)->estado;
+      break;
+    case RECURSO_UMIDIFICADOR:
+      device["estado"] = recursoGetUmidificador(r)->estado;
+      device["estadoFan"] = recursoGetUmidificador(r)->estadoFan;
+      break;
+    }
+
+    doc["device"] = device;
+
+    serializeJson(doc, ret);
   }
 
   return ret;
-}
-
-JsonDocument recursoGetJSONEventoLocked(Recurso *r, TipoEvento tipoEvento)
-{
-  JsonDocument doc;
-
-  doc["origem"] = eTomadaDeviceID();
-  doc["id"] = String(r->id);
-  doc["evento"] = eventoGetTipoTxt(tipoEvento);
-
-  JsonDocument device;
-  switch (r->tipo)
-  {
-  case RECURSO_RELE:
-    device["estado"] = recursoGetRele(r)->estado;
-    break;
-  case RECURSO_SENSOR:
-  {
-    Sensor *s = recursoGetSensor(r);
-    device["valor"] = s->valor;
-    device["status"] = s->status;
-  }
-  break;
-  case RECURSO_BOTAO:
-    device["estado"] = recursoGetBotao(r)->estado;
-    break;
-  case RECURSO_UMIDIFICADOR:
-    device["estado"] = recursoGetUmidificador(r)->estado;
-    device["estadoFan"] = recursoGetUmidificador(r)->estadoFan;
-    break;
-  }
-
-  doc["device"] = device;
-
-  return doc;
 }
 
 // Nao manda os eventos recebidos para o Server, quem faz são os nodos remotos

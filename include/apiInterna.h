@@ -6,5 +6,5 @@
 bool apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc, String &msgOut);
 bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta, String &msgOut);
 
-String apiInternaEnviaEvento(String ipPort, JsonDocument *body);
-String apiInternaEnviaEvento(IPAddress ip, JsonDocument *body, int port = 80);
+String apiInternaEnviaJSON(IPAddress ip, String endpoint, String json, int port);
+String apiInternaEnviaJSON(String ipPort, String endpoint, String json);

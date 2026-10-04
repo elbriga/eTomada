@@ -153,7 +153,7 @@ void eventosProcessaTask(void *)
 
                 if (evento.enviaMestre || evento.enviaServer)
                 {
-                    JsonDocument eventoJSON = recursoGetJSONEvento(evento.recursoID, evento.tipo);
+                    String eventoJSON = recursoGetJSONEvento(evento.recursoID, evento.tipo);
 
                     if (evento.enviaMestre)
                         mestreEnviaEvento(eventoJSON);
