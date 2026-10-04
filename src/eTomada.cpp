@@ -35,6 +35,7 @@
 #include "hardwareProfile.h"
 #include "umidificador.h"
 #include "sensorChuva.h"
+#include "server.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("eTOMADA", nivel, fmt, ##__VA_ARGS__)
@@ -93,6 +94,8 @@ void eTomadaInit()
   botoesInit();
 
   eTomadaLoadConfig();
+
+  serverEnviaSnapshot();
 }
 
 static int configLoadCount = 0;
