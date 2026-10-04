@@ -13,6 +13,7 @@
 #include "agendamentos.h"
 #include "sensorChuva.h"
 #include "http.h"
+#include "led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("REGRA", nivel, fmt, ##__VA_ARGS__)
@@ -275,6 +276,14 @@ String regraDisparaAcao(Regra *regra)
     }
     break;
 
+    case ACAO_ALERTA:
+    {
+        Recurso *recurso = recursoGet(regra->condicao.evento.recursoID);
+        int estado = recursoGetValor(recurso);
+        ledSetAnim((estado == 1) ? LED_ANIM_ALARM : LED_OFF);
+    }
+    break;
+
     default:
         logaM(LOG_CRITICO, "TODO :: regraDispara[%d] tipo (%d)", regra->id, acao->tipo);
         break;
@@ -446,6 +455,8 @@ static const char *regraTipoAcaoTxt(TipoAcao acao)
         return "ESTADO";
     case ACAO_TIMER:
         return "TIMER";
+    case ACAO_ALERTA:
+        return "ALERTA";
     default:
         return "ACAO??";
     }
@@ -509,8 +520,8 @@ String regraGetTxt(Regra *r)
         ret += r->acao.timer;
         break;
 
-    case ACAO_SCRIPT:
-        ret += "SCRIPT";
+    case ACAO_ALERTA:
+        ret += "ALERTA";
         break;
 
     default:
@@ -818,6 +829,10 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
                     doc["acao"]["recurso"].as<const char *>(),
                     sizeof(regra->acao.recursoID));
             regra->acao.timer = doc["acao"]["timer"].as<uint32_t>();
+        }
+        else if (tipoAcaoStr == "ALERTA")
+        {
+            regra->acao.tipo = ACAO_ALERTA;
         }
         else
         {
