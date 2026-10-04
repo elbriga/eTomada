@@ -41,7 +41,7 @@ void ledInit()
     rgbLed.clear();
     rgbLed.show();
 
-    ledSetAnim(1); // Azul == Boot!
+    ledSetAnim(LED_ANIM_BOOT); // Azul == Boot!
   }
   else
   {
@@ -59,24 +59,33 @@ int ledGetAnim()
   return led.anim;
 }
 
+void rgbLedWrite(uint8_t r, uint8_t g, uint8_t b)
+{
+  if (!r && !g && !b)
+    rgbLed.clear();
+  else
+    rgbLed.setPixelColor(0, r * INTENSIDADE, g * INTENSIDADE, b * INTENSIDADE);
+  rgbLed.show();
+}
+
 void ledSetAnim(uint8_t num, uint8_t loop)
 {
-  if (num >= 0 && num < TOT_ANIMS)
+  if (num == LED_ANIM_OFF || (num >= 0 && num < TOT_ANIMS))
     led.anim = num;
   if (loop > 0 && loop < 11)
     led.loop = loop;
   led.frame = 999; // Forçar mudança
-}
 
-void rgbLedWrite(uint8_t r, uint8_t g, uint8_t b)
-{
-  rgbLed.setPixelColor(0, r * INTENSIDADE, g * INTENSIDADE, b * INTENSIDADE);
-  rgbLed.show();
+  if (num == LED_ANIM_OFF)
+    rgbLedWrite(0, 0, 0);
 }
 
 void ledProcessa()
 {
   if (!ledAtivo())
+    return;
+
+  if (led.anim == LED_ANIM_OFF)
     return;
 
   // Sincronizado com o segundo!
@@ -91,24 +100,24 @@ void ledProcessa()
     bool r = false, g = false, b = false;
     switch (led.anim)
     {
-    case RGB_LED_ANIM_BLUE: // 1
+    case LED_ANIM_BOOT: // 1
       b = led.frame % 2;
       break;
-    case RGB_LED_ANIM_RED: // 2
+    case LED_ANIM_ALARM: // 2
       r = led.frame % 2;
       break;
-    case RGB_LED_ANIM_COLOR: // 3
+    case LED_ANIM_COLOR: // 3
       r = led.frame == 0;
       g = led.frame == 1;
       b = led.frame == 2;
       break;
-    case RGB_LED_ANIM_PISCA: // 4
+    case LED_ANIM_PISCA: // 4
       r = (tv.tv_usec / 50000) % 2;
       g = r;
       b = r;
       break;
 
-    case RGB_LED_ANIM_GREEN: // 0
+    case LED_ANIM_RUN: // 0
     default:
       g = led.frame == 0;
       break;
@@ -125,8 +134,8 @@ void ledProcessa()
     if (led.frame == 0 && oldFrame > 0 && led.loop > 0)
     {
       led.loop--;
-      if (!led.loop && led.anim != RGB_LED_ANIM_RED) // eTomadaEmAlerta()!
-        ledSetAnim(0);                               // BaseAnim
+      if (!led.loop && led.anim != LED_ANIM_ALARM) // eTomadaEmAlerta()!
+        ledSetAnim(0);                             // BaseAnim
     }
   }
   else

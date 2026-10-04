@@ -280,7 +280,7 @@ String regraDisparaAcao(Regra *regra)
     {
         Recurso *recurso = recursoGet(regra->condicao.evento.recursoID);
         int estado = recursoGetValor(recurso);
-        ledSetAnim((estado == 1) ? LED_ANIM_ALARM : LED_OFF);
+        ledSetAnim((estado == 1) ? LED_ANIM_ALARM : LED_ANIM_OFF);
     }
     break;
 

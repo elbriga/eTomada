@@ -1,10 +1,11 @@
 #pragma once
 
-#define RGB_LED_ANIM_GREEN 0
-#define RGB_LED_ANIM_BLUE 1
-#define RGB_LED_ANIM_RED 2
-#define RGB_LED_ANIM_COLOR 3
-#define RGB_LED_ANIM_PISCA 4
+#define LED_ANIM_OFF 99
+#define LED_ANIM_RUN 0
+#define LED_ANIM_BOOT 1
+#define LED_ANIM_ALARM 2
+#define LED_ANIM_COLOR 3
+#define LED_ANIM_PISCA 4
 
 void ledInit();
 bool ledAtivo();

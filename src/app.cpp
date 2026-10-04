@@ -160,7 +160,7 @@ void appInit()
   lastMinute = timeinfo.tm_min; // TODO :: Esse impede que dispare um EVENTO_HORARIO para o minuto atual do boot
   lastHour = timeinfo.tm_hour; */
 
-  ledSetAnim(RGB_LED_ANIM_GREEN); // Verde == Loop
+  ledSetAnim(LED_ANIM_OFF); // Usar o LED só para o Alerta
 }
 
 static uint32_t tsMdnsChuncho = 0;
@@ -229,8 +229,9 @@ void appLoop()
     {
       last10Second = timeinfo.tm_sec / 10;
 
-      if (ledGetAnim() != RGB_LED_ANIM_RED) // TODO : eTomadaEmAlerta()
-        ledSetAnim(RGB_LED_ANIM_PISCA, 3);
+      if (!true) // IF MODO ALERTA Usar o LED só para o Alerta
+        ledSetAnim(LED_ANIM_PISCA, 3);
+
       sensoresAtualiza();
 
       if (!wifiModoAP)
