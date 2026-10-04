@@ -15,6 +15,7 @@
 #include "util.h"
 #include "umidificador.h"
 #include "eventos.h"
+#include "led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RECURSO", nivel, fmt, ##__VA_ARGS__)
@@ -696,6 +697,13 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
       eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false);
   }
   break;
+  }
+
+  // TODO :: Parametrizar o recurso que liga o eTomadaEmAlerta()
+  if (recurso->remoto && !strcmp(recurso->recursoRemoto->nodo->id, "GROW") && !strcmp(recurso->recursoRemoto->idRemoto, "R1"))
+  {
+    int estado = recursoGetValor(recurso); // TODO :: eTomadaEmAlerta()
+    ledSetAnim((estado == 1) ? RGB_LED_ANIM_RED : RGB_LED_ANIM_GREEN);
   }
 
   return "OK";

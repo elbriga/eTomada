@@ -229,7 +229,8 @@ void appLoop()
     {
       last10Second = timeinfo.tm_sec / 10;
 
-      ledSetAnim(RGB_LED_ANIM_PISCA, 3);
+      if (ledGetAnim() != RGB_LED_ANIM_RED) // TODO : eTomadaEmAlerta()
+        ledSetAnim(RGB_LED_ANIM_PISCA, 3);
       sensoresAtualiza();
 
       if (!wifiModoAP)

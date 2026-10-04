@@ -54,6 +54,11 @@ bool ledAtivo()
   return hardwareProfile.ledPin != 255;
 }
 
+int ledGetAnim()
+{
+  return led.anim;
+}
+
 void ledSetAnim(uint8_t num, uint8_t loop)
 {
   if (num >= 0 && num < TOT_ANIMS)
