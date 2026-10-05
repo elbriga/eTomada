@@ -45,7 +45,9 @@ void sensorCorrenteACS712Task(void *args)
 
     // Transformar para Watts
     int range = max - min;
-    sensorCorrenteACS712Leitura = range / 6.42;
+    sensorCorrenteACS712Leitura = (range - 150) / 5.97;
+    if (sensorCorrenteACS712Leitura < 0)
+      sensorCorrenteACS712Leitura = 0;
 
     vTaskDelay(pdTICKS_TO_MS(8000));
   }
