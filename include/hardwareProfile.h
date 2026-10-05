@@ -45,16 +45,18 @@ typedef struct
 
 #ifdef HW_LOLIN
 #include "hardware/lolin.h"
-#elif defined(HW_C3MINI)
-#include "hardware/c3mini.h"
-#elif defined(HW_C3MINITERRA)
+#elif defined(HW_MESTRE)
+#include "hardware/mestre.h"
+#elif defined(HW_TERRARIO)
 #include "hardware/terrario.h"
-#elif defined(HW_ESP32)
-#include "hardware/esp32.h"
+#elif defined(HW_UMIDFANVALVE)
+#include "hardware/umidFanValve.h"
+#elif defined(HW_UMIDTERRARIO)
+#include "hardware/umidTerrario.h"
 #elif defined(HW_TELA)
 #include "hardware/tela.h"
-#elif defined(HW_ESP32S3)
-#include "hardware/esp32-s3.h"
+#elif defined(HW_GROW)
+#include "hardware/grow.h"
 #else
 #error "Nenhum Hardware Profile definido."
 #endif
