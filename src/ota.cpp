@@ -15,6 +15,7 @@
 #include "util.h"
 #include "wifi.h"
 #include "shaCache.h"
+#include "led.h"
 
 #define OTA_SERVER "10.0.0.1" // TODO :: Unificar em eTomadaServer junto com o log-server
 #define OTA_TAMANHO_MINIMO_FLASH 4
@@ -307,6 +308,9 @@ void otaUpload(
 
             return;
         }
+
+        eTomadaSetModoOperacao(MODO_EM_OTA);
+        ledSetAnim(LED_ANIM_BOOT);
     }
 
     // Recebendo dados

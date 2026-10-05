@@ -16,6 +16,7 @@ void eTomadaLoadConfig();
 
 ModoOperacao eTomadaGetModoOperacao();
 const char *eTomadaGetModoOperacaoStr();
+void eTomadaSetModoOperacao(ModoOperacao modo);
 
 String eTomadaGetVersao();
 String eTomadaDeviceID();

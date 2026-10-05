@@ -161,6 +161,17 @@ const char *eTomadaGetModoOperacaoStr()
   }
 }
 
+void eTomadaSetModoOperacao(ModoOperacao modo)
+{
+  if (modo != MODO_CONTROLADOR && modo != MODO_NO && modo != MODO_EM_OTA)
+  {
+    logaM(LOG_CRITICO, "eTomadaSetModoOperacao: Modo invalido [%d]", modo);
+    return;
+  }
+
+  modoOperacao = modo;
+}
+
 String eTomadaDeviceID()
 {
   return deviceID;
