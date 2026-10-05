@@ -309,7 +309,7 @@ void otaUpload(
             return;
         }
 
-        eTomadaSetModoOperacao(MODO_EM_OTA);
+        eTomadaSetEmOta();
         ledSetAnim(LED_ANIM_BOOT);
     }
 
