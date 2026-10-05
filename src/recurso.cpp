@@ -163,7 +163,7 @@ bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, boo
   return recursoSet(id.c_str(), estado, msgOut, enviaMestre);
 }
 
-bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut, bool enviaMestre)
+bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
 {
   if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
   {
@@ -199,6 +199,58 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut, bool
         umidificadorFanSetEstado(estadoFan);
       }
       ret = umidificadorSetEstado(umidEstado, msgOut);
+    }
+    break;
+    }
+  }
+
+  return ret;
+}
+
+bool recursoSetRemoto(IPAddress ip, TipoNodoRemoto tipoNodo, const char *recursoID, const char *idRemoto, String estado, String &msgOut)
+{
+  JsonDocument resposta;
+  bool ret = apiInternaSetRecurso(ip, tipoNodo, idRemoto, estado, resposta, msgOut);
+
+  if (ret && !resposta.isNull())
+  {
+    String out;
+    serializeJson(resposta, out);
+    logaM(LOG_AVISO, "ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
+
+    MutexLock lock(modeloMutex, "recursoSetRemoto");
+    if (!lock)
+      return "recursoSetRemoto: mutex timeout";
+
+    Recurso *recurso = recursoGet(recursoID);
+    if (!recurso)
+      return "recursoSetRemoto: recurso sumiu!";
+
+    switch (recurso->tipo)
+    {
+    case RECURSO_RELE:
+    {
+      if (resposta["recurso"]["device"]["estado"].isNull())
+      {
+        logaM(LOG_AVISO, "CacheJson sem dados do Rele");
+        break;
+      }
+      Rele *rele = recursoGetRele(recurso);
+      rele->estado = resposta["recurso"]["device"]["estado"].as<bool>();
+    }
+    break;
+
+    case RECURSO_UMIDIFICADOR:
+    {
+      if (resposta["recurso"]["device"]["estado"].isNull())
+      {
+        logaM(LOG_AVISO, "CacheJson sem dados do Umid");
+        break;
+      }
+      Umidificador *umid = recursoGetUmidificador(recurso);
+      umid->estado = (UmidificadorEstado)resposta["recurso"]["device"]["estado"].as<int>();
+      if (!resposta["recurso"]["device"]["estadoFan"].isNull())
+        umid->estadoFan = (UmidificadorFanEstado)resposta["recurso"]["device"]["estadoFan"].as<int>();
     }
     break;
     }
@@ -265,7 +317,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
     if (!recurso->remoto)
     {
       // Recursos locais: Tratar dentro do Lock
-      ret = recursoSetLocalLocked(recurso, estadoFinal, msgOut, enviaMestre);
+      ret = recursoSetLocalLocked(recurso, estadoFinal, msgOut);
     }
     else
     {
@@ -279,52 +331,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
   if (remoto)
   {
     // API
-    JsonDocument resposta;
-    ret = apiInternaSetRecurso(ip, tipoNodo, idRemoto, estadoFinal, resposta, msgOut);
-
-    if (ret && !resposta.isNull())
-    {
-      String out;
-      serializeJson(resposta, out);
-      logaM(LOG_AVISO, "ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
-
-      MutexLock lock(modeloMutex, "recursoSet2");
-      if (!lock)
-        return "recursoSet: mutex timeout";
-
-      Recurso *recurso = recursoGet(recursoID);
-      if (!recurso)
-        return "recursoSet: recurso sumiu!";
-
-      switch (recurso->tipo)
-      {
-      case RECURSO_RELE:
-      {
-        if (resposta["recurso"]["device"]["estado"].isNull())
-        {
-          logaM(LOG_AVISO, "CacheJson sem dados do Rele");
-          break;
-        }
-        Rele *rele = recursoGetRele(recurso);
-        rele->estado = resposta["recurso"]["device"]["estado"].as<bool>();
-      }
-      break;
-
-      case RECURSO_UMIDIFICADOR:
-      {
-        if (resposta["recurso"]["device"]["estado"].isNull())
-        {
-          logaM(LOG_AVISO, "CacheJson sem dados do Umid");
-          break;
-        }
-        Umidificador *umid = recursoGetUmidificador(recurso);
-        umid->estado = (UmidificadorEstado)resposta["recurso"]["device"]["estado"].as<int>();
-        if (!resposta["recurso"]["device"]["estadoFan"].isNull())
-          umid->estadoFan = (UmidificadorFanEstado)resposta["recurso"]["device"]["estadoFan"].as<int>();
-      }
-      break;
-      }
-    }
+    ret = recursoSetRemoto(ip, tipoNodo, recursoID, idRemoto, estadoFinal, msgOut);
   }
 
   if (ret)
