@@ -17,9 +17,9 @@ function umidGetCard(recurso) {
   <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
 </div>
 <div class="status">
-  <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power == 1 ? 0 : 1})">${power == 1 ? "🟢" : "🔴"}</button>
-  <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power == 2 ? 0 : 2})">${power == 2 ? "🟢" : "🔴"}</button>
-  <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power == 3 ? 0 : 3})">${power == 3 ? "🟢" : "🔴"}</button>
+  <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power == 1 ? 0 : 1}, ${fanPower})">${power == 1 ? "🟢" : "🔴"}</button>
+  <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power == 2 ? 0 : 2}, ${fanPower})">${power == 2 ? "🟢" : "🔴"}</button>
+  <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power == 3 ? 0 : 3}, ${fanPower})">${power == 3 ? "🟢" : "🔴"}</button>
 </div>
 ${
   fanPower >= 0
@@ -27,9 +27,9 @@ ${
   <div class="title">Ventilador</div>
 </div>
 <div class="status">
-  <button class="editBtn" onclick="umidificadorFanSetPower('${recurso.id}', ${fanPower == 1 ? 0 : 1})">${fanPower == 1 ? "🟢" : "🔴"}</button>
-  <button class="editBtn" onclick="umidificadorFanSetPower('${recurso.id}', ${fanPower == 2 ? 0 : 2})">${fanPower == 2 ? "🟢" : "🔴"}</button>
-  <button class="editBtn" onclick="umidificadorFanSetPower('${recurso.id}', ${fanPower == 3 ? 0 : 3})">${fanPower == 3 ? "🟢" : "🔴"}</button>
+  <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power}, ${fanPower == 1 ? 0 : 1})">${fanPower == 1 ? "🟢" : "🔴"}</button>
+  <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power}, ${fanPower == 2 ? 0 : 2})">${fanPower == 2 ? "🟢" : "🔴"}</button>
+  <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power}, ${fanPower == 3 ? 0 : 3})">${fanPower == 3 ? "🟢" : "🔴"}</button>
 </div>`
     : ""
 }`;
@@ -93,32 +93,18 @@ async function umidSalvarFromModal() {
   }
 }
 
-async function umidificadorSetPower(recursoID, power) {
+async function umidificadorSetPower(recursoID, power, powerFan) {
   try {
     await eTomadaAPI(
       "setRecurso",
       {
         id: recursoID,
         estado: power,
+        estadoFan: powerFan,
       },
       "PUT",
     );
   } catch (e) {
     statusMsg(`Erro ao controlar UMID: ` + e);
-  }
-}
-
-async function umidificadorFanSetPower(recursoID, power) {
-  try {
-    await eTomadaAPI(
-      "setRecurso",
-      {
-        id: recursoID,
-        estadoFan: power,
-      },
-      "PUT",
-    );
-  } catch (e) {
-    statusMsg(`Erro ao controlar FAN: ` + e);
   }
 }
