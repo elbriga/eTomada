@@ -103,15 +103,14 @@ void logaInit()
 {
   Preferences prefs;
   prefs.begin("eTomada", false); // usando o mesmo namespace de eTomada.cpp
-
   // Para testes
   // prefs.putString("logLevel", String(LOG_DEBUG0));
   // prefs.putString("logServer", "192.168.1.220:8080");
-
-  logaChangeLevel(getPrefsAtr(prefs, "", "logLevel").toInt());
-  logServer = LOG_SERVER; // getPrefsAtr(prefs, "", "logServer");
-
+  int logLevel = prefs.getString("logLevel", String(LOG_NORMAL)).toInt();
+  logServer = prefs.getString("logServer", LOG_SERVER);
   prefs.end();
+
+  logaChangeLevel(logLevel);
 
   if (!logaRemotoAtivo())
   {
