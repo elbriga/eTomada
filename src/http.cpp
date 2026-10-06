@@ -1,11 +1,11 @@
-#include "httpAuth.h"
+#include <Preferences.h>
+
 #include "eTomada.h"
 #include "http.h"
 #include "loga.h"
 #include "wifi.h"
 #include "recovery.h"
 #include "api.h"
-#include <Preferences.h>
 
 #define DEV // TODO :: remover
 
@@ -15,80 +15,27 @@
 // Web Server
 AsyncWebServer httpServer(80);
 AsyncEventSource sse("/events");
-
-const String &httpAuthPassword()
-{
-  static String password = []()
-  {
-    Preferences prefs;
-    prefs.begin("eTomada", false);
-
-    // Para setar:
-    // prefs.putString("adminPass", "sapo");
-
-    if (!prefs.isKey("adminPass"))
-      prefs.putString("adminPass", ETOMADA_HTTP_DEFAULT_PASSWORD);
-
-    String storedPassword = prefs.getString("adminPass", ETOMADA_HTTP_DEFAULT_PASSWORD);
-    prefs.end();
-
-    return storedPassword;
-  }();
-
-  return password;
-}
-
-constexpr uint8_t AUTH_FAILURE_LIMIT = 5;
-constexpr uint32_t AUTH_FAILURE_WINDOW_MS = 10UL * 60 * 1000;
-constexpr uint32_t AUTH_BLOCK_DURATION_MS = 15UL * 60 * 1000;
-constexpr size_t AUTH_TRACKED_CLIENTS = 16;
-
-struct AuthClientState
-{
-  String ip;
-  uint8_t failures = 0;
-  uint32_t windowStartedAt = 0;
-  uint32_t blockedAt = 0;
-  uint32_t lastSeenAt = 0;
-};
-
-AuthClientState authClientStates[AUTH_TRACKED_CLIENTS];
-
-AuthClientState &authClientStateFor(const String &ip, uint32_t now)
-{
-  AuthClientState *available = nullptr;
-  AuthClientState *oldest = &authClientStates[0];
-
-  for (AuthClientState &state : authClientStates)
-  {
-    if (state.ip == ip && state.ip.length() > 0)
-    {
-      state.lastSeenAt = now;
-      return state;
-    }
-
-    if (state.ip.length() == 0 && available == nullptr)
-      available = &state;
-
-    if (now - state.lastSeenAt > now - oldest->lastSeenAt)
-      oldest = &state;
-  }
-
-  AuthClientState &state = available ? *available : *oldest;
-  state.ip = ip;
-  state.failures = 0;
-  state.windowStartedAt = now;
-  state.blockedAt = 0;
-  state.lastSeenAt = now;
-  return state;
-}
+String httpSenha;
 
 void httpServerInitModoAP();
 void httpServerInitModoAPI();
+void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next);
 
 void httpServerInit()
 {
   logaM(LOG_NORMAL, "Inicializando o servidor http");
+
+  Preferences prefs;
+  prefs.begin("eTomada", false);
+
+  // Para setar:
+  // prefs.putString("adminPass", "sapo");
+
+  if (!prefs.isKey("adminPass"))
+    prefs.putString("adminPass", ETOMADA_HTTP_DEFAULT_PASSWORD);
+
+  httpSenha = prefs.getString("adminPass");
+  prefs.end();
 
 #ifdef DEV
   //  Adicionar headers para functionar o CORS quando em DEV localhost
@@ -120,60 +67,6 @@ void httpServerInit()
     } });
 
   httpServer.begin();
-}
-
-void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)
-{
-  // Requisicoes vindas de 10.0.0.1 vem do tunnel cloudflare = internet aberta
-  String remoteIP = request->client()->remoteIP().toString();
-  if (request->method() == HTTP_OPTIONS ||
-      (remoteIP != "10.0.0.1" && remoteIP.startsWith("10.")))
-  {
-    next();
-    return;
-  }
-
-  String clientIP = remoteIP;
-  if (remoteIP == "10.0.0.1")
-  {
-    const AsyncWebHeader *forwardedIP = request->getHeader("CF-Connecting-IP");
-    if (forwardedIP && forwardedIP->value().length() > 0)
-      clientIP = forwardedIP->value();
-  }
-
-  uint32_t now = millis();
-  AuthClientState &state = authClientStateFor(clientIP, now);
-  if (state.failures >= AUTH_FAILURE_LIMIT && now - state.blockedAt < AUTH_BLOCK_DURATION_MS)
-  {
-    request->send(429, "text/plain", "Muitas tentativas de login. Tente novamente mais tarde.");
-    return;
-  }
-
-  if (now - state.windowStartedAt >= AUTH_FAILURE_WINDOW_MS || state.failures >= AUTH_FAILURE_LIMIT)
-  {
-    state.failures = 0;
-    state.windowStartedAt = now;
-    state.blockedAt = 0;
-  }
-
-  if (request->authenticate(ETOMADA_HTTP_USERNAME, httpAuthPassword().c_str()))
-  {
-    state.failures = 0;
-    state.windowStartedAt = now;
-    state.blockedAt = 0;
-    next();
-    return;
-  }
-
-  state.failures++;
-  if (state.failures >= AUTH_FAILURE_LIMIT)
-  {
-    state.blockedAt = now;
-    request->send(429, "text/plain", "Muitas tentativas de login. Tente novamente mais tarde.");
-    return;
-  }
-
-  request->requestAuthentication(AsyncAuthType::AUTH_BASIC, "eTomada");
 }
 
 void httpServerInitModoAPI()
@@ -261,6 +154,132 @@ void httpEnviaSSERefresh()
 {
   String body = eTomadaGetSnapshotJSON();
   httpEnviaSSE(body, "sse_snapshot");
+}
+
+// Auth
+void httpSetSenha(const String &senha)
+{
+  httpSenha = senha;
+
+  Preferences prefs;
+  prefs.begin("eTomada", false);
+  prefs.putString("adminPass", senha);
+  prefs.end();
+}
+
+String httpGetSenha()
+{
+  return httpSenha;
+}
+
+constexpr uint8_t AUTH_FAILURE_LIMIT = 5;
+constexpr uint32_t AUTH_FAILURE_WINDOW_MS = 10UL * 60 * 1000;
+constexpr uint32_t AUTH_BLOCK_DURATION_MS = 15UL * 60 * 1000;
+constexpr size_t AUTH_TRACKED_CLIENTS = 16;
+
+struct AuthClientState
+{
+  String ip;
+  uint8_t failures = 0;
+  uint32_t windowStartedAt = 0;
+  uint32_t blockedAt = 0;
+  uint32_t lastSeenAt = 0;
+};
+
+AuthClientState authClientStates[AUTH_TRACKED_CLIENTS];
+
+AuthClientState &authClientStateFor(const String &ip, uint32_t now)
+{
+  AuthClientState *available = nullptr;
+  AuthClientState *oldest = &authClientStates[0];
+
+  for (AuthClientState &state : authClientStates)
+  {
+    if (state.ip == ip && state.ip.length() > 0)
+    {
+      state.lastSeenAt = now;
+      return state;
+    }
+
+    if (state.ip.length() == 0 && available == nullptr)
+      available = &state;
+
+    if (now - state.lastSeenAt > now - oldest->lastSeenAt)
+      oldest = &state;
+  }
+
+  AuthClientState &state = available ? *available : *oldest;
+  state.ip = ip;
+  state.failures = 0;
+  state.windowStartedAt = now;
+  state.blockedAt = 0;
+  state.lastSeenAt = now;
+  return state;
+}
+
+IPAddress httpGetClientIP(AsyncWebServerRequest *request)
+{
+  IPAddress clientIP = request->client()->remoteIP();
+  if (request->hasHeader("CF-Connecting-IP"))
+  {
+    const AsyncWebHeader *forwardedIP = request->getHeader("CF-Connecting-IP");
+    if (forwardedIP && forwardedIP->value().length() > 0)
+      clientIP.fromString(forwardedIP->value());
+  }
+  return clientIP;
+}
+
+void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)
+{
+  if (httpSenha.length() == 0)
+  {
+    next();
+    return;
+  }
+
+  // Deixa passar o OPTIONS e os IPs da rede 10.x.x.x (rede local)
+  String clientIP = httpGetClientIP(request).toString();
+  if (request->method() == HTTP_OPTIONS || clientIP.startsWith("10."))
+  {
+    next();
+    return;
+  }
+
+  uint32_t now = millis();
+  AuthClientState &state = authClientStateFor(clientIP, now);
+  if (state.failures >= AUTH_FAILURE_LIMIT && now - state.blockedAt < AUTH_BLOCK_DURATION_MS)
+  {
+    request->send(429, "text/plain", "Muitas tentativas de login. Tente novamente mais tarde.");
+    logaRequest(request, "429 Too Many Requests");
+    return;
+  }
+
+  if (now - state.windowStartedAt >= AUTH_FAILURE_WINDOW_MS || state.failures >= AUTH_FAILURE_LIMIT)
+  {
+    state.failures = 0;
+    state.windowStartedAt = now;
+    state.blockedAt = 0;
+  }
+
+  if (request->authenticate(ETOMADA_HTTP_USERNAME, httpSenha.c_str()))
+  {
+    state.failures = 0;
+    state.windowStartedAt = now;
+    state.blockedAt = 0;
+    next();
+    return;
+  }
+
+  state.failures++;
+  if (state.failures >= AUTH_FAILURE_LIMIT)
+  {
+    state.blockedAt = now;
+    request->send(429, "text/plain", "Muitas tentativas de login. Tente novamente mais tarde.");
+    logaRequest(request, "429 Too Many Requests 2");
+    return;
+  }
+
+  request->requestAuthentication(AsyncAuthType::AUTH_BASIC, "eTomada");
 }
 
 void logaRequest(AsyncWebServerRequest *request, String resultado)

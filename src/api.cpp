@@ -337,6 +337,33 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
     request->send(200, "application/json", R"({"msg":"logLevel configurado"})");
     logaRequest(request, "200 OK");
   }
+  else if (!doc["adminNewPass"].isNull())
+  {
+    // verificar se é o mestre ou whitelist, para não testar a senha atual
+    String remoteIP = httpGetClientIP(request).toString();
+    if ((!mestreAtivo() || remoteIP != mestreGetIP().toString()) && remoteIP != "10.0.1.100")
+    {
+      if (doc["adminPass"].as<String>() != httpGetSenha())
+      {
+        request->send(400, "application/json", R"({"msg":"Senha atual incorreta"})");
+        logaRequest(request, "400 Senha atual incorreta");
+        return;
+      }
+    }
+
+    String newPass = doc["adminNewPass"];
+    if (newPass.length() < 4)
+    {
+      request->send(400, "application/json", R"({"msg":"Nova senha deve ter pelo menos 4 caracteres"})");
+      logaRequest(request, "400 Nova senha deve ter pelo menos 4 caracteres");
+      return;
+    }
+
+    httpSetSenha(newPass);
+
+    request->send(200, "application/json", R"({"msg":"adminPass configurado"})");
+    logaRequest(request, "200 OK");
+  }
   else
   {
     request->send(200, "application/json", R"({"msg":"config quem?"})");

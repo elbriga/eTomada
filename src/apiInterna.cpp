@@ -8,7 +8,7 @@
 #include "recurso.h"
 #include "recursoRemoto.h"
 #include "util.h"
-#include "httpAuth.h"
+#include "http.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("APIINT", nivel, fmt, ##__VA_ARGS__)
@@ -100,7 +100,7 @@ bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String r
 
   HTTPClient http;
   http.begin(url);
-  http.setAuthorization(ETOMADA_HTTP_USERNAME, httpAuthPassword().c_str());
+  http.setAuthorization(ETOMADA_HTTP_USERNAME, httpGetSenha().c_str());
   http.setTimeout(API_INTERNA_TIMEOUT);
   http.setUserAgent("eTomada Full " + eTomadaDeviceID() + " v" + eTomadaGetVersao());
 
