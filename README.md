@@ -161,17 +161,6 @@ Exemplo:
 
 ---
 
-# 🟢 Controle manual
-
-É possível ligar/desligar manualmente uma tomada mesmo com automação ativa.
-
-Quando uma regra automática existe:
-
-- o acionamento manual dura 30 minutos # TODO!
-- depois o sistema volta ao modo automático
-
----
-
 # 🔄 Atualizações em tempo real
 
 O frontend utiliza **Server-Sent Events (SSE)** para:
