@@ -15,6 +15,51 @@
 AsyncWebServer httpServer(80);
 AsyncEventSource sse("/events");
 
+constexpr uint8_t AUTH_FAILURE_LIMIT = 5;
+constexpr uint32_t AUTH_FAILURE_WINDOW_MS = 10UL * 60 * 1000;
+constexpr uint32_t AUTH_BLOCK_DURATION_MS = 15UL * 60 * 1000;
+constexpr size_t AUTH_TRACKED_CLIENTS = 16;
+
+struct AuthClientState
+{
+  String ip;
+  uint8_t failures = 0;
+  uint32_t windowStartedAt = 0;
+  uint32_t blockedAt = 0;
+  uint32_t lastSeenAt = 0;
+};
+
+AuthClientState authClientStates[AUTH_TRACKED_CLIENTS];
+
+AuthClientState &authClientStateFor(const String &ip, uint32_t now)
+{
+  AuthClientState *available = nullptr;
+  AuthClientState *oldest = &authClientStates[0];
+
+  for (AuthClientState &state : authClientStates)
+  {
+    if (state.ip == ip && state.ip.length() > 0)
+    {
+      state.lastSeenAt = now;
+      return state;
+    }
+
+    if (state.ip.length() == 0 && available == nullptr)
+      available = &state;
+
+    if (now - state.lastSeenAt > now - oldest->lastSeenAt)
+      oldest = &state;
+  }
+
+  AuthClientState &state = available ? *available : *oldest;
+  state.ip = ip;
+  state.failures = 0;
+  state.windowStartedAt = now;
+  state.blockedAt = 0;
+  state.lastSeenAt = now;
+  return state;
+}
+
 void httpServerInitModoAP();
 void httpServerInitModoAPI();
 
@@ -59,10 +104,49 @@ void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)
   // Requisicoes vindas de 10.0.0.1 vem do tunnel cloudflare = internet aberta
   String remoteIP = request->client()->remoteIP().toString();
   if (request->method() == HTTP_OPTIONS ||
-      (remoteIP != "10.0.0.1" && remoteIP.startsWith("10.")) ||
-      request->authenticate(ETOMADA_HTTP_USERNAME, ETOMADA_HTTP_PASSWORD))
+      (remoteIP != "10.0.0.1" && remoteIP.startsWith("10.")))
   {
     next();
+    return;
+  }
+
+  String clientIP = remoteIP;
+  if (remoteIP == "10.0.0.1")
+  {
+    const AsyncWebHeader *forwardedIP = request->getHeader("CF-Connecting-IP");
+    if (forwardedIP && forwardedIP->value().length() > 0)
+      clientIP = forwardedIP->value();
+  }
+
+  uint32_t now = millis();
+  AuthClientState &state = authClientStateFor(clientIP, now);
+  if (state.failures >= AUTH_FAILURE_LIMIT && now - state.blockedAt < AUTH_BLOCK_DURATION_MS)
+  {
+    request->send(429, "text/plain", "Muitas tentativas de login. Tente novamente mais tarde.");
+    return;
+  }
+
+  if (now - state.windowStartedAt >= AUTH_FAILURE_WINDOW_MS || state.failures >= AUTH_FAILURE_LIMIT)
+  {
+    state.failures = 0;
+    state.windowStartedAt = now;
+    state.blockedAt = 0;
+  }
+
+  if (request->authenticate(ETOMADA_HTTP_USERNAME, ETOMADA_HTTP_PASSWORD))
+  {
+    state.failures = 0;
+    state.windowStartedAt = now;
+    state.blockedAt = 0;
+    next();
+    return;
+  }
+
+  state.failures++;
+  if (state.failures >= AUTH_FAILURE_LIMIT)
+  {
+    state.blockedAt = now;
+    request->send(429, "text/plain", "Muitas tentativas de login. Tente novamente mais tarde.");
     return;
   }
 
@@ -102,10 +186,22 @@ void httpServerInitModoAPI()
   recoveryAPIRegister();
 
   // Eventos de conexão/desconexão
+  sse.authorizeConnect([](AsyncWebServerRequest *request)
+                       {
+    String remoteIP = request->client()->remoteIP().toString();
+    String clientIP = remoteIP;
+    if (request->hasHeader("CF-Connecting-IP"))
+    {
+      const AsyncWebHeader *forwardedIP = request->getHeader("CF-Connecting-IP");
+      if (forwardedIP && forwardedIP->value().length() > 0)
+        clientIP = forwardedIP->value();
+    }
+
+    logaM(LOG_NORMAL, "Cliente SSE conectado de [%s]", clientIP.c_str());
+    return true; });
+
   sse.onConnect([](AsyncEventSourceClient *client)
                 {
-    logaM(LOG_NORMAL, "Cliente SSE conectado de [%s]", client->client()->remoteIP().toString().c_str());
-
     // Snapshot ao conectar
     String body = eTomadaGetSnapshotJSON();
     client->send(body, "sse_snapshot", millis(), 2500); });

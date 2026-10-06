@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "2.0.6"
+#define ETOMADA_VERSAO "2.0.7"
 // 1.3.19 - Rede 10 com log server, mac no mDNS,
 // 1.3.20 - endpoint de UPLOAD de Firmware
 // 1.3.21 - sensor de corrent com task propria
@@ -15,6 +15,7 @@
 // 2.0.3  - umidificador remoto e refactor del mestre.online
 // 2.0.4  - Interface de gerenciamento de Nodos e Recursos
 // 2.0.5  - Nomes Locks
+// 2.0.6  - HTTP Auth + Limite de tentativas
 
 #include "eTomada.h"
 #include "mestre.h"
