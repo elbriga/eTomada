@@ -1,3 +1,4 @@
+#include "httpAuth.h"
 #include "eTomada.h"
 #include "http.h"
 #include "loga.h"
@@ -53,8 +54,25 @@ void httpServerInit()
   httpServer.begin();
 }
 
+void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)
+{
+  // Requisicoes vindas de 10.0.0.1 vem do tunnel cloudflare = internet aberta
+  String remoteIP = request->client()->remoteIP().toString();
+  if (request->method() == HTTP_OPTIONS ||
+      (remoteIP != "10.0.0.1" && remoteIP.startsWith("10.")) ||
+      request->authenticate(ETOMADA_HTTP_USERNAME, ETOMADA_HTTP_PASSWORD))
+  {
+    next();
+    return;
+  }
+
+  request->requestAuthentication(AsyncAuthType::AUTH_BASIC, "eTomada");
+}
+
 void httpServerInitModoAPI()
 {
+  httpServer.addMiddleware(httpMiddlewareAuth);
+
   ArRequestHandlerFunction funcVazia = [](AsyncWebServerRequest *request) {};
 
   httpServer.on("/api/getSnapshot", HTTP_GET, apiSnapshot);
