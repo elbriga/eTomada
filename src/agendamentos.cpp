@@ -13,7 +13,7 @@ struct AcaoAgendada
 
     // Para acao AGEND_RECURSO
     char recursoID[32];
-    int estado; // TODO :: mudar para string comando
+    char comando[16];
 };
 
 #define MAX_ACOES_AGENDADAS 16
@@ -35,14 +35,14 @@ void agendamentosInit()
         1);
 }
 
-void agendamentosLimpa(TipoAgendamento tipo, const char *recursoID)
+void agendamentosLimpa(const char *recursoID)
 {
     for (int s = 0; s < MAX_ACOES_AGENDADAS; s++)
-        if (acoes[s].tipo == tipo && !strcmp(acoes[s].recursoID, recursoID))
+        if (strcmp(acoes[s].recursoID, recursoID) == 0)
             acoes[s].tipo = AGEND_NENHUM;
 }
 
-void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID, int estado)
+void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID, const char *comando)
 {
     // procurar um "slot"
     AcaoAgendada *acao = nullptr;
@@ -66,7 +66,7 @@ void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID,
     acao->quando = millis() + timeoutMs;
 
     strlcpy(acao->recursoID, recursoID, sizeof(acao->recursoID));
-    acao->estado = estado;
+    strlcpy(acao->comando, comando, sizeof(acao->comando));
 }
 
 void agendamentosProcessaTask(void *)
@@ -86,10 +86,10 @@ void agendamentosProcessaTask(void *)
                 {
                 case AGEND_RECURSO:
                 {
-                    logaM(LOG_AVISO, "Agendamento recurso [%s] para [%s]", acao->recursoID, acao->estado ? "ON" : "OFF");
+                    logaM(LOG_AVISO, "Agendamento Comando [%s] no recurso [%s]", acao->comando, acao->recursoID);
 
                     String msg;
-                    if (!recursoSet(acao->recursoID, acao->estado ? "ON" : "OFF", msg))
+                    if (!recursoSet(acao->recursoID, acao->comando, msg))
                         logaM(LOG_AVISO, "agendamentosProcessaTask :: [%s]", msg.c_str());
                 }
                 break;

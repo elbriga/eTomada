@@ -270,9 +270,9 @@ String regraDisparaAcao(Regra *regra)
 
         if (!recursoSet(acao->recursoID, "ON", msg))
             return msg;
+
         // Agendar o OFF
-        // TODO :: no recursoSet cancelar os agendamentos
-        agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, acao->recursoID, false);
+        agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, acao->recursoID, "OFF");
     }
     break;
 

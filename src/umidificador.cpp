@@ -188,7 +188,7 @@ void umidificadorSetEstadoTask(void *args)
     logaM(LOG_NORMAL, "Umidificador ligado no POWER[%d]", (int)umid.estado);
 
     int minutosOff = (4 - umid.estado) * 30; // timer de 30, 60 ou 90 minutos, conforme o power
-    agendamentosLimpa(AGEND_RECURSO, "UMIDIFICADOR");
+    agendamentosLimpa("UMIDIFICADOR");
     agendamentosAdd(AGEND_RECURSO, minutosOff * 60 * 1000, "UMIDIFICADOR", 0);
     logaM(LOG_NORMAL, "Agendado desligamento para daqui [%d] minutos", minutosOff);
   }

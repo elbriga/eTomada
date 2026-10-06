@@ -336,10 +336,13 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
 
   if (ret)
   {
+    // Limpar os agendamentos do recurso, caso existam
+    agendamentosLimpa(recursoID);
+
     if (estado == "PULSE")
     {
       // Agendar o OFF = pulso de 1000ms
-      agendamentosAdd(AGEND_RECURSO, 1000, recursoID, false);
+      agendamentosAdd(AGEND_RECURSO, 1000, recursoID, "OFF");
     }
 
     // Enviar para o Server somente dos recursos Locais

@@ -20,7 +20,6 @@ typedef struct
 typedef struct
 {
     int pino;
-    // TODO :: bool invertido;
 } BotaoHW;
 
 typedef struct
