@@ -84,7 +84,8 @@ void logaChangeLevel(int newLevel)
 
   Preferences prefs;
   prefs.begin("eTomada", false);
-  prefs.putString("logLevel", String(logLevel));
+  if (prefs.getString("logLevel", "") != String(logLevel))
+    prefs.putString("logLevel", String(logLevel));
   prefs.end();
 }
 
