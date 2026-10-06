@@ -1,6 +1,7 @@
 #include <ESPAsyncWebServer.h>
 
 void apiSnapshot(AsyncWebServerRequest *request);
+void apiGetRecurso(AsyncWebServerRequest *request);
 void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiSetRecursoConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiEvento(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);

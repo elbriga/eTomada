@@ -58,6 +58,7 @@ void httpServerInitModoAPI()
   ArRequestHandlerFunction funcVazia = [](AsyncWebServerRequest *request) {};
 
   httpServer.on("/api/getSnapshot", HTTP_GET, apiSnapshot);
+  httpServer.on("/api/getRecurso", HTTP_GET, apiGetRecurso);
   httpServer.on("/api/setRecurso", HTTP_PUT, funcVazia, NULL, apiSetRecurso);
   httpServer.on("/api/setRecursoConfig", HTTP_PUT, funcVazia, NULL, apiSetRecursoConfig);
   httpServer.on("/api/mock", HTTP_POST, funcVazia, NULL, apiMock);

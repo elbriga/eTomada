@@ -1,5 +1,6 @@
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
+#include <Preferences.h>
 
 #include "eTomada.h"
 #include "loga.h"
@@ -21,6 +22,38 @@ void apiSnapshot(AsyncWebServerRequest *request)
 
   String snapshot = eTomadaGetSnapshotJSON();
   request->send(200, "application/json", snapshot);
+  logaRequest(request, "200 OK");
+}
+
+void apiGetRecurso(AsyncWebServerRequest *request)
+{
+  if (!request->hasParam("id"))
+  {
+    request->send(400, "application/json", R"({"msg":"Parametro 'id' obrigatorio"})");
+    logaRequest(request, "400 Missing id");
+    return;
+  }
+
+  String recursoID = request->getParam("id")->value();
+
+  JsonDocument doc;
+  {
+    MutexLock lock(modeloMutex, "apiGetRecurso");
+    if (!lock)
+      doc["msg"] = "Erro de LOCK!";
+    else
+    {
+      Recurso *r = recursoGet(recursoID.c_str());
+      if (!r)
+        doc["msg"] = "Recurso Invalido!";
+      else
+        doc = recursoGetJSONDoc(r);
+    }
+  }
+
+  String body;
+  serializeJson(doc, body);
+  request->send(200, "application/json", body);
   logaRequest(request, "200 OK");
 }
 
@@ -294,7 +327,14 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
   }
   else if (!doc["logLevel"].isNull())
   {
-    logaChangeLevel(doc["logLevel"].as<int>());
+    int logLevel = doc["logLevel"].as<int>();
+    logaChangeLevel(logLevel);
+
+    Preferences prefs;
+    prefs.begin("eTomada", false);
+    prefs.putString("logLevel", String(logLevel));
+    prefs.end();
+
     request->send(200, "application/json", R"({"msg":"logLevel configurado"})");
     logaRequest(request, "200 OK");
   }
