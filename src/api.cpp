@@ -1,6 +1,5 @@
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
-#include <Preferences.h>
 
 #include "eTomada.h"
 #include "loga.h"
@@ -329,11 +328,6 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
   {
     int logLevel = doc["logLevel"].as<int>();
     logaChangeLevel(logLevel);
-
-    Preferences prefs;
-    prefs.begin("eTomada", false);
-    prefs.putString("logLevel", String(logLevel));
-    prefs.end();
 
     request->send(200, "application/json", R"({"msg":"logLevel configurado"})");
     logaRequest(request, "200 OK");

@@ -81,6 +81,11 @@ void logaChangeLevel(int newLevel)
     logLevel = LOG_NORMAL;
     break;
   }
+
+  Preferences prefs;
+  prefs.begin("eTomada", false);
+  prefs.putString("logLevel", String(logLevel));
+  prefs.end();
 }
 
 void logsFlush(time_t maxWaitMS, time_t minWait)
