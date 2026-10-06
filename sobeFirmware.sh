@@ -1,16 +1,27 @@
 #!/bin/bash
 
-FW=$1
-HOST=$2
+HOST=$1
 
 uso() {
-	echo "Uso: ./sobeFirmware.sh ARQUIVO.bin HOST"
+	echo "Uso: ./sobeFirmware.sh HOST"
 	echo
 	exit 1
 }
 
-[[ -z "$FW" || -z "$HOST" ]] && uso
-[[ ! -f "$FW" ]] && uso
+[[ -z "$HOST" ]] && uso
+
+FW=.pio/build/$HOST/firmware.bin
+if [ ! -f "$FW" ]; then
+	echo "Arquivo de firmware nao encontrado: $FW"
+	echo "Compile o firmware antes de subir"
+	exit 2
+fi
+# verificar se o arquivo tem mais de 30 minutos, se sim, avisar que o firmware pode estar desatualizado
+if [ $(find "$FW" -mmin +30 | wc -l) -gt 0 ]; then
+	echo "Arquivo de firmware desatualizado: $FW"
+	echo "Compile o firmware antes de subir"
+	exit 3
+fi
 
 TAM=$(stat -c%s $FW)
 SHA=$(sha256sum $FW | awk '{print $1}')
