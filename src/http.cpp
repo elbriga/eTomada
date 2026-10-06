@@ -5,6 +5,7 @@
 #include "wifi.h"
 #include "recovery.h"
 #include "api.h"
+#include <Preferences.h>
 
 #define DEV // TODO :: remover
 
@@ -14,6 +15,28 @@
 // Web Server
 AsyncWebServer httpServer(80);
 AsyncEventSource sse("/events");
+
+const String &httpAuthPassword()
+{
+  static String password = []()
+  {
+    Preferences prefs;
+    prefs.begin("eTomada", false);
+
+    // Para setar:
+    // prefs.putString("adminPass", "sapo");
+
+    if (!prefs.isKey("adminPass"))
+      prefs.putString("adminPass", ETOMADA_HTTP_DEFAULT_PASSWORD);
+
+    String storedPassword = prefs.getString("adminPass", ETOMADA_HTTP_DEFAULT_PASSWORD);
+    prefs.end();
+
+    return storedPassword;
+  }();
+
+  return password;
+}
 
 constexpr uint8_t AUTH_FAILURE_LIMIT = 5;
 constexpr uint32_t AUTH_FAILURE_WINDOW_MS = 10UL * 60 * 1000;
@@ -133,7 +156,7 @@ void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)
     state.blockedAt = 0;
   }
 
-  if (request->authenticate(ETOMADA_HTTP_USERNAME, ETOMADA_HTTP_PASSWORD))
+  if (request->authenticate(ETOMADA_HTTP_USERNAME, httpAuthPassword().c_str()))
   {
     state.failures = 0;
     state.windowStartedAt = now;

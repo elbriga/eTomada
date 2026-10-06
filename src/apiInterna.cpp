@@ -100,7 +100,7 @@ bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String r
 
   HTTPClient http;
   http.begin(url);
-  http.setAuthorization(ETOMADA_HTTP_USERNAME, ETOMADA_HTTP_PASSWORD);
+  http.setAuthorization(ETOMADA_HTTP_USERNAME, httpAuthPassword().c_str());
   http.setTimeout(API_INTERNA_TIMEOUT);
   http.setUserAgent("eTomada Full " + eTomadaDeviceID() + " v" + eTomadaGetVersao());
 
