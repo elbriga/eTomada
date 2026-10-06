@@ -13,7 +13,7 @@
 extern const HardwareProfile hardwareProfile;
 
 #define TOT_ANIMS 5
-#define INTENSIDADE 0.1
+#define INTENSIDADE 0.33
 
 typedef struct
 {
