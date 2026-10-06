@@ -134,16 +134,19 @@ void logaInit()
     return;
   }
 
-  xTaskCreate(
-      logRemotoTask,
-      "logRemoto",
-      4096,
-      nullptr,
-      1,
-      nullptr);
+  if (xTaskCreate(
+          logRemotoTask,
+          "logRemoto",
+          4096,
+          nullptr,
+          1,
+          nullptr) != pdPASS)
+  {
+    logaM(LOG_CRITICO, "ERRO: nao foi possivel criar tarefa de logs remotos");
+    return;
+  }
 
-  logaM(LOG_NORMAL, "Log remoto inicializado em %s", logServer.c_str());
-  logaChangeLevel(logLevel); // Para msg
+  logaM(LOG_NORMAL, "Log[%d] remoto inicializado em %s", logLevel, logServer.c_str());
 }
 
 void loga(const char *modulo, LogLevel nivel, const char *fmt, ...)
