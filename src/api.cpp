@@ -18,6 +18,11 @@
 
 void apiSnapshot(AsyncWebServerRequest *request)
 {
+  if (request->hasHeader("CF-Connecting-IP"))
+  {
+    const AsyncWebHeader *h = request->getHeader("CF-Connecting-IP");
+    logaM(LOG_NORMAL, "getSnapshot > IP externo: %s\n", h->value().c_str());
+  }
 
   String snapshot = eTomadaGetSnapshotJSON();
   request->send(200, "application/json", snapshot);
