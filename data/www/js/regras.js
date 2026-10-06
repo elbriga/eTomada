@@ -77,7 +77,7 @@ function regraOpenEditModal(regraID) {
   } else {
     regra = eTomadaData.regras.find((r) => r.id == regraID);
     if (!regra) {
-      // TODO :: msg
+      statusMsg("Regra não encontrada!");
       return;
     }
   }
