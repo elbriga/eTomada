@@ -98,7 +98,6 @@ void apiSetRecursoConfig(AsyncWebServerRequest *request, uint8_t *data, size_t l
 
 void apiEvento(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
-  // TODO :: Enviar 404 se nao achar o recurso do evento
   String atzEventoOK = recursoEventoRecebido(data);
 
   request->send(200, "application/json", "{\"msg\": \"" + atzEventoOK + "\"}");
@@ -109,7 +108,6 @@ void apiEvento(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t
 
 void apiMock(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
-  // TODO :: Enviar 404 se nao achar o recurso do evento
   String mockOK = eventoMockFromJson(data);
 
   request->send(200, "application/json", "{\"msg\": \"" + mockOK + "\"}");
@@ -266,17 +264,6 @@ void apiFactoryReset(AsyncWebServerRequest *request)
   logaRequest(request, "200 OK");
 }
 
-void apiResetWifiConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-{
-  // TODO :: MAGIC!
-  WiFiResetConfig();
-
-  request->send(200, "application/json", R"({"msg":"OK"})");
-  logaRequest(request, "200 OK");
-
-  utilRestart("reset WiFi");
-}
-
 void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
   JsonDocument doc;
@@ -294,13 +281,6 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
     String pass = doc["pass"] | "";
     doc.clear();
 
-    if (ssid == "")
-    {
-      logaRequest(request, "400 SSID Invalido");
-      request->send(400, "application/json", R"({"msg":"SSID Invalido"})");
-      return;
-    }
-
     if (!temPass)
     {
       logaRequest(request, "400 sem PASS");
@@ -309,8 +289,6 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
     }
 
     WiFiSalvaConfig(ssid, pass);
-
-    // TODO :: mudar WiFi sem reiniciar??
 
     request->send(200, "application/json", R"({"msg":"OK - vou reinicar"})");
     logaRequest(request, "200 OK");
@@ -362,7 +340,7 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
     httpSetSenha(newPass);
 
     request->send(200, "application/json", R"({"msg":"adminPass configurado"})");
-    logaRequest(request, "200 OK");
+    logaRequest(request, "200 adminPass configurado");
   }
   else
   {
