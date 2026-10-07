@@ -58,7 +58,7 @@ void apiGetRecurso(AsyncWebServerRequest *request)
   String body;
   serializeJson(doc, body);
   request->send(200, "application/json", body);
-  logaRequest(request, "200 OK");
+  // logaRequest(request, "200 OK");
 }
 
 void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
@@ -355,28 +355,6 @@ void apiCheckWWW(AsyncWebServerRequest *request)
 
   request->send(200, "application/json", R"({"msg":"WWW conferido"})");
   logaRequest(request, "200 OK");
-}
-
-void roletaTask(void *arg)
-{
-  eTomadaRoleta();
-  vTaskDelete(NULL);
-}
-void apiRoleta(AsyncWebServerRequest *request)
-{
-  String body = "Sorteando!";
-
-  request->send(200, "application/json", body);
-  logaRequest(request, "200 OK");
-
-  xTaskCreatePinnedToCore(
-      roletaTask,
-      "roleta",
-      4096,
-      NULL,
-      1,
-      NULL,
-      1);
 }
 
 void apiAPRedes(AsyncWebServerRequest *request)

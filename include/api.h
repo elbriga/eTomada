@@ -17,7 +17,6 @@ void apiDelRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size
 void apiFactoryReset(AsyncWebServerRequest *request);
 void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiCheckWWW(AsyncWebServerRequest *request);
-void apiRoleta(AsyncWebServerRequest *request);
 
 void apiAPRedes(AsyncWebServerRequest *request);
 void apiAPSetWiFiConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);

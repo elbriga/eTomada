@@ -25,7 +25,6 @@ String eTomadaDeviceBoard();
 
 String eTomadaGetSnapshotJSON();
 
-void eTomadaRoleta();
 void eTomadaFactoryReset();
 
 String getMACStr();

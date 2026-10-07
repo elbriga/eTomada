@@ -57,6 +57,6 @@ async function eTomadaRender(snapshot) {
   _eTomadaLoading = false;
 }
 
-function eTomadaRoleta() {
-  eTomadaAPI("roleta");
+function eTomadaBoot() {
+  eTomadaAPI("boot");
 }

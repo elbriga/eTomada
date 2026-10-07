@@ -119,7 +119,7 @@ void eTomadaLoadConfig()
 
     logaM(LOG_AVISO, ">>> eTomadaLoadConfig[%d]", configLoadCount);
 
-    if (modoOperacao == MODO_CONTROLADOR) // TODO :: MODO_NO com nodo/recurso remoto?
+    if (modoOperacao == MODO_CONTROLADOR)
     {
       logaM(LOG_NORMAL, "%sInicializando Nodos Remotos:", configLoadCount ? "(RE)" : "");
       nodoRemotoInit();
@@ -265,90 +265,6 @@ String eTomadaGetSnapshotJSON()
   serializeJson(doc, out);
 
   return out;
-}
-
-void eTomadaRoleta()
-{
-  logaTitulo("ROLETA!");
-
-  int totRelesLocais = 0;
-  String *relesLocais = nullptr;
-
-  { // Lock para pegar os IDs dos relesLocais
-    MutexLock lock(modeloMutex, "eTomadaRoleta");
-    if (!lock)
-    {
-      logaM(LOG_CRITICO, "roleta :: ERRO DE LOCK!");
-      return;
-    }
-
-    int totRecursos = recursosGetCount();
-    for (int r = 0; r < totRecursos; r++)
-    {
-      Recurso *recurso = recursoGetPorIndice(r);
-      if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
-      {
-        totRelesLocais++;
-      }
-    }
-
-    relesLocais = new String[totRelesLocais]();
-    if (!relesLocais)
-    {
-      logaTitulo("ROLETA :: ERRO DE MALLOC");
-      return;
-    }
-
-    int rli = 0;
-    for (int r = 0; r < totRecursos; r++)
-    {
-      Recurso *recurso = recursoGetPorIndice(r);
-      if (recurso->tipo == RECURSO_RELE && !recurso->remoto)
-      {
-        relesLocais[rli++] = recurso->id;
-      }
-    }
-  }
-
-  String msg;
-
-  // Zerar
-  for (int r = 0; r < totRelesLocais; r++)
-    recursoSet(relesLocais[r].c_str(), "OFF", msg);
-
-  int delay = 25, delta = 2;
-  int num = esp_random() % totRelesLocais;
-  int oldNum = num;
-  int loop = 0;
-
-  while (delay < 440)
-  {
-    esp_task_wdt_reset(); // alimenta o watchdog
-
-    oldNum = num;
-    num++;
-    if (num >= totRelesLocais)
-    {
-      num = 0;
-    }
-    recursoSet(relesLocais[oldNum].c_str(), "OFF", msg);
-    recursoSet(relesLocais[num].c_str(), "ON", msg);
-
-    loop++;
-    if (loop > 40)
-    {
-      delay += delta;
-      if (loop > 90)
-      {
-        delta += 1;
-      }
-    }
-    vTaskDelay(pdMS_TO_TICKS(delay));
-  }
-
-  delete[] relesLocais;
-
-  logaM(LOG_AVISO, "** Numero Sorteado: %d **", num + 1);
 }
 
 void eTomadaFactoryReset()
