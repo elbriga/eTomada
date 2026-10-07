@@ -14,6 +14,7 @@
 #include "recurso.h"
 #include "eventos.h"
 #include "sensorChuva.h"
+#include "util.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("SENSOR", nivel, fmt, ##__VA_ARGS__)
@@ -21,16 +22,12 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
-static Sensor sensores[MAX_SENSORES];
-
+static Sensor *sensores = NULL;
 static int boardSensorCount = 0;
 
 void sensoresInit()
 {
   logaM(LOG_NORMAL, "Inicializando Sensores Locais");
-
-  // Zerar tudo
-  memset(sensores, 0, sizeof(sensores));
 
   // Verificar quantos sensores temos
   boardSensorCount = 0;
@@ -41,6 +38,10 @@ void sensoresInit()
       break;
     boardSensorCount++;
   }
+
+  sensores = new Sensor[boardSensorCount]();
+  if (!sensores)
+    utilDIE("Nao foi possivel alocar memoria para sensores");
 
   // Inicializar os TipoSensor
   tipoSensorInit();
@@ -105,12 +106,9 @@ int sensoresGetCount()
 
 Sensor *sensorGet(int numSensor)
 {
-  if (numSensor < 1 || numSensor > sensoresGetCount())
-  {
-    return NULL;
-  }
-
-  return &sensores[numSensor - 1];
+  return (numSensor > 0 && numSensor <= sensoresGetCount())
+             ? &sensores[numSensor - 1]
+             : NULL;
 }
 
 JsonDocument sensorGetJSONDoc(Recurso *r, bool full)
@@ -205,7 +203,8 @@ void sensoresAtualizaTask(void *args)
 
         // Verificar delta e maxSilencio
         bool gravarEvento = sensor->gravarEventos &&
-                            (abs(sensor->ultimoValorServer - sensor->valor) >= sensor->delta || (agora - sensor->ultimoEventoServer > sensor->maxSilencioSecs * 1000));
+                            (abs(sensor->ultimoValorServer - sensor->valor) >= sensor->delta ||
+                             (agora - sensor->ultimoEventoServer > sensor->maxSilencioSecs * 1000));
         if (gravarEvento)
         {
           sensor->ultimoValorServer = sensor->valor;

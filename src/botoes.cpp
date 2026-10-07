@@ -10,6 +10,7 @@
 #include "prefs.h"
 #include "recurso.h"
 #include "eventos.h"
+#include "util.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("BOTAO", nivel, fmt, ##__VA_ARGS__)
@@ -17,16 +18,12 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
-static Botao botoes[MAX_BOTOES]; // TODO :: Alocação dinamica
-
+static Botao *botoes = NULL;
 static int boardBotaoCount = 0;
 
 void botoesInit()
 {
   logaM(LOG_NORMAL, "Inicializando Botões Locais");
-
-  // Zerar tudo
-  memset(botoes, 0, sizeof(botoes));
 
   // Verificar quantos botoes temos
   boardBotaoCount = 0;
@@ -37,6 +34,10 @@ void botoesInit()
       break;
     boardBotaoCount++;
   }
+
+  botoes = new Botao[boardBotaoCount]();
+  if (!botoes)
+    utilDIE("Nao foi possivel alocar memoria para botoes");
 
   Preferences prefs;
   prefs.begin("botoes", false);
@@ -69,15 +70,11 @@ int botoesGetCount()
 
 Botao *botaoGet(int num)
 {
-  if (num > 0 && num <= botoesGetCount())
-  {
-    return &botoes[num - 1];
-  }
-
-  return NULL;
+  return (num > 0 && num <= botoesGetCount())
+             ? &botoes[num - 1]
+             : NULL;
 }
 
-// REQUIRE modeloMutex locked
 JsonDocument botaoGetJSONDoc(Recurso *r, bool full)
 {
   JsonDocument doc;
@@ -86,10 +83,6 @@ JsonDocument botaoGetJSONDoc(Recurso *r, bool full)
     return doc;
 
   doc["num"] = b->num;
-  // TODO :: nome botao
-  // doc["nome"] = b->nome;
-  // doc["tipo"] = s->tipo;
-
   if (full)
   {
     doc["pino"] = b->pino;

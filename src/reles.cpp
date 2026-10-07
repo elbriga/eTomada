@@ -8,6 +8,7 @@
 #include "display.h"
 #include "http.h"
 #include "recurso.h"
+#include "util.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RELE", nivel, fmt, ##__VA_ARGS__)
@@ -15,16 +16,12 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
-static Rele reles[MAX_RELES];
-
+static Rele *reles = NULL;
 static int boardReleCount = 0;
 
 void relesInit()
 {
   logaM(LOG_NORMAL, "Inicializando Relés Locais");
-
-  // Zerar tudo
-  memset(reles, 0, sizeof(reles));
 
   // Verificar quantos reles temos
   boardReleCount = 0;
@@ -35,6 +32,10 @@ void relesInit()
       break;
     boardReleCount++;
   }
+
+  reles = new Rele[boardReleCount]();
+  if (!reles)
+    utilDIE("Nao foi possivel alocar memoria para reles");
 
   int totReles = relesGetCount();
   for (int r = 1; r <= totReles; r++)
@@ -61,12 +62,9 @@ int relesGetCount()
 
 Rele *releGet(int numRele)
 {
-  if (numRele < 1 || numRele > relesGetCount())
-  {
-    return NULL;
-  }
-
-  return &reles[numRele - 1];
+  return (numRele > 0 && numRele <= relesGetCount())
+             ? &reles[numRele - 1]
+             : NULL;
 }
 
 // REQUIRE releMutex locked
