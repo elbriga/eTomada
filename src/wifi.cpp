@@ -60,7 +60,7 @@ void WiFiConnect()
   WiFi.disconnect();
   WiFi.setSleep(false);
 
-  String hostname = "eTomada-" + eTomadaDeviceID();
+  String hostname = eTomadaDeviceID();
   WiFi.setHostname(hostname.c_str());
 
   WiFi.begin(ssid.c_str(), pass.c_str());
@@ -125,11 +125,6 @@ void WiFiSalvaConfig(String ssid, String senha)
   wifiPrefs.putString("pass", senha);
 
   wifiPrefs.end();
-}
-
-void WiFiResetConfig()
-{
-  WiFiSalvaConfig("", "");
 }
 
 bool WiFiTemConfig()

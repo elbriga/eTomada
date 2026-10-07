@@ -9,7 +9,7 @@ struct Recurso; // Forward declaration
 
 struct Sensor
 {
-    int num; // TODO : remover?
+    int num;
     int pino;
     int valor;
 

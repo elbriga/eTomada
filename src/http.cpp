@@ -84,7 +84,6 @@ void httpServerInitModoAPI()
   httpServer.on("/api/setRegra", HTTP_PUT, funcVazia, NULL, apiSetRegra);
   httpServer.on("/api/delRegra", HTTP_PUT, funcVazia, NULL, apiDelRegra);
   httpServer.on("/api/factoryReset", HTTP_POST, apiFactoryReset);
-  httpServer.on("/api/resetWiFiConfig", HTTP_POST, funcVazia, NULL, apiResetWifiConfig);
   httpServer.on("/api/setConfig", HTTP_POST, funcVazia, NULL, apiSetConfig);
   httpServer.on("/api/checkWWW", HTTP_GET, apiCheckWWW);
   httpServer.on("/api/roleta", HTTP_GET, apiRoleta);

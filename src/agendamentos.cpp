@@ -60,8 +60,6 @@ void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID,
         return;
     }
 
-    // TODO :: sempre chamar agendamentoLimpa()?
-
     acao->tipo = tipo;
     acao->quando = millis() + timeoutMs;
 

@@ -9,8 +9,6 @@ struct Mestre
 };
 
 void mestreInit();
-void mestreCheckOnline(); // TODO Remover ??
-
 void mestreLoop();
 bool mestreAtivo();
 
