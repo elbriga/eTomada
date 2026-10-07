@@ -86,6 +86,7 @@ void httpServerInitModoAPI()
   httpServer.on("/api/factoryReset", HTTP_POST, apiFactoryReset);
   httpServer.on("/api/setConfig", HTTP_POST, funcVazia, NULL, apiSetConfig);
   httpServer.on("/api/checkWWW", HTTP_GET, apiCheckWWW);
+  httpServer.on("/api/boot", HTTP_GET, apiRegrasBoot);
 
   if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
   {

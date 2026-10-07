@@ -357,6 +357,14 @@ void apiCheckWWW(AsyncWebServerRequest *request)
   logaRequest(request, "200 OK");
 }
 
+void apiRegrasBoot(AsyncWebServerRequest *request)
+{
+  regrasBoot();
+
+  request->send(200, "application/json", R"({"msg":"Boot das Regras"})");
+  logaRequest(request, "200 OK");
+}
+
 void apiAPRedes(AsyncWebServerRequest *request)
 {
   request->send(200, "application/json", WiFiGetScanJSON());
