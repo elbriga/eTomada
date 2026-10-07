@@ -55,15 +55,12 @@ bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idR
   return ret;
 }
 
-String apiInternaEnviaJSON(IPAddress ip, String endpoint, String json, int port) // TODO :: retornar bool
+bool apiInternaEnviaJSON(IPAddress ip, int port, String endpoint, String json, String &msgOut)
 {
-  String msgOut;
-  bool ret = apiInterna(ip, port, endpoint, "POST", json, nullptr, msgOut);
-
-  return ret ? "OK" : msgOut;
+  return apiInterna(ip, port, endpoint, "POST", json, nullptr, msgOut);
 }
 
-String apiInternaEnviaJSON(String ipPort, String endpoint, String json)
+bool apiInternaEnviaJSON(String ipPort, String endpoint, String json, String &msgOut)
 {
   int port = 80;
   String ipStr = ipPort;
@@ -74,7 +71,10 @@ String apiInternaEnviaJSON(String ipPort, String endpoint, String json)
     String portStr = ipPort.substring(pos + 1);
     int p = portStr.toInt();
     if (p <= 0 || p > 65535)
-      return "Porta invalida";
+    {
+      msgOut = "Porta invalida";
+      return false;
+    }
 
     ipStr = ipPort.substring(0, pos);
     port = p;
@@ -82,9 +82,12 @@ String apiInternaEnviaJSON(String ipPort, String endpoint, String json)
 
   IPAddress ip;
   if (!ip.fromString(ipStr))
-    return "IP invalido";
+  {
+    msgOut = "IP invalido";
+    return false;
+  }
 
-  return apiInternaEnviaJSON(ip, endpoint, json, port);
+  return apiInternaEnviaJSON(ip, port, endpoint, json, msgOut);
 }
 
 bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String request, JsonDocument *responseOut, String &msgOut)

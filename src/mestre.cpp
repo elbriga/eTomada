@@ -17,6 +17,7 @@
 
 Mestre mestre;
 
+void mestreCheckOnline();
 #define MESTRE_HEARTBEAT_TIMEOUT 30000
 
 void mestreInit()
@@ -52,10 +53,9 @@ void mestreCheckOnline()
 
     // Procurar nosso mestre
     IPAddress ipMestre = MDNS.queryHost(mestre.deviceID);
-    if (ipMestre)
+    if (ipMestre && mestre.ip != ipMestre)
     {
-        if (mestre.ip != ipMestre)
-            logaM(LOG_AVISO, "Mestre novo IP [%s]", ipMestre.toString().c_str());
+        logaM(LOG_AVISO, "Mestre novo IP [%s]", ipMestre.toString().c_str());
         mestre.ip = ipMestre;
     }
 }
@@ -76,11 +76,17 @@ void mestreEnviaEvento(String payloadJson)
     if (!mestre.ip)
     {
         logaM(LOG_AVISO, "Mestre sem IP! Descartando evento [%d]", payloadJson.c_str());
+        // TODO :: mestre.refreshPendente = true;
         return;
     }
 
-    // TODO :: mecanismo de re-envio caso falha, limitado a Xs de atraso
-    apiInternaEnviaJSON(mestre.ip, "evento", payloadJson, 80);
+    String msg;
+    if (!apiInternaEnviaJSON(mestre.ip, 80, "evento", payloadJson, msg))
+    {
+        logaM(LOG_AVISO, "Falha ao enviar evento para mestre [%s]", msg.c_str());
+        // TODO :: mestre.refreshPendente = true;
+        return;
+    }
 }
 
 bool mestreAtivo()
