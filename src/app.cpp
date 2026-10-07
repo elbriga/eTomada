@@ -152,14 +152,6 @@ void appInit()
 
   logaTitulo("Setup OK!");
 
-  /*/ Inicializar controles do loop principal
-  struct tm timeinfo;
-  sysGetTime(&timeinfo);
-  lastSecond = timeinfo.tm_sec;
-  last10Second = timeinfo.tm_sec / 10;
-  lastMinute = timeinfo.tm_min; // TODO :: Esse impede que dispare um EVENTO_HORARIO para o minuto atual do boot
-  lastHour = timeinfo.tm_hour; */
-
   ledSetAnim(LED_ANIM_OFF); // Usar o LED só para o Alerta
 }
 
