@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
-#include <ESPmDNS.h>
 
 #include "eTomada.h"
 #include "loga.h"
@@ -105,11 +104,6 @@ JsonDocument nodosRemotosGetNovosJSON()
   return doc;
 }
 
-void nodosRemotosLimpaCacheNovosNodos()
-{
-  memset(novosNodos, 0, sizeof(novosNodos));
-}
-
 void nodoRemotoCalcRecursos()
 {
   // Zerar
@@ -135,175 +129,6 @@ void nodoRemotoCalcRecursos()
     }
     rec->recursoRemoto->nodo->recursosCount++;
   }
-}
-
-/**
- * Task para buscar o IP dos Nodos Remotos e buscar o snapshot
- * chamado a cada 10s
- */
-void nodosRemotosRefreshTask(void *args)
-{
-  // Escanear
-  int totND = MDNS.queryService("etomada", "tcp");
-
-  // Verificar por novos nodos
-  for (int nd = 0; nd < totND; nd++)
-  {
-    String novoIDStr = MDNS.hostname(nd);
-    const char *novoID = novoIDStr.c_str();
-    NodoRemoto *temNodo = nodoRemotoGet(novoID);
-    if (temNodo)
-      continue;
-
-    // Ver se já demos msg para esse novo nodo
-    bool jaAvisei = false;
-    for (int i = 0; i < MAX_NOVOS_NODOS; i++)
-      if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, novoID))
-      {
-        jaAvisei = true;
-        break;
-      }
-
-    if (!jaAvisei)
-    {
-      for (int i = 0; i < MAX_NOVOS_NODOS; i++)
-        if (!novosNodos[i].ativo)
-        {
-          novosNodos[i].ativo = true;
-          strlcpy(novosNodos[i].nome, novoID, sizeof(novosNodos[i].nome));
-          novosNodos[i].ip = MDNS.IP(nd);
-          strlcpy(novosNodos[i].tipo, MDNS.txt(nd, "api").c_str(), sizeof(novosNodos[i].tipo));
-          break;
-        }
-
-      logaM(LOG_AVISO, ">>> Novo eTomada!!! [%s] encontrado em [%s]. Avisar na interface",
-            novoID, MDNS.IP(nd).toString().c_str());
-      // TODO
-    }
-  }
-
-  // Atualizar os nodos encontrados
-  {
-    MutexLock lock(modeloMutex, "nodosRemotosRefreshTask");
-    if (!lock)
-      return;
-
-    int totNR = nodosRemotosGetCount();
-    for (int nr = 0; nr < totNR; nr++)
-    {
-      NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
-
-      // Buscar este deviceID nos nodos escaneados
-      IPAddress ipScan;
-      String apiScan;
-      for (int nd = 0; nd < totND; nd++)
-      {
-        if (!strcmp(MDNS.hostname(nd).c_str(), nodoRemoto->id))
-        {
-          ipScan = MDNS.IP(nd);
-          apiScan = MDNS.txt(nd, "api");
-          break;
-        }
-      }
-
-      if (!ipScan)
-      {
-        // TODO ? msg?
-        continue;
-      }
-
-      // Verificar o IP
-      if (nodoRemoto->ip != ipScan)
-      {
-        nodoRemoto->ip = ipScan;
-        logaM(LOG_AVISO, "Nodo Remoto [%s] Novo IP: %s",
-              nodoRemoto->id, nodoRemoto->ip.toString().c_str());
-
-        if (nodoRemoto->recursosCount > 0)
-          nodoRemoto->refreshPendente = true;
-      }
-    }
-  }
-
-  for (int nr = 0;; nr++)
-  {
-    char nodoID[32];
-    IPAddress ip;
-
-    // Pegar os dados com LOCK
-    {
-      MutexLock lock(modeloMutex, "nodosRemotosRefreshTask2");
-      if (!lock)
-        continue;
-
-      NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
-      if (!nodoRemoto)
-        break;
-
-      if (nodoRemoto->ip && nodoRemoto->refreshPendente)
-      {
-        strlcpy(nodoID, nodoRemoto->id, sizeof(nodoID));
-        ip = nodoRemoto->ip;
-      }
-    }
-
-    if (!ip)
-      continue;
-
-    // HTTP sem o LOCK
-    String msg;
-    JsonDocument snapshot;
-    if (!apiInternaGetSnapshot(ip, snapshot, msg))
-    {
-      logaM(LOG_AVISO, "nodosRemotosRefreshTask > apiIntGetSnapshot > [%s]", msg.c_str());
-      snapshot.clear();
-      continue;
-    }
-
-    {
-      MutexLock lock(modeloMutex, "nodosRemotosRefreshTask3");
-      if (!lock)
-        continue;
-
-      NodoRemoto *nodoRemoto = nodoRemotoGet(nodoID);
-      if (!nodoRemoto)
-        continue;
-
-      recursoRemotoAtualizaFromSnapshotLocked(nodoRemoto, snapshot);
-    }
-
-    // regrasBoot fora do Lock
-    if (regrasBoot(nodoID))
-    {
-      MutexLock lock(modeloMutex, "nodosRemotosRefreshTask4");
-      if (!lock)
-        continue;
-
-      NodoRemoto *nodoRemoto = nodoRemotoGet(nodoID);
-      if (!nodoRemoto)
-      {
-        logaM(LOG_AVISO, "nodosRemotosRefreshTask :: nodo sumiu!");
-        continue;
-      }
-
-      nodoRemoto->refreshPendente = false;
-    }
-
-    snapshot.clear();
-  }
-
-  vTaskDelete(NULL);
-}
-
-void nodosRemotosRefresh()
-{
-  xTaskCreate(
-      nodosRemotosRefreshTask,
-      "nrRefresh",
-      8192 * 2,
-      nullptr,
-      1,
-      NULL);
 }
 
 String nodosRemotosLoad(const char *path)

@@ -19,7 +19,6 @@
 #include "memoria.h"
 #include "shaCache.h"
 #include "umidificador.h"
-#include "mdns-gs.h"
 #include "led.h"
 #include "sensorChuva.h"
 #include "nodoRemoto.h"
@@ -100,11 +99,9 @@ void appInit()
 
   logsFlush();
 
-  // mDNS e NTP somente no modo STA
+  // NTP somente no modo STA
   if (!WiFiGetModoAP())
   {
-    mdnsInit(true);
-
     // Verificar se ja temos hora do RTC
     struct tm timeinfo;
     sysGetTime(&timeinfo);
@@ -155,8 +152,6 @@ void appInit()
   ledSetAnim(LED_ANIM_OFF); // Usar o LED só para o Alerta
 }
 
-static uint32_t tsMdnsChuncho = 0;
-
 void appLoop()
 {
   esp_task_wdt_reset(); // alimenta o watchdog
@@ -186,13 +181,6 @@ void appLoop()
   if (timeinfo.tm_sec != lastSecond)
   {
     lastSecond = timeinfo.tm_sec;
-
-    // CHUNCHO para consertar o mDNS
-    if (!wifiModoAP && millis() - tsMdnsChuncho >= 60 * 1000)
-    {
-      tsMdnsChuncho = millis();
-      mdnsInit(false);
-    }
 
     if (ntpSyncOKFlag)
     {
@@ -230,14 +218,6 @@ void appLoop()
       {
         // Keepalive para a interface web
         httpEnviaSSE("{}", "sse_ping");
-
-        // Verificar os NÓs remotos (em nova Task) a cada 10s:
-        if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
-          nodosRemotosRefresh();
-
-        // Usado no NODO_NO para verificar o ip do mestre
-        if (eTomadaGetModoOperacao() == MODO_NO)
-          mestreLoop();
       }
 
       // 1m/1m
@@ -262,8 +242,6 @@ void appLoop()
         {
           lastHour = timeinfo.tm_hour;
           memoriaLog("1H/1H");
-
-          nodosRemotosLimpaCacheNovosNodos();
         }
       }
     }

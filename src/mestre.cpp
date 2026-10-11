@@ -1,5 +1,4 @@
 #include <ArduinoJson.h>
-#include <ESPmDNS.h>
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -15,15 +14,22 @@
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MESTRE", nivel, fmt, ##__VA_ARGS__)
 
-Mestre mestre;
+struct Mestre
+{
+    String deviceID;
+    IPAddress ip;
+};
+Mestre mestre = {};
 
-void mestreCheckOnline();
-#define MESTRE_HEARTBEAT_TIMEOUT 30000
+bool mestreAtivo()
+{
+    return (mestre.deviceID != "");
+}
 
 void mestreInit()
 {
-    // Zerar tudo
-    memset(&mestre, 0, sizeof(Mestre));
+    mestre.deviceID = "";
+    mestre.ip = IPAddress();
 
     if (eTomadaGetModoOperacao() != MODO_NO) // TODO : Mestre no MODO_CONTROLADOR tambem?
         return;
@@ -32,40 +38,41 @@ void mestreInit()
     prefs.begin("eTomada", false);
 
     // Para testes
-    // prefs.putString("mestre1", "MESTRE"); // resolve por mDNS
+    // prefs.putString("mestre1", "MESTRE"); // resolve por DNS
 
     mestre.deviceID = getPrefsAtr(prefs, "1", "mestre");
     prefs.end();
 
-    if (mestreAtivo())
-        logaM(LOG_AVISO, "Nodo Mestre: %s", mestre.deviceID.c_str());
-
-    mestreCheckOnline();
-}
-
-void mestreCheckOnline()
-{
     if (!mestreAtivo())
-        return;
-
-    if (WiFiGetModoAP())
-        return;
-
-    // Procurar nosso mestre
-    IPAddress ipMestre = MDNS.queryHost(mestre.deviceID);
-    if (ipMestre && mestre.ip != ipMestre)
     {
-        logaM(LOG_AVISO, "Mestre novo IP [%s]", ipMestre.toString().c_str());
-        mestre.ip = ipMestre;
-    }
-}
-
-void mestreLoop()
-{
-    if (!mestreAtivo()) // Sem mestre retorna
+        logaM(LOG_AVISO, "Sem MESTRE configurado!");
         return;
+    }
 
-    mestreCheckOnline();
+    String hostname = mestre.deviceID + ".etomada";
+    if (!WiFi.hostByName(hostname.c_str(), mestre.ip))
+    {
+        logaM(LOG_CRITICO, "Falha ao resolver o IP do MESTRE [%s.etomada]", mestre.deviceID.c_str());
+        return;
+    }
+    if (!mestre.ip)
+    {
+        logaM(LOG_CRITICO, "FALHA ao resolver o IP do MESTRE [%s.etomada]", mestre.deviceID.c_str());
+        return;
+    }
+
+    logaM(LOG_AVISO, "Nodo Mestre: [%s] @ [%s]", mestre.deviceID.c_str(), mestre.ip.toString().c_str());
+
+    // Avisar nosso boot para o mestre
+    JsonDocument jsonBoot;
+    jsonBoot["origem"] = eTomadaDeviceID();
+    jsonBoot["id"] = "ETOMADA";
+    jsonBoot["timestamp"] = 13; // TODO
+    jsonBoot["evento"] = "BOOT";
+    jsonBoot["device"]["uptime"] = millis();
+    String json;
+    serializeJson(jsonBoot, json);
+    mestreEnviaEvento(json.c_str());
 }
 
 void mestreEnviaEvento(String payloadJson)
@@ -87,11 +94,6 @@ void mestreEnviaEvento(String payloadJson)
         // TODO :: mestre.refreshPendente = true;
         return;
     }
-}
-
-bool mestreAtivo()
-{
-    return (mestre.deviceID != "");
 }
 
 IPAddress mestreGetIP()

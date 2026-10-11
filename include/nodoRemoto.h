@@ -30,8 +30,6 @@ NodoRemoto *nodoRemotoGet(const char *id);
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto);
 
-void nodosRemotosRefresh();
-void nodosRemotosLimpaCacheNovosNodos();
 void nodoRemotoCalcRecursos();
 
 JsonDocument nodosRemotosGetJSON(NodoRemoto *novoNodo = nullptr, bool full = true);
