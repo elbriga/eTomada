@@ -36,6 +36,7 @@ JsonDocument nodosRemotosGetJSON(NodoRemoto *novoNodo = nullptr, bool full = tru
 String nodoRemotoAddFromJSON(uint8_t *json);
 String nodoRemotoDelFromJSON(uint8_t *json);
 
+void nodoRemotoNovoAdd(const char *novoID, const char *tipo, IPAddress novoIP);
 int nodosRemotosGetNovosCount();
 JsonDocument nodosRemotosGetNovosJSON();
 

@@ -51,7 +51,7 @@ TipoRecurso recursoGetTipoFromStr(String tipoStr);
 JsonDocument recursoGetJSONDoc(Recurso *r);
 
 String recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento);
-String recursoEventoRecebido(uint8_t *json);
+String recursoEventoRecebido(uint8_t *json, IPAddress ip);
 
 String recursoAtualizaConfigFromJSON(uint8_t *json);
 

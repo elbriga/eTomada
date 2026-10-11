@@ -588,17 +588,27 @@ String recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento)
 }
 
 // Nao manda os eventos recebidos para o Server, quem faz são os nodos remotos
-String recursoEventoRecebido(uint8_t *json)
+String recursoEventoRecebido(uint8_t *json, IPAddress ip)
 {
   JsonDocument doc;
   if (utilLeJson("recursoEventoRecebido", doc, json))
     return "JSON Invalido";
 
+  String origem = doc["origem"];
+
+  if (doc["evento"].as<String>() == "BOOT")
+  {
+    String tipo = doc["tipo"];
+    nodoRemotoNovoAdd(origem.c_str(), tipo.c_str(), ip);
+    doc.clear();
+    return "OK";
+  }
+
   MutexLock lock(modeloMutex, "recursoEventoRecebido");
   if (!lock)
     return "Erro de LOCK!";
 
-  NodoRemoto *nr = nodoRemotoGet(doc["origem"].as<const char *>());
+  NodoRemoto *nr = nodoRemotoGet(origem.c_str());
   if (!nr)
   {
     doc.clear();

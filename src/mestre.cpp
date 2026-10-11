@@ -67,8 +67,9 @@ void mestreInit()
     JsonDocument jsonBoot;
     jsonBoot["origem"] = eTomadaDeviceID();
     jsonBoot["id"] = "ETOMADA";
-    jsonBoot["timestamp"] = 13; // TODO
+    jsonBoot["timestamp"] = millis();
     jsonBoot["evento"] = "BOOT";
+    jsonBoot["device"]["tipo"] = "Full";
     jsonBoot["device"]["uptime"] = millis();
     String json;
     serializeJson(jsonBoot, json);

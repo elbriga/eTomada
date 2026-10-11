@@ -98,7 +98,7 @@ void apiSetRecursoConfig(AsyncWebServerRequest *request, uint8_t *data, size_t l
 
 void apiEvento(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
-  String atzEventoOK = recursoEventoRecebido(data);
+  String atzEventoOK = recursoEventoRecebido(data, request->client()->remoteIP());
 
   request->send(200, "application/json", "{\"msg\": \"" + atzEventoOK + "\"}");
 

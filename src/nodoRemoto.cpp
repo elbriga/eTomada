@@ -27,7 +27,7 @@ struct NovoNodo
   bool ativo;
   char nome[32];
   IPAddress ip;
-  char tipo[8];
+  TipoNodoRemoto tipo;
 };
 static NovoNodo novosNodos[MAX_NOVOS_NODOS] = {};
 
@@ -85,6 +85,41 @@ int nodosRemotosGetNovosCount()
   return ret;
 }
 
+void nodoRemotoNovoAdd(const char *novoID, const char *tipoStr, IPAddress novoIP)
+{
+  logaM(LOG_AVISO, ">>> Novo eTomada [%s]!!! [%s] dando sinal de [%s]",
+        tipoStr, novoID, novoIP.toString().c_str());
+
+  TipoNodoRemoto tipo = nodoRemotoGetTipoFromStr(tipoStr);
+  if (tipo == TIPO_NODO_DESCONHECIDO)
+  {
+    logaM(LOG_CRITICO, "Novo nodo com tipo DESCONHECIDO! Descartando!");
+    return;
+  }
+
+  // Verificar se ja temos esse nodo no buffer
+  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+    if (novosNodos[i].ativo && !strcmp(novoID, novosNodos[i].nome))
+      return;
+
+  bool addOK = false;
+  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+  {
+    if (novosNodos[i].ativo)
+      continue;
+
+    novosNodos[i].ativo = true;
+    strlcpy(novosNodos[i].nome, novoID, sizeof(novosNodos[i].nome));
+    novosNodos[i].ip = novoIP;
+    novosNodos[i].tipo = tipo;
+    addOK = true;
+    break;
+  }
+
+  if (!addOK)
+    logaM(LOG_CRITICO, "Erro ao add novo nodo no buffer!");
+}
+
 JsonDocument nodosRemotosGetNovosJSON()
 {
   JsonDocument doc;
@@ -97,7 +132,7 @@ JsonDocument nodosRemotosGetNovosJSON()
 
     JsonObject novoJS = nodos.add<JsonObject>();
     novoJS["id"] = novosNodos[i].nome;
-    novoJS["tipo"] = novosNodos[i].tipo;
+    novoJS["tipo"] = novosNodos[i].tipo == TIPO_NODO_FULL ? "Full" : "Lite";
     novoJS["ip"] = novosNodos[i].ip.toString();
   }
 
@@ -266,7 +301,7 @@ String nodoRemotoAddFromJSON(uint8_t *json)
     if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, novoID))
     {
       novoNodo.ip = novosNodos[i].ip;
-      novoNodo.tipo = nodoRemotoGetTipoFromStr(novosNodos[i].tipo);
+      novoNodo.tipo = novosNodos[i].tipo;
       break;
     }
 
