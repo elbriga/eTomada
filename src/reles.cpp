@@ -79,7 +79,7 @@ JsonDocument releGetJSONDoc(Recurso *rec, bool full)
 
   if (full)
   {
-    doc["pino"] = r->pino;
+    doc["pino"] = r->pino; // TODO : Remover!
     doc["estado"] = r->estado;
   }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "hardwareProfile.h"
 
+// Embaixo da escada! C3MINI
 const HardwareProfile hardwareProfile = {
     .modelo = "R2B2",
     .board = "esp32c3",

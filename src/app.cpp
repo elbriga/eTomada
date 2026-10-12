@@ -149,7 +149,8 @@ void appInit()
 
   logaTitulo("Setup OK!");
 
-  ledSetAnim(LED_ANIM_OFF); // Usar o LED só para o Alerta
+  if (regraTemAlerta())
+    ledSetAnim(LED_ANIM_OFF);
 }
 
 void appLoop()

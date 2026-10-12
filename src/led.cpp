@@ -40,13 +40,13 @@ void ledInit()
     rgbLed.begin();
     rgbLed.clear();
     rgbLed.show();
-
-    ledSetAnim(LED_ANIM_BOOT); // Azul == Boot!
   }
   else
   {
     digitalWrite(hardwareProfile.ledPin, !hardwareProfile.ledInvertido);
   }
+
+  ledSetAnim(LED_ANIM_BOOT); // Azul == Boot!
 }
 
 bool ledAtivo()

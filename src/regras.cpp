@@ -106,6 +106,8 @@ bool regrasBoot(const char *nodoID)
     if (regrasBootOK && !nodoID) // Rodar o "all" somente uma vez, mas permitir boot por nodo
         return true;
 
+    // TODO :: tratar as regras de alerta
+
     // Obter horario
     struct tm timeinfo;
     sysGetTime(&timeinfo);
@@ -239,6 +241,19 @@ Regra *regraGetPorRecurso(const char *idLocal)
 int regrasCount()
 {
     return regrasTotal;
+}
+
+bool regraTemAlerta()
+{
+    int tot = regrasCount();
+    for (int r = 0; r < tot; r++)
+    {
+        Regra *regra = &regras[r];
+        if (regra->acao.tipo == ACAO_ALERTA)
+            return true;
+    }
+
+    return false;
 }
 
 String regraGetTxt(Regra *r);
