@@ -23,7 +23,7 @@ function renderConfig() {
   if (eTomadaData.nodosRemotos) {
     html = "<h2>Nodos Remotos</h2>";
     eTomadaData.nodosRemotos.forEach((nodo) => {
-      html += `<button onclick="nodoInfo('${nodo.id}')">${nodo.ip == "0.0.0.0" ? "🔴" : "🟢"} ${nodo.id} (${nodo.tipo})</button><br>\n`;
+      html += `<button onclick="nodoInfo('${nodo.id}')">${nodo.online ? "🟢" : "🔴"} ${nodo.id} (${nodo.tipo})</button><br>\n`;
     });
   }
 
@@ -45,7 +45,7 @@ async function salvarConfigGeral() {
   eTomadaRender();
 }
 
-async function factoryReset() {
+/*async function factoryReset() {
   if (confirm("Deseja realmente ZERAR TUDO!?!")) {
     await eTomadaAPI("factoryReset", { senha: 1333 }, "POST");
 
@@ -53,7 +53,7 @@ async function factoryReset() {
 
     statusMsg("Recarregado com configuração de fábrica");
   }
-}
+}*/
 
 async function soReset() {
   if (confirm("Confirma?")) {
@@ -99,8 +99,7 @@ async function nodoInfo(id) {
     }
   }
 
-  const online = nodo.ip != "0.0.0.0";
-  const msgOnline = online ? `🟢 ${nodo.ip}` : "🔴 offline";
+  const msgOnline = nodo.online ? `🟢 ${nodo.ip}` : "🔴 offline";
 
   const card = document.createElement("div");
   card.id = cardID;
