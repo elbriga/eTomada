@@ -364,7 +364,8 @@ String recursosRemotosPersisteLocked(RecursoRemoto *novoRecurso)
 
 void recursoRemotoPrint(RecursoRemoto *recursoRemoto)
 {
-  logaM(LOG_NORMAL, "RecursoRemoto [%s] %s em %s",
+  logaM(LOG_NORMAL, "RecursoRemoto [%s] %s em %s (%s)",
         recursoRemoto->idLocal, recursoGetTipoStr(recursoRemoto->tipo),
+        recursoRemoto->nodo ? recursoRemoto->nodo->id : "???",
         recursoRemoto->nodo ? recursoRemoto->nodo->ip.toString().c_str() : "???");
 }

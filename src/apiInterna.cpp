@@ -23,6 +23,17 @@ bool apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc, String &msgOut)
   return apiInterna(ip, 80, "getSnapshot", "GET", "", &doc, msgOut);
 }
 
+bool apiInternaPing(IPAddress ip, String &msgOut)
+{
+  bool pingOK = apiInterna(ip, 80, "ping", "GET", "", nullptr, msgOut);
+
+  // TODO :: Atualizar todos e remover!
+  if (!pingOK && msgOut == "Erro 404") // Considerar os nodos desatualizados sem o "ping"
+    pingOK = true;
+
+  return pingOK;
+}
+
 bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta, String &msgOut)
 {
   bool ret;
@@ -99,7 +110,8 @@ bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String r
   }
 
   String url = "http://" + ip.toString() + (port != 80 ? ":" + String(port) : "") + "/api/" + endpoint;
-  logaM(LOG_DEBUG0, "apiInterna: Acionando %s", url.c_str());
+  if (endpoint != "ping")
+    logaM(LOG_DEBUG0, "apiInterna: Acionando %s", url.c_str());
 
   HTTPClient http;
   http.begin(url);
@@ -201,8 +213,9 @@ bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String r
 
   http.end();
 
+  bool OK = (code == 200 || code == 204);
   msgOut = responseOut && !(*responseOut)["msg"].isNull()
                ? (*responseOut)["msg"].as<String>()
-               : (code == 200 ? "OK" : "Erro " + String(code));
-  return (code == 200);
+               : (OK ? "OK" : "Erro " + String(code));
+  return OK;
 }

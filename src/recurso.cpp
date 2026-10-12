@@ -598,10 +598,10 @@ String recursoEventoRecebido(uint8_t *json, IPAddress ip)
 
   if (doc["evento"].as<String>() == "BOOT")
   {
-    String tipo = doc["tipo"];
-    nodoRemotoNovoAdd(origem.c_str(), tipo.c_str(), ip);
+    String tipo = doc["device"]["tipo"];
+    nodoRemotoEventoBoot(origem.c_str(), tipo.c_str(), ip);
     doc.clear();
-    return "OK";
+    return "Bem Vindo!";
   }
 
   MutexLock lock(modeloMutex, "recursoEventoRecebido");

@@ -49,7 +49,7 @@ void mestreInit()
         return;
     }
 
-    String hostname = mestre.deviceID + ".etomada";
+    String hostname = mestre.deviceID + ETOMADA_DOMAIN_NAME;
     if (!WiFi.hostByName(hostname.c_str(), mestre.ip))
     {
         logaM(LOG_CRITICO, "Falha ao resolver o IP do MESTRE [%s.etomada]", mestre.deviceID.c_str());

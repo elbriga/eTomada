@@ -21,12 +21,17 @@ struct NodoRemoto
   int recursosCount;
   bool refreshPendente;
   bool del;
+  bool online;
+  uint32_t ultimoContato;
+  uint32_t ultimoTeste;
 };
 
 void nodoRemotoInit();
 int nodosRemotosGetCount();
 
 NodoRemoto *nodoRemotoGet(const char *id);
+
+void nodosRemotosRefreshCtl(bool liga);
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto);
 
@@ -36,7 +41,7 @@ JsonDocument nodosRemotosGetJSON(NodoRemoto *novoNodo = nullptr, bool full = tru
 String nodoRemotoAddFromJSON(uint8_t *json);
 String nodoRemotoDelFromJSON(uint8_t *json);
 
-void nodoRemotoNovoAdd(const char *novoID, const char *tipo, IPAddress novoIP);
+void nodoRemotoEventoBoot(const char *novoID, const char *tipo, IPAddress novoIP);
 int nodosRemotosGetNovosCount();
 JsonDocument nodosRemotosGetNovosJSON();
 

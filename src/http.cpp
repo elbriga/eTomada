@@ -98,6 +98,10 @@ void httpServerInitModoAPI()
     httpServer.on("/api/delRecursoRemoto", HTTP_PUT, funcVazia, NULL, apiDelRecursoRemoto);
   }
 
+  httpServer.on("/api/ping", HTTP_GET,
+                [](AsyncWebServerRequest *request)
+                { request->send(204); });
+
   recoveryAPIRegister();
 
   // Eventos de conexão/desconexão

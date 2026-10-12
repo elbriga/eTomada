@@ -1,6 +1,8 @@
 #pragma once
 #include <Arduino.h>
 
+#define ETOMADA_DOMAIN_NAME ".etomada"
+
 struct Recurso; // Forward declaration
 
 typedef enum

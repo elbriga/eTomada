@@ -1,3 +1,4 @@
+#include <atomic>
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
@@ -48,8 +49,250 @@ void nodoRemotoInit()
   if (msgLoad != "OK")
     logaM(LOG_AVISO, ">> nodosRemotosLoad: [%s]", msgLoad.c_str());
 
+  // Inicializar os nodos > buscar IP
   for (int nr = 0; nr < totNodosRemotos; nr++)
-    nodoRemotoPrint(nodoRemotoGetPorIndice(nr));
+  {
+    NodoRemoto *nodo = nodoRemotoGetPorIndice(nr);
+    String hostname = String(nodo->id) + ETOMADA_DOMAIN_NAME;
+    if (!WiFi.hostByName(hostname.c_str(), nodo->ip))
+    {
+      nodo->ip = IPAddress();
+      logaM(LOG_AVISO, "Erro de DNS para o nodo [%s]", nodo->id);
+    }
+    else
+    {
+      nodo->online = false; // Ao ficar online liga a flag nodo->refreshPendente
+      nodo->ultimoContato = 0;
+      nodo->ultimoTeste = millis() - 20000UL;
+    }
+
+    nodoRemotoPrint(nodo);
+  }
+}
+
+std::atomic<bool> nodosRemotosRefreshRodando{false};
+std::atomic<bool> nodosRemotosRefreshRequestOFF{false};
+
+void nodosRemotosRefreshTask(void *args)
+{
+  char nodoID[32];
+  IPAddress ip;
+  bool fazRefresh;
+  bool pula = false;
+
+  nodosRemotosRefreshRodando = true;
+
+  // for infinito sem o total fora do lock
+  // reinicia nr=0 quando chega no final
+  for (int nr = 0;; nr++)
+  {
+    if (nodosRemotosRefreshRequestOFF)
+    {
+      nodosRemotosRefreshRequestOFF = false;
+      break;
+    }
+
+    // Com o delay aqui em cima os "continue" sempre respeitam o delay
+    if (!pula)
+      vTaskDelay(pdMS_TO_TICKS(100));
+    pula = false;
+
+    ip = IPAddress(); // zerar
+
+    // Pegar os dados com LOCK
+    {
+      MutexLock lock(modeloMutex, "nodosRemotosRefreshTask1");
+      if (!lock)
+        continue;
+
+      NodoRemoto *nodoRemoto = nodoRemotoGetPorIndice(nr);
+      if (!nodoRemoto)
+      {
+        nr = -1; // FORÇAR O RESET DO FOR!!!! = LOOP INFINITO
+        continue;
+      }
+
+      // Nodo sem IP? nao esta cadastrado no DNS, vai nos custar 1s!
+      if (!nodoRemoto->ip)
+      {
+        pula = true;
+        continue;
+      }
+
+      uint32_t tempoDesdeUltimoContato = millis() - nodoRemoto->ultimoContato;
+      if (tempoDesdeUltimoContato > 70 * 1000)
+      {
+        if (nodoRemoto->online)
+          logaM(LOG_AVISO, "Nodo [%s] OFFLINE!", nodoRemoto->id);
+        nodoRemoto->online = false;
+      }
+
+      if (millis() - nodoRemoto->ultimoTeste < 20 * 1000)
+        continue;
+
+      if (nodoRemoto->refreshPendente ||
+          !nodoRemoto->online ||
+          tempoDesdeUltimoContato > 30 * 1000)
+      {
+        nodoRemoto->ultimoTeste = millis();
+
+        strlcpy(nodoID, nodoRemoto->id, sizeof(nodoID));
+        ip = nodoRemoto->ip;
+
+        fazRefresh = nodoRemoto->refreshPendente;
+        // if (fazRefresh)
+        //   logaM(LOG_NORMAL, "Fazer refresh de [%s]", nodoID);
+        // else
+        //   logaM(LOG_NORMAL, "Fazer PING para [%s]", nodoID);
+      }
+    }
+
+    if (!ip)
+      continue;
+
+    if (fazRefresh)
+    {
+      String msg;
+      JsonDocument snapshot;
+      // HTTP sem o LOCK
+      if (!apiInternaGetSnapshot(ip, snapshot, msg))
+      {
+        logaM(LOG_AVISO, "nodosRemotosRefreshTask > apiIntGetSnapshot > [%s]", msg.c_str());
+        snapshot.clear();
+        continue;
+      }
+
+      {
+        MutexLock lock(modeloMutex, "nodosRemotosRefresh2");
+        if (!lock)
+          continue;
+
+        NodoRemoto *nodoRemoto = nodoRemotoGet(nodoID);
+        if (!nodoRemoto)
+          continue;
+
+        recursoRemotoAtualizaFromSnapshotLocked(nodoRemoto, snapshot);
+      }
+
+      snapshot.clear();
+
+      // regrasBoot fora do Lock
+      bool regrasBootOK = regrasBoot(nodoID);
+
+      {
+        MutexLock lock(modeloMutex, "nodosRemotosRefreshTask3");
+        if (!lock)
+          continue;
+
+        NodoRemoto *nodoRemoto = nodoRemotoGet(nodoID);
+        if (!nodoRemoto)
+        {
+          logaM(LOG_AVISO, "nodosRemotosRefreshTask :: nodo sumiu!");
+          continue;
+        }
+
+        nodoRemoto->refreshPendente = !regrasBootOK;
+        nodoRemoto->online = true;
+        nodoRemoto->ultimoContato = millis();
+        nodoRemoto->ultimoTeste = millis();
+      }
+
+      continue;
+    }
+
+    // Fazer o PING
+    String msg;
+    bool online = apiInternaPing(ip, msg);
+
+    {
+      MutexLock lock(modeloMutex, "nodosRemotosRefreshTask4");
+      if (!lock)
+        continue;
+
+      NodoRemoto *nodoRemoto = nodoRemotoGet(nodoID);
+      if (!nodoRemoto)
+      {
+        logaM(LOG_AVISO, "nodosRemotosRefreshTask :: nodo sumiu 2!");
+        continue;
+      }
+
+      nodoRemoto->ultimoTeste = millis();
+
+      if (online)
+      {
+        if (!nodoRemoto->online)
+        {
+          logaM(LOG_AVISO, "Nodo[%s] Ficou Online!", nodoRemoto->id);
+          nodoRemoto->refreshPendente = true;
+          nodoRemoto->ultimoTeste = millis() - 30000UL; // para o refresh
+        }
+
+        nodoRemoto->online = true;
+        nodoRemoto->ultimoContato = millis();
+      }
+    }
+  }
+
+  logaM(LOG_NORMAL, "Encerrando Task de Refresh");
+
+  nodosRemotosRefreshRodando = false;
+  vTaskDelete(NULL);
+}
+
+void nodosRemotosRefreshCtl(bool liga)
+{
+  if (!liga) // Desligar a Task
+  {
+    if (!nodosRemotosRefreshRodando)
+      return;
+
+    // Solicitar o desligamento
+    nodosRemotosRefreshRequestOFF = true;
+
+    // Aguardar!
+    uint32_t inicio = millis();
+    uint32_t t3, t3i = 0;
+    while (nodosRemotosRefreshRodando)
+    {
+      vTaskDelay(pdMS_TO_TICKS(25));
+
+      t3 = (millis() - inicio) / 3000;
+      if (t3i != t3)
+      {
+        t3i = t3;
+        logaM(LOG_AVISO, "AGUARDANDO encerramento da Task de refresh a [%d]s", t3 * 3);
+      }
+    }
+
+    return;
+  }
+
+  if (!nodosRemotosGetCount())
+  {
+    logaM(LOG_AVISO, "nodosRemotosRefresh OFF > SEM NODOS REMOTOS");
+    return;
+  }
+
+  if (nodosRemotosRefreshRodando)
+  {
+    logaM(LOG_CRITICO, "nodosRemotosRefreshCtl(ON) > JA ATIVO!!!!");
+    return;
+  }
+
+  nodosRemotosRefreshRodando = true;
+  nodosRemotosRefreshRequestOFF = false;
+
+  if (xTaskCreate(
+          nodosRemotosRefreshTask,
+          "nrRefresh",
+          8192 * 2,
+          nullptr,
+          1,
+          NULL) != pdPASS)
+  {
+    logaM(LOG_CRITICO, "ERRO ao criar Task de refresh!!!");
+    nodosRemotosRefreshRodando = false;
+  }
 }
 
 int nodosRemotosGetCount()
@@ -83,41 +326,6 @@ int nodosRemotosGetNovosCount()
     if (novosNodos[i].ativo)
       ret++;
   return ret;
-}
-
-void nodoRemotoNovoAdd(const char *novoID, const char *tipoStr, IPAddress novoIP)
-{
-  logaM(LOG_AVISO, ">>> Novo eTomada [%s]!!! [%s] dando sinal de [%s]",
-        tipoStr, novoID, novoIP.toString().c_str());
-
-  TipoNodoRemoto tipo = nodoRemotoGetTipoFromStr(tipoStr);
-  if (tipo == TIPO_NODO_DESCONHECIDO)
-  {
-    logaM(LOG_CRITICO, "Novo nodo com tipo DESCONHECIDO! Descartando!");
-    return;
-  }
-
-  // Verificar se ja temos esse nodo no buffer
-  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
-    if (novosNodos[i].ativo && !strcmp(novoID, novosNodos[i].nome))
-      return;
-
-  bool addOK = false;
-  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
-  {
-    if (novosNodos[i].ativo)
-      continue;
-
-    novosNodos[i].ativo = true;
-    strlcpy(novosNodos[i].nome, novoID, sizeof(novosNodos[i].nome));
-    novosNodos[i].ip = novoIP;
-    novosNodos[i].tipo = tipo;
-    addOK = true;
-    break;
-  }
-
-  if (!addOK)
-    logaM(LOG_CRITICO, "Erro ao add novo nodo no buffer!");
 }
 
 JsonDocument nodosRemotosGetNovosJSON()
@@ -166,6 +374,51 @@ void nodoRemotoCalcRecursos()
   }
 }
 
+void nodoRemotoEventoBoot(const char *deviceID, const char *tipoStr, IPAddress ip)
+{
+  logaM(LOG_AVISO, ">>> eTomada [%s]!!! [%s] evento BOOT de [%s]",
+        tipoStr, deviceID, ip.toString().c_str());
+
+  // Verificar se é um de nossos nodos remotos cadastrados
+  NodoRemoto *nr = nodoRemotoGet(deviceID);
+  if (nr)
+  {
+    nr->refreshPendente = true;
+    return;
+  }
+
+  // == Novo eTomada ==
+
+  TipoNodoRemoto tipo = nodoRemotoGetTipoFromStr(tipoStr);
+  if (tipo == TIPO_NODO_DESCONHECIDO)
+    logaM(LOG_CRITICO, "Novo nodo com tipo DESCONHECIDO?!? Vou deixar cadastrar!!");
+
+  // Verificar se ja temos esse nodo no buffer de novos nodos
+  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+    if (novosNodos[i].ativo && !strcmp(deviceID, novosNodos[i].nome))
+    {
+      novosNodos[i].ip = ip;
+      return;
+    }
+
+  bool addOK = false;
+  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+  {
+    if (novosNodos[i].ativo)
+      continue;
+
+    novosNodos[i].ativo = true;
+    strlcpy(novosNodos[i].nome, deviceID, sizeof(novosNodos[i].nome));
+    novosNodos[i].ip = ip;
+    novosNodos[i].tipo = tipo;
+    addOK = true;
+    break;
+  }
+
+  if (!addOK)
+    logaM(LOG_CRITICO, "Erro ao add novo nodo! buffer cheio?");
+}
+
 String nodosRemotosLoad(const char *path)
 {
   File file = LittleFS.open(path, "r");
@@ -208,6 +461,8 @@ String nodosRemotosLoad(const char *path)
     nodo->tipo = nodoRemotoGetTipoFromStr(nodoJson["tipo"].as<String>());
     strlcpy(nodo->descricao, nodoJson["descricao"].as<const char *>(), sizeof(nodo->descricao));
 
+    nodo->ip = IPAddress();
+
     totNodosRemotos++;
   }
 
@@ -223,7 +478,10 @@ void nodoRemotoGetJS(NodoRemoto *nodo, JsonObject &obj, bool full)
   obj["descricao"] = nodo->descricao;
 
   if (full)
+  {
+    obj["online"] = nodo->online;
     obj["ip"] = nodo->ip.toString();
+  }
 }
 
 JsonDocument nodosRemotosGetJSON(NodoRemoto *novoNodo, bool full)
@@ -295,7 +553,9 @@ String nodoRemotoAddFromJSON(uint8_t *json)
   if (doc["id"].isNull())
     return "Informe o ID!";
 
-  const char *novoID = doc["id"].as<const char *>();
+  String id = doc["id"];
+  const char *novoID = id.c_str();
+
   NodoRemoto novoNodo = {};
   for (int i = 0; i < MAX_NOVOS_NODOS; i++)
     if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, novoID))
@@ -325,6 +585,11 @@ String nodoRemotoAddFromJSON(uint8_t *json)
     if (msg != "OK")
       return msg;
   }
+
+  // Remover do array de Novos Nodos
+  for (int i = 0; i < MAX_NOVOS_NODOS; i++)
+    if (novosNodos[i].ativo && !strcmp(novosNodos[i].nome, novoID))
+      novosNodos[i].ativo = false;
 
   // ReLoad config
   eTomadaLoadConfig();

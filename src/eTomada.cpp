@@ -103,6 +103,9 @@ void eTomadaInit()
 static int configLoadCount = 0;
 void eTomadaLoadConfig()
 {
+  if (modoOperacao == MODO_CONTROLADOR)
+    nodosRemotosRefreshCtl(false);
+
   MutexLock configLock(configMutex, "eTomadaLoadConfig config");
   if (!configLock)
   {
@@ -143,6 +146,9 @@ void eTomadaLoadConfig()
 
   // Regras Boot fora do Lock de reursos, mas dentro do lock de config
   regrasBoot();
+
+  if (modoOperacao == MODO_CONTROLADOR)
+    nodosRemotosRefreshCtl(true);
 }
 
 ModoOperacao eTomadaGetModoOperacao()
@@ -246,7 +252,7 @@ String eTomadaGetSnapshotJSON()
       doc["regras"] = regrasJS;
 
       if (nodosRemotosGetCount())
-        doc["nodosRemotos"] = nodosRemotosGetJSON();
+        doc["nodosRemotos"] = nodosRemotosGetJSON(nullptr, true);
 
       if (nodosRemotosGetNovosCount())
         doc["novosNodos"] = nodosRemotosGetNovosJSON();
