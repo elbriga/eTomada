@@ -30,8 +30,7 @@ void nodoRemotoInit();
 int nodosRemotosGetCount();
 
 NodoRemoto *nodoRemotoGet(const char *id);
-
-void nodosRemotosRefreshCtl(bool liga);
+NodoRemoto *nodoRemotoGetPorIndice(int i);
 
 void nodoRemotoPrint(NodoRemoto *nodoRemoto);
 

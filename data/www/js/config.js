@@ -140,7 +140,7 @@ Modelo: ${nodo.tipo}<input type="hidden" id="tipoNodo-${id}" value="${nodo.tipo}
       htmlRecursos += `<li>${r.tipo} ${r.id} (${r.idRemoto}) <button class="editBtn" onclick="recursoRemotoDel('${id}','${r.idRemoto}')">Del</button></li>`;
     });
 
-    if (online) {
+    if (nodo.online) {
       const nodoSnapshot = await eTomadaAPI("getNodo?id=" + id);
       if (nodoSnapshot.msg != undefined && nodoSnapshot.msg == "OK") {
         const snapshot = nodoSnapshot.nodo;

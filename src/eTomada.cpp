@@ -28,7 +28,7 @@
 #include "mutex.h"
 #include "loga.h"
 #include "prefs.h"
-#include "nodoRemoto.h"
+#include "nodoRemotoRefresh.h"
 #include "recurso.h"
 #include "eventos.h"
 #include "agendamentos.h"
