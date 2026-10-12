@@ -70,8 +70,11 @@ void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, si
   if (!recursoSetFromJSON(data, recursoID, msg, !fromMestre))
     logaM(LOG_AVISO, "apiSetRecurso > recursoSetFromJSON > [%s]", msg.c_str());
 
+  if (fromMestre)
+    msg = "SIM MESTRE:" + msg;
+
   JsonDocument resposta;
-  resposta["msg"] = (fromMestre ? "SIM MESTRE!:" : "") + msg;
+  resposta["msg"] = msg;
   if (recursoID != "")
   {
     MutexLock lock(modeloMutex, "apiSetRecurso");
