@@ -113,9 +113,12 @@ bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String r
   if (endpoint != "ping")
     logaM(LOG_DEBUG0, "apiInterna: Acionando %s", url.c_str());
 
+  uint32_t inicio = millis();
+
   HTTPClient http;
   http.begin(url);
   http.setAuthorization(ETOMADA_HTTP_USERNAME, httpGetSenha().c_str());
+  http.setConnectTimeout(API_INTERNA_TIMEOUT);
   http.setTimeout(API_INTERNA_TIMEOUT);
   http.setUserAgent("eTomada Full " + eTomadaDeviceID() + " v" + eTomadaGetVersao());
 
@@ -140,6 +143,12 @@ bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String r
   }
 
   esp_task_wdt_reset(); // alimenta o watchdog
+
+  if (code < 0 && endpoint != "ping")
+    logaM(LOG_AVISO, "Falha HTTP [%s]: %s (%d)",
+          url.c_str(),
+          http.errorToString(code).c_str(),
+          code);
 
   if (code == 200)
   {
@@ -212,6 +221,9 @@ bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String r
   }
 
   http.end();
+
+  if (endpoint != "ping")
+    logaM(LOG_DEBUG0, "Duracao HTTP [%s]: [%d ms]", url.c_str(), millis() - inicio);
 
   bool OK = (code == 200 || code == 204);
   msgOut = responseOut && !(*responseOut)["msg"].isNull()
