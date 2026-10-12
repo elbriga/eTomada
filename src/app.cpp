@@ -149,7 +149,7 @@ void appInit()
 
   logaTitulo("Setup OK!");
 
-  if (regraTemAlerta())
+  if (!!regraTemAlerta())
     ledSetAnim(LED_ANIM_OFF);
 }
 

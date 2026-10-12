@@ -772,6 +772,9 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
 
 int recursoGetValor(Recurso *r)
 {
+  if (!r)
+    return 0;
+
   switch (r->tipo)
   {
   case RECURSO_RELE:

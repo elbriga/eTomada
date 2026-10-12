@@ -74,7 +74,7 @@ void regrasInit();
 bool regrasBoot(const char *nodoID = nullptr);
 
 int regrasCount();
-bool regraTemAlerta();
+Regra *regraTemAlerta();
 
 void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra = nullptr);
 Regra *regraGetPorRecurso(const char *idLocalRecurso);
