@@ -54,7 +54,7 @@ bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idR
 
   case TIPO_NODO_LITE:
   {
-    ret = apiInterna(ip, 80, "setRele?estado=" + estado, "GET", "", &resposta, msgOut);
+    ret = apiInterna(ip, 80, String("setRele?id=") + idRemoto + "&estado=" + estado, "GET", "", &resposta, msgOut);
   }
   break;
 

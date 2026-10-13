@@ -126,25 +126,25 @@ function regraOpenEditModal(regraID) {
   document.getElementById("modalRegraAcao").value = regra.acao.tipo;
   regrasOCModalAcao();
 
-  if (regra.acao.tipo == "ESTADO") {
-    regraPopulaComboRecursos(
-      "modalRegraAcaoEstadoRecurso",
-      (r) => r.tipo == "RELE",
-    );
-    document.getElementById("modalRegraAcaoEstadoRecurso").value =
-      regra.acao.recurso;
-    document.getElementById("modalRegraAcaoEstadoComando").value =
-      regra.acao.comando;
-  } else if (regra.acao.tipo == "TIMER") {
-    regraPopulaComboRecursos(
-      "modalRegraAcaoTimerRecurso",
-      (r) => r.tipo == "RELE",
-    );
-    document.getElementById("modalRegraAcaoTimerRecurso").value =
-      regra.acao.recurso;
-    document.getElementById("modalRegraAcaoTimerTempo").value =
-      regra.acao.timer | 10;
-  }
+  // Acao ESTADO
+  regraPopulaComboRecursos(
+    "modalRegraAcaoEstadoRecurso",
+    (r) => r.tipo == "RELE",
+  );
+  document.getElementById("modalRegraAcaoEstadoRecurso").value =
+    regra.acao.recurso;
+  document.getElementById("modalRegraAcaoEstadoComando").value =
+    regra.acao.comando;
+
+  // ACAO TIMER
+  regraPopulaComboRecursos(
+    "modalRegraAcaoTimerRecurso",
+    (r) => r.tipo == "RELE",
+  );
+  document.getElementById("modalRegraAcaoTimerRecurso").value =
+    regra.acao.recurso;
+  document.getElementById("modalRegraAcaoTimerTempo").value =
+    regra.acao.timer | 10;
 
   document.getElementById("modalSalvarBtn").onclick = function () {
     regraSalvarFromModal();
