@@ -6,7 +6,7 @@
 
 void memoriaLog(const char *onde)
 {
-    logaM(LOG_AVISO,
+    logaM(LOG_DEBUG0,
           "MEMLOG [%s] : free=%u min=%u maxAlloc=%u",
           onde,
           ESP.getFreeHeap(),

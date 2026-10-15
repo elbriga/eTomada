@@ -182,11 +182,12 @@ void appLoop()
   if (timeinfo.tm_sec != lastSecond)
   {
     lastSecond = timeinfo.tm_sec;
+    // memoriaLog("LOOP"); // DEBUG
 
     if (ntpSyncOKFlag)
     {
       ntpSyncOKFlag = false;
-      logaM(LOG_AVISO, "NTP SYNC OK. Sync RTC");
+      logaM(LOG_DEBUG0, "NTP SYNC OK. Sync RTC");
       rtcStoreSystemClock();
       // Dentro do regrasBoot: Só chamar somente 1 vez no boot, senão ele vai "se intrometer"
       regrasBoot();

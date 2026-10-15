@@ -22,7 +22,8 @@ String logaGetLogServer();
 void logaChangeLevel(int newLevel);
 
 // Funções novas
-void loga(const char *modulo, LogLevel nivel, const char *fmt, ...);
+void loga(const char *modulo, LogLevel nivel, const char *fmt, ...)
+    __attribute__((format(printf, 3, 4))); // Para o compilador validar as strings de printf
 void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args);
 
 void logaTitulo(const char *msg);
