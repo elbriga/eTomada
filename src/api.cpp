@@ -321,8 +321,9 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
   else if (!doc["adminNewPass"].isNull())
   {
     // verificar se é o mestre ou whitelist, para não testar a senha atual
-    String remoteIP = httpGetClientIP(request).toString();
-    if ((!mestreAtivo() || remoteIP != mestreGetIP().toString()) && remoteIP != "10.0.1.100")
+    bool deFora = false;
+    String remoteIP = httpGetClientIP(request, &deFora);
+    if (deFora || ((!mestreAtivo() || remoteIP != mestreGetIP().toString()) && remoteIP != "10.0.1.100"))
     {
       if (doc["adminPass"].as<String>() != httpGetSenha())
       {

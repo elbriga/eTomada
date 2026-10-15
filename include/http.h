@@ -9,7 +9,7 @@
 void httpServerInit();
 void httpSetSenha(const String &senha);
 String httpGetSenha();
-IPAddress httpGetClientIP(AsyncWebServerRequest *request);
+String httpGetClientIP(AsyncWebServerRequest *request, bool *deFora);
 void httpEnviaSSE(String msg, String tipo);
 void httpEnviaSSERefresh();
 void logaRequest(AsyncWebServerRequest *request, String resultado);
