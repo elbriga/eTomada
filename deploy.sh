@@ -45,7 +45,7 @@ perl -0777 -pe '
 
     s/INSERIR_CSS_AQUI/$css/g;
     s/INSERIR_JS_AQUI/$js/g;
-' "frontend/index.tpl" > "$OUT"
+' "frontend/index-tpl.html" > "$OUT"
 
 rm "$BUNDLE"
 
