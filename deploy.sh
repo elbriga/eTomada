@@ -3,7 +3,7 @@ set -e
 MANIFEST=eTomada.json
 
 PASTA=data/www
-OUT="$PASTA/js/eTomada.js"
+OUT="$PASTA/app.js"
 F1="$PASTA/index.html"
 F2="$PASTA/style.css"
 
@@ -36,9 +36,8 @@ gzip -9 -k -f "$F2"
 # Gerar o manifest
 {
     echo '{"devices":[],"www":{"arquivos":{'
-
     first=true
-    for file in $PASTA/* $PASTA/js/*; do
+    for file in $PASTA/*; do
         [ -f "$file" ] || continue
 
         hash=$(sha256sum "$file" | awk '{print $1}')
@@ -52,11 +51,10 @@ gzip -9 -k -f "$F2"
 
         printf '  "%s": "%s"' "$path" "$hash"
     done
-
-    echo
     echo "}}}"
 } > "$MANIFEST"
 
+# Jogar no raspberry
 PASTAPI=/root/nginx-docker/html/firmware
 rsync -rav $PASTA/* pi:$PASTAPI/www/
 scp "$MANIFEST" pi:$PASTAPI/

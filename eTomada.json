@@ -1,11 +1,10 @@
 {"devices":[],"www":{"arquivos":{
+  "/app.js": "b15fde150a6edc06dd930d63362dc68a5e9292f6a5d7f9877eba3d31c8727a27",
+  "/app.js.gz": "d37610a1b171a78ae184428b0479a73f12e97b42caf0d08b08bda50af6154f0f",
   "/favicon.ico": "5d3e7c96ac156eeeb5653b6dd9098fc299b2040956d02e17bd07f7dd6bba299b",
   "/favicon.ico.gz": "19272c35bf71a25275e396b8f519884115eaebfc27c5b221b54fb6118c0503c7",
-  "/index.html": "98e9ec097e4a32d20d7ea115da56b43795fca44a70b3c634d5be4709b7e2246c",
-  "/index.html.gz": "35bf388dc78cb2ef15d1764a0c902f38463b8592d1df80c6e807f4e63b98c5be",
+  "/index.html": "8b5f54ab22d570abecc4323148317ce1b7f93d5722c216b626ae6427cbbbd97d",
+  "/index.html.gz": "91502cf1c3cd9d051ebff770a9f506eb8990e8670957a01d3da5041b95af67b3",
   "/portal.html": "509b1e30a57d4a92f3996c4bdf1bb2ede0fa7f5047a73a54cb731f02052a3d49",
   "/style.css": "7c3e2f65bfb1afed76991d229245e28a3795ac673e5292194351f08fdc5d987c",
-  "/style.css.gz": "6df0b1cc8bdd5f954406c3eb54634328eeae79a5a1c3b2bb42f2c44e47e703bf",
-  "/js/eTomada.js": "b15fde150a6edc06dd930d63362dc68a5e9292f6a5d7f9877eba3d31c8727a27",
-  "/js/eTomada.js.gz": "fab96a691b7a6b1edd9a8adadfd7713a8c1de2bbdb897e54b05669e14aabd2d9"
-}}}
+  "/style.css.gz": "6df0b1cc8bdd5f954406c3eb54634328eeae79a5a1c3b2bb42f2c44e47e703bf"}}}
