@@ -135,8 +135,11 @@ bool regrasBoot(const char *nodoID)
             if (regraAlerta->condicao.tipo == COND_EVENTO)
             {
                 Recurso *r = recursoGet(regraAlerta->condicao.evento.recursoID);
-                bool alerta = recursoGetValor(r);
-                ledSetAnim(alerta ? LED_ANIM_ALARM : LED_ANIM_OFF);
+                if (r)
+                {
+                    bool alerta = recursoGetValor(r);
+                    ledSetAnim(alerta ? LED_ANIM_ALARM : LED_ANIM_OFF);
+                }
             }
         }
 
@@ -258,7 +261,7 @@ Regra *regraTemAlerta()
     for (int r = 0; r < tot; r++)
     {
         Regra *regra = &regras[r];
-        if (regra->acao.tipo == ACAO_ALERTA)
+        if (!strcmp(regra->acao.recursoID, "__ALERTA__"))
             return regra;
     }
 
@@ -277,6 +280,17 @@ String regraDisparaAcao(Regra *regra)
     {
     case ACAO_ESTADO:
     {
+        if (!strcmp(acao->recursoID, "__ALERTA__"))
+        {
+            // TODO :: Aterta esta sempre ignorando o comando e fazendo FOLLOW
+            Recurso *recAlerta = recursoGet(regra->condicao.evento.recursoID);
+            if (!recAlerta)
+                return "dispAcaoESTADO : Origem invalida?1";
+            int estado = recursoGetValor(recAlerta);
+            ledSetAnim(estado ? LED_ANIM_ALARM : LED_ANIM_OFF);
+            break;
+        }
+
         Recurso *rec = recursoGet(acao->recursoID);
         if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoESTADO : Nao eh RELE!";
@@ -286,7 +300,7 @@ String regraDisparaAcao(Regra *regra)
         {
             Recurso *recOrigem = recursoGet(regra->condicao.evento.recursoID);
             if (!recOrigem)
-                return "dispAcaoESTADO : Origem invalida?";
+                return "dispAcaoESTADO : Origem invalida?2";
             int estadoOrigem = recursoGetValor(recOrigem);
             comando = estadoOrigem ? "ON" : "OFF";
         }
@@ -307,14 +321,6 @@ String regraDisparaAcao(Regra *regra)
 
         // Agendar o OFF
         agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, acao->recursoID, "OFF");
-    }
-    break;
-
-    case ACAO_ALERTA:
-    {
-        Recurso *recurso = recursoGet(regra->condicao.evento.recursoID);
-        int estado = recursoGetValor(recurso);
-        ledSetAnim((estado == 1) ? LED_ANIM_ALARM : LED_ANIM_OFF);
     }
     break;
 
@@ -489,8 +495,6 @@ static const char *regraTipoAcaoTxt(TipoAcao acao)
         return "ESTADO";
     case ACAO_TIMER:
         return "TIMER";
-    case ACAO_ALERTA:
-        return "ALERTA";
     default:
         return "ACAO??";
     }
@@ -552,10 +556,6 @@ String regraGetTxt(Regra *r)
         ret += r->acao.recursoID;
         ret += " TIMER:";
         ret += r->acao.timer;
-        break;
-
-    case ACAO_ALERTA:
-        ret += "ALERTA";
         break;
 
     default:
@@ -863,10 +863,6 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
                     doc["acao"]["recurso"].as<const char *>(),
                     sizeof(regra->acao.recursoID));
             regra->acao.timer = doc["acao"]["timer"].as<uint32_t>();
-        }
-        else if (tipoAcaoStr == "ALERTA")
-        {
-            regra->acao.tipo = ACAO_ALERTA;
         }
         else
         {

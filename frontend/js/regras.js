@@ -35,14 +35,14 @@ function regrasRenderFromSnapshot() {
   });
 }
 
-function regraPopulaComboRecursos(comboID, filtro) {
+function regraPopulaComboRecursos(comboID, filtro, addAlerta) {
   if (!filtro) filtro = (r) => true;
-  var options =
-    "<option value=''>Escolha um Recurso</option>\n" +
-    eTomadaData.recursos
-      .filter(filtro)
-      .map((r) => `<option value="${r.id}">${r.tipo} - ${r.nome}</option>`)
-      .join("\n");
+  var options = "<option value=''>Escolha um Recurso</option>\n";
+  if (addAlerta) options += "<option value='__ALERTA__'>Alerta!</option>\n";
+  options += eTomadaData.recursos
+    .filter(filtro)
+    .map((r) => `<option value="${r.id}">${r.tipo} - ${r.nome}</option>`)
+    .join("\n");
 
   document.getElementById(comboID).innerHTML = options;
 }
@@ -130,6 +130,7 @@ function regraOpenEditModal(regraID) {
   regraPopulaComboRecursos(
     "modalRegraAcaoEstadoRecurso",
     (r) => r.tipo == "RELE",
+    true,
   );
   document.getElementById("modalRegraAcaoEstadoRecurso").value =
     regra.acao.recurso;

@@ -21,9 +21,8 @@ enum TipoAcao
 {
     ACAO_ESTADO = 10,
     ACAO_TIMER = 20,
-    ACAO_ALERTA = 30,
-    // ACAO_DELAY = 40, // TODO
-    // ACAO_SCRIPT = 50 // TODO
+    // ACAO_DELAY = 30, // TODO
+    // ACAO_SCRIPT = 40 // TODO
 };
 
 struct Condicao

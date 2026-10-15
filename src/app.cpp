@@ -225,7 +225,7 @@ void appLoop()
     {
       last10Second = timeinfo.tm_sec / 10;
 
-      if (!true) // IF MODO ALERTA Usar o LED só para o Alerta
+      if (!regraTemAlerta())
         ledSetAnim(LED_ANIM_PISCA, 3);
 
       sensoresAtualiza();
