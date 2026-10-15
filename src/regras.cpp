@@ -281,7 +281,17 @@ String regraDisparaAcao(Regra *regra)
         if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoESTADO : Nao eh RELE!";
 
-        if (!recursoSet(acao->recursoID, acao->comando, msg))
+        String comando = acao->comando;
+        if (acao->comando == "FOLLOW")
+        {
+            Recurso *recOrigem = recursoGet(regra->condicao.evento.recursoID);
+            if (!recOrigem)
+                return "dispAcaoESTADO : Origem invalida?";
+            int estadoOrigem = recursoGetValor(recOrigem);
+            comando = estadoOrigem ? "ON" : "OFF";
+        }
+
+        if (!recursoSet(acao->recursoID, comando, msg))
             return msg;
     }
     break;
