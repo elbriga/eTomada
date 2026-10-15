@@ -130,16 +130,13 @@ bool regrasBoot(const char *nodoID)
         logaM(LOG_AVISO, "== regrasBoot(%s) ==", nodoID ? nodoID : "all");
 
         Regra *regraAlerta = regraTemAlerta();
-        if (regraAlerta)
+        if (regraAlerta && regraAlerta->condicao.tipo == COND_EVENTO)
         {
-            if (regraAlerta->condicao.tipo == COND_EVENTO)
+            Recurso *r = recursoGet(regraAlerta->condicao.evento.recursoID);
+            if (r)
             {
-                Recurso *r = recursoGet(regraAlerta->condicao.evento.recursoID);
-                if (r)
-                {
-                    bool alerta = recursoGetValor(r);
-                    ledSetAnim(alerta ? LED_ANIM_ALARM : LED_ANIM_OFF);
-                }
+                bool alerta = recursoGetValor(r);
+                ledSetAnim(alerta ? LED_ANIM_ALARM : LED_ANIM_OFF);
             }
         }
 
