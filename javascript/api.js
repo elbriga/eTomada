@@ -30,7 +30,7 @@ function sseInit() {
     eTomadaRender(snapshot);
   });
 
-  // Refresh de um rele
+  // Refresh de um recurso
   SSE.addEventListener("sse_recurso", (e) => {
     const recurso = JSON.parse(e.data);
     recursoAtualiza(recurso);
