@@ -1,8 +1,8 @@
 
 # WWW
+>> createBundle.sh FAZ:
 rsync -rav /home/gabriel/workspace/eTomada/data/www/* pi:/root/nginx-docker/html/firmware/www/
-cd firmware-server/ && bash geraManifest.sh | pbcopy && cd -
-scp /home/gabriel/workspace/eTomada/firmware-server/eTomada.json pi:/root/nginx-docker/html/firmware/
+scp /home/gabriel/workspace/eTomada/eTomada.json pi:/root/nginx-docker/html/firmware/
 
 # Firmware
 sudo scp .pio/build/lolin/firmware.bin pi:/root/nginx-docker/html/firmware/lolin32_R6S4B1_1.3.9.bin
