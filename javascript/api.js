@@ -17,6 +17,7 @@ function sseInit() {
   SSE.onopen = () => {
     console.log("SSE conectado");
     sseMarkOnline();
+    eTomadaRender();
   };
 
   SSE.onerror = (err) => {

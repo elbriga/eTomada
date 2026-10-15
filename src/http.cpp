@@ -107,27 +107,16 @@ void httpServerInitModoAPI()
   // Eventos de conexão/desconexão
   sse.authorizeConnect([](AsyncWebServerRequest *request)
                        {
-    String remoteIP = request->client()->remoteIP().toString();
-    String clientIP = remoteIP;
-    if (request->hasHeader("CF-Connecting-IP"))
-    {
-      const AsyncWebHeader *forwardedIP = request->getHeader("CF-Connecting-IP");
-      if (forwardedIP && forwardedIP->value().length() > 0)
-        clientIP = forwardedIP->value();
-    }
-
+    bool deFora = false;
+    String clientIP = httpGetClientIP(request, &deFora);
     logaM(LOG_NORMAL, "Cliente SSE conectado de [%s]", clientIP.c_str());
     return true; });
 
-  sse.onConnect([](AsyncEventSourceClient *client)
-                {
-    // Snapshot ao conectar
-    String body = eTomadaGetSnapshotJSON();
-    client->send(body, "sse_snapshot", millis(), 2500); });
-
   httpServer.addHandler(&sse);
 
-  httpServer.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html");
+  httpServer.serveStatic("/", LittleFS, "/www/")
+      .setDefaultFile("index.html");
+  // .setTryGzipFirst(false);
 }
 
 void httpServerInitModoAP()
@@ -220,14 +209,15 @@ AuthClientState &authClientStateFor(const String &ip, uint32_t now)
   return state;
 }
 
-IPAddress httpGetClientIP(AsyncWebServerRequest *request)
+String httpGetClientIP(AsyncWebServerRequest *request, bool *deFora)
 {
-  IPAddress clientIP = request->client()->remoteIP();
+  String clientIP = request->client()->remoteIP().toString();
   if (request->hasHeader("CF-Connecting-IP"))
   {
+    *deFora = true;
     const AsyncWebHeader *forwardedIP = request->getHeader("CF-Connecting-IP");
-    if (forwardedIP && forwardedIP->value().length() > 0)
-      clientIP.fromString(forwardedIP->value());
+    if (forwardedIP && !forwardedIP->value().isEmpty())
+      clientIP = forwardedIP->value();
   }
   return clientIP;
 }
@@ -241,8 +231,9 @@ void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)
   }
 
   // Deixa passar o OPTIONS e os IPs da rede 10.x.x.x (rede local)
-  String clientIP = httpGetClientIP(request).toString();
-  if (request->method() == HTTP_OPTIONS || clientIP.startsWith("10."))
+  bool deFora = false;
+  String clientIP = httpGetClientIP(request, &deFora);
+  if (request->method() == HTTP_OPTIONS || (!deFora && clientIP.startsWith("10.")))
   {
     next();
     return;
@@ -288,7 +279,7 @@ void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)
 void logaRequest(AsyncWebServerRequest *request, String resultado)
 {
   logaM(LOG_NORMAL, "[org:%s] %s %s => [%s]",
-        request->client()->remoteIP().toString(),
+        request->client()->remoteIP().toString().c_str(),
         request->methodToString(),
         request->url().c_str(),
         resultado.c_str());

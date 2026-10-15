@@ -84,6 +84,7 @@ function sseInit() {
   SSE.onopen = () => {
     console.log("SSE conectado");
     sseMarkOnline();
+    eTomadaRender();
   };
 
   SSE.onerror = (err) => {
@@ -97,7 +98,7 @@ function sseInit() {
     eTomadaRender(snapshot);
   });
 
-  // Refresh de um rele
+  // Refresh de um recurso
   SSE.addEventListener("sse_recurso", (e) => {
     const recurso = JSON.parse(e.data);
     recursoAtualiza(recurso);
