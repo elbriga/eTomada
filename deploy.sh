@@ -3,11 +3,10 @@ set -e
 MANIFEST=eTomada.json
 
 PASTA=data/www
-OUT="$PASTA/app.js"
-F1="$PASTA/index.html"
-F2="$PASTA/style.css"
+OUT=$PASTA/index.html
 
-DIRJS=javascript
+BUNDLE=app.js.tmp
+DIRJS=frontend/js
 ARQUIVOS=(
     eTomada.js
     api.js
@@ -20,18 +19,38 @@ ARQUIVOS=(
     regras.js
     umid.js
 )
-# Gerar bundle
+# Gerar bundle JS
 {
     for arq in "${ARQUIVOS[@]}"; do
         echo "/* ===== $arq ===== */"
         cat "$DIRJS/$arq"
         printf '\n;\n\n'
     done
-} > "$OUT"
+} > "$BUNDLE"
+
+# Gerar index.html com CSS e JS embutidos
+CSS_FILE="frontend/style.css" JS_FILE="$BUNDLE" \
+perl -0777 -pe '
+    BEGIN {
+        local $/;
+
+        open my $fh, "<", $ENV{CSS_FILE} or die $!;
+        $css = <$fh>;
+        close $fh;
+
+        open $fh, "<", $ENV{JS_FILE} or die $!;
+        $js = <$fh>;
+        close $fh;
+    }
+
+    s/INSERIR_CSS_AQUI/$css/g;
+    s/INSERIR_JS_AQUI/$js/g;
+' "frontend/index.tpl" > "$OUT"
+
+rm "$BUNDLE"
 
 gzip -9 -k -f "$OUT"
-gzip -9 -k -f "$F1"
-gzip -9 -k -f "$F2"
+gzip -9 -k -f "$PASTA/portal.html"
 
 # Gerar o manifest
 {
@@ -60,10 +79,12 @@ rsync -rav $PASTA/* pi:$PASTAPI/www/
 scp "$MANIFEST" pi:$PASTAPI/
 
 echo
-echo "Bundle gerado"
-echo "Arquivos: ${#ARQUIVOS[@]}"
-du -h "$OUT"
-du -h "$OUT.gz"
-du -h "$F1.gz"
-du -h "$F2.gz"
+echo "$PASTA gerado"
+echo "manifest [$MANIFEST] gerado"
+echo "sync pi"
+echo
+for arq in $PASTA/*; do
+    du -h "$arq"
+done
+du -h "$PASTA"
 echo

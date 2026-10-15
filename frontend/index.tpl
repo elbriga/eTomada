@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>eTomada</title>
+    <style>
+INSERIR_CSS_AQUI
+    </style>
+    <script>
+INSERIR_JS_AQUI
+window.addEventListener("load", eTomadaInit);
+    </script>
+  </head>
+
+  <body>
+    <header>
+      <div class="headerTop">
+        <div>
+          ⚡ eTomada <br />
+          <button onclick="eTomadaRender()" style="width: 120px">
+            🔄 Reload
+          </button>
+          <button onclick="eTomadaBoot()" style="width: 120px">
+            🔄 Conferir Regras
+          </button>
+        </div>
+        <div id="status"></div>
+        <button class="configBtn" onclick="openConfig()">⚙️</button>
+      </div>
+    </header>
+
+    <div class="container" id="painel"></div>
+
+    <div class="container" id="sensores"></div>
+
+    <div class="container" id="reles"></div>
+
+    <div class="container" id="botoes"></div>
+
+    <div class="container" id="umidificador"></div>
+
+    <div class="automacoes">
+      <div class="headerTop">
+        <h2>Automações</h2>
+        <button class="editBtn" onclick="regraOpenEditModal(0)">➕</button>
+      </div>
+      <div class="container" id="regras"></div>
+    </div>
+
+    <footer>
+      <div id="datahora">--</div>
+    </footer>
+
+    <div id="configOverlay" class="overlay" onclick="closeConfig()"></div>
+    <div id="configPanel" class="sidePanel">
+      <div class="sideHeader">
+        <div>⚙️</div>
+        <button onclick="closeConfig()">✖</button>
+      </div>
+      <div id="configContent"></div>
+      <br />
+      <button onclick="salvarConfigGeral()">💾 Salvar Configuração</button>
+      <br /><br />
+      <button onclick="soReset()">🚨 Reset!</button>
+    </div>
+
+    <div id="modalOverlay" class="overlay" onclick="editModalClose()"></div>
+    <div id="editModal" class="modal">
+      <div class="modalHeader">
+        <div id="modalTitle">Editar</div>
+        <button onclick="editModalClose()">✖</button>
+      </div>
+
+      <div class="modalContent">
+        Nome: <input id="modalNome" maxlength="31" size="40" />
+        <div id="modalDivRegra">
+          <label>Condição</label>
+          Tipo:
+          <select id="modalRegraCondicao" onchange="regrasOCModalCondicao()">
+            <option value="">Escolha um Tipo</option>
+            <option value="EVENTO">Eventos</option>
+            <option value="HORARIO">Horário</option>
+            <option value="EXPRESSAO">Expressão</option>
+          </select><br>
+          <div id="divRegraEvento">
+            Recurso: <select id="modalRegraRecursoEvento"></select><br />
+            Evento:
+            <select id="modalRegraEvento">
+              <option value="">Escolha um Evento</option>
+              <option value="ON">Ligou</option>
+              <option value="OFF">Desligou</option>
+              <option value="TOGGLE">Mudou</option>
+              <option value="CLICK">Click!</option>
+              <option value="DUPCLICK">Duplo Click!</option>
+            </select><br>
+          </div>
+          <div id="divRegraHorario">
+            Horário:
+            <select id="modalRegraHora"></select>
+            :
+            <select id="modalRegraMinuto"></select>
+          </div>
+
+          <input type="checkbox" id="modalRegraCheck" onchange="regrasOCModalCheck()"/> Checagem Adicional<br />
+          <div id="divRegraCheck">
+            <select id="modalRegraVar"></select>
+            <select id="modalRegraOperacao" style="width: 60px">
+              <option value="=">=</option>
+              <option value="!=">!=</option>
+              <option value="&gt;">&gt;</option>
+              <option value="&gt;=">&gt;=</option>
+              <option value="&lt;">&lt;</option>
+              <option value="&lt;=">&lt;=</option>
+            </select>
+            <input id="modalRegraVal" maxlength="5" style="width: 60px" />
+          </div>
+
+          <label>Ação</label>
+          Tipo: 
+          <select id="modalRegraAcao" onchange="regrasOCModalAcao()">
+            <option value="ESTADO">Mudar Estado</option>
+            <option value="TIMER">Timer</option>
+            <option value="ALERTA">Modo Alerta</option>
+          </select>
+          <div id="divRegraAcaoEstado">
+            Recurso: <select id="modalRegraAcaoEstadoRecurso"></select><br />
+            Comando:
+            <select id="modalRegraAcaoEstadoComando">
+              <option value="ON">Ligar</option>
+              <option value="OFF">Desligar</option>
+              <option value="TOGGLE">Mudar Estado</option>
+            </select>
+          </div>
+          <div id="divRegraAcaoTimer">
+            Recurso: <select id="modalRegraAcaoTimerRecurso"></select><br>
+            Timer: <input id="modalRegraAcaoTimerTempo" maxlength="10" /><br>
+          </div>
+        </div>
+        <button id="modalSalvarBtn">💾 Salvar</button>
+      </div>
+    </div>
+
+    <div id="offlineOverlay" class="overlay"></div>
+
+    <div id="offlineModal" class="modal">
+      <div class="modalHeader">
+        <div>⚠️ eTomada Offline</div>
+      </div>
+
+      <div class="modalContent">
+        <p>Sem comunicação com o dispositivo.</p>
+
+        <p class="small">Verificando reconexão automaticamente...</p>
+
+        <button onclick="window.location.reload()">🔄 Recarregar Página</button>
+      </div>
+    </div>
+  </body>
+</html>

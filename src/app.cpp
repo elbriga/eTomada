@@ -119,6 +119,20 @@ void appInit()
     }
   }
 
+  // logaM(LOG_AVISO, ">>>>>>> LIMPANDO LIXO!");
+  // LittleFS.remove("/www/js/eTomada.js");
+  // LittleFS.remove("/www/js/api.js");
+  // LittleFS.remove("/www/js/recurso.js");
+  // LittleFS.remove("/www/js/reles.js");
+  // LittleFS.remove("/www/js/sensores.js");
+  // LittleFS.remove("/www/js/botoes.js");
+  // LittleFS.remove("/www/js/config.js");
+  // LittleFS.remove("/www/js/util.js");
+  // LittleFS.remove("/www/js/regras.js");
+  // LittleFS.remove("/www/js/umid.js");
+  // LittleFS.remove("/www/style.css");
+  // LittleFS.remove("/www/style.css.gz");
+
   // Mostrar o status do FS
   {
     size_t total = LittleFS.totalBytes();
