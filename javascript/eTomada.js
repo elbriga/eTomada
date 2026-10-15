@@ -9,8 +9,7 @@ let eTomadaData = null;
 
 function eTomadaInit() {
   sseInit();
-  // Nao precisa Render aqui pois vem o evento sse_snapshot ao conectar
-  // eTomadaRender();
+  eTomadaRender();
 }
 
 async function eTomadaRefresh(snapshot) {
