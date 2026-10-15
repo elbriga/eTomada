@@ -3,11 +3,17 @@ let releEditando = null;
 function releGetCard(recurso) {
   if (recurso.tipo != "RELE") return null;
 
+  let online = true;
+  if (recurso.remoto) {
+    const nodo = eTomadaGetNodo(recurso.nodo);
+    if (nodo && !nodo.online) online = false;
+  }
+
   let rele = recurso.device;
 
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;
-  card.className = "card cardRele" + (recurso.remoto ? " cardRemoto" : "");
+  card.className = `card cardRele${recurso.remoto ? " cardRemoto" : ""}${!online ? " cardOffline" : ""}`;
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">

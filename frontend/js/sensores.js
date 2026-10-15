@@ -3,6 +3,12 @@ let sensorEditando = null;
 function sensorGetCard(recurso) {
   if (recurso.tipo != "SENSOR") return null;
 
+  let online = true;
+  if (recurso.remoto) {
+    const nodo = eTomadaGetNodo(recurso.nodo);
+    if (nodo && !nodo.online) online = false;
+  }
+
   let sensor = recurso.device;
   const tsOK = sensor.status == "OK";
   const card = document.createElement("div");
@@ -12,7 +18,7 @@ function sensorGetCard(recurso) {
       : `${recurso.id} de ${sensor.categoria} ${sensor.tipo}`;
   card.id = `recursoCard-${recurso.id}`;
   card.className =
-    `card cardSensor${!tsOK ? " cardSensorInativo" : ""}` +
+    `card cardSensor${!tsOK || !online ? " cardOffline" : ""}` +
     (recurso.remoto ? " cardRemoto" : "");
   card.innerHTML = `
 <div class="headerTop">

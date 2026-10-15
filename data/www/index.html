@@ -73,7 +73,7 @@ footer {
   background: #5e89ab;
 }
 
-.cardSensorInativo {
+.cardOffline {
   opacity: 0.3;
 }
 
@@ -352,6 +352,10 @@ function eTomadaBoot() {
   eTomadaAPI("boot");
 }
 
+function eTomadaGetNodo(id) {
+  return eTomadaData.nodosRemotos.find((nr) => nr.id === id) || null;
+}
+
 ;
 
 /* ===== api.js ===== */
@@ -529,11 +533,17 @@ let releEditando = null;
 function releGetCard(recurso) {
   if (recurso.tipo != "RELE") return null;
 
+  let online = true;
+  if (recurso.remoto) {
+    const nodo = eTomadaGetNodo(recurso.nodo);
+    if (nodo && !nodo.online) online = false;
+  }
+
   let rele = recurso.device;
 
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;
-  card.className = "card cardRele" + (recurso.remoto ? " cardRemoto" : "");
+  card.className = `card cardRele${recurso.remoto ? " cardRemoto" : ""}${!online ? " cardOffline" : ""}`;
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">
@@ -646,6 +656,12 @@ let sensorEditando = null;
 function sensorGetCard(recurso) {
   if (recurso.tipo != "SENSOR") return null;
 
+  let online = true;
+  if (recurso.remoto) {
+    const nodo = eTomadaGetNodo(recurso.nodo);
+    if (nodo && !nodo.online) online = false;
+  }
+
   let sensor = recurso.device;
   const tsOK = sensor.status == "OK";
   const card = document.createElement("div");
@@ -655,7 +671,7 @@ function sensorGetCard(recurso) {
       : `${recurso.id} de ${sensor.categoria} ${sensor.tipo}`;
   card.id = `recursoCard-${recurso.id}`;
   card.className =
-    `card cardSensor${!tsOK ? " cardSensorInativo" : ""}` +
+    `card cardSensor${!tsOK || !online ? " cardOffline" : ""}` +
     (recurso.remoto ? " cardRemoto" : "");
   card.innerHTML = `
 <div class="headerTop">
@@ -749,11 +765,17 @@ let botaoEditando = null;
 function botaoGetCard(recurso) {
   if (recurso.tipo != "BOTAO") return null;
 
+  let online = true;
+  if (recurso.remoto) {
+    const nodo = eTomadaGetNodo(recurso.nodo);
+    if (nodo && !nodo.online) online = false;
+  }
+
   let botao = recurso.device;
 
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;
-  card.className = "card cardBotao" + (recurso.remoto ? " cardRemoto" : "");
+  card.className = `card cardBotao${recurso.remoto ? " cardRemoto" : ""}${!online ? " cardOffline" : ""}`;
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">
@@ -1434,13 +1456,19 @@ async function regraSetAtiva(regraID, ativa) {
 let umidEditando = null;
 
 function umidGetCard(recurso) {
+  let online = true;
+  if (recurso.remoto) {
+    const nodo = eTomadaGetNodo(recurso.nodo);
+    if (nodo && !nodo.online) online = false;
+  }
+
   const power = recurso.device.estado;
   const fanPower =
     recurso.device.estadoFan == undefined ? -1 : recurso.device.estadoFan;
 
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;
-  card.className = "card cardUmidificador";
+  card.className = `card cardUmidificador${recurso.remoto ? " cardRemoto" : ""}${!online ? " cardOffline" : ""}`;
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">
@@ -1558,7 +1586,7 @@ window.addEventListener("load", eTomadaInit);
             🔄 Reload
           </button>
           <button onclick="eTomadaBoot()" style="width: 120px">
-            🔄 Conferir Regras
+            🔄 Boot
           </button>
         </div>
         <div id="status"></div>

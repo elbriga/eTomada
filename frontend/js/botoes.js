@@ -3,11 +3,17 @@ let botaoEditando = null;
 function botaoGetCard(recurso) {
   if (recurso.tipo != "BOTAO") return null;
 
+  let online = true;
+  if (recurso.remoto) {
+    const nodo = eTomadaGetNodo(recurso.nodo);
+    if (nodo && !nodo.online) online = false;
+  }
+
   let botao = recurso.device;
 
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;
-  card.className = "card cardBotao" + (recurso.remoto ? " cardRemoto" : "");
+  card.className = `card cardBotao${recurso.remoto ? " cardRemoto" : ""}${!online ? " cardOffline" : ""}`;
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">

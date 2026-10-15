@@ -59,3 +59,7 @@ async function eTomadaRender(snapshot) {
 function eTomadaBoot() {
   eTomadaAPI("boot");
 }
+
+function eTomadaGetNodo(id) {
+  return eTomadaData.nodosRemotos.find((nr) => nr.id === id) || null;
+}
