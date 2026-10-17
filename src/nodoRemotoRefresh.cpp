@@ -12,6 +12,8 @@
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("NRREFRH", nivel, fmt, ##__VA_ARGS__)
 
+#define NRR_TIMEOUT_OFFLINE 90 * 1000
+
 std::atomic<bool> nodosRemotosRefreshRodando{false};
 std::atomic<bool> nodosRemotosRefreshRequestOFF{false};
 
@@ -62,7 +64,7 @@ void nodosRemotosRefreshTask(void *args)
       }
 
       uint32_t tempoDesdeUltimoContato = millis() - nodoRemoto->ultimoContato;
-      if (tempoDesdeUltimoContato > 70 * 1000)
+      if (tempoDesdeUltimoContato > NRR_TIMEOUT_OFFLINE)
       {
         if (nodoRemoto->online)
           logaM(LOG_AVISO, "Nodo [%s] OFFLINE!", nodoRemoto->id);
