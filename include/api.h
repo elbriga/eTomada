@@ -6,7 +6,7 @@ void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, si
 void apiSetRecursoConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiEvento(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiMock(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
-void apiGetFile(AsyncWebServerRequest *request);
+void apiFiles(AsyncWebServerRequest *request);
 void apiGetNodo(AsyncWebServerRequest *request);
 void apiAddNodo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiDelNodo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);

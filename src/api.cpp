@@ -117,43 +117,132 @@ void apiMock(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
   logaRequest(request, "200 " + mockOK);
 }
 
-void apiGetFile(AsyncWebServerRequest *request)
+void lsRecursivo(File &pasta, JsonArray files, int &tamanho)
 {
-  if (!request->hasParam("file"))
+  File file = pasta.openNextFile();
+  while (file)
   {
-    request->send(400, "application/json", R"({"msg":"Parametro 'file' obrigatorio"})");
-    logaRequest(request, "400 Missing file");
+    if (file.isDirectory())
+      lsRecursivo(file, files, tamanho);
+    else
+    {
+      JsonObject item = files.add<JsonObject>();
+      item["name"] = file.path();
+      item["size"] = file.size();
+      tamanho += file.size();
+    }
+
+    file.close();
+    file = pasta.openNextFile();
+  }
+}
+
+void apiFiles(AsyncWebServerRequest *request)
+{
+  if (request->hasParam("file"))
+  {
+    String file = request->getParam("file")->value();
+
+    if (file.indexOf("..") >= 0)
+    {
+      request->send(400, "application/json", R"({"msg":"Nome de arquivo invalido"})");
+      logaRequest(request, "400 Invalid file");
+      return;
+    }
+
+    // Garante que o caminho comece com /
+    if (!file.startsWith("/"))
+      file = "/" + file;
+
+    if (!LittleFS.exists(file))
+    {
+      request->send(404, "application/json", R"({"msg":"FNF"})");
+      logaRequest(request, "404 FNF");
+      return;
+    }
+
+    AsyncWebServerResponse *response =
+        request->beginResponse(
+            LittleFS,
+            file,
+            "application/json");
+
+    request->send(response);
+    logaRequest(request, "200 OK");
+  }
+  else if (request->hasParam("del"))
+  {
+    String fileDel = request->getParam("del")->value();
+    if (fileDel.isEmpty() || fileDel.indexOf("..") >= 0)
+    {
+      request->send(400, "application/json", R"({"msg":"Nome de arquivo invalido"})");
+      logaRequest(request, "400 Invalid file");
+      return;
+    }
+    // Garante que o caminho comece com /
+    if (!fileDel.startsWith("/"))
+      fileDel = "/" + fileDel;
+
+    if (fileDel == "/" || !LittleFS.exists(fileDel))
+    {
+      request->send(404, "application/json", R"({"msg":"Arquivo nao encontrado"})");
+      logaRequest(request, "404 Del " + fileDel);
+      return;
+    }
+
+    File arquivo = LittleFS.open(fileDel, "r");
+    bool isDir = arquivo && arquivo.isDirectory();
+    arquivo.close();
+    if (isDir)
+    {
+      request->send(400, "application/json", R"({"msg":"Nao e permitido remover diretorios"})");
+      logaRequest(request, "400 Del diretorio " + fileDel);
+      return;
+    }
+
+    if (!LittleFS.remove(fileDel))
+    {
+      request->send(500, "application/json", R"({"msg":"Erro ao remover!"})");
+      logaRequest(request, "500 Del Err");
+      return;
+    }
+
+    request->send(200, "application/json", R"({"msg":"Arquivo removido"})");
+    logaRequest(request, "200 Del OK " + fileDel);
     return;
   }
-
-  String file = request->getParam("file")->value();
-
-  if (file.indexOf("..") >= 0)
+  else
   {
-    request->send(400, "application/json", R"({"msg":"Nome de arquivo invalido"})");
-    logaRequest(request, "400 Invalid file");
+    // ls
+    File raiz = LittleFS.open("/");
+
+    if (!raiz || !raiz.isDirectory())
+    {
+      request->send(500, "application/json", "{\"error\":\"LittleFS indisponivel\"}");
+      logaRequest(request, "500 LS");
+      return;
+    }
+
+    JsonDocument doc;
+    doc["dir"] = "/";
+    doc["size"] = 0;
+    doc["totFiles"] = 0;
+    JsonArray files = doc["files"].to<JsonArray>();
+
+    int tamanho = 0;
+    lsRecursivo(raiz, files, tamanho);
+    raiz.close();
+
+    doc["size"] = tamanho;
+    doc["totFiles"] = files.size();
+
+    String json;
+    serializeJson(doc, json);
+
+    request->send(200, "application/json", json);
+    logaRequest(request, String("200 LS ") + doc["totFiles"].as<String>() + " files - " + String(tamanho) + " bytes");
     return;
   }
-
-  // Garante que o caminho comece com /
-  if (!file.startsWith("/"))
-    file = "/" + file;
-
-  if (!LittleFS.exists(file))
-  {
-    request->send(404, "application/json", R"({"msg":"FNF"})");
-    logaRequest(request, "404 FNF");
-    return;
-  }
-
-  AsyncWebServerResponse *response =
-      request->beginResponse(
-          LittleFS,
-          file,
-          "application/json");
-
-  request->send(response);
-  logaRequest(request, "200 OK");
 }
 
 void apiAddNodo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
