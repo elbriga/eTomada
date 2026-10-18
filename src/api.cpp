@@ -227,7 +227,7 @@ void apiAddRecursoRemoto(AsyncWebServerRequest *request, uint8_t *data, size_t l
 {
   String addRROK = recursoRemotoAddFromJSON(data);
 
-  // vTaskDelay(pdMS_TO_TICKS(1500)); // Dar tempo do refresh mDNS
+  vTaskDelay(pdMS_TO_TICKS(3000)); // Dar tempo do refresh de Recursos na interface
 
   request->send(200, "application/json", "{\"msg\": \"" + addRROK + "\"}");
   logaRequest(request, "200 " + addRROK);
@@ -237,7 +237,7 @@ void apiDelRecursoRemoto(AsyncWebServerRequest *request, uint8_t *data, size_t l
 {
   String delRROK = recursoRemotoDelFromJSON(data);
 
-  // vTaskDelay(pdMS_TO_TICKS(1500)); // Dar tempo do refresh mDNS
+  vTaskDelay(pdMS_TO_TICKS(3000)); // Dar tempo do refresh de Recursos na interface
 
   request->send(200, "application/json", "{\"msg\": \"" + delRROK + "\"}");
   logaRequest(request, "200 " + delRROK);
