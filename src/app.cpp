@@ -178,7 +178,7 @@ void appLoop()
   // 5ms/5ms
   ledProcessa();
 
-  if (eTomadaGetModoOperacao() == MODO_EM_OTA)
+  if (otaEstaEmAndamento())
   {
     // Congelar tudo menos o LED quando fazendo OTA
     vTaskDelay(pdMS_TO_TICKS(50));

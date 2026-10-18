@@ -9,7 +9,6 @@ typedef enum
 {
     MODO_NO = 0,
     MODO_CONTROLADOR = 1,
-    MODO_EM_OTA = 99,
 } ModoOperacao;
 
 void eTomadaInit0();
@@ -18,7 +17,6 @@ void eTomadaLoadConfig();
 
 ModoOperacao eTomadaGetModoOperacao();
 const char *eTomadaGetModoOperacaoStr();
-void eTomadaSetEmOta();
 
 String eTomadaGetVersao();
 String eTomadaDeviceID();

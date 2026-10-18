@@ -6,6 +6,7 @@
 #include "wifi.h"
 #include "recovery.h"
 #include "api.h"
+#include "ota.h"
 
 #define DEV // TODO :: remover
 
@@ -20,6 +21,7 @@ String httpSenha;
 void httpServerInitModoAP();
 void httpServerInitModoAPI();
 void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next);
+void httpMiddlewareCheckOTA(AsyncWebServerRequest *request, ArMiddlewareNext next);
 
 void httpServerInit()
 {
@@ -72,6 +74,7 @@ void httpServerInit()
 void httpServerInitModoAPI()
 {
   httpServer.addMiddleware(httpMiddlewareAuth);
+  httpServer.addMiddleware(httpMiddlewareCheckOTA);
 
   ArRequestHandlerFunction funcVazia = [](AsyncWebServerRequest *request) {};
 
@@ -83,7 +86,7 @@ void httpServerInitModoAPI()
   httpServer.on("/api/getFile", HTTP_GET, apiGetFile);
   httpServer.on("/api/setRegra", HTTP_PUT, funcVazia, NULL, apiSetRegra);
   httpServer.on("/api/delRegra", HTTP_PUT, funcVazia, NULL, apiDelRegra);
-  httpServer.on("/api/factoryReset", HTTP_POST, apiFactoryReset);
+  httpServer.on("/api/factoryReset", HTTP_DELETE, apiFactoryReset);
   httpServer.on("/api/setConfig", HTTP_POST, funcVazia, NULL, apiSetConfig);
   httpServer.on("/api/checkWWW", HTTP_GET, apiCheckWWW);
   httpServer.on("/api/boot", HTTP_GET, apiRegrasBoot);
@@ -220,6 +223,22 @@ String httpGetClientIP(AsyncWebServerRequest *request, bool *deFora)
       clientIP = forwardedIP->value();
   }
   return clientIP;
+}
+
+void httpMiddlewareCheckOTA(AsyncWebServerRequest *request, ArMiddlewareNext next)
+{
+  if (otaEstaEmAndamento())
+  {
+    bool requestEhOTA = request->url() == "/api/ota" && request->method() == HTTP_POST;
+
+    if (!requestEhOTA)
+    {
+      request->send(503, "text/plain", "OTA em andamento");
+      return;
+    }
+  }
+
+  next();
 }
 
 void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)

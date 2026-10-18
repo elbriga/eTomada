@@ -3,6 +3,8 @@
 
 void otaInit();
 
+bool otaEstaEmAndamento();
+
 bool otaChecaWWW();
 
 void otaUpload(

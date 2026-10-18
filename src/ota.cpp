@@ -1,3 +1,4 @@
+#include <atomic>
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <esp_task_wdt.h>
@@ -26,6 +27,8 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
+std::atomic<bool> otaEmAndamento{false};
+
 static bool otaSupported = false;
 
 bool otaEspSuportaOTA();
@@ -34,9 +37,16 @@ const char *otaGetState();
 
 void otaInit()
 {
+    otaEmAndamento.store(false, std::memory_order_relaxed);
+
     otaSupported = otaEspSuportaOTA();
     if (otaSupported)
         logaM(LOG_NORMAL, "Estado OTA: %s", otaGetState());
+}
+
+bool otaEstaEmAndamento()
+{
+    return otaEmAndamento.load(std::memory_order_relaxed);
 }
 
 bool otaChecaWWW()
@@ -309,7 +319,7 @@ void otaUpload(
             return;
         }
 
-        eTomadaSetEmOta();
+        otaEmAndamento.store(true, std::memory_order_relaxed);
         ledSetAnim(LED_ANIM_BOOT);
     }
 
@@ -400,6 +410,8 @@ void otaUploadHelper(AsyncWebServerRequest *request)
         resposta += "\"}";
 
         request->send(400, "application/json", resposta);
+
+        otaEmAndamento.store(false, std::memory_order_relaxed);
         return;
     }
 

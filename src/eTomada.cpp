@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "3.0.1"
+#define ETOMADA_VERSAO "3.0.2"
 // 1.3.19 - Rede 10 com log server, mac no mDNS,
 // 1.3.20 - endpoint de UPLOAD de Firmware
 // 1.3.21 - sensor de corrent com task propria
@@ -18,6 +18,7 @@
 // 2.0.6  - HTTP Auth + Limite de tentativas
 // 3.0.0  - Del mDNS! Usar DNS .etomada
 // 3.0.1  - Bundle index.html
+// 3.0.2  - Para tudo durante OTA
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -168,11 +169,6 @@ const char *eTomadaGetModoOperacaoStr()
   default:
     return "MODOOPERACAOINVALIDO!";
   }
-}
-
-void eTomadaSetEmOta()
-{
-  modoOperacao = MODO_EM_OTA;
 }
 
 String eTomadaDeviceID()
