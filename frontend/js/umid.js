@@ -20,7 +20,7 @@ function umidGetCard(recurso) {
     <div class="medio">Umid. ${recurso.id}${recurso.remoto ? ` em ${recurso.nodo}` : ""}</div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
-  <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
+  <button class="editBtn" onclick="umidOpenEditModal('${recurso.id}')">✏️</button>
 </div>
 <div class="status">
   <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power == 1 ? 0 : 1}, ${fanPower})">${power == 1 ? "🟢" : "🔴"}</button>
