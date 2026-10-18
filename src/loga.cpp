@@ -12,14 +12,13 @@
 #include "ntp.h"
 #include "prefs.h"
 #include "wifi.h"
+#include "server.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("LOGS", nivel, fmt, ##__VA_ARGS__)
 
 #define LOG_QUEUE_SIZE 32
 #define LOG_MESSAGE_SIZE 512
-
-#define LOG_SERVER "10.0.0.1:8080"
 
 String logServer = "";
 LogLevel logLevel = LOG_NORMAL;
@@ -37,11 +36,6 @@ static QueueHandle_t logQueue = nullptr;
 
 static void logRemotoTask(void *param);
 void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args);
-
-String logaGetLogServer()
-{
-  return logServer;
-}
 
 bool logaRemotoAtivo()
 {
@@ -107,7 +101,7 @@ void logaInit()
   // prefs.putString("logLevel", String(LOG_DEBUG0));
   // prefs.putString("logServer", "192.168.1.220:8080");
   int logLevel = prefs.getString("logLevel", String(LOG_NORMAL)).toInt();
-  logServer = prefs.getString("logServer", LOG_SERVER);
+  logServer = prefs.getString("logServer", ETOMADA_SERVER);
   prefs.end();
 
   logaChangeLevel(logLevel);
