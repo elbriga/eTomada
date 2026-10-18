@@ -13,6 +13,10 @@ function editModalOpen(comRegras) {
 
 function editModalClose() {
   releEditando = null;
+  sensorEditando = null;
+  botaoEditando = null;
+  regraEditando = null;
+  umidEditando = null;
 
   document.getElementById("modalOverlay").classList.remove("open");
   document.getElementById("editModal").classList.remove("open");
