@@ -261,9 +261,9 @@ void apiDelRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size
 
 void apiFactoryReset(AsyncWebServerRequest *request)
 {
-  eTomadaFactoryReset();
+  // eTomadaFactoryReset();
 
-  request->send(200, "application/json", R"({"msg":"OK"})");
+  request->send(200, "application/json", R"({"msg":"TODO"})");
   logaRequest(request, "200 OK");
 }
 
