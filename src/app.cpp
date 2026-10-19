@@ -35,14 +35,6 @@ extern const HardwareProfile hardwareProfile;
 static long ntpSyncTimeTS = 0;
 static bool ntpSyncOKFlag = false; // Flag setada pelo callback do ntp
 
-// Controles do loop principal
-static int lastSecond = -1;
-static int last10Second = -1;
-static int lastMinute = -1;
-static int lastHour = -1;
-static int wifiFora = 0;
-static int lastMsgDBM = -(60 * 60 * 1000); // MSG a cada 1h
-
 void appNtpSetSyncFlag()
 {
   ntpSyncOKFlag = true;
@@ -155,6 +147,13 @@ void appInit()
 
 void appLoop()
 {
+  static int lastSecond = -1;
+  static int last10Second = -1;
+  static int lastMinute = -1;
+  static int lastHour = -1;
+  static int wifiFora = 0;
+  static int lastMsgDBM = -(60 * 60 * 1000); // MSG a cada 1h
+
   esp_task_wdt_reset(); // alimenta o watchdog
 
   bool wifiModoAP = WiFiGetModoAP();
