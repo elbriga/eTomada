@@ -7,6 +7,7 @@
 #include "recovery.h"
 #include "api.h"
 #include "ota.h"
+#include "dnsReverso.h"
 
 #define DEV // TODO :: remover
 
@@ -80,8 +81,8 @@ void httpServerInitModoAPI()
 
   httpServer.on("/api/getSnapshot", HTTP_GET, apiSnapshot);
   httpServer.on("/api/getRecurso", HTTP_GET, apiGetRecurso);
-  httpServer.on("/api/setRecurso", HTTP_PUT, funcVazia, NULL, apiSetRecurso);
-  httpServer.on("/api/setRecursoConfig", HTTP_PUT, funcVazia, NULL, apiSetRecursoConfig);
+  httpServer.on("/api/setRecurso", HTTP_POST, funcVazia, NULL, apiSetRecurso);
+  httpServer.on("/api/setRecursoConfig", HTTP_POST, funcVazia, NULL, apiSetRecursoConfig);
   httpServer.on("/api/mock", HTTP_POST, funcVazia, NULL, apiMock);
   httpServer.on("/api/files", HTTP_POST, funcVazia, NULL, apiFiles);
   httpServer.on("/api/setRegra", HTTP_PUT, funcVazia, NULL, apiSetRegra);
@@ -297,8 +298,10 @@ void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)
 
 void logaRequest(AsyncWebServerRequest *request, String resultado)
 {
+  IPAddress ip = request->client()->remoteIP();
+  String host = dnsReverso(ip);
   logaM(LOG_NORMAL, "[org:%s] %s %s => [%s]",
-        request->client()->remoteIP().toString().c_str(),
+        host.c_str(),
         request->methodToString(),
         request->url().c_str(),
         resultado.c_str());
