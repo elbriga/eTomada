@@ -16,16 +16,16 @@
 #define API_INTERNA_TIMEOUT 1000
 #define API_INTERNA_RESPONSE_MAXLEN 8192
 
-bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String request, JsonDocument *responseOut, String &msgOut);
+bool apiInterna(const char *hostname, IPAddress ip, int port, String endpoint, String metodo, String request, JsonDocument *responseOut, String &msgOut);
 
-bool apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc, String &msgOut)
+bool apiInternaGetSnapshot(const char *hostname, IPAddress ip, JsonDocument &doc, String &msgOut)
 {
-  return apiInterna(ip, 80, "getSnapshot", "GET", "", &doc, msgOut);
+  return apiInterna(hostname, ip, 80, "getSnapshot", "GET", "", &doc, msgOut);
 }
 
-bool apiInternaPing(IPAddress ip, String &msgOut)
+bool apiInternaPing(const char *hostname, IPAddress ip, String &msgOut)
 {
-  bool pingOK = apiInterna(ip, 80, "ping", "GET", "", nullptr, msgOut);
+  bool pingOK = apiInterna(hostname, ip, 80, "ping", "GET", "", nullptr, msgOut);
 
   // TODO :: Atualizar todos e remover!
   if (!pingOK && msgOut == "Erro 404") // Considerar os nodos desatualizados sem o "ping"
@@ -34,7 +34,7 @@ bool apiInternaPing(IPAddress ip, String &msgOut)
   return pingOK;
 }
 
-bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta, String &msgOut)
+bool apiInternaSetRecurso(const char *hostname, IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta, String &msgOut)
 {
   bool ret;
 
@@ -48,13 +48,13 @@ bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idR
     String request;
     serializeJson(requestJson, request);
 
-    ret = apiInterna(ip, 80, "setRecurso", "POST", request, &resposta, msgOut);
+    ret = apiInterna(hostname, ip, 80, "setRecurso", "POST", request, &resposta, msgOut);
   }
   break;
 
   case TIPO_NODO_LITE:
   {
-    ret = apiInterna(ip, 80, String("setRele?id=") + idRemoto + "&estado=" + estado, "GET", "", &resposta, msgOut);
+    ret = apiInterna(hostname, ip, 80, String("setRele?id=") + idRemoto + "&estado=" + estado, "GET", "", &resposta, msgOut);
   }
   break;
 
@@ -66,12 +66,12 @@ bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idR
   return ret;
 }
 
-bool apiInternaEnviaJSON(IPAddress ip, int port, String endpoint, String json, String &msgOut)
+bool apiInternaEnviaJSON(const char *hostname, IPAddress ip, int port, String endpoint, String json, String &msgOut)
 {
-  return apiInterna(ip, port, endpoint, "POST", json, nullptr, msgOut);
+  return apiInterna(hostname, ip, port, endpoint, "POST", json, nullptr, msgOut);
 }
 
-bool apiInternaEnviaJSON(String ipPort, String endpoint, String json, String &msgOut)
+bool apiInternaEnviaJSON(const char *hostname, String ipPort, String endpoint, String json, String &msgOut)
 {
   int port = 80;
   String ipStr = ipPort;
@@ -98,10 +98,10 @@ bool apiInternaEnviaJSON(String ipPort, String endpoint, String json, String &ms
     return false;
   }
 
-  return apiInternaEnviaJSON(ip, port, endpoint, json, msgOut);
+  return apiInternaEnviaJSON(hostname, ip, port, endpoint, json, msgOut);
 }
 
-bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String request, JsonDocument *responseOut, String &msgOut)
+bool apiInterna(const char *hostname, IPAddress ip, int port, String endpoint, String metodo, String request, JsonDocument *responseOut, String &msgOut)
 {
   if (!ip)
   {
@@ -111,7 +111,7 @@ bool apiInterna(IPAddress ip, int port, String endpoint, String metodo, String r
 
   String url = "http://" + ip.toString() + (port != 80 ? ":" + String(port) : "") + "/api/" + endpoint;
   if (endpoint != "ping")
-    logaM(LOG_DEBUG0, "apiInterna: Acionando %s", url.c_str());
+    logaM(LOG_DEBUG0, "apiInterna: %s [%s] %s", metodo.c_str(), hostname, url.c_str());
 
   uint32_t inicio = millis();
 

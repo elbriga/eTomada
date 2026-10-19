@@ -207,10 +207,10 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
   return ret;
 }
 
-bool recursoSetRemoto(IPAddress ip, TipoNodoRemoto tipoNodo, const char *recursoID, const char *idRemoto, String estado, String &msgOut)
+bool recursoSetRemoto(const char *nodoID, IPAddress ip, TipoNodoRemoto tipoNodo, const char *recursoID, const char *idRemoto, String estado, String &msgOut)
 {
   JsonDocument resposta;
-  bool ret = apiInternaSetRecurso(ip, tipoNodo, idRemoto, estado, resposta, msgOut);
+  bool ret = apiInternaSetRecurso(nodoID, ip, tipoNodo, idRemoto, estado, resposta, msgOut);
 
   if (ret && !resposta.isNull())
   {
@@ -267,6 +267,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
   bool remoto = false;
   IPAddress ip;
   TipoNodoRemoto tipoNodo;
+  char nodoID[32];
   char idRemoto[32];
 
   bool enviaToggle = false;
@@ -324,6 +325,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
       // Recursos remotos: guardar copia e soltar o Lock
       ip = recurso->recursoRemoto->nodo->ip;
       tipoNodo = recurso->recursoRemoto->nodo->tipo;
+      strlcpy(nodoID, recurso->recursoRemoto->nodo->id, sizeof(nodoID));
       strlcpy(idRemoto, recurso->recursoRemoto->idRemoto, sizeof(idRemoto));
     }
   }
@@ -331,7 +333,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
   if (remoto)
   {
     // API
-    ret = recursoSetRemoto(ip, tipoNodo, recursoID, idRemoto, estadoFinal, msgOut);
+    ret = recursoSetRemoto(nodoID, ip, tipoNodo, recursoID, idRemoto, estadoFinal, msgOut);
   }
 
   if (ret)

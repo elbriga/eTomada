@@ -20,13 +20,13 @@ void serverInit()
 void serverEnviaEvento(String payloadJSON)
 {
     String msg;
-    if (!apiInternaEnviaJSON(ETOMADA_SERVER, "evento", payloadJSON, msg))
+    if (!apiInternaEnviaJSON("server", ETOMADA_SERVER, "evento", payloadJSON, msg))
         logaM(LOG_AVISO, "Falha ao enviar evento para server [%s]", msg.c_str());
 }
 
 void serverEnviaSnapshot()
 {
     String msg;
-    if (!apiInternaEnviaJSON(ETOMADA_SERVER, "snapshot", eTomadaGetSnapshotJSON(), msg))
+    if (!apiInternaEnviaJSON("server", ETOMADA_SERVER, "snapshot", eTomadaGetSnapshotJSON(), msg))
         logaM(LOG_AVISO, "Falha ao enviar snapshot para server [%s]", msg.c_str());
 }

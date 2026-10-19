@@ -99,7 +99,7 @@ void nodosRemotosRefreshTask(void *args)
       String msg;
       JsonDocument snapshot;
       // HTTP sem o LOCK
-      if (!apiInternaGetSnapshot(ip, snapshot, msg))
+      if (!apiInternaGetSnapshot(nodoID, ip, snapshot, msg))
       {
         logaM(LOG_AVISO, "nodosRemotosRefreshTask > apiIntGetSnapshot > [%s]", msg.c_str());
         snapshot.clear();
@@ -146,7 +146,7 @@ void nodosRemotosRefreshTask(void *args)
 
     // Fazer o PING
     String msg;
-    bool online = apiInternaPing(ip, msg);
+    bool online = apiInternaPing(nodoID, ip, msg);
 
     {
       MutexLock lock(modeloMutex, "nodosRemotosRefreshTask4");

@@ -3,11 +3,11 @@
 
 #include "nodoRemoto.h"
 
-bool apiInternaGetSnapshot(IPAddress ip, JsonDocument &doc, String &msgOut);
+bool apiInternaGetSnapshot(const char *hostname, IPAddress ip, JsonDocument &doc, String &msgOut);
 
-bool apiInternaPing(IPAddress ip, String &msgOut);
+bool apiInternaPing(const char *hostname, IPAddress ip, String &msgOut);
 
-bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta, String &msgOut);
+bool apiInternaSetRecurso(const char *hostname, IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta, String &msgOut);
 
-bool apiInternaEnviaJSON(IPAddress ip, int port, String endpoint, String json, String &msgOut);
-bool apiInternaEnviaJSON(String ipPort, String endpoint, String json, String &msgOut);
+bool apiInternaEnviaJSON(const char *hostname, IPAddress ip, int port, String endpoint, String json, String &msgOut);
+bool apiInternaEnviaJSON(const char *hostname, String ipPort, String endpoint, String json, String &msgOut);

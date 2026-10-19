@@ -89,7 +89,7 @@ void mestreEnviaEvento(String payloadJson)
     }
 
     String msg;
-    if (!apiInternaEnviaJSON(mestre.ip, 80, "evento", payloadJson, msg))
+    if (!apiInternaEnviaJSON(mestre.deviceID.c_str(), mestre.ip, 80, "evento", payloadJson, msg))
     {
         logaM(LOG_AVISO, "Falha ao enviar evento para mestre [%s]", msg.c_str());
         // TODO :: mestre.refreshPendente = true;

@@ -212,7 +212,7 @@ String recursoRemotoAddFromJSON(uint8_t *json)
 
   String msg;
   JsonDocument snapshot;
-  if (apiInternaGetSnapshot(ip, snapshot, msg)) // HTTP sem Lock
+  if (apiInternaGetSnapshot(nodoStr.c_str(), ip, snapshot, msg)) // HTTP sem Lock
   {
     JsonObject cacheRR = recursoRemotoGetFromSnapshot(snapshot, idRemotoStr);
     if (!cacheRR)

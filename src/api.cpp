@@ -400,7 +400,7 @@ void apiGetNodo(AsyncWebServerRequest *request)
     {
       String msg;
       JsonDocument snapshot;
-      if (apiInternaGetSnapshot(ip, snapshot, msg))
+      if (apiInternaGetSnapshot(id.c_str(), ip, snapshot, msg))
         ret["nodo"] = snapshot;
       else
         ret["msg"] = msg;
