@@ -50,7 +50,11 @@ perl -0777 -pe '
 rm "$BUNDLE"
 
 gzip -9 -k -f "$OUT"
-gzip -9 -k -f "$PASTA/portal.html"
+rm "$OUT"
+
+gzip -9 -k -f "frontend/portal.html"
+mv "frontend/portal.html.gz" $PASTA
+
 
 # Gerar o manifest
 {
