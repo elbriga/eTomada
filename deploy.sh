@@ -62,6 +62,7 @@ mv "frontend/portal.html.gz" $PASTA
     echo '{"devices":[],"www":{"arquivos":{'
     first=true
     for file in $PASTA/*; do
+        [ "$file" == "$PASTA/index.html" ] && continue # Arquivo morto só para o Nginx local
         [ -f "$file" ] || continue
 
         hash=$(sha256sum "$file" | awk '{print $1}')
