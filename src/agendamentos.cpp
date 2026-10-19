@@ -60,11 +60,14 @@ void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID,
         return;
     }
 
-    acao->tipo = tipo;
     acao->quando = millis() + timeoutMs;
 
-    strlcpy(acao->recursoID, recursoID, sizeof(acao->recursoID));
-    strlcpy(acao->comando, comando, sizeof(acao->comando));
+    if (recursoID)
+        strlcpy(acao->recursoID, recursoID, sizeof(acao->recursoID));
+    if (comando)
+        strlcpy(acao->comando, comando, sizeof(acao->comando));
+
+    acao->tipo = tipo;
 }
 
 void agendamentosProcessaTask(void *)
