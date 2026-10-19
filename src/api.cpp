@@ -137,22 +137,127 @@ void lsRecursivo(File &pasta, JsonArray files, int &tamanho)
   }
 }
 
-void apiFiles(AsyncWebServerRequest *request)
+bool apiFilesValidaCaminho(String &file)
 {
-  if (request->hasParam("file"))
-  {
-    String file = request->getParam("file")->value();
+  if (file.isEmpty() || file.indexOf("..") >= 0 ||
+      file.indexOf('\\') >= 0)
+    return false;
 
-    if (file.indexOf("..") >= 0)
+  if (!file.startsWith("/"))
+    file = "/" + file;
+
+  return file != "/" && !file.endsWith("/");
+}
+
+void apiFiles(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+{
+  // PUT - Upload binario, em blocos
+  if (request->hasParam("put"))
+  {
+    String filePut = request->getParam("put")->value();
+
+    if (!apiFilesValidaCaminho(filePut))
+    {
+      if (index == 0)
+      {
+        request->send(400, "application/json", R"({"msg":"Nome de arquivo invalido"})");
+        logaRequest(request, "400 PUT Invalid file");
+      }
+      return;
+    }
+
+    // Primeiro bloco: abre arquivo para escrita
+    if (index == 0)
+    {
+      request->_tempFile = LittleFS.open(filePut, "w");
+
+      if (!request->_tempFile)
+      {
+        request->send(500, "application/json", R"({"msg":"Erro ao abrir arquivo"})");
+        logaRequest(request, "500 PUT Open " + filePut);
+        return;
+      }
+    }
+
+    // Abertura ou escrita anterior falhou
+    if (!request->_tempFile)
+      return;
+
+    // Grava bloco recebido
+    if (request->_tempFile.write(data, len) != len)
+    {
+      request->_tempFile.close();
+      LittleFS.remove(filePut);
+
+      request->send(507, "application/json", R"({"msg":"Erro ao gravar arquivo"})");
+      logaRequest(request, "507 PUT Write " + filePut);
+      return;
+    }
+
+    // Ultimo bloco
+    if (index + len == total)
+    {
+      request->_tempFile.close();
+
+      request->send(200, "application/json", R"({"msg":"Arquivo gravado"})");
+      logaRequest(request, "200 PUT " + filePut + " - " + String(total) + " bytes");
+    }
+
+    return;
+  }
+
+  // Operacoes JSON: file, del, ls
+  // Acumula o corpo caso chegue dividido em blocos.
+  constexpr size_t MAX_JSON = 4096;
+
+  if (total > MAX_JSON)
+  {
+    if (index == 0)
+      request->send(413, "application/json", R"({"msg":"JSON muito grande"})");
+    return;
+  }
+
+  if (index == 0)
+    request->_tempObject = malloc(total + 1);
+
+  if (!request->_tempObject)
+  {
+    if (index == 0)
+      request->send(500, "application/json", R"({"msg":"Memoria insuficiente"})");
+    return;
+  }
+
+  if (index > total || len > total - index)
+  {
+    request->send(400, "application/json", R"({"msg":"Corpo HTTP invalido"})");
+    return;
+  }
+
+  memcpy((uint8_t *)request->_tempObject + index, data, len);
+
+  if (index + len < total)
+    return;
+
+  ((char *)request->_tempObject)[total] = '\0';
+
+  JsonDocument doc;
+  if (deserializeJson(doc, (char *)request->_tempObject, total))
+  {
+    logaRequest(request, "400 JSON Invalido");
+    request->send(400, "application/json", R"({"msg":"JSON Invalido"})");
+    return;
+  }
+
+  // GET FILE
+  if (!doc["getFile"].isNull())
+  {
+    String file = doc["getFile"];
+    if (!apiFilesValidaCaminho(file))
     {
       request->send(400, "application/json", R"({"msg":"Nome de arquivo invalido"})");
       logaRequest(request, "400 Invalid file");
       return;
     }
-
-    // Garante que o caminho comece com /
-    if (!file.startsWith("/"))
-      file = "/" + file;
 
     if (!LittleFS.exists(file))
     {
@@ -161,29 +266,24 @@ void apiFiles(AsyncWebServerRequest *request)
       return;
     }
 
-    AsyncWebServerResponse *response =
-        request->beginResponse(
-            LittleFS,
-            file,
-            "application/json");
-
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, file, "application/octet-stream");
     request->send(response);
-    logaRequest(request, "200 OK");
+    logaRequest(request, "200 FILE " + file);
+    return;
   }
-  else if (request->hasParam("del"))
+
+  // DELETE
+  else if (!doc["del"].isNull())
   {
-    String fileDel = request->getParam("del")->value();
-    if (fileDel.isEmpty() || fileDel.indexOf("..") >= 0)
+    String fileDel = doc["del"];
+    if (!apiFilesValidaCaminho(fileDel))
     {
       request->send(400, "application/json", R"({"msg":"Nome de arquivo invalido"})");
       logaRequest(request, "400 Invalid file");
       return;
     }
-    // Garante que o caminho comece com /
-    if (!fileDel.startsWith("/"))
-      fileDel = "/" + fileDel;
 
-    if (fileDel == "/" || !LittleFS.exists(fileDel))
+    if (!LittleFS.exists(fileDel))
     {
       request->send(404, "application/json", R"({"msg":"Arquivo nao encontrado"})");
       logaRequest(request, "404 Del " + fileDel);
@@ -211,36 +311,38 @@ void apiFiles(AsyncWebServerRequest *request)
     logaRequest(request, "200 Del OK " + fileDel);
     return;
   }
+
+  // LS
   else
   {
-    // ls
     File raiz = LittleFS.open("/");
 
     if (!raiz || !raiz.isDirectory())
     {
-      request->send(500, "application/json", "{\"error\":\"LittleFS indisponivel\"}");
+      request->send(500, "application/json", R"({"error":"LittleFS indisponivel"})");
       logaRequest(request, "500 LS");
       return;
     }
 
-    JsonDocument doc;
-    doc["dir"] = "/";
-    doc["size"] = 0;
-    doc["totFiles"] = 0;
-    JsonArray files = doc["files"].to<JsonArray>();
+    JsonDocument docLs;
+    docLs["dir"] = "/";
+    docLs["size"] = 0;
+    docLs["totFiles"] = 0;
+    JsonArray files = docLs["files"].to<JsonArray>();
 
     int tamanho = 0;
     lsRecursivo(raiz, files, tamanho);
     raiz.close();
 
-    doc["size"] = tamanho;
-    doc["totFiles"] = files.size();
+    docLs["size"] = tamanho;
+    docLs["totFiles"] = files.size();
 
     String json;
-    serializeJson(doc, json);
+    serializeJson(docLs, json);
 
     request->send(200, "application/json", json);
-    logaRequest(request, String("200 LS ") + doc["totFiles"].as<String>() + " files - " + String(tamanho) + " bytes");
+    logaRequest(request, "200 LS " + String(files.size()) +
+                             " files - " + String(tamanho) + " bytes");
     return;
   }
 }
