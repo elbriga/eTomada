@@ -48,7 +48,7 @@ bool apiInternaSetRecurso(IPAddress ip, TipoNodoRemoto tipoNodo, const char *idR
     String request;
     serializeJson(requestJson, request);
 
-    ret = apiInterna(ip, 80, "setRecurso", "PUT", request, &resposta, msgOut);
+    ret = apiInterna(ip, 80, "setRecurso", "POST", request, &resposta, msgOut);
   }
   break;
 

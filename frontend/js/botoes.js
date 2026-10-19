@@ -80,7 +80,7 @@ async function botaoSalvarFromModal() {
         id: botaoEditando,
         nome: document.getElementById("modalNome").value,
       },
-      "PUT",
+      "POST",
     );
 
     editModalClose();

@@ -92,7 +92,7 @@ async function sensorSalvarFromModal() {
         id: sensorEditando,
         nome: document.getElementById("modalNome").value,
       },
-      "PUT",
+      "POST",
     );
 
     editModalClose();

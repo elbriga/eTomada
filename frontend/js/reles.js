@@ -88,7 +88,7 @@ async function releSalvarFromModal() {
         id: releEditando,
         nome: document.getElementById("modalNome").value,
       },
-      "PUT",
+      "POST",
     );
 
     editModalClose();
@@ -111,7 +111,7 @@ async function releControla(recursoID, novoEstado, btn) {
         id: recursoID,
         estado: novoEstado ? "ON" : "OFF",
       },
-      "PUT",
+      "POST",
     );
   } catch (e) {
     statusMsg("Erro ao setar: " + e);

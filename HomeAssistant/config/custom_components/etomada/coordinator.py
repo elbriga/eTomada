@@ -181,7 +181,7 @@ class ETomadaCoordinator(DataUpdateCoordinator):
             "id": resource_id,
             "estado": "ON" if state else "OFF",
         }
-        async with session.put(
+        async with session.post(
             f"{self.base_url}/api/setRecurso",
             json=payload,
         ) as response:

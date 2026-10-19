@@ -147,10 +147,10 @@ void appInit()
 
   httpServerInit();
 
-  logaTitulo("Setup OK!");
-
   if (!!regraTemAlerta())
     ledSetAnim(LED_ANIM_OFF);
+
+  logaTitulo("Setup OK!");
 }
 
 void appLoop()

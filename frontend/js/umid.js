@@ -87,7 +87,7 @@ async function umidSalvarFromModal() {
         id: umidEditando,
         nome: document.getElementById("modalNome").value,
       },
-      "PUT",
+      "POST",
     );
 
     editModalClose();
@@ -108,7 +108,7 @@ async function umidificadorSetPower(recursoID, power, powerFan) {
         estado: power,
         estadoFan: powerFan,
       },
-      "PUT",
+      "POST",
     );
   } catch (e) {
     statusMsg(`Erro ao controlar UMID: ` + e);

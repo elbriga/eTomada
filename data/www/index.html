@@ -622,7 +622,7 @@ async function releSalvarFromModal() {
         id: releEditando,
         nome: document.getElementById("modalNome").value,
       },
-      "PUT",
+      "POST",
     );
 
     editModalClose();
@@ -645,7 +645,7 @@ async function releControla(recursoID, novoEstado, btn) {
         id: recursoID,
         estado: novoEstado ? "ON" : "OFF",
       },
-      "PUT",
+      "POST",
     );
   } catch (e) {
     statusMsg("Erro ao setar: " + e);
@@ -749,7 +749,7 @@ async function sensorSalvarFromModal() {
         id: sensorEditando,
         nome: document.getElementById("modalNome").value,
       },
-      "PUT",
+      "POST",
     );
 
     editModalClose();
@@ -846,7 +846,7 @@ async function botaoSalvarFromModal() {
         id: botaoEditando,
         nome: document.getElementById("modalNome").value,
       },
-      "PUT",
+      "POST",
     );
 
     editModalClose();
@@ -1117,6 +1117,10 @@ function editModalOpen(comRegras) {
 
 function editModalClose() {
   releEditando = null;
+  sensorEditando = null;
+  botaoEditando = null;
+  regraEditando = null;
+  umidEditando = null;
 
   document.getElementById("modalOverlay").classList.remove("open");
   document.getElementById("editModal").classList.remove("open");
@@ -1480,7 +1484,7 @@ function umidGetCard(recurso) {
     <div class="medio">Umid. ${recurso.id}${recurso.remoto ? ` em ${recurso.nodo}` : ""}</div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
-  <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
+  <button class="editBtn" onclick="umidOpenEditModal('${recurso.id}')">✏️</button>
 </div>
 <div class="status">
   <button class="editBtn" onclick="umidificadorSetPower('${recurso.id}', ${power == 1 ? 0 : 1}, ${fanPower})">${power == 1 ? "🟢" : "🔴"}</button>
@@ -1547,7 +1551,7 @@ async function umidSalvarFromModal() {
         id: umidEditando,
         nome: document.getElementById("modalNome").value,
       },
-      "PUT",
+      "POST",
     );
 
     editModalClose();
@@ -1568,7 +1572,7 @@ async function umidificadorSetPower(recursoID, power, powerFan) {
         estado: power,
         estadoFan: powerFan,
       },
-      "PUT",
+      "POST",
     );
   } catch (e) {
     statusMsg(`Erro ao controlar UMID: ` + e);
