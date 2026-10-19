@@ -50,7 +50,8 @@ perl -0777 -pe '
 rm "$BUNDLE"
 
 gzip -9 -k -f "$OUT"
-rm "$OUT"
+# Zerar o index.html
+echo "Nginx precisa desse arquivo servir o .gz" > $OUT
 
 gzip -9 -k -f "frontend/portal.html"
 mv "frontend/portal.html.gz" $PASTA
