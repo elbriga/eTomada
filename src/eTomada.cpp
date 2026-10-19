@@ -201,21 +201,6 @@ String eTomadaGetSnapshotJSON()
 {
   JsonDocument doc;
 
-  doc["device_id"] = eTomadaDeviceID(); // Ex.: QUARTO
-  doc["device_model"] = eTomadaDeviceModel();
-  doc["device_board"] = eTomadaDeviceBoard();
-  doc["fw_version"] = eTomadaGetVersao();
-  doc["api"] = "Full";
-
-  doc["mac"] = getMACStr();
-  doc["ip"] = WiFi.localIP().toString();
-  doc["ssid"] = WiFi.SSID();
-  doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
-
-  if (mestreAtivo())
-    doc["mestre"] = mestreGetID();
-
-  doc["uptime"] = millis();
   time_t now = 0;
   time(&now);
   doc["timestamp"] = (unsigned long)now;
@@ -266,6 +251,22 @@ String eTomadaGetSnapshotJSON()
       JsonArray regrasZeradas = doc["regras"].to<JsonArray>();
     }
   }
+
+  doc["device_id"] = eTomadaDeviceID(); // Ex.: QUARTO
+  doc["device_model"] = eTomadaDeviceModel();
+  doc["device_board"] = eTomadaDeviceBoard();
+  doc["fw_version"] = eTomadaGetVersao();
+  doc["api"] = "Full";
+
+  doc["mac"] = getMACStr();
+  doc["ip"] = WiFi.localIP().toString();
+  doc["ssid"] = WiFi.SSID();
+  doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
+
+  if (mestreAtivo())
+    doc["mestre"] = mestreGetID();
+
+  doc["uptime"] = millis();
 
   String out;
   serializeJson(doc, out);
