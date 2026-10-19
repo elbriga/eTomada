@@ -112,6 +112,7 @@ async function nodoInfo(id) {
   </div>
   <div>
     <div id="btnDelNodo-${id}"></div>
+    <button class="editBtn" onclick="nodoOpen('${nodo.id}')">🔗</button>
     <button class="editBtn" onclick="closeCard('${card.id}')">✖</button>
   </div>
 </div>
@@ -164,6 +165,11 @@ Modelo: ${nodo.tipo}<input type="hidden" id="tipoNodo-${id}" value="${nodo.tipo}
   }
 
   document.getElementById(nodoInfoID).innerHTML = htmlInfo;
+}
+
+function nodoOpen(id) {
+  const link = `http://${id}.etomada/`;
+  window.open(link, "_blank");
 }
 
 async function nodoAdd(id) {
