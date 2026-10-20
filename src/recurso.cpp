@@ -259,7 +259,7 @@ bool recursoSetRemoto(const char *nodoID, IPAddress ip, TipoNodoRemoto tipoNodo,
   return ret;
 }
 
-bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaMestre)
+bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaMestre, bool enviaEventos)
 {
   bool ret = false;
 
@@ -347,10 +347,13 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
       agendamentosAdd(AGEND_RECURSO, 1000, recursoID, "OFF");
     }
 
-    // Enviar para o Server somente dos recursos Locais
-    eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre, !remoto);
-    if (enviaToggle)
-      eventoPost(EVENTO_TOGGLE, recursoID, false, false, false); // RELES: Nao envia atualizacoes, mas serve para as regras
+    if (enviaEventos)
+    {
+      bool enviaServer = !remoto; // Enviar para o Server somente dos recursos Locais
+      eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre, enviaServer);
+      if (enviaToggle)
+        eventoPost(EVENTO_TOGGLE, recursoID, false, false, false); // RELES: Nao envia atualizacoes, mas serve para as regras
+    }
   }
 
   return ret;

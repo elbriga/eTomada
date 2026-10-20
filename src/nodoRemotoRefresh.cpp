@@ -166,7 +166,7 @@ void nodosRemotosRefreshTask(void *args)
       {
         if (!nodoRemoto->online)
         {
-          logaM(LOG_AVISO, "Nodo[%s] Ficou Online!", nodoRemoto->id);
+          logaM(LOG_AVISO, "Nodo [%s] Ficou Online!", nodoRemoto->id);
           nodoRemoto->refreshPendente = true;
           nodoRemoto->ultimoTeste = millis() - 30000UL; // para o refresh
         }

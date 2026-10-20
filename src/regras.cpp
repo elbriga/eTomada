@@ -127,7 +127,7 @@ bool regrasBoot(const char *nodoID)
             return false;
         }
 
-        logaM(LOG_AVISO, "== regrasBoot(%s) ==", nodoID ? nodoID : "all");
+        logaM(LOG_DEBUG0, "== regrasBoot(%s) ==", nodoID ? nodoID : "all");
 
         Regra *regraAlerta = regraTemAlerta();
         if (regraAlerta && regraAlerta->condicao.tipo == COND_EVENTO)
@@ -268,6 +268,7 @@ Regra *regraTemAlerta()
 String regraGetTxt(Regra *r);
 String regraDisparaAcao(Regra *regra)
 {
+    // TODO :: Revisar Locks!
     Acao *acao = &regra->acao;
 
     logaM(LOG_NORMAL, ">> Ativando [%s]", regraGetTxt(regra).c_str());
@@ -297,9 +298,25 @@ String regraDisparaAcao(Regra *regra)
         {
             Recurso *recOrigem = recursoGet(regra->condicao.evento.recursoID);
             if (!recOrigem)
-                return "dispAcaoESTADO : Origem invalida?2";
+                return "dispAcaoESTADO FOLLOW : Origem invalida?2";
             int estadoOrigem = recursoGetValor(recOrigem);
             comando = estadoOrigem ? "ON" : "OFF";
+        }
+        else if (acao->comando == "TOGGLEF")
+        {
+            bool estadoDestino = !recursoGetValor(rec);
+            comando = estadoDestino ? "ON" : "OFF";
+
+            Recurso *recOrigem = recursoGet(regra->condicao.evento.recursoID);
+            if (!recOrigem)
+                return "dispAcaoESTADO FOLLOW : Origem invalida?3";
+            bool estadoOrigem = recursoGetValor(rec);
+            if (estadoOrigem != estadoDestino)
+            {
+                // Corrigir o estado do chamador sem gerar eventos
+                String msg2;
+                recursoSet(regra->condicao.evento.recursoID, comando, msg2, false, false);
+            }
         }
 
         if (!recursoSet(acao->recursoID, comando, msg))
@@ -343,6 +360,7 @@ int regrasGetValorPorNome(const char *nomeVar)
 
 void regrasProcessaEvento(Evento e)
 {
+    // TODO :: Revisar Locks!
     String msgDisplay = "";
     for (int r = 0; r < regrasTotal; r++)
     {
