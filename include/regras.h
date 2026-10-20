@@ -54,8 +54,8 @@ struct Acao
 {
     TipoAcao tipo;
     char recursoID[32];
-    String comando; // ACAO_ESTADO
-    uint32_t timer; // ACAO_TIMER
+    char comando[32]; // ACAO_ESTADO
+    uint32_t timer;   // ACAO_TIMER
 };
 
 struct Regra

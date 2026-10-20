@@ -64,6 +64,8 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, String &estadoAtualOut)
     for (int r = 0; r < regrasTotal; r++)
     {
         Regra *regra = &regras[r];
+        if (!regra->ativa || regra->remover)
+            continue;
 
         // Trabalhar com regras de HORARIO
         Condicao *cond = &regra->condicao;
@@ -71,7 +73,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, String &estadoAtualOut)
             continue;
 
         // Trabalhar em cima de ON e OFF
-        if (regra->acao.comando != "ON" && regra->acao.comando != "OFF")
+        if (strcmp(regra->acao.comando, "ON") && strcmp(regra->acao.comando, "OFF"))
             continue;
 
         // Verificar se esta regra age em cima do recurso
@@ -80,7 +82,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, String &estadoAtualOut)
 
         // Verificar se ja passou esse HORARIO
         int minutoRegra = cond->horario.hora * 60 + cond->horario.minuto;
-        if (minutoRegra < minutoAtual)
+        if (minutoRegra <= minutoAtual)
         {
             // Salvar o estado da ultima regra aplicavel
             if (minutoRegra > minutoUltimo)
@@ -122,10 +124,7 @@ bool regrasBoot(const char *nodoID)
     {
         MutexLock lock(modeloMutex, "regrasBoot");
         if (!lock)
-        {
-            logaM(LOG_CRITICO, "regrasBoot: mutex timeout");
             return false;
-        }
 
         logaM(LOG_DEBUG0, "== regrasBoot(%s) ==", nodoID ? nodoID : "all");
 
@@ -265,12 +264,40 @@ Regra *regraTemAlerta()
     return nullptr;
 }
 
-String regraGetTxt(Regra *r);
-String regraDisparaAcao(Regra *regra)
+#define REGRAS_MAX_ACOES_PENDENTES 8
+struct AcaoPendente
 {
-    // TODO :: Revisar Locks!
-    Acao *acao = &regra->acao;
+    int regraID;
+    char regraTxt[128];
+    char recursoID[32];
+    char comando[16];
+    int timerOff;
+    bool enviaEventos;
+};
 
+bool acaoPendenteAdiciona(int &count, AcaoPendente *acoes, Regra *regra, const char *recursoID, const char *comando, int timerOff = 0, bool enviaEventos = true)
+{
+    if (count >= REGRAS_MAX_ACOES_PENDENTES)
+    {
+        logaM(LOG_CRITICO, "Cache de Acoes Pendentes de regras [ESTOUROU!]");
+        return false;
+    }
+
+    acoes[count].regraID = regra->id;
+    strlcpy(acoes[count].regraTxt, regraGetTxt(regra).c_str(), sizeof(acoes[count].regraTxt));
+    strlcpy(acoes[count].recursoID, recursoID, sizeof(acoes[count].recursoID));
+    strlcpy(acoes[count].comando, comando, sizeof(acoes[count].comando));
+    acoes[count].timerOff = timerOff;
+    acoes[count].enviaEventos = enviaEventos;
+
+    count++;
+
+    return true;
+}
+
+String regraAddAcaoCache(Regra *regra, int &count, AcaoPendente *acoes)
+{
+    Acao *acao = &regra->acao;
     logaM(LOG_NORMAL, ">> Ativando [%s]", regraGetTxt(regra).c_str());
 
     String msg;
@@ -285,7 +312,9 @@ String regraDisparaAcao(Regra *regra)
             if (!recAlerta)
                 return "dispAcaoESTADO : Origem invalida?1";
             int estado = recursoGetValor(recAlerta);
-            ledSetAnim(estado ? LED_ANIM_ALARM : LED_ANIM_OFF);
+            // ledSetAnim(estado ? LED_ANIM_ALARM : LED_ANIM_OFF);
+            if (!acaoPendenteAdiciona(count, acoes, regra, "__ALERTA__", estado ? "ON" : "OFF"))
+                return "Erro add AP";
             break;
         }
 
@@ -294,7 +323,7 @@ String regraDisparaAcao(Regra *regra)
             return "dispAcaoESTADO : Nao eh RELE!";
 
         String comando = acao->comando;
-        if (acao->comando == "FOLLOW")
+        if (!strcmp(acao->comando, "FOLLOW"))
         {
             Recurso *recOrigem = recursoGet(regra->condicao.evento.recursoID);
             if (!recOrigem)
@@ -302,7 +331,7 @@ String regraDisparaAcao(Regra *regra)
             int estadoOrigem = recursoGetValor(recOrigem);
             comando = estadoOrigem ? "ON" : "OFF";
         }
-        else if (acao->comando == "TOGGLEF")
+        else if (!strcmp(acao->comando, "TOGGLEF"))
         {
             bool estadoDestino = !recursoGetValor(rec);
             comando = estadoDestino ? "ON" : "OFF";
@@ -310,17 +339,23 @@ String regraDisparaAcao(Regra *regra)
             Recurso *recOrigem = recursoGet(regra->condicao.evento.recursoID);
             if (!recOrigem)
                 return "dispAcaoESTADO FOLLOW : Origem invalida?3";
-            bool estadoOrigem = recursoGetValor(rec);
+            bool estadoOrigem = recursoGetValor(recOrigem);
             if (estadoOrigem != estadoDestino)
             {
                 // Corrigir o estado do chamador sem gerar eventos
-                String msg2;
-                recursoSet(regra->condicao.evento.recursoID, comando, msg2, false, false);
+                // String msg2;
+                // recursoSet(regra->condicao.evento.recursoID, comando, msg2, false, false);
+                if (count < REGRAS_MAX_ACOES_PENDENTES - 1)
+                    acaoPendenteAdiciona(count, acoes, regra, regra->condicao.evento.recursoID, comando.c_str(), 0, false);
+                else
+                    logaM(LOG_CRITICO, "regraAddAcaoCache > TOGGLEF > sem espaço do cache de Acoes para Folow");
             }
         }
 
-        if (!recursoSet(acao->recursoID, comando, msg))
-            return msg;
+        // if (!recursoSet(acao->recursoID, comando, msg))
+        //     return msg;
+        if (!acaoPendenteAdiciona(count, acoes, regra, acao->recursoID, comando.c_str()))
+            return "Erro add AP 3";
     }
     break;
 
@@ -330,17 +365,20 @@ String regraDisparaAcao(Regra *regra)
         if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoTIMER : Nao eh RELE!";
 
-        if (!recursoSet(acao->recursoID, "ON", msg))
-            return msg;
+        // if (!recursoSet(acao->recursoID, "ON", msg))
+        //     return msg;
 
-        // Agendar o OFF
-        agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, acao->recursoID, "OFF");
+        // // Agendar o OFF
+        // agendamentosAdd(AGEND_RECURSO, acao->timer * 1000, acao->recursoID, "OFF");
+
+        if (!acaoPendenteAdiciona(count, acoes, regra, acao->recursoID, "ON", acao->timer))
+            return "Erro add AP TIMER";
     }
     break;
 
     default:
         logaM(LOG_CRITICO, "TODO :: regraDispara[%d] tipo (%d)", regra->id, acao->tipo);
-        break;
+        return "TODO";
     }
 
     return "OK";
@@ -360,92 +398,143 @@ int regrasGetValorPorNome(const char *nomeVar)
 
 void regrasProcessaEvento(Evento e)
 {
-    // TODO :: Revisar Locks!
-    String msgDisplay = "";
-    for (int r = 0; r < regrasTotal; r++)
+    // Limpar o cache
+    int acoesPendentesCount = 0;
+    AcaoPendente acoesPendentes[REGRAS_MAX_ACOES_PENDENTES] = {};
+
+    // Processar o evento dentro do lock
     {
-        Regra *regra = &regras[r];
+        MutexLock lock(modeloMutex, "regrasProcessaEvento");
+        if (!lock)
+            return;
 
-        if (!regra->ativa)
-            continue;
-
-        bool disparaAcao = false;
-
-        // Verificas a condicao
-        Condicao *c = &regra->condicao;
-        if (c->tipo == COND_NENHUMA) // ??
-            continue;
-
-        switch (c->tipo)
+        for (int r = 0; r < regrasTotal; r++)
         {
-        case COND_EVENTO:
-            // Verificar se foi o recurso da regra que gerou o evento
-            if (strcmp(c->evento.recursoID, e.recursoID))
+            Regra *regra = &regras[r];
+
+            if (!regra->ativa || regra->remover)
                 continue;
 
-            if (e.tipo == c->evento.tipo)
-                disparaAcao = true;
-            break;
+            bool disparaAcao = false;
 
-        case COND_HORARIO:
-            if (e.tipo != EVENTO_HORARIO)
+            // Verificas a condicao
+            Condicao *c = &regra->condicao;
+            if (c->tipo == COND_NENHUMA) // ??
+                continue;
+
+            switch (c->tipo)
+            {
+            case COND_EVENTO:
+                // Verificar se foi o recurso da regra que gerou o evento
+                if (strcmp(c->evento.recursoID, e.recursoID))
+                    continue;
+
+                if (e.tipo == c->evento.tipo)
+                    disparaAcao = true;
                 break;
 
-            // Obter horario
-            struct tm timeinfo;
-            sysGetTime(&timeinfo);
-
-            if (timeinfo.tm_hour == c->horario.hora && timeinfo.tm_min == c->horario.minuto)
-            {
-                if (timeinfo.tm_year + 1900 < 2026)
-                {
-                    // Sem data/hora não processa regras de HORARIO
-                    logaM(LOG_AVISO, "Pulando regra[%s] : estamos sem HORA!", regra->nome);
+            case COND_HORARIO:
+                if (e.tipo != EVENTO_HORARIO)
                     break;
+
+                // Obter horario
+                struct tm timeinfo;
+                sysGetTime(&timeinfo);
+
+                if (timeinfo.tm_hour == c->horario.hora && timeinfo.tm_min == c->horario.minuto)
+                {
+                    if (timeinfo.tm_year + 1900 < 2026)
+                    {
+                        // Sem data/hora não processa regras de HORARIO
+                        logaM(LOG_AVISO, "Pulando regra[%s] : estamos sem HORA!", regra->nome);
+                        break;
+                    }
+                    disparaAcao = true;
                 }
-                disparaAcao = true;
-            }
-            break;
+                break;
 
-        default:
-            logaM(LOG_CRITICO, "TODO :: regrasProcessaEvento[%d] condicao.tipo (%d) DESCONHECIDA", regra->id, c->tipo);
-            disparaAcao = false;
-            break;
-        }
-
-        // Verificar o check
-        if (disparaAcao && c->check.variavel[0] != '\0')
-        {
-            int valorVar = regrasGetValorPorNome(c->check.variavel);
-            if (c->check.op[0] == '>')
-                disparaAcao = (c->check.op[1] == '=')
-                                  ? valorVar >= c->check.valor
-                                  : valorVar > c->check.valor;
-            else if (c->check.op[0] == '<')
-                disparaAcao = (c->check.op[1] == '=')
-                                  ? valorVar <= c->check.valor
-                                  : valorVar < c->check.valor;
-            else if (c->check.op[0] == '!')
-                disparaAcao = valorVar != c->check.valor;
-            else if (c->check.op[0] == '=')
-                disparaAcao = valorVar == c->check.valor;
-            else
-            {
-                logaM(LOG_CRITICO, "regrasProcessaEvento[%d] condicao.op (%s) DESCONHECIDA", regra->id, c->check.op);
+            default:
+                logaM(LOG_CRITICO, "TODO :: regrasProcessaEvento[%d] condicao.tipo (%d) DESCONHECIDA", regra->id, c->tipo);
                 disparaAcao = false;
+                break;
             }
-        }
 
-        if (disparaAcao)
-        {
-            // Executar!
-            msgDisplay = regraDisparaAcao(regra);
-            logaM(LOG_NORMAL, "Resultado da Regra[%s]: [%s]", regra->nome, msgDisplay.c_str());
+            // Verificar o check
+            if (disparaAcao && c->check.variavel[0] != '\0')
+            {
+                int valorVar = regrasGetValorPorNome(c->check.variavel);
+                if (c->check.op[0] == '>')
+                    disparaAcao = (c->check.op[1] == '=')
+                                      ? valorVar >= c->check.valor
+                                      : valorVar > c->check.valor;
+                else if (c->check.op[0] == '<')
+                    disparaAcao = (c->check.op[1] == '=')
+                                      ? valorVar <= c->check.valor
+                                      : valorVar < c->check.valor;
+                else if (c->check.op[0] == '!')
+                    disparaAcao = valorVar != c->check.valor;
+                else if (c->check.op[0] == '=')
+                    disparaAcao = valorVar == c->check.valor;
+                else
+                {
+                    logaM(LOG_CRITICO, "regrasProcessaEvento[%d] condicao.op (%s) DESCONHECIDA", regra->id, c->check.op);
+                    disparaAcao = false;
+                }
+            }
+
+            if (disparaAcao)
+            {
+                String msg = regraAddAcaoCache(regra, acoesPendentesCount, acoesPendentes);
+                if (msg != "OK")
+                    logaM(LOG_AVISO, "ERRO > regraProcessaEvento > addAcaoCache > [%s]", msg.c_str());
+            }
         }
     }
 
-    if (msgDisplay != "")
-        displayMostraMsg(msgDisplay.c_str(), 5000, false);
+    // Executar fora do Lock
+    if (acoesPendentesCount > 0)
+    {
+        String msg;
+        for (int i = 0; i < acoesPendentesCount; i++)
+        {
+            AcaoPendente *ap = &acoesPendentes[i];
+
+            // Verificar se regraTxt é igual - usar ID como chave
+            {
+                MutexLock lock(modeloMutex, "regrasProcessaEvento2");
+                if (!lock)
+                    return;
+
+                Regra *regra = regraGet(ap->regraID);
+                if (!regra || !regra->ativa || regra->remover)
+                {
+                    logaM(LOG_AVISO, "Regra [%d] removida ou desativada!", ap->regraID);
+                    continue;
+                }
+
+                String txtNovo = regraGetTxt(regra);
+                if (txtNovo != ap->regraTxt)
+                {
+                    logaM(LOG_AVISO, "Regra [%d] mudou enquanto estavamos fora!", ap->regraID);
+                    continue;
+                }
+            }
+
+            if (!recursoSet(ap->recursoID, ap->comando, msg, ap->enviaEventos, ap->enviaEventos))
+            {
+                logaM(LOG_AVISO, "ERRO regraProcessaEvento > [%s]", msg.c_str());
+                continue;
+            }
+
+            if (ap->timerOff > 0)
+            {
+                // Agendar o OFF
+                agendamentosAdd(AGEND_RECURSO, ap->timerOff * 1000, ap->recursoID, "OFF");
+            }
+
+            logaM(LOG_NORMAL, "Resultado da Regra[%s]: [%s]", ap->regraTxt, msg.c_str());
+        }
+    }
 }
 
 String regraValida(String regra)
@@ -681,13 +770,19 @@ String regraAtualizaFromJSON(uint8_t *json)
     int id = doc["id"].as<int>();
     bool addRegra = (id == 0);
 
-    Regra *regra, novaRegra;
+    MutexLock configLock(configMutex, "regraAtualiza config");
+    if (!configLock)
+        return "Config mutex timeout";
+
+    MutexLock lock(modeloMutex, "regraAtualiza modelo");
+    if (!lock)
+        return "Modelo mutex timeout";
+
+    Regra *regra;
+    Regra novaRegra = {};
 
     if (addRegra)
-    {
-        memset(&novaRegra, 0, sizeof(novaRegra));
         regra = &novaRegra;
-    }
     else
     {
         regra = regraGet(id);
@@ -727,22 +822,32 @@ String regraDeleteFromJSON(uint8_t *json)
     int id = doc["id"].as<int>();
     doc.clear();
 
-    Regra *regra = regraGet(id);
-    if (!regra)
-        return "Regra Invalida";
+    {
+        MutexLock configLock(configMutex, "regraAtualiza config");
+        if (!configLock)
+            return "Config mutex timeout";
 
-    // DEL
-    regra->remover = true;
+        MutexLock lock(modeloMutex, "regraAtualiza modelo");
+        if (!lock)
+            return "Modelo mutex timeout";
 
-    // Le regra->remover
-    String msg = regrasPersiste();
-    if (msg != "OK")
-        return msg;
+        Regra *regra = regraGet(id);
+        if (!regra)
+            return "Regra Invalida";
 
-    // Recarregar as regras
-    msg = regrasLoad(REGRAS_PATH);
-    if (msg != "OK")
-        return "regrasLoad():" + msg;
+        // DEL
+        regra->remover = true;
+
+        // Le regra->remover
+        String msg = regrasPersiste();
+        if (msg != "OK")
+            return msg;
+
+        // Recarregar as regras
+        msg = regrasLoad(REGRAS_PATH);
+        if (msg != "OK")
+            return "regrasLoad():" + msg;
+    }
 
     httpEnviaSSERefresh();
 
@@ -780,10 +885,10 @@ String regrasPersiste(Regra *novaRegra)
 
     file.close();
 
-    LittleFS.rename("/automacoes.json.tmp", "/automacoes.json");
+    if (!LittleFS.rename("/automacoes.json.tmp", "/automacoes.json"))
+        return "ERRO: regrasPersiste:Rename";
 
     logaM(LOG_NORMAL, "Regras Salvas!");
-
     return "OK";
 }
 
@@ -866,17 +971,13 @@ void regraLoadFromJSON(Regra *regra, JsonObject &doc)
         if (tipoAcaoStr == "ESTADO")
         {
             regra->acao.tipo = ACAO_ESTADO;
-            strlcpy(regra->acao.recursoID,
-                    doc["acao"]["recurso"].as<const char *>(),
-                    sizeof(regra->acao.recursoID));
-            regra->acao.comando = doc["acao"]["comando"].as<String>();
+            strlcpy(regra->acao.recursoID, doc["acao"]["recurso"].as<const char *>(), sizeof(regra->acao.recursoID));
+            strlcpy(regra->acao.comando, doc["acao"]["comando"].as<const char *>(), sizeof(regra->acao.comando));
         }
         else if (tipoAcaoStr == "TIMER")
         {
             regra->acao.tipo = ACAO_TIMER;
-            strlcpy(regra->acao.recursoID,
-                    doc["acao"]["recurso"].as<const char *>(),
-                    sizeof(regra->acao.recursoID));
+            strlcpy(regra->acao.recursoID, doc["acao"]["recurso"].as<const char *>(), sizeof(regra->acao.recursoID));
             regra->acao.timer = doc["acao"]["timer"].as<uint32_t>();
         }
         else
