@@ -298,8 +298,17 @@ void httpMiddlewareAuth(AsyncWebServerRequest *request, ArMiddlewareNext next)
 
 void logaRequest(AsyncWebServerRequest *request, String resultado)
 {
-  IPAddress ip = request->client()->remoteIP();
-  String host = dnsReverso(ip);
+  String host;
+  if (request->hasHeader("CF-Connecting-IP"))
+  {
+    const AsyncWebHeader *h = request->getHeader("CF-Connecting-IP");
+    host = h ? h->value() : "tunel";
+  }
+  else
+  {
+    IPAddress ip = request->client()->remoteIP();
+    host = dnsReverso(ip);
+  }
   logaM(LOG_NORMAL, "[org:%s] %s %s => [%s]",
         host.c_str(),
         request->methodToString(),
