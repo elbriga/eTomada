@@ -1,41 +1,49 @@
+
 #include <Arduino.h>
 #include <WiFi.h>
 
-const char *SSID = "GLS";
-const char *PASSWORD = "Lola09876543*";
+#define WIFI_SSID  "GLS"
+#define WIFI_SENHA "Lola09876543*"
 
 void setup()
 {
     Serial.begin(115200);
-    delay(1000);
+    delay(2000);
 
-    Serial.println("\n=== ESP32-C3 STA TEST ===");
+    Serial.println("\nESP32-C3 WiFi Test");
 
     WiFi.mode(WIFI_STA);
-    WiFi.begin(SSID, PASSWORD);
+    WiFi.setSleep(false);
+    WiFi.begin(WIFI_SSID, WIFI_SENHA);
 
-    Serial.print("Conectando");
-
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        delay(500);
-        Serial.print(".");
-    }
-
-    Serial.println();
-    Serial.println("WiFi conectado!");
-    Serial.print("IP: ");
-    Serial.println(WiFi.localIP());
-    Serial.print("Gateway: ");
-    Serial.println(WiFi.gatewayIP());
-    Serial.print("DNS: ");
-    Serial.println(WiFi.dnsIP());
-    Serial.print("RSSI: ");
-    Serial.println(WiFi.RSSI());
+    Serial.printf("Conectando a %s...\n", WIFI_SSID);
 }
 
 void loop()
 {
-    // TODO ping
-    delay(1000);
+    static uint32_t ultimaLeitura = 0;
+
+    if (millis() - ultimaLeitura < 3000)
+        return;
+    ultimaLeitura = millis();
+
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        Serial.printf(
+            "OK IP=%s RSSI=%d dBm MAC=%s\n",
+            WiFi.localIP().toString().c_str(),
+            WiFi.RSSI(),
+            WiFi.macAddress().c_str()
+        );
+    }
+    else
+    {
+        Serial.printf(
+            "Desconectado! Status=%d\n",
+            WiFi.status()
+        );
+
+        // WiFi.disconnect();
+        // WiFi.begin(WIFI_SSID, WIFI_SENHA);
+    }
 }
