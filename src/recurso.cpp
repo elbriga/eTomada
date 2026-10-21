@@ -15,6 +15,7 @@
 #include "util.h"
 #include "umidificador.h"
 #include "eventos.h"
+#include "led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RECURSO", nivel, fmt, ##__VA_ARGS__)
@@ -261,6 +262,13 @@ bool recursoSetRemoto(const char *nodoID, IPAddress ip, TipoNodoRemoto tipoNodo,
 
 bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaMestre, bool enviaEventos)
 {
+  // Recurso virtual __ALERTA__
+  if (!strcmp(recursoID, "__ALERTA__"))
+  {
+    ledSetAnim(estado == "ON" ? LED_ANIM_ALARM : LED_ANIM_OFF);
+    return true;
+  }
+
   bool ret = false;
 
   // Buffer dos dados para não ficar com o Lock durante HTTP
