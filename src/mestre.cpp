@@ -18,6 +18,7 @@ struct Mestre
 {
     String deviceID;
     IPAddress ip;
+    int port;
 };
 Mestre mestre = {};
 
@@ -34,6 +35,12 @@ void mestreInit()
     if (eTomadaGetModoOperacao() != MODO_NO) // TODO : Mestre no MODO_CONTROLADOR tambem?
         return;
 
+    // Migracao mestre > SERVER
+    mestre.deviceID = "SERVER";
+    mestre.ip = IPAddress(10, 0, 0, 1);
+    mestre.port = 8080;
+
+    /*
     Preferences prefs;
     prefs.begin("eTomada", false);
 
@@ -60,8 +67,9 @@ void mestreInit()
         logaM(LOG_CRITICO, "FALHA ao resolver o IP do MESTRE [%s.etomada]", mestre.deviceID.c_str());
         return;
     }
+    */
 
-    logaM(LOG_AVISO, "Nodo Mestre: [%s] @ [%s]", mestre.deviceID.c_str(), mestre.ip.toString().c_str());
+    logaM(LOG_AVISO, "Nodo Mestre: [%s] @ [%s:%d]", mestre.deviceID.c_str(), mestre.ip.toString().c_str(), mestre.port);
 
     // Avisar nosso boot para o mestre
     JsonDocument jsonBoot;
@@ -89,7 +97,7 @@ void mestreEnviaEvento(String payloadJson)
     }
 
     String msg;
-    if (!apiInternaEnviaJSON(mestre.deviceID.c_str(), mestre.ip, 80, "evento", payloadJson, msg))
+    if (!apiInternaEnviaJSON(mestre.deviceID.c_str(), mestre.ip, mestre.port, "evento", payloadJson, msg))
     {
         logaM(LOG_AVISO, "Falha ao enviar evento para mestre [%s]", msg.c_str());
         // TODO :: mestre.refreshPendente = true;
