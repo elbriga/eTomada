@@ -6,7 +6,7 @@
 #include "rele.h"
 #include "sensor.h"
 #include "botao.h"
-#include "recursoRemoto.h"
+#include "umidificador.h"
 #include "tipoRecurso.h"
 #include "eventos.h"
 
@@ -15,14 +15,12 @@ struct Recurso
   char id[32];
   TipoRecurso tipo;
   char nome[32];
-  bool remoto;
   union
   {
     Rele *rele;
     Sensor *sensor;
     Botao *botao;
     Umidificador *umid;
-    RecursoRemoto *recursoRemoto;
   };
 };
 
@@ -33,11 +31,6 @@ void recursosZera();
 Recurso *recursoGet(const char *id);
 Recurso *recursoGetPorIndice(int posicao);
 
-Rele *recursoGetRele(Recurso *r);
-Sensor *recursoGetSensor(Recurso *r);
-Botao *recursoGetBotao(Recurso *recurso);
-Umidificador *recursoGetUmidificador(Recurso *recurso);
-
 // Altera o recurso > acoes
 bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, bool enviaMestre = true);
 bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaMestre = true, bool enviaEventos = true);
@@ -45,7 +38,6 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
 // Atualiza o recurso > eventos
 String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool enviaEventos);
 
-bool recursoSetNextID(RecursoRemoto *rr);
 const char *recursoGetTipoStr(TipoRecurso tipo);
 TipoRecurso recursoGetTipoFromStr(String tipoStr);
 JsonDocument recursoGetJSONDoc(Recurso *r);

@@ -71,7 +71,7 @@ Rele *releGet(int numRele)
 JsonDocument releGetJSONDoc(Recurso *rec, bool full)
 {
   JsonDocument doc;
-  Rele *r = recursoGetRele(rec);
+  Rele *r = rec->rele;
   if (!r)
     return doc;
 
@@ -94,7 +94,7 @@ bool releControla(Recurso *r, bool estado, String &msgOut)
     return false;
   }
 
-  Rele *rele = recursoGetRele(r);
+  Rele *rele = r->rele;
   if (!rele)
   {
     msgOut = "releControla: Rele invalido";

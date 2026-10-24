@@ -70,7 +70,7 @@ struct Regra
 };
 
 void regrasInit();
-bool regrasBoot(const char *nodoID = nullptr);
+bool regrasBoot();
 
 // Sincronização autoritativa das regras locais.
 int regrasSubstituir(JsonDocument &pacote, String &msg);

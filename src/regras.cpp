@@ -127,10 +127,12 @@ typedef struct
 {
     String recursoID, estado;
 } CacheAcao;
-static bool regrasBootOK = false;
-bool regrasBoot(const char *nodoID)
+
+bool regrasBoot()
 {
-    if (regrasBootOK && !nodoID) // Rodar o "all" somente uma vez, mas permitir boot por nodo
+    static bool regrasBootOK = false;
+
+    if (regrasBootOK) // Rodar o "all" somente uma vez
         return true;
 
     // Obter horario
@@ -151,7 +153,7 @@ bool regrasBoot(const char *nodoID)
         if (!lock)
             return false;
 
-        logaM(LOG_DEBUG0, "== regrasBoot(%s) ==", nodoID ? nodoID : "all");
+        logaM(LOG_DEBUG0, "== regrasBoot ==");
 
         Regra *regraAlerta = regraTemAlerta();
         if (regraAlerta && regraAlerta->condicao.tipo == COND_EVENTO)
@@ -165,21 +167,12 @@ bool regrasBoot(const char *nodoID)
         }
 
         // Ajustar o estado dos RELEs conforme as regras de HORARIO para agora
-        bool somenteNodo = nodoID && strlen(nodoID) > 0;
         int totRecursos = recursosGetCount();
         for (int r = 0; r < totRecursos; r++)
         {
             Recurso *recurso = recursoGetPorIndice(r);
             if (recurso->tipo != RECURSO_RELE) // TODO Umid?
                 continue;
-
-            if (somenteNodo) // Verificar as regras somente de 1 nodo se informado
-            {
-                if (!recurso->remoto)
-                    continue;
-                if (strcmp(recurso->recursoRemoto->nodo->id, nodoID))
-                    continue;
-            }
 
             String estadoAtual;
             Regra *regraAtivada = regrasCalculaEstadoAtual(recurso, estadoAtual);
@@ -228,7 +221,7 @@ bool regrasBoot(const char *nodoID)
         }
     }
 
-    if (ret && !nodoID)
+    if (ret)
         regrasBootOK = true;
 
     return ret;
@@ -902,7 +895,7 @@ static bool regraSyncValida(JsonObject regra)
     if (strcmp(destino, "__ALERTA__"))
     {
         Recurso *recurso = recursoGet(destino);
-        if (!recurso || recurso->tipo != RECURSO_RELE || recurso->remoto)
+        if (!recurso || recurso->tipo != RECURSO_RELE)
             return false;
     }
 
@@ -957,9 +950,7 @@ static size_t regrasCapturaEstadosHorario(EstadoHorarioSync *saida, size_t capac
     {
         Recurso *recurso = recursoGetPorIndice(i);
 
-        if (!recurso ||
-            recurso->tipo != RECURSO_RELE ||
-            recurso->remoto)
+        if (!recurso || recurso->tipo != RECURSO_RELE)
             continue;
 
         if (total >= capacidade)

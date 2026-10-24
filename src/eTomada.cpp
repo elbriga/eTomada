@@ -34,14 +34,12 @@
 #include "mutex.h"
 #include "loga.h"
 #include "prefs.h"
-#include "nodoRemotoRefresh.h"
 #include "recurso.h"
 #include "eventos.h"
 #include "agendamentos.h"
 #include "regras.h"
 #include "util.h"
 #include "hardwareProfile.h"
-#include "umidificador.h"
 #include "sensorChuva.h"
 #include "server.h"
 
@@ -197,12 +195,6 @@ String eTomadaGetSnapshotJSON()
       doc["regras"] = regrasJS;
       doc["rules_revision"] = regrasGetRevision();
 
-      if (nodosRemotosGetCount())
-        doc["nodosRemotos"] = nodosRemotosGetJSON(nullptr, true);
-
-      if (nodosRemotosGetNovosCount())
-        doc["novosNodos"] = nodosRemotosGetNovosJSON();
-
       if (sensorChuvaAtivo())
         doc["horasSemChuva"] = sensorChuvaGetHorasSemChuva();
     }
@@ -253,10 +245,6 @@ void eTomadaFactoryReset()
     prefs.end();
 
     prefs.begin("sensores", false);
-    prefs.clear();
-    prefs.end();
-
-    prefs.begin("recursosRemotos", false);
     prefs.clear();
     prefs.end();
   }

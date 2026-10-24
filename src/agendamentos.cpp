@@ -1,7 +1,6 @@
 #include "agendamentos.h"
 #include "recurso.h"
 #include "loga.h"
-// #include "umidificador.h"
 #include "mutex.h"
 
 // Função de log para esta modulo

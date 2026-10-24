@@ -78,7 +78,7 @@ Botao *botaoGet(int num)
 JsonDocument botaoGetJSONDoc(Recurso *r, bool full)
 {
   JsonDocument doc;
-  Botao *b = recursoGetBotao(r);
+  Botao *b = r->botao;
   if (!b)
     return doc;
 
@@ -109,8 +109,6 @@ void botoesAtualiza()
   {
     Recurso *rec = recursoGetPorIndice(r);
     if (rec->tipo != RECURSO_BOTAO)
-      continue;
-    if (rec->remoto)
       continue;
 
     Botao *botao = rec->botao;

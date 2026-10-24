@@ -4,9 +4,7 @@
 
 #include "eTomada.h"
 #include "loga.h"
-#include "nodoRemoto.h"
 #include "recurso.h"
-#include "recursoRemoto.h"
 #include "util.h"
 #include "http.h"
 
@@ -32,38 +30,6 @@ bool apiInternaPing(const char *hostname, IPAddress ip, String &msgOut)
     pingOK = true;
 
   return pingOK;
-}
-
-bool apiInternaSetRecurso(const char *hostname, IPAddress ip, TipoNodoRemoto tipoNodo, const char *idRemoto, String estado, JsonDocument &resposta, String &msgOut)
-{
-  bool ret;
-
-  switch (tipoNodo)
-  {
-  case TIPO_NODO_FULL:
-  {
-    JsonDocument requestJson;
-    requestJson["id"] = idRemoto;
-    requestJson["estado"] = estado;
-    String request;
-    serializeJson(requestJson, request);
-
-    ret = apiInterna(hostname, ip, 80, "setRecurso", "POST", request, &resposta, msgOut);
-  }
-  break;
-
-  case TIPO_NODO_LITE:
-  {
-    ret = apiInterna(hostname, ip, 80, String("setRele?id=") + idRemoto + "&estado=" + estado, "GET", "", &resposta, msgOut);
-  }
-  break;
-
-  default:
-    msgOut = "Nodo não inicializado!";
-    return false;
-  }
-
-  return ret;
 }
 
 bool apiInternaEnviaJSON(const char *hostname, IPAddress ip, int port, String endpoint, String json, String &msgOut)

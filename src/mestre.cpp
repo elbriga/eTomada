@@ -4,7 +4,6 @@
 #include "mestre.h"
 #include "prefs.h"
 #include "loga.h"
-#include "nodoRemoto.h"
 #include "recurso.h"
 #include "apiInterna.h"
 #include "eventos.h"

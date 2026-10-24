@@ -4,8 +4,6 @@
 #include "loga.h"
 #include "util.h"
 #include "regras.h"
-#include "nodoRemoto.h"
-#include "recursoRemoto.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("TESTES", nivel, fmt, ##__VA_ARGS__)

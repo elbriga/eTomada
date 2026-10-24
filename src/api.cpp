@@ -94,16 +94,6 @@ void apiSetRecursoConfig(AsyncWebServerRequest *request, uint8_t *data, size_t l
   logaRequest(request, "200 " + atzCfgOK);
 }
 
-void apiEvento(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-{
-  String atzEventoOK = recursoEventoRecebido(data, request->client()->remoteIP());
-
-  request->send(200, "application/json", "{\"msg\": \"" + atzEventoOK + "\"}");
-
-  if (atzEventoOK != "OK")
-    logaRequest(request, "200 " + atzEventoOK);
-}
-
 void apiMock(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
   String mockOK = eventoMockFromJson(data);
@@ -366,93 +356,6 @@ void apiFiles(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t 
                              " files - " + String(tamanho) + " bytes");
     return;
   }
-}
-
-void apiAddNodo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-{
-  String addNodoOK = nodoRemotoAddFromJSON(data);
-
-  request->send(200, "application/json", "{\"msg\": \"" + addNodoOK + "\"}");
-  logaRequest(request, "200 " + addNodoOK);
-}
-
-void apiDelNodo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-{
-  String delNodoOK = nodoRemotoDelFromJSON(data);
-
-  request->send(200, "application/json", "{\"msg\": \"" + delNodoOK + "\"}");
-  logaRequest(request, "200 " + delNodoOK);
-}
-
-void apiGetNodo(AsyncWebServerRequest *request)
-{
-  JsonDocument ret;
-
-  if (!request->hasParam("id"))
-  {
-    ret["msg"] = "Informe o ID";
-  }
-  else
-  {
-    IPAddress ip;
-    String id = request->getParam("id")->value();
-    {
-      MutexLock lock(modeloMutex, "apiGetNodo");
-      if (!lock)
-      {
-        ret["msg"] = "Erro Mutex!";
-      }
-      else
-      {
-        NodoRemoto *nr = nodoRemotoGet(id.c_str());
-        if (!nr)
-        {
-          ret["msg"] = "Nodo Invalido";
-        }
-        else
-        {
-          ip = nr->ip;
-          ret["msg"] = "OK";
-        }
-      }
-    }
-
-    if (ip)
-    {
-      String msg;
-      JsonDocument snapshot;
-      if (apiInternaGetSnapshot(id.c_str(), ip, snapshot, msg))
-        ret["nodo"] = snapshot;
-      else
-        ret["msg"] = msg;
-    }
-  }
-
-  int code = ret["msg"] == "OK" ? 200 : 400;
-  String body;
-  serializeJson(ret, body);
-  request->send(code, "application/json", body);
-  logaRequest(request, String(code) + " " + ret["msg"].as<String>());
-}
-
-void apiAddRecursoRemoto(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-{
-  String addRROK = recursoRemotoAddFromJSON(data);
-
-  vTaskDelay(pdMS_TO_TICKS(3000)); // Dar tempo do refresh de Recursos na interface
-
-  request->send(200, "application/json", "{\"msg\": \"" + addRROK + "\"}");
-  logaRequest(request, "200 " + addRROK);
-}
-
-void apiDelRecursoRemoto(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-{
-  String delRROK = recursoRemotoDelFromJSON(data);
-
-  vTaskDelay(pdMS_TO_TICKS(3000)); // Dar tempo do refresh de Recursos na interface
-
-  request->send(200, "application/json", "{\"msg\": \"" + delRROK + "\"}");
-  logaRequest(request, "200 " + delRROK);
 }
 
 void apiSetRegras(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)

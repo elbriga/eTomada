@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 #include <nvs.h>
-#include <nvs_flash.h>
 
 #include "eTomada.h"
 #include "mestre.h"
@@ -20,8 +19,6 @@
 #include "shaCache.h"
 #include "umidificador.h"
 #include "led.h"
-#include "sensorChuva.h"
-#include "nodoRemoto.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("APP", nivel, fmt, ##__VA_ARGS__)

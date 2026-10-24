@@ -5,8 +5,6 @@
 #include "loga.h"
 #include "prefs.h"
 #include "recurso.h"
-#include "nodoRemoto.h"
-#include "recursoRemoto.h"
 #include "http.h"
 #include "apiInterna.h"
 #include "eventos.h"
@@ -24,17 +22,15 @@ static Recurso *recursos;
 static int totRecursos = 0;
 int recursoAddCount = 0;
 
-Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id, bool remoto = false);
+Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id);
 
 void recursosInit()
 {
   int totRelesLocais = relesGetCount();
   int totSensoresLocais = sensoresGetCount();
   int totBotoesLocais = botoesGetCount();
-  int totRecursosRemotos = recursosRemotosGetCount();
 
-  totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais + totRecursosRemotos +
-                (umidificadorAtivo() ? 1 : 0);
+  totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais + (umidificadorAtivo() ? 1 : 0);
 
   if (recursos)
     delete[] recursos;
@@ -72,23 +68,13 @@ void recursosInit()
     recurso->botao = botaoGet(b);
   }
 
-  for (int r = 0; r < totRecursosRemotos; r++)
-  {
-    RecursoRemoto *rr = recursoRemotoGetPorIndice(r);
-    Recurso *recurso = recursoAdd(prefs, rr->tipo, rr->idLocal, true);
-    recurso->recursoRemoto = rr;
-  }
-
   if (umidificadorAtivo())
   {
-    Recurso *r = recursoAdd(prefs, RECURSO_UMIDIFICADOR, "UMIDIFICADOR", false);
+    Recurso *r = recursoAdd(prefs, RECURSO_UMIDIFICADOR, "UMIDIFICADOR");
     r->umid = umidificadorGet();
   }
 
   prefs.end();
-
-  // Inicializa nodo->recursosCount
-  nodoRemotoCalcRecursos();
 
   int tot = recursosGetCount();
   for (int r = 0; r < tot; r++)
@@ -106,7 +92,7 @@ void recursoLoadFromPrefs(Recurso *r, Preferences &prefs)
   strlcpy(r->nome, nome.c_str(), sizeof(r->nome));
 }
 
-Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id, bool remoto)
+Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id)
 {
   if (recursoAddCount >= totRecursos)
     utilDIE("recursoAdd!! DIE!!");
@@ -114,7 +100,6 @@ Recurso *recursoAdd(Preferences &prefs, TipoRecurso tipo, const char *id, bool r
   Recurso *r = &recursos[recursoAddCount++];
 
   r->tipo = tipo;
-  r->remoto = remoto;
 
   strlcpy(r->id, id, sizeof(r->id));
 
@@ -171,11 +156,6 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
     msgOut = "Erro recursoSetLocalLocked: Recurso nao eh RELE nem UMID";
     return false;
   }
-  if (recurso->remoto)
-  {
-    msgOut = "Erro recursoSetLocalLocked: recurso remoto!";
-    return false;
-  }
 
   bool ret;
   {
@@ -208,58 +188,6 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
   return ret;
 }
 
-bool recursoSetRemoto(const char *nodoID, IPAddress ip, TipoNodoRemoto tipoNodo, const char *recursoID, const char *idRemoto, String estado, String &msgOut)
-{
-  JsonDocument resposta;
-  bool ret = apiInternaSetRecurso(nodoID, ip, tipoNodo, idRemoto, estado, resposta, msgOut);
-
-  if (ret && !resposta.isNull())
-  {
-    String out;
-    serializeJson(resposta, out);
-    logaM(LOG_AVISO, "ATUALIZAR RECURSO REMOTO com Resposta :::::::: [%s]", out.c_str());
-
-    MutexLock lock(modeloMutex, "recursoSetRemoto");
-    if (!lock)
-      return "recursoSetRemoto: mutex timeout";
-
-    Recurso *recurso = recursoGet(recursoID);
-    if (!recurso)
-      return "recursoSetRemoto: recurso sumiu!";
-
-    switch (recurso->tipo)
-    {
-    case RECURSO_RELE:
-    {
-      if (resposta["recurso"]["device"]["estado"].isNull())
-      {
-        logaM(LOG_AVISO, "CacheJson sem dados do Rele");
-        break;
-      }
-      Rele *rele = recursoGetRele(recurso);
-      rele->estado = resposta["recurso"]["device"]["estado"].as<bool>();
-    }
-    break;
-
-    case RECURSO_UMIDIFICADOR:
-    {
-      if (resposta["recurso"]["device"]["estado"].isNull())
-      {
-        logaM(LOG_AVISO, "CacheJson sem dados do Umid");
-        break;
-      }
-      Umidificador *umid = recursoGetUmidificador(recurso);
-      umid->estado = (UmidificadorEstado)resposta["recurso"]["device"]["estado"].as<int>();
-      if (!resposta["recurso"]["device"]["estadoFan"].isNull())
-        umid->estadoFan = (UmidificadorFanEstado)resposta["recurso"]["device"]["estadoFan"].as<int>();
-    }
-    break;
-    }
-  }
-
-  return ret;
-}
-
 bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaMestre, bool enviaEventos)
 {
   // Recurso virtual __ALERTA__
@@ -270,16 +198,9 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
   }
 
   bool ret = false;
-
-  // Buffer dos dados para não ficar com o Lock durante HTTP
-  bool remoto = false;
-  IPAddress ip;
-  TipoNodoRemoto tipoNodo;
-  char nodoID[32];
-  char idRemoto[32];
-
   bool enviaToggle = false;
   String estadoFinal = estado;
+
   {
     MutexLock lock(modeloMutex, "recursoSet");
     if (!lock)
@@ -307,9 +228,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
 
       if (estado == "TOGGLE")
       {
-        Rele *r = recursoGetRele(recurso);
-        if (!r)
-          return "recursoToggle : RELE invalido";
+        Rele *r = recurso->rele;
         estadoFinal = !r->estado ? "ON" : "OFF";
       }
       else if (estado == "PULSE")
@@ -322,26 +241,8 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
       }
     }
 
-    remoto = recurso->remoto;
-    if (!recurso->remoto)
-    {
-      // Recursos locais: Tratar dentro do Lock
-      ret = recursoSetLocalLocked(recurso, estadoFinal, msgOut);
-    }
-    else
-    {
-      // Recursos remotos: guardar copia e soltar o Lock
-      ip = recurso->recursoRemoto->nodo->ip;
-      tipoNodo = recurso->recursoRemoto->nodo->tipo;
-      strlcpy(nodoID, recurso->recursoRemoto->nodo->id, sizeof(nodoID));
-      strlcpy(idRemoto, recurso->recursoRemoto->idRemoto, sizeof(idRemoto));
-    }
-  }
-
-  if (remoto)
-  {
-    // API
-    ret = recursoSetRemoto(nodoID, ip, tipoNodo, recursoID, idRemoto, estadoFinal, msgOut);
+    // Recursos locais: Tratar dentro do Lock
+    ret = recursoSetLocalLocked(recurso, estadoFinal, msgOut);
   }
 
   if (ret)
@@ -357,8 +258,7 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
 
     if (enviaEventos)
     {
-      bool enviaServer = !remoto; // Enviar para o Server somente dos recursos Locais
-      eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre, enviaServer);
+      eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre, true);
       if (enviaToggle)
         eventoPost(EVENTO_TOGGLE, recursoID, false, false, false); // RELES: Nao envia atualizacoes, mas serve para as regras
     }
@@ -412,34 +312,6 @@ Recurso *recursoGet(const char *id)
   return NULL;
 }
 
-Rele *recursoGetRele(Recurso *recurso)
-{
-  if (recurso->tipo != RECURSO_RELE)
-    return nullptr;
-  return recurso->remoto ? &recurso->recursoRemoto->rele : recurso->rele;
-}
-
-Sensor *recursoGetSensor(Recurso *recurso)
-{
-  if (recurso->tipo != RECURSO_SENSOR)
-    return nullptr;
-  return recurso->remoto ? &recurso->recursoRemoto->sensor : recurso->sensor;
-}
-
-Botao *recursoGetBotao(Recurso *recurso)
-{
-  if (recurso->tipo != RECURSO_BOTAO)
-    return nullptr;
-  return recurso->remoto ? &recurso->recursoRemoto->botao : recurso->botao;
-}
-
-Umidificador *recursoGetUmidificador(Recurso *recurso)
-{
-  if (recurso->tipo != RECURSO_UMIDIFICADOR)
-    return nullptr;
-  return recurso->remoto ? &recurso->recursoRemoto->umid : recurso->umid;
-}
-
 const char *recursoGetTipoStr(TipoRecurso tipo)
 {
   switch (tipo)
@@ -474,29 +346,6 @@ char recursoGetTipoLetra(TipoRecurso tipo)
   }
 }
 
-bool recursoSetNextID(RecursoRemoto *rr)
-{
-  char letra = recursoGetTipoLetra(rr->tipo);
-  char id[32] = {0};
-  Recurso *rec = nullptr;
-
-  for (int r = 1; r < 1000; r++)
-  {
-    sprintf(id, "%c%d", letra, r);
-    rec = recursoGet(id);
-    if (!rec)
-      break;
-  }
-  if (rec)
-  {
-    logaM(LOG_AVISO, "Mais de 1000 recursos?? Oha!");
-    return false;
-  }
-
-  strlcpy(rr->idLocal, id, sizeof(rr->idLocal));
-  return true;
-}
-
 TipoRecurso recursoGetTipoFromStr(String tipoStr)
 {
   if (tipoStr == "RELE")
@@ -519,12 +368,6 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
   doc["id"] = r->id;
   doc["tipo"] = recursoGetTipoStr(r->tipo);
   doc["nome"] = r->nome;
-  doc["remoto"] = r->remoto;
-  if (r->remoto && r->recursoRemoto->nodo)
-  {
-    doc["nodo"] = r->recursoRemoto->nodo->id;
-    doc["idRemoto"] = r->recursoRemoto->idRemoto;
-  }
 
   switch (r->tipo)
   {
@@ -574,21 +417,21 @@ String recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento)
     switch (r->tipo)
     {
     case RECURSO_RELE:
-      device["estado"] = recursoGetRele(r)->estado;
+      device["estado"] = r->rele->estado;
       break;
     case RECURSO_SENSOR:
     {
-      Sensor *s = recursoGetSensor(r);
+      Sensor *s = r->sensor;
       device["valor"] = s->valor;
       device["status"] = s->status;
     }
     break;
     case RECURSO_BOTAO:
-      device["estado"] = recursoGetBotao(r)->estado;
+      device["estado"] = r->botao->estado;
       break;
     case RECURSO_UMIDIFICADOR:
-      device["estado"] = recursoGetUmidificador(r)->estado;
-      device["estadoFan"] = recursoGetUmidificador(r)->estadoFan;
+      device["estado"] = r->umid->estado;
+      device["estadoFan"] = r->umid->estadoFan;
       break;
     }
 
@@ -600,65 +443,13 @@ String recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento)
   return ret;
 }
 
-// Nao manda os eventos recebidos para o Server, quem faz são os nodos remotos
-String recursoEventoRecebido(uint8_t *json, IPAddress ip)
-{
-  JsonDocument doc;
-  if (utilLeJson("recursoEventoRecebido", doc, json))
-    return "JSON Invalido";
-
-  String origem = doc["origem"];
-
-  if (doc["evento"].as<String>() == "BOOT")
-  {
-    String tipo = doc["device"]["tipo"];
-    nodoRemotoEventoBoot(origem.c_str(), tipo.c_str(), ip);
-    doc.clear();
-    return "Bem Vindo!";
-  }
-
-  MutexLock lock(modeloMutex, "recursoEventoRecebido");
-  if (!lock)
-    return "Erro de LOCK!";
-
-  NodoRemoto *nr = nodoRemotoGet(origem.c_str());
-  if (!nr)
-  {
-    doc.clear();
-    return "Nodo Invalido!";
-  }
-
-  String recursoID = doc["id"];
-  int tot = recursosGetCount();
-  for (int r = 0; r < tot; r++)
-  {
-    Recurso *rec = recursoGetPorIndice(r);
-    if (!rec->remoto)
-      continue;
-    if (rec->recursoRemoto->nodo != nr) // TODO :: Melhor testar por ID?
-      continue;
-
-    if (strcmp(recursoID.c_str(), rec->recursoRemoto->idRemoto))
-      continue;
-
-    // logaM(LOG_DEBUG, "Evento recebido! Atualizar recurso [%s @ %s]", rec->id, rec->recursoRemoto->nodo->id);
-    String ret = recursoAtualizaFromJsonLocked(rec, doc["device"], true);
-
-    doc.clear();
-    return ret;
-  }
-
-  doc.clear();
-  return "Recurso [" + recursoID + " @ " + String(nr->id) + "] nao encontrado";
-}
-
 String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool enviaEventos)
 {
   switch (recurso->tipo)
   {
   case RECURSO_RELE:
   {
-    Rele *rele = recursoGetRele(recurso);
+    Rele *rele = recurso->rele;
     bool novoEstado = doc["estado"].as<bool>();
     bool mudou = (rele->estado != novoEstado);
     rele->estado = novoEstado;
@@ -672,7 +463,7 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
 
   case RECURSO_SENSOR:
   {
-    Sensor *sensor = recursoGetSensor(recurso);
+    Sensor *sensor = recurso->sensor;
 
     if (!doc["tipo"].isNull())
       strlcpy(sensor->tipo, doc["tipo"].as<const char *>(), sizeof(sensor->tipo));
@@ -693,7 +484,7 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
 
   case RECURSO_BOTAO:
   {
-    Botao *botao = recursoGetBotao(recurso);
+    Botao *botao = recurso->botao;
     bool novoEstado = doc["estado"].as<bool>();
     bool mudou = (botao->estado != novoEstado);
     botao->estado = novoEstado;
@@ -707,7 +498,7 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
 
   case RECURSO_UMIDIFICADOR:
   {
-    Umidificador *umid = recursoGetUmidificador(recurso);
+    Umidificador *umid = recurso->umid;
     int novoEstado = doc["estado"].as<int>();
     int novoEstadoFan = doc["estadoFan"].as<int>();
 
@@ -791,29 +582,16 @@ int recursoGetValor(Recurso *r)
   switch (r->tipo)
   {
   case RECURSO_RELE:
-  {
-    Rele *rele = recursoGetRele(r);
-    return rele->estado;
-  }
+    return r->rele->estado;
 
   case RECURSO_SENSOR:
-  {
-    Sensor *sensor = recursoGetSensor(r);
-    return sensor->valor;
-  }
+    return r->sensor->valor;
 
   case RECURSO_BOTAO:
-  {
-    Botao *botao = recursoGetBotao(r);
-    return botao->estado;
-  }
+    return r->botao->estado;
 
   case RECURSO_UMIDIFICADOR:
-  {
-    Umidificador *umid = recursoGetUmidificador(r);
-    return umid->estado;
-    // TODO :: e estadoFan?
-  }
+    return r->umid->estado;
 
   default:
     return -999;
@@ -822,7 +600,6 @@ int recursoGetValor(Recurso *r)
 
 void recursoPrint(Recurso *recurso)
 {
-  logaM(LOG_NORMAL, "Recurso%s %s: %s [%s]",
-        recurso->remoto ? " Remoto" : "", recurso->id,
-        recursoGetTipoStr(recurso->tipo), recurso->nome);
+  logaM(LOG_NORMAL, "Recurso %s: %s [%s]",
+        recurso->id, recursoGetTipoStr(recurso->tipo), recurso->nome);
 }

@@ -51,8 +51,12 @@ void sensorChuvaInit()
     return;
   if (rChuva->tipo != RECURSO_SENSOR)
     return;
-  if (!rChuva->remoto) // Ainda não funciona com SENSOR local!
+
+  // TODO : Sensor LOCAL
+  {
+    logaM(LOG_AVISO, "SENSOR DE CHUVA DESATIVADO - TODO sensor local");
     return;
+  }
 
   // Init
   sensorChuva.ativo = true;
@@ -61,8 +65,7 @@ void sensorChuvaInit()
   sensorChuva.debounce = millis();
   sensorChuva.tsInicioSeco = millis() - (3 * 24 * 60 * 60 * 1000); // Nao chove a 72h!
 
-  logaM(LOG_NORMAL, "Inicializando sensor de CHUVA em [%s @ %s]",
-        rChuva->recursoRemoto->idRemoto, rChuva->recursoRemoto->nodo->id);
+  logaM(LOG_NORMAL, "Inicializando sensor de CHUVA");
 }
 
 // Chamado de 10s/10s
@@ -79,7 +82,7 @@ void sensorChuvaLoopLocked()
   }
 
   // Debounce
-  Sensor *s = recursoGetSensor(rChuva);
+  Sensor *s = rChuva->sensor;
   bool leitura = !s->valor ? SENSORCHUVA_MOLHADO : SENSORCHUVA_SECO; // PINO LOW == CHUVA ON
   if (leitura != sensorChuva.ultimoEstado)
   {

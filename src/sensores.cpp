@@ -115,7 +115,7 @@ JsonDocument sensorGetJSONDoc(Recurso *r, bool full)
 {
   JsonDocument doc;
 
-  Sensor *s = recursoGetSensor(r);
+  Sensor *s = r->sensor;
   if (!s)
     return doc;
 
@@ -171,8 +171,6 @@ void sensoresAtualizaTask(void *args)
     {
       Recurso *rec = recursoGetPorIndice(r);
       if (rec->tipo != RECURSO_SENSOR)
-        continue;
-      if (rec->remoto)
         continue;
 
       Sensor *sensor = rec->sensor;

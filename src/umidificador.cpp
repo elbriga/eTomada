@@ -227,7 +227,7 @@ JsonDocument umidificadorGetJSONDoc(Recurso *r, bool full)
 {
   JsonDocument doc;
 
-  Umidificador *u = recursoGetUmidificador(r);
+  Umidificador *u = r->umid;
   if (!u)
     return doc;
 
