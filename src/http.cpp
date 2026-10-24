@@ -92,18 +92,7 @@ void httpServerInitModoAPI()
   httpServer.on("/api/checkWWW", HTTP_GET, apiCheckWWW);
   httpServer.on("/api/boot", HTTP_GET, apiRegrasBoot);
 
-  if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
-  {
-    httpServer.on("/api/evento", HTTP_POST, funcVazia, NULL, apiEvento);
-    httpServer.on("/api/getNodo", HTTP_GET, apiGetNodo);
-    httpServer.on("/api/addNodo", HTTP_PUT, funcVazia, NULL, apiAddNodo);
-    httpServer.on("/api/delNodo", HTTP_PUT, funcVazia, NULL, apiDelNodo);
-    httpServer.on("/api/addRecursoRemoto", HTTP_PUT, funcVazia, NULL, apiAddRecursoRemoto);
-    httpServer.on("/api/delRecursoRemoto", HTTP_PUT, funcVazia, NULL, apiDelRecursoRemoto);
-  }
-
-  httpServer.on("/api/ping", HTTP_GET,
-                [](AsyncWebServerRequest *request)
+  httpServer.on("/api/ping", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->send(204); });
 
   recoveryAPIRegister();

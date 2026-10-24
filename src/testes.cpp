@@ -10,27 +10,12 @@
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("TESTES", nivel, fmt, ##__VA_ARGS__)
 
-void testaOTA();
-void carregaArquivosJsonTeste();
-
-void TESTES()
-{
-    // Remove e altera arquivos para testar a atualização via firmware server
-    // testaOTA();
-
-    if (eTomadaGetModoOperacao() == MODO_CONTROLADOR)
-    {
-        // Carrega os JSON de testes
-        // carregaArquivosJsonTeste();
-    }
-}
-
 void testaOTA()
 {
     // Apaga o arquivo e ele deve baixar de novo:
     LittleFS.remove("/www/favicon.ico.gz");
     // Altera o arquivo e ele deve corrigir
-    File fp = LittleFS.open("/www/js/api.js", FILE_APPEND);
+    File fp = LittleFS.open("/www/index.html", FILE_APPEND);
     if (fp)
     {
         const char *teste = "aaa";
@@ -41,14 +26,8 @@ void testaOTA()
         logaM(LOG_AVISO, "Teste de OTA! Arquivo Faltando!?");
 }
 
-void carregaArquivosJsonTeste()
+void TESTES()
 {
-    logaM(LOG_AVISO, "INICIALIZANDO REGRAS FROM TESTES!!!");
-    utilCopiaArquivo("/config/automacoesTeste.json", REGRAS_PATH);
-
-    logaM(LOG_AVISO, "INICIALIZANDO NODOS REMOTOS FROM TESTES!!!");
-    utilCopiaArquivo("/config/nodosRemotosTeste.json", NODOS_PATH);
-
-    logaM(LOG_AVISO, "INICIALIZANDO RECURSOS REMOTOS FROM TESTES!!!");
-    utilCopiaArquivo("/config/recursosRemotosTeste.json", RECURSOS_REMOTOS_PATH);
+    // Remove e altera arquivos para testar a atualização via firmware server
+    // testaOTA();
 }

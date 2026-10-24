@@ -32,9 +32,6 @@ void mestreInit()
     mestre.deviceID = "";
     mestre.ip = IPAddress();
 
-    if (eTomadaGetModoOperacao() != MODO_NO) // TODO : Mestre no MODO_CONTROLADOR tambem?
-        return;
-
     // Migracao mestre > SERVER
     mestre.deviceID = "SERVER";
     mestre.ip = IPAddress(10, 0, 0, 1);

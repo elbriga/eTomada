@@ -51,9 +51,6 @@
 // Hardware Profile - um para cada placa
 extern const HardwareProfile hardwareProfile;
 
-// Modo de Operação
-ModoOperacao modoOperacao = MODO_NO;
-
 String deviceID;
 String eTomadaDeviceIDPadrao();
 void TESTES(); // testes.cpp
@@ -66,22 +63,16 @@ void eTomadaInit0()
   prefs.begin("eTomada", false);
 
   // Para testes
-  // prefs.putUChar("modo", MODO_CONTROLADOR);
   // prefs.putString("deviceID", "QUARTO"); // Nao pode ser maior que 32 chars
-
-  if (!prefs.isKey("modo"))
-    prefs.putUChar("modo", MODO_NO);
-  modoOperacao =
-      (prefs.getUChar("modo") == MODO_CONTROLADOR) ? MODO_CONTROLADOR : MODO_NO;
 
   if (!prefs.isKey("deviceID"))
     prefs.putString("deviceID", eTomadaDeviceIDPadrao());
+
   deviceID = prefs.getString("deviceID");
 
   logaM(LOG_NORMAL, "DeviceID: %s", deviceID.c_str());
   logaM(LOG_NORMAL, "Board: %s", hardwareProfile.board);
   logaM(LOG_NORMAL, "Modelo: %s", hardwareProfile.modelo);
-  logaM(LOG_NORMAL, "Modo de Operação: %s", eTomadaGetModoOperacaoStr());
   logaM(LOG_NORMAL, "MAC: %s", getMACStr().c_str());
 
   prefs.end();
@@ -109,9 +100,6 @@ void eTomadaInit()
 static int configLoadCount = 0;
 void eTomadaLoadConfig()
 {
-  if (modoOperacao == MODO_CONTROLADOR)
-    nodosRemotosRefreshCtl(false);
-
   MutexLock configLock(configMutex, "eTomadaLoadConfig config");
   if (!configLock)
   {
@@ -129,15 +117,6 @@ void eTomadaLoadConfig()
 
     logaM(LOG_AVISO, ">>> eTomadaLoadConfig[%d]", configLoadCount);
 
-    if (modoOperacao == MODO_CONTROLADOR)
-    {
-      logaM(LOG_NORMAL, "%sInicializando Nodos Remotos:", configLoadCount ? "(RE)" : "");
-      nodoRemotoInit();
-
-      logaM(LOG_NORMAL, "%sInicializando Recursos Remotos:", configLoadCount ? "(RE)" : "");
-      recursosRemotosInit();
-    }
-
     logaM(LOG_NORMAL, "%sInicializando Recursos:", configLoadCount ? "(RE)" : "");
     recursosInit();
 
@@ -152,27 +131,6 @@ void eTomadaLoadConfig()
 
   // Regras Boot fora do Lock de reursos, mas dentro do lock de config
   regrasBoot();
-
-  if (modoOperacao == MODO_CONTROLADOR)
-    nodosRemotosRefreshCtl(true);
-}
-
-ModoOperacao eTomadaGetModoOperacao()
-{
-  return modoOperacao;
-}
-
-const char *eTomadaGetModoOperacaoStr()
-{
-  switch (modoOperacao)
-  {
-  case MODO_CONTROLADOR:
-    return "CONTROLADOR";
-  case MODO_NO:
-    return "NÓ";
-  default:
-    return "MODOOPERACAOINVALIDO!";
-  }
 }
 
 String eTomadaDeviceID()
