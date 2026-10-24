@@ -16,55 +16,9 @@
 
 bool apiInterna(const char *hostname, IPAddress ip, int port, String endpoint, String metodo, String request, JsonDocument *responseOut, String &msgOut);
 
-bool apiInternaGetSnapshot(const char *hostname, IPAddress ip, JsonDocument &doc, String &msgOut)
-{
-  return apiInterna(hostname, ip, 80, "getSnapshot", "GET", "", &doc, msgOut);
-}
-
-bool apiInternaPing(const char *hostname, IPAddress ip, String &msgOut)
-{
-  bool pingOK = apiInterna(hostname, ip, 80, "ping", "GET", "", nullptr, msgOut);
-
-  // TODO :: Atualizar todos e remover!
-  if (!pingOK && msgOut == "Erro 404") // Considerar os nodos desatualizados sem o "ping"
-    pingOK = true;
-
-  return pingOK;
-}
-
 bool apiInternaEnviaJSON(const char *hostname, IPAddress ip, int port, String endpoint, String json, String &msgOut)
 {
   return apiInterna(hostname, ip, port, endpoint, "POST", json, nullptr, msgOut);
-}
-
-bool apiInternaEnviaJSON(const char *hostname, String ipPort, String endpoint, String json, String &msgOut)
-{
-  int port = 80;
-  String ipStr = ipPort;
-
-  const int pos = ipPort.indexOf(':');
-  if (pos >= 0)
-  {
-    String portStr = ipPort.substring(pos + 1);
-    int p = portStr.toInt();
-    if (p <= 0 || p > 65535)
-    {
-      msgOut = "Porta invalida";
-      return false;
-    }
-
-    ipStr = ipPort.substring(0, pos);
-    port = p;
-  }
-
-  IPAddress ip;
-  if (!ip.fromString(ipStr))
-  {
-    msgOut = "IP invalido";
-    return false;
-  }
-
-  return apiInternaEnviaJSON(hostname, ip, port, endpoint, json, msgOut);
 }
 
 bool apiInterna(const char *hostname, IPAddress ip, int port, String endpoint, String metodo, String request, JsonDocument *responseOut, String &msgOut)
@@ -76,8 +30,8 @@ bool apiInterna(const char *hostname, IPAddress ip, int port, String endpoint, S
   }
 
   String url = "http://" + ip.toString() + (port != 80 ? ":" + String(port) : "") + "/api/" + endpoint;
-  if (endpoint != "ping")
-    logaM(LOG_DEBUG0, "apiInterna: %s [%s] %s", metodo.c_str(), hostname, url.c_str());
+
+  logaM(LOG_DEBUG0, "apiInterna: %s [%s] %s", metodo.c_str(), hostname, url.c_str());
 
   uint32_t inicio = millis();
 
@@ -110,7 +64,7 @@ bool apiInterna(const char *hostname, IPAddress ip, int port, String endpoint, S
 
   esp_task_wdt_reset(); // alimenta o watchdog
 
-  if (code < 0 && endpoint != "ping")
+  if (code < 0)
     logaM(LOG_AVISO, "Falha HTTP [%s]: %s (%d)",
           url.c_str(),
           http.errorToString(code).c_str(),
@@ -188,8 +142,7 @@ bool apiInterna(const char *hostname, IPAddress ip, int port, String endpoint, S
 
   http.end();
 
-  if (endpoint != "ping")
-    logaM(LOG_DEBUG0, "Duracao HTTP [%s]: [%d ms]", url.c_str(), millis() - inicio);
+  logaM(LOG_DEBUG0, "Duracao HTTP [%s]: [%d ms]", url.c_str(), millis() - inicio);
 
   bool OK = (code == 200 || code == 204);
   msgOut = responseOut && !(*responseOut)["msg"].isNull()

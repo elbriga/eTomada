@@ -11,7 +11,6 @@
 #include "agendamentos.h"
 #include "util.h"
 #include "umidificador.h"
-#include "eventos.h"
 #include "led.h"
 
 // Função de log para esta modulo
@@ -440,90 +439,6 @@ String recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento)
   }
 
   return ret;
-}
-
-String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool enviaEventos)
-{
-  switch (recurso->tipo)
-  {
-  case RECURSO_RELE:
-  {
-    Rele *rele = recurso->rele;
-    bool novoEstado = doc["estado"].as<bool>();
-    bool mudou = (rele->estado != novoEstado);
-    rele->estado = novoEstado;
-    if (enviaEventos && mudou)
-    {
-      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, false);
-      eventoPost(EVENTO_TOGGLE, recurso->id, false, false);
-    }
-  }
-  break;
-
-  case RECURSO_SENSOR:
-  {
-    Sensor *sensor = recurso->sensor;
-
-    if (!doc["tipo"].isNull())
-      strlcpy(sensor->tipo, doc["tipo"].as<const char *>(), sizeof(sensor->tipo));
-    if (!doc["categoria"].isNull())
-      strlcpy(sensor->categoria, doc["categoria"].as<const char *>(), sizeof(sensor->categoria));
-    if (!doc["unidade"].isNull())
-      strlcpy(sensor->unidade, doc["unidade"].as<const char *>(), sizeof(sensor->unidade));
-    if (!doc["status"].isNull())
-      strlcpy(sensor->status, doc["status"].as<const char *>(), sizeof(sensor->status));
-
-    int novoValor = doc["valor"].as<int>();
-    bool mudou = (sensor->valor != novoValor);
-    sensor->valor = novoValor;
-    if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, false);
-  }
-  break;
-
-  case RECURSO_BOTAO:
-  {
-    Botao *botao = recurso->botao;
-    bool novoEstado = doc["estado"].as<bool>();
-    bool mudou = (botao->estado != novoEstado);
-    botao->estado = novoEstado;
-    if (enviaEventos && mudou)
-    {
-      eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso->id, true, false);
-      eventoPost(EVENTO_TOGGLE, recurso->id, false, false);
-    }
-  }
-  break;
-
-  case RECURSO_UMIDIFICADOR:
-  {
-    Umidificador *umid = recurso->umid;
-    int novoEstado = doc["estado"].as<int>();
-    int novoEstadoFan = doc["estadoFan"].as<int>();
-
-    bool mudou = false;
-
-    if (novoEstado >= UMID_DESLIGADO && novoEstado <= UMID_POWER5)
-    {
-      if (umid->estado != novoEstado)
-        mudou = true;
-      umid->estado = (UmidificadorEstado)novoEstado;
-    }
-
-    if (novoEstadoFan >= UMIDFAN_DESLIGADO && novoEstadoFan <= UMIDFAN_POWER3)
-    {
-      if (umid->estadoFan != novoEstadoFan)
-        mudou = true;
-      umid->estadoFan = (UmidificadorFanEstado)novoEstadoFan;
-    }
-
-    if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, false);
-  }
-  break;
-  }
-
-  return "OK";
 }
 
 String recursoAtualizaConfigFromJSON(uint8_t *json)

@@ -84,6 +84,4 @@ Regra *regraGetPorRecurso(const char *idLocalRecurso);
 
 void regrasProcessaEvento(Evento e);
 
-String regraValida(String regra);
-
 void regraPrint(Regra *r);

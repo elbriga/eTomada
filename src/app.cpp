@@ -18,7 +18,6 @@
 #include "memoria.h"
 #include "shaCache.h"
 #include "umidificador.h"
-#include "led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("APP", nivel, fmt, ##__VA_ARGS__)
@@ -62,7 +61,7 @@ void appInit()
 
   shaInit();
 
-  // Inicializar MODO DE OPERAÇÃO e o deviceID
+  // Inicializar o deviceID
   eTomadaInit0();
 
   logaM(LOG_NORMAL, "Flash: %u MB", ESP.getFlashChipSize() / (1024 * 1024));

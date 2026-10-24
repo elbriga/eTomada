@@ -35,9 +35,6 @@ Recurso *recursoGetPorIndice(int posicao);
 bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, bool enviaEventos = true);
 bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaEventos = true);
 
-// Atualiza o recurso > eventos
-String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool enviaEventos);
-
 const char *recursoGetTipoStr(TipoRecurso tipo);
 TipoRecurso recursoGetTipoFromStr(String tipoStr);
 JsonDocument recursoGetJSONDoc(Recurso *r);

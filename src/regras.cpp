@@ -31,7 +31,6 @@ static char regrasRevision[65] = {};
 String regrasLoad(const char *path);
 String regraGetTxt(Regra *r);
 void regraLoadFromJSON(Regra *regra, JsonObject &doc);
-String regrasPersiste(Regra *novaRegra = nullptr);
 
 void regrasInit()
 {
@@ -561,16 +560,6 @@ void regrasProcessaEvento(Evento e)
     }
 }
 
-String regraValida(String regra)
-{
-    if (regra == "")
-    {
-        return "OK";
-    }
-
-    return "TODO";
-}
-
 static const char *regraTipoEventoTxt(TipoEvento evento)
 {
     switch (evento)
@@ -783,44 +772,6 @@ void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra)
         JsonObject obj = regrasOut.add<JsonObject>();
         regraGetJS(novaRegra, obj);
     }
-}
-
-String regrasPersiste(Regra *novaRegra)
-{
-    File file = LittleFS.open("/automacoes.json.tmp", "w");
-    if (!file)
-    {
-        return "ERRO: ao abrir automacoes.json.tmp para escrita";
-    }
-
-    JsonDocument regras;
-    regrasGetJSONDoc(regras, novaRegra); // Se novaRegra != nullptr == ADD
-
-    JsonDocument doc;
-    doc["regras"] = regras;
-
-    String out;
-    if (!serializeJson(doc, out))
-    {
-        file.close();
-        return "ERRO: regrasPersiste:serializeJson";
-    }
-
-    logaM(LOG_DEBUG, "regrasPersiste: [%s]", out.c_str());
-
-    if (!serializeJson(doc, file))
-    {
-        file.close();
-        return "ERRO: regrasPersiste:serializeJson FILE";
-    }
-
-    file.close();
-
-    if (!LittleFS.rename("/automacoes.json.tmp", "/automacoes.json"))
-        return "ERRO: regrasPersiste:Rename";
-
-    logaM(LOG_NORMAL, "Regras Salvas!");
-    return "OK";
 }
 
 // Validação > rejeitar regras incompatíveis antes de modificar o modelo.

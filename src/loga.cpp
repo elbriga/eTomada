@@ -37,11 +37,6 @@ static QueueHandle_t logQueue = nullptr;
 static void logRemotoTask(void *param);
 void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args);
 
-bool logaRemotoAtivo()
-{
-  return (logServer != "");
-}
-
 void logaChangeLevel(int newLevel)
 {
   switch (newLevel)
@@ -95,26 +90,17 @@ void logsFlush(time_t maxWaitMS, time_t minWait)
 
 void logaInit()
 {
+  logServer = serverGetIPPortStr();
+
   Preferences prefs;
   prefs.begin("eTomada", false); // usando o mesmo namespace de eTomada.cpp
   // Para testes
   // prefs.putString("logLevel", String(LOG_DEBUG0));
   // prefs.putString("logServer", "192.168.1.220:8080");
   int logLevel = prefs.getString("logLevel", String(LOG_NORMAL)).toInt();
-  logServer = prefs.getString("logServer", ETOMADA_SERVER);
   prefs.end();
 
   logaChangeLevel(logLevel);
-
-  if (!logaRemotoAtivo())
-  {
-    logaM(LOG_AVISO, "==========================");
-    logaM(LOG_AVISO, "Sem logServer configurado!");
-    logaM(LOG_AVISO, "==========================");
-    return;
-  }
-
-  // TODO validar logServer se tem a porta tbm
 
   if (logQueue)
   {
@@ -232,7 +218,7 @@ void logaV(const char *modulo, LogLevel nivel, const char *fmt, va_list args)
                 msg);
 
   // Enviar para fila de log remoto
-  if (logaRemotoAtivo() && logQueue)
+  if (logQueue)
   {
     LogRemoto log;
 
@@ -261,13 +247,6 @@ static void logRemotoTask(void *param)
   {
     if (xQueueReceive(logQueue, &log, portMAX_DELAY) != pdTRUE)
       continue;
-
-    if (!logaRemotoAtivo())
-    {
-      // Nao deve entrar aqui, essa task nao roda se nao estiver ativo
-      Serial.println("log remoto task sem log remoto!!??????");
-      continue;
-    }
 
     if (WiFiGetModoAP())
     {

@@ -92,9 +92,6 @@ void httpServerInitModoAPI()
   httpServer.on("/api/checkWWW", HTTP_GET, apiCheckWWW);
   httpServer.on("/api/boot", HTTP_GET, apiRegrasBoot);
 
-  httpServer.on("/api/ping", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->send(204); });
-
   recoveryAPIRegister();
 
   // Eventos de conexão/desconexão
