@@ -2,6 +2,7 @@
 #include "recurso.h"
 #include "loga.h"
 // #include "umidificador.h"
+#include "mutex.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("AGENDS", nivel, fmt, ##__VA_ARGS__)
@@ -10,6 +11,7 @@ struct AcaoAgendada
 {
     TipoAgendamento tipo;
     uint32_t quando;
+    uint16_t regraID;
 
     // Para acao AGEND_RECURSO
     char recursoID[32];
@@ -17,13 +19,17 @@ struct AcaoAgendada
 };
 
 #define MAX_ACOES_AGENDADAS 16
-AcaoAgendada acoes[MAX_ACOES_AGENDADAS] = {}; // TODO :: Mutex para proteger o acesso a este array
+static AcaoAgendada acoes[MAX_ACOES_AGENDADAS] = {};
+static SemaphoreHandle_t agendamentosMutex = nullptr;
 
 void agendamentosProcessaTask(void *);
 
 void agendamentosInit()
 {
     memset(acoes, 0, sizeof(acoes));
+
+    agendamentosMutex = xSemaphoreCreateMutex();
+    configASSERT(agendamentosMutex);
 
     xTaskCreatePinnedToCore(
         agendamentosProcessaTask,
@@ -37,79 +43,115 @@ void agendamentosInit()
 
 void agendamentosLimpa(const char *recursoID)
 {
-    for (int s = 0; s < MAX_ACOES_AGENDADAS; s++)
-        if (strcmp(acoes[s].recursoID, recursoID) == 0)
-            acoes[s].tipo = AGEND_NENHUM;
+    MutexLock lock(agendamentosMutex, "agendamentosLimpa");
+    if (!lock)
+        return;
+
+    for (auto &acao : acoes)
+        if (acao.tipo == AGEND_RECURSO && !strcmp(acao.recursoID, recursoID))
+            acao = {};
 }
 
-void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID, const char *comando)
+// Sincronização > cancelar somente timers originados de regras.
+void agendamentosLimpaRegras()
 {
-    // procurar um "slot"
-    AcaoAgendada *acao = nullptr;
-    for (int s = 0; s < MAX_ACOES_AGENDADAS; s++)
+    MutexLock lock(agendamentosMutex, "agendamentosLimpaRegras");
+    if (!lock)
+        return;
+
+    for (auto &acao : acoes)
+        if (acao.tipo == AGEND_RECURSO && acao.regraID != 0)
+            acao = {};
+}
+
+void agendamentosAdd(TipoAgendamento tipo, int timeoutMs, const char *recursoID, const char *comando, uint16_t regraID)
+{
+    if (timeoutMs > AGENDAMENTO_TEMPO_MAXIMO * 1000U)
     {
-        if (acoes[s].tipo == AGEND_NENHUM)
-        {
-            acao = &acoes[s];
-            break;
-        }
-    }
-    if (!acao)
-    {
-        logaM(LOG_CRITICO, "agendamentosAdd[%d]: IMPOSSIVEL ACHAR SLOT!", tipo);
+        logaM(LOG_CRITICO, "Timeout de agendamento excedido");
         return;
     }
 
-    acao->quando = millis() + timeoutMs;
+    MutexLock lock(agendamentosMutex, "agendamentosAdd");
+    if (!lock)
+        return;
 
-    if (recursoID)
-        strlcpy(acao->recursoID, recursoID, sizeof(acao->recursoID));
-    if (comando)
-        strlcpy(acao->comando, comando, sizeof(acao->comando));
+    for (auto &acao : acoes)
+    {
+        if (acao.tipo != AGEND_NENHUM)
+            continue;
 
-    acao->tipo = tipo;
+        AcaoAgendada nova = {};
+        nova.tipo = tipo;
+        nova.quando = millis() + timeoutMs;
+        nova.regraID = regraID;
+
+        if (recursoID)
+            strlcpy(nova.recursoID, recursoID, sizeof(nova.recursoID));
+
+        if (comando)
+            strlcpy(nova.comando, comando, sizeof(nova.comando));
+
+        acao = nova;
+        return;
+    }
+
+    logaM(LOG_CRITICO, "agendamentosAdd: sem slots livres");
 }
 
 void agendamentosProcessaTask(void *)
 {
     while (true)
     {
-        // procura ações cujo "quando" chegou
-        for (int s = 0; s < MAX_ACOES_AGENDADAS; s++)
+        // Serializa execução de timers com substituições de configuração.
         {
-            AcaoAgendada *acao = &acoes[s];
-            if (acao->tipo == AGEND_NENHUM)
-                continue;
-
-            if ((int32_t)(millis() - acao->quando) >= 0)
+            MutexLock configLock(configMutex, "agendamentosTask config");
+            if (configLock)
             {
-                switch (acao->tipo)
+                for (int s = 0; s < MAX_ACOES_AGENDADAS; s++)
                 {
-                case AGEND_RECURSO:
-                {
-                    logaM(LOG_AVISO, "Agendamento Comando [%s] no recurso [%s]", acao->comando, acao->recursoID);
+                    AcaoAgendada acao = {};
+                    {
+                        MutexLock lock(agendamentosMutex, "agendamentosTask");
+                        if (!lock)
+                            break;
 
-                    String msg;
-                    if (!recursoSet(acao->recursoID, acao->comando, msg))
-                        logaM(LOG_AVISO, "agendamentosProcessaTask :: [%s]", msg.c_str());
+                        if (acoes[s].tipo == AGEND_NENHUM ||
+                            (int32_t)(millis() - acoes[s].quando) < 0)
+                            continue;
+
+                        // Retira o agendamento antes de executar.
+                        acao = acoes[s];
+                        acoes[s] = {};
+                    }
+
+                    // Execução sempre fora do mutex dos agendamentos.
+                    switch (acao.tipo)
+                    {
+                    case AGEND_RECURSO:
+                    {
+                        logaM(LOG_AVISO,
+                              "Agendamento [%s] no recurso [%s], regra [%u]",
+                              acao.comando, acao.recursoID,
+                              (unsigned)acao.regraID);
+
+                        String msg;
+                        if (!recursoSet(acao.recursoID, acao.comando, msg))
+                            logaM(LOG_AVISO, "Agendamento: %s", msg.c_str());
+                        break;
+                    }
+
+                    case AGEND_RESET:
+                        logaM(LOG_AVISO, "RESETANDO!");
+                        vTaskDelay(pdMS_TO_TICKS(1000));
+                        ESP.restart();
+                        break;
+
+                    default:
+                        logaM(LOG_CRITICO, "Agendamento invalido: %d", acao.tipo);
+                        break;
+                    }
                 }
-                break;
-
-                case AGEND_RESET:
-                {
-                    logaM(LOG_AVISO, "RESETANDO!");
-                    vTaskDelay(pdTICKS_TO_MS(1000)); // Delay para dar tempo de flush nos logs
-                    ESP.restart();
-                }
-                break;
-
-                default:
-                    logaM(LOG_CRITICO, "agendamentosProcessaTask :: TIPO [%d] invalido!", acao->tipo);
-                    break;
-                }
-
-                // remove do slot
-                acao->tipo = AGEND_NENHUM;
             }
         }
 

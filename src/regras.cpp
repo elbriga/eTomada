@@ -519,45 +519,51 @@ void regrasProcessaEvento(Evento e)
     // Executar fora do Lock
     if (acoesPendentesCount > 0)
     {
-        String msg;
-        for (int i = 0; i < acoesPendentesCount; i++)
+        // Evita executar uma regra enquanto seu conjunto está sendo substituído.
+        MutexLock configLock(configMutex, "regrasProcessaEvento executa");
+        if (configLock)
         {
-            AcaoPendente *ap = &acoesPendentes[i];
-
-            // Verificar se regraTxt é igual - usar ID como chave
+            String msg;
+            for (int i = 0; i < acoesPendentesCount; i++)
             {
-                MutexLock lock(modeloMutex, "regrasProcessaEvento2");
-                if (!lock)
-                    return;
+                AcaoPendente *ap = &acoesPendentes[i];
 
-                Regra *regra = regraGet(ap->regraID);
-                if (!regra || !regra->ativa || regra->remover)
+                // Verificar se regraTxt é igual - usar ID como chave
                 {
-                    logaM(LOG_AVISO, "Regra [%d] removida ou desativada!", ap->regraID);
+                    MutexLock lock(modeloMutex, "regrasProcessaEvento2");
+                    if (!lock)
+                        return;
+
+                    Regra *regra = regraGet(ap->regraID);
+                    if (!regra || !regra->ativa || regra->remover)
+                    {
+                        logaM(LOG_AVISO, "Regra [%d] removida ou desativada!", ap->regraID);
+                        continue;
+                    }
+
+                    String txtNovo = regraGetTxt(regra);
+                    if (txtNovo != ap->regraTxt)
+                    {
+                        logaM(LOG_AVISO, "Regra [%d] mudou enquanto estavamos fora!", ap->regraID);
+                        continue;
+                    }
+                }
+
+                if (!recursoSet(ap->recursoID, ap->comando, msg, ap->enviaEventos, ap->enviaEventos))
+                {
+                    logaM(LOG_AVISO, "ERRO regraProcessaEvento > [%s]", msg.c_str());
                     continue;
                 }
 
-                String txtNovo = regraGetTxt(regra);
-                if (txtNovo != ap->regraTxt)
+                if (ap->timerOff > 0)
                 {
-                    logaM(LOG_AVISO, "Regra [%d] mudou enquanto estavamos fora!", ap->regraID);
-                    continue;
+                    // Agendar o OFF
+                    agendamentosAdd(AGEND_RECURSO, (uint32_t)ap->timerOff * 1000U,
+                                    ap->recursoID, "OFF", ap->regraID);
                 }
-            }
 
-            if (!recursoSet(ap->recursoID, ap->comando, msg, ap->enviaEventos, ap->enviaEventos))
-            {
-                logaM(LOG_AVISO, "ERRO regraProcessaEvento > [%s]", msg.c_str());
-                continue;
+                logaM(LOG_NORMAL, "Resultado da Regra[%s]: [%s]", ap->regraTxt, msg.c_str());
             }
-
-            if (ap->timerOff > 0)
-            {
-                // Agendar o OFF
-                agendamentosAdd(AGEND_RECURSO, ap->timerOff * 1000, ap->recursoID, "OFF");
-            }
-
-            logaM(LOG_NORMAL, "Resultado da Regra[%s]: [%s]", ap->regraTxt, msg.c_str());
         }
     }
 }
@@ -915,7 +921,8 @@ static bool regraSyncValida(JsonObject regra)
     {
         return strcmp(destino, "__ALERTA__") &&
                acao["timer"].is<uint32_t>() &&
-               acao["timer"].as<uint32_t>() > 0;
+               acao["timer"].as<uint32_t>() > 0 &&
+               acao["timer"].as<uint32_t>() <= 2147483U;
     }
 
     return false;
@@ -1153,6 +1160,9 @@ int regrasSubstituir(JsonDocument &pacote, String &msg)
 
         // Captura o estado esperado com as novas regras.
         totalDepois = regrasCapturaEstadosHorario(depois, REGRAS_SYNC_MAX_ESTADOS);
+
+        // Novo conjunto instalado > invalidar timers das regras anteriores.
+        agendamentosLimpaRegras();
 
         delete[] antigas;
     }
