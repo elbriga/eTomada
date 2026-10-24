@@ -44,18 +44,12 @@ void regrasInit()
             logaM(LOG_CRITICO, "Falha ao recuperar automacoes.json.bak");
     }
 
+    // Sem configuração local > aguardar sincronização do Server.
     if (!LittleFS.exists(REGRAS_PATH))
     {
-        if (LittleFS.exists(REGRAS_PATH_DEFAULT))
-        {
-            logaM(LOG_AVISO, "INICIALIZANDO REGRAS FROM DEFAULT");
-            utilCopiaArquivo(REGRAS_PATH_DEFAULT, REGRAS_PATH);
-        }
-        else
-        {
-            logaM(LOG_AVISO, "ERRO: regrasLoad > Arquivo [%s] nao existe!", REGRAS_PATH);
-            return;
-        }
+        logaM(LOG_AVISO, "Sem regras locais. Aguardando Server.");
+        regrasRevision[0] = '\0';
+        return;
     }
 
     String msg = regrasLoad(REGRAS_PATH);
@@ -932,6 +926,55 @@ String regrasGetRevision()
     return String(regrasRevision);
 }
 
+#define REGRAS_SYNC_MAX_ESTADOS 16
+
+struct EstadoHorarioSync
+{
+    char recursoID[32] = {};
+    char estado[4] = {};
+};
+
+// Captura o estado esperado dos relés locais pelas regras de horário.
+// Deve ser chamada com modeloMutex adquirido.
+static size_t regrasCapturaEstadosHorario(EstadoHorarioSync *saida, size_t capacidade)
+{
+    struct tm horario;
+    sysGetTime(&horario);
+
+    if (horario.tm_year + 1900 < 2026)
+        return 0;
+
+    size_t total = 0;
+
+    for (int i = 0; i < recursosGetCount(); i++)
+    {
+        Recurso *recurso = recursoGetPorIndice(i);
+
+        if (!recurso ||
+            recurso->tipo != RECURSO_RELE ||
+            recurso->remoto)
+            continue;
+
+        if (total >= capacidade)
+        {
+            logaM(LOG_CRITICO, "Limite de estados na sincronizacao");
+            break;
+        }
+
+        EstadoHorarioSync &item = saida[total++];
+
+        strlcpy(item.recursoID, recurso->id,
+                sizeof(item.recursoID));
+
+        String estado;
+        if (regrasCalculaEstadoAtual(recurso, estado))
+            strlcpy(item.estado, estado.c_str(),
+                    sizeof(item.estado));
+    }
+
+    return total;
+}
+
 int regrasSubstituir(JsonDocument &pacote, String &msg)
 {
     const char *deviceId = pacote["device_id"] | "";
@@ -1055,6 +1098,12 @@ int regrasSubstituir(JsonDocument &pacote, String &msg)
         return 500;
     }
 
+    EstadoHorarioSync antes[REGRAS_SYNC_MAX_ESTADOS] = {};
+    EstadoHorarioSync depois[REGRAS_SYNC_MAX_ESTADOS] = {};
+
+    size_t totalAntes = 0;
+    size_t totalDepois = 0;
+
     {
         MutexLock lock(modeloMutex, "regrasSync aplica");
         if (!lock)
@@ -1093,16 +1142,51 @@ int regrasSubstituir(JsonDocument &pacote, String &msg)
             return 500;
         }
 
+        // Captura o estado esperado com as regras anteriores.
+        totalAntes = regrasCapturaEstadosHorario(antes, REGRAS_SYNC_MAX_ESTADOS);
+
         // Modelo > troca o array somente depois da persistência.
         Regra *antigas = regras;
         regras = novas.release();
         regrasTotal = total;
         strlcpy(regrasRevision, revision, sizeof(regrasRevision));
 
+        // Captura o estado esperado com as novas regras.
+        totalDepois = regrasCapturaEstadosHorario(depois, REGRAS_SYNC_MAX_ESTADOS);
+
         delete[] antigas;
     }
 
     LittleFS.remove(REGRAS_BAK);
+
+    // Reconciliação > aplicar somente estados esperados que mudaram.
+    for (size_t i = 0; i < totalDepois; i++)
+    {
+        const EstadoHorarioSync &novo = depois[i];
+
+        if (!novo.estado[0])
+            continue;
+
+        const char *anterior = "";
+        for (size_t j = 0; j < totalAntes; j++)
+        {
+            if (!strcmp(antes[j].recursoID, novo.recursoID))
+            {
+                anterior = antes[j].estado;
+                break;
+            }
+        }
+
+        if (!strcmp(anterior, novo.estado))
+            continue;
+
+        String msg;
+        if (!recursoSet(novo.recursoID, novo.estado, msg))
+        {
+            logaM(LOG_AVISO, "SYNC horario [%s] -> [%s]: %s",
+                  novo.recursoID, novo.estado, msg.c_str());
+        }
+    }
 
     logaM(LOG_NORMAL, "Sincronizadas %u regras, revision %.12s",
           (unsigned)total, regrasRevision);
@@ -1222,36 +1306,38 @@ String regrasLoad(const char *path)
         return "ERRO: regrasLoad > lendo regras";
 
     JsonArray regrasJson = doc["regras"].as<JsonArray>();
-    int totRegras = regrasJson.size();
 
-    if (totRegras > MAX_REGRAS)
+    if (regrasJson.isNull() || regrasJson.size() > MAX_REGRAS)
+        return "ERRO: conjunto de regras invalido";
+
+    const size_t total = regrasJson.size();
+
+    // Carregamento > montar tudo antes de substituir o array ativo.
+    std::unique_ptr<Regra[]> novas(total ? new (std::nothrow) Regra[total]() : nullptr);
+
+    if (total && !novas)
+        return "ERRO: memoria insuficiente";
+
+    bool pacoteServidor = doc["revision"].is<const char *>();
+
+    size_t carregadas = 0;
+
+    for (JsonObject obj : regrasJson)
     {
-        logaM(LOG_CRITICO, "MUITAS (%d) REGRAS NO ARQUIVO, LENDO SOMENTE %d PRIMEIRAS!!!", totRegras, MAX_REGRAS);
-        totRegras = MAX_REGRAS;
+        if (obj.isNull() || (pacoteServidor && !regraSyncValida(obj)))
+            return "ERRO: regra invalida no arquivo";
+
+        regraLoadFromJSON(&novas[carregadas], obj);
+        carregadas++;
     }
 
-    if (regras)
-        delete[] regras;
+    // Modelo > substituição somente após carregamento completo.
+    // Esta função já é chamada sob modeloMutex em eTomadaLoadConfig().
+    Regra *antigas = regras;
+    regras = novas.release();
+    regrasTotal = carregadas;
 
-    regras = new Regra[totRegras]();
-    if (!regras)
-        utilDIE("NO new Regras! DIE!!!!!!!");
-
-    regrasTotal = 0;
-    for (JsonObject regraJson : regrasJson)
-    {
-        if (regrasTotal >= totRegras)
-            break;
-
-        Regra *regra = &regras[regrasTotal];
-
-        regraLoadFromJSON(regra, regraJson);
-        regraPrint(regra);
-
-        regrasTotal++;
-    }
-
-    doc.clear();
+    delete[] antigas;
 
     return "OK";
 }
