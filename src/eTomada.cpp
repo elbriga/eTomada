@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "3.0.5"
+#define ETOMADA_VERSAO "4.0.0"
 // 1.3.19 - Rede 10 com log server, mac no mDNS,
 // 1.3.20 - endpoint de UPLOAD de Firmware
 // 1.3.21 - sensor de corrent com task propria
@@ -22,6 +22,7 @@
 // 3.0.3  - File Manager
 // 3.0.4  - DNS Reverso
 // 3.0.5  - Add comando TOGGLEF para o EKAZA
+// 4.0.0  - DEL mestre > Ave SERVER!
 
 #include "eTomada.h"
 #include "mestre.h"
