@@ -72,14 +72,15 @@ struct Regra
 void regrasInit();
 bool regrasBoot(const char *nodoID = nullptr);
 
+// Sincronização autoritativa das regras locais.
+int regrasSubstituir(JsonDocument &pacote, String &msg);
+String regrasGetRevision();
+
 int regrasCount();
 Regra *regraTemAlerta();
 
 void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra = nullptr);
 Regra *regraGetPorRecurso(const char *idLocalRecurso);
-
-String regraAtualizaFromJSON(uint8_t *json);
-String regraDeleteFromJSON(uint8_t *json);
 
 void regrasProcessaEvento(Evento e);
 

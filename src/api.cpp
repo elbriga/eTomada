@@ -20,7 +20,8 @@ void apiSnapshot(AsyncWebServerRequest *request)
 {
   String snapshot = eTomadaGetSnapshotJSON();
   request->send(200, "application/json", snapshot);
-  logaRequest(request, "200 OK");
+  // if IP org != SERVER
+  // logaRequest(request, "200 OK");
 }
 
 void apiGetRecurso(AsyncWebServerRequest *request)
@@ -143,6 +144,15 @@ bool apiFilesValidaCaminho(String &file)
   return file != "/" && !file.endsWith("/");
 }
 
+// Protege os arquivos gerenciados pela sincronização.
+bool apiFilesArquivoRegras(const String &file)
+{
+  return file == REGRAS_PATH ||
+         file == "/automacoes.json.tmp" ||
+         file == "/automacoes.json.bak" ||
+         file == REGRAS_PATH_DEFAULT;
+}
+
 void apiFiles(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
   // PUT - Upload binario, em blocos
@@ -156,6 +166,16 @@ void apiFiles(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t 
       {
         request->send(400, "application/json", R"({"msg":"Nome de arquivo invalido"})");
         logaRequest(request, "400 PUT Invalid file");
+      }
+      return;
+    }
+
+    if (apiFilesArquivoRegras(filePut))
+    {
+      if (index == 0)
+      {
+        request->send(403, "application/json", R"({"msg":"Arquivo gerenciado pelo servidor"})");
+        logaRequest(request, "400 PUT Forbidden file");
       }
       return;
     }
@@ -274,6 +294,13 @@ void apiFiles(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t 
     {
       request->send(400, "application/json", R"({"msg":"Nome de arquivo invalido"})");
       logaRequest(request, "400 Invalid file");
+      return;
+    }
+
+    if (apiFilesArquivoRegras(fileDel))
+    {
+      request->send(403, "application/json", R"({"msg":"Arquivo gerenciado pelo servidor"})");
+      logaRequest(request, "403 Forbidden file");
       return;
     }
 
@@ -428,20 +455,71 @@ void apiDelRecursoRemoto(AsyncWebServerRequest *request, uint8_t *data, size_t l
   logaRequest(request, "200 " + delRROK);
 }
 
-void apiSetRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+void apiSetRegras(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
-  String atzCfgOK = regraAtualizaFromJSON(data);
+  constexpr size_t MAX_JSON = 32768;
 
-  request->send(200, "application/json", "{\"msg\": \"" + atzCfgOK + "\"}");
-  logaRequest(request, "200 " + atzCfgOK);
-}
+  // HTTP > receber o conjunto completo antes de validar.
+  if (!total || total > MAX_JSON)
+  {
+    if (index == 0)
+      request->send(413, "application/json",
+                    R"({"msg":"Pacote muito grande"})");
+    return;
+  }
 
-void apiDelRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-{
-  String atzCfgOK = regraDeleteFromJSON(data);
+  if (index == 0)
+    request->_tempObject = malloc(total + 1);
 
-  request->send(200, "application/json", "{\"msg\": \"" + atzCfgOK + "\"}");
-  logaRequest(request, "200 " + atzCfgOK);
+  if (!request->_tempObject)
+  {
+    if (index == 0)
+      request->send(507, "application/json",
+                    R"({"msg":"Memoria insuficiente"})");
+    return;
+  }
+
+  if (index > total || len > total - index)
+  {
+    request->send(400, "application/json",
+                  R"({"msg":"Corpo HTTP invalido"})");
+    return;
+  }
+
+  memcpy((uint8_t *)request->_tempObject + index, data, len);
+
+  if (index + len < total)
+    return;
+
+  ((char *)request->_tempObject)[total] = '\0';
+
+  JsonDocument pacote;
+  DeserializationError erro = deserializeJson(pacote, (char *)request->_tempObject, total);
+  if (erro)
+  {
+    request->send(400, "application/json",
+                  R"({"msg":"JSON invalido"})");
+    return;
+  }
+
+  // Regras > validar, persistir e substituir o modelo.
+  String msg;
+  int status = regrasSubstituir(pacote, msg);
+
+  JsonDocument resposta;
+  resposta["msg"] = msg;
+
+  if (status == 200)
+  {
+    resposta["revision"] = regrasGetRevision();
+    resposta["total"] = pacote["regras"].as<JsonArray>().size();
+  }
+
+  String body;
+  serializeJson(resposta, body);
+
+  request->send(status, "application/json", body);
+  logaRequest(request, String(status) + " " + msg);
 }
 
 void apiFactoryReset(AsyncWebServerRequest *request)

@@ -236,6 +236,7 @@ String eTomadaGetSnapshotJSON()
       JsonDocument regrasJS;
       regrasGetJSONDoc(regrasJS);
       doc["regras"] = regrasJS;
+      doc["rules_revision"] = regrasGetRevision();
 
       if (nodosRemotosGetCount())
         doc["nodosRemotos"] = nodosRemotosGetJSON(nullptr, true);

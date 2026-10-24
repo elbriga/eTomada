@@ -12,8 +12,7 @@ void apiAddNodo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_
 void apiDelNodo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiAddRecursoRemoto(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiDelRecursoRemoto(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
-void apiSetRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
-void apiDelRegra(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
+void apiSetRegras(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiFactoryReset(AsyncWebServerRequest *request);
 void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void apiCheckWWW(AsyncWebServerRequest *request);

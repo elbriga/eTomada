@@ -1,3 +1,5 @@
+#include <memory>
+#include <new>
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
@@ -5,7 +7,6 @@
 #include "eTomada.h"
 #include "regras.h"
 #include "loga.h"
-#include "display.h"
 #include "mutex.h"
 #include "ntp.h"
 #include "util.h"
@@ -19,9 +20,13 @@
 #define logaM(nivel, fmt, ...) loga("REGRA", nivel, fmt, ##__VA_ARGS__)
 
 #define MAX_REGRAS 64
+#define REGRAS_TMP "/automacoes.json.tmp"
+#define REGRAS_BAK "/automacoes.json.bak"
 
 int regrasTotal = 0;
 Regra *regras = nullptr;
+
+static char regrasRevision[65] = {};
 
 String regrasLoad(const char *path);
 String regraGetTxt(Regra *r);
@@ -30,6 +35,15 @@ String regrasPersiste(Regra *novaRegra = nullptr);
 
 void regrasInit()
 {
+    // Boot > recuperar regras anteriores se a substituição foi interrompida.
+    if (!LittleFS.exists(REGRAS_PATH) && LittleFS.exists(REGRAS_BAK))
+    {
+        if (LittleFS.rename(REGRAS_BAK, REGRAS_PATH))
+            logaM(LOG_AVISO, "Arquivo de regras RECUPERADO do BAK");
+        else
+            logaM(LOG_CRITICO, "Falha ao recuperar automacoes.json.bak");
+    }
+
     if (!LittleFS.exists(REGRAS_PATH))
     {
         if (LittleFS.exists(REGRAS_PATH_DEFAULT))
@@ -47,6 +61,22 @@ void regrasInit()
     String msg = regrasLoad(REGRAS_PATH);
     if (msg != "OK")
         logaM(LOG_AVISO, ">> regrasLoad: [%s]", msg.c_str());
+    else
+    {
+        // Buscar a revisão
+        File arquivo = LittleFS.open(REGRAS_PATH, "r");
+        JsonDocument doc;
+        if (arquivo && !deserializeJson(doc, arquivo))
+        {
+            const char *revision = doc["revision"] | "";
+            strlcpy(regrasRevision, revision, sizeof(regrasRevision));
+        }
+        else
+            regrasRevision[0] = '\0';
+
+        if (arquivo)
+            arquivo.close();
+    }
 }
 
 Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, String &estadoAtualOut)
@@ -58,7 +88,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, String &estadoAtualOut)
     struct tm timeinfo;
     sysGetTime(&timeinfo);
     int minutoAtual = timeinfo.tm_hour * 60 + timeinfo.tm_min;
-    int minutoUltimo = -1;
+    int menorDistancia = 1441;
 
     Regra *regraAtivadaOut = nullptr;
     for (int r = 0; r < regrasTotal; r++)
@@ -82,15 +112,16 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, String &estadoAtualOut)
 
         // Verificar se ja passou esse HORARIO
         int minutoRegra = cond->horario.hora * 60 + cond->horario.minuto;
-        if (minutoRegra <= minutoAtual)
+        // Boot > considera também a última regra do dia anterior.
+        int distancia = (minutoAtual - minutoRegra + 1440) % 1440;
+
+        if (distancia < menorDistancia ||
+            (distancia == menorDistancia &&
+             regraAtivadaOut && regra->id < regraAtivadaOut->id))
         {
-            // Salvar o estado da ultima regra aplicavel
-            if (minutoRegra > minutoUltimo)
-            {
-                minutoUltimo = minutoRegra;
-                regraAtivadaOut = regra;
-                estadoAtualOut = regra->acao.comando;
-            }
+            menorDistancia = distancia;
+            regraAtivadaOut = regra;
+            estadoAtualOut = regra->acao.comando;
         }
     }
 
@@ -761,99 +792,6 @@ void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra)
     }
 }
 
-String regraAtualizaFromJSON(uint8_t *json)
-{
-    JsonDocument doc;
-    if (utilLeJson("regraAtualizaFromJSON", doc, json))
-        return "JSON Invalido";
-
-    int id = doc["id"].as<int>();
-    bool addRegra = (id == 0);
-
-    MutexLock configLock(configMutex, "regraAtualiza config");
-    if (!configLock)
-        return "Config mutex timeout";
-
-    MutexLock lock(modeloMutex, "regraAtualiza modelo");
-    if (!lock)
-        return "Modelo mutex timeout";
-
-    Regra *regra;
-    Regra novaRegra = {};
-
-    if (addRegra)
-        regra = &novaRegra;
-    else
-    {
-        regra = regraGet(id);
-        if (!regra)
-        {
-            doc.clear();
-            return "Regra Invalida";
-        }
-    }
-
-    JsonObject obj = doc.as<JsonObject>();
-    regraLoadFromJSON(regra, obj);
-    doc.clear();
-
-    // Se passar a novaRegra para o regrasPersiste() ele adiciona ela no final
-    String msg = regrasPersiste(addRegra ? &novaRegra : nullptr);
-    if (msg != "OK")
-        return msg;
-
-    if (addRegra)
-    {
-        // Recarregar as regras para a nova regra entrar no array global de regras
-        msg = regrasLoad(REGRAS_PATH);
-        if (msg != "OK")
-            return msg;
-    }
-
-    return "OK";
-}
-
-String regraDeleteFromJSON(uint8_t *json)
-{
-    JsonDocument doc;
-    if (utilLeJson("regraDeleteFromJSON", doc, json))
-        return "JSON Invalido";
-
-    int id = doc["id"].as<int>();
-    doc.clear();
-
-    {
-        MutexLock configLock(configMutex, "regraAtualiza config");
-        if (!configLock)
-            return "Config mutex timeout";
-
-        MutexLock lock(modeloMutex, "regraAtualiza modelo");
-        if (!lock)
-            return "Modelo mutex timeout";
-
-        Regra *regra = regraGet(id);
-        if (!regra)
-            return "Regra Invalida";
-
-        // DEL
-        regra->remover = true;
-
-        // Le regra->remover
-        String msg = regrasPersiste();
-        if (msg != "OK")
-            return msg;
-
-        // Recarregar as regras
-        msg = regrasLoad(REGRAS_PATH);
-        if (msg != "OK")
-            return "regrasLoad():" + msg;
-    }
-
-    httpEnviaSSERefresh();
-
-    return "OK";
-}
-
 String regrasPersiste(Regra *novaRegra)
 {
     File file = LittleFS.open("/automacoes.json.tmp", "w");
@@ -890,6 +828,289 @@ String regrasPersiste(Regra *novaRegra)
 
     logaM(LOG_NORMAL, "Regras Salvas!");
     return "OK";
+}
+
+// Validação > rejeitar regras incompatíveis antes de modificar o modelo.
+static bool regraSyncValida(JsonObject regra)
+{
+    int id = regra["id"] | 0;
+    const char *nome = regra["nome"] | "";
+    JsonObject quando = regra["quando"].as<JsonObject>();
+    JsonObject acao = regra["acao"].as<JsonObject>();
+
+    if (id < 1 || id > 65535 ||
+        strlen(nome) == 0 || strlen(nome) >= 64 ||
+        !regra["ativa"].is<bool>() ||
+        quando.isNull() || acao.isNull())
+        return false;
+
+    const char *tipoCond = quando["tipo"] | "";
+
+    if (!strcmp(tipoCond, "HORARIO"))
+    {
+        if (!quando["hora"].is<int>() || !quando["minuto"].is<int>())
+            return false;
+
+        int hora = quando["hora"];
+        int minuto = quando["minuto"];
+
+        if (hora < 0 || hora > 23 || minuto < 0 || minuto > 59)
+            return false;
+    }
+    else if (!strcmp(tipoCond, "EVENTO"))
+    {
+        const char *recurso = quando["recurso"] | "";
+        const char *evento = quando["evento"] | "";
+
+        if (!*recurso || strlen(recurso) >= 32 ||
+            !recursoGet(recurso))
+            return false;
+
+        if (strcmp(evento, "TOGGLE") &&
+            strcmp(evento, "CLICK") &&
+            strcmp(evento, "DUPCLICK") &&
+            strcmp(evento, "LIGOU") &&
+            strcmp(evento, "DESLIGOU"))
+            return false;
+    }
+    else
+        return false;
+
+    if (!quando["check"].isNull())
+    {
+        JsonObject check = quando["check"].as<JsonObject>();
+        const char *variavel = check["variavel"] | "";
+        const char *op = check["operacao"] | "";
+
+        if (!*variavel || strlen(variavel) >= 32 ||
+            (strcmp(variavel, "HORASSECO") && !recursoGet(variavel)) ||
+            !check["valor"].is<int>())
+            return false;
+
+        if (strcmp(op, ">") && strcmp(op, "<") &&
+            strcmp(op, "=") && strcmp(op, "!=") &&
+            strcmp(op, ">=") && strcmp(op, "<="))
+            return false;
+    }
+
+    const char *tipoAcao = acao["tipo"] | "";
+    const char *destino = acao["recurso"] | "";
+
+    if (!*destino || strlen(destino) >= 32)
+        return false;
+
+    if (strcmp(destino, "__ALERTA__"))
+    {
+        Recurso *recurso = recursoGet(destino);
+        if (!recurso || recurso->tipo != RECURSO_RELE || recurso->remoto)
+            return false;
+    }
+
+    if (!strcmp(tipoAcao, "ESTADO"))
+    {
+        const char *cmd = acao["comando"] | "";
+
+        return !strcmp(cmd, "ON") ||
+               !strcmp(cmd, "OFF") ||
+               !strcmp(cmd, "TOGGLE") ||
+               !strcmp(cmd, "FOLLOW") ||
+               !strcmp(cmd, "TOGGLEF");
+    }
+
+    if (!strcmp(tipoAcao, "TIMER"))
+    {
+        return strcmp(destino, "__ALERTA__") &&
+               acao["timer"].is<uint32_t>() &&
+               acao["timer"].as<uint32_t>() > 0;
+    }
+
+    return false;
+}
+
+String regrasGetRevision()
+{
+    return String(regrasRevision);
+}
+
+int regrasSubstituir(JsonDocument &pacote, String &msg)
+{
+    const char *deviceId = pacote["device_id"] | "";
+    const char *revision = pacote["revision"] | "";
+    JsonArray lista = pacote["regras"].as<JsonArray>();
+
+    if (!*deviceId ||
+        !String(deviceId).equalsIgnoreCase(eTomadaDeviceID()) ||
+        strlen(revision) != 64 ||
+        lista.isNull() || lista.size() > MAX_REGRAS)
+    {
+        msg = "Pacote de regras invalido";
+        return 422;
+    }
+
+    for (int i = 0; i < 64; i++)
+    {
+        char c = revision[i];
+        if (!isxdigit((unsigned char)c))
+        {
+            msg = "Revision invalida";
+            return 422;
+        }
+    }
+
+    const size_t total = lista.size();
+
+    std::unique_ptr<Regra[]> novas(total ? new (std::nothrow) Regra[total]() : nullptr);
+    // Remove o ERROR do vscode, mas é pior
+    // std::unique_ptr<Regra[]> novas(total ? new Regra[total]() : nullptr);
+
+    if (total && !novas)
+    {
+        msg = "Memoria insuficiente";
+        return 507;
+    }
+
+    MutexLock configLock(configMutex, "regrasSync config");
+    if (!configLock)
+    {
+        msg = "Config mutex timeout";
+        return 503;
+    }
+
+    {
+        MutexLock lock(modeloMutex, "regrasSync valida");
+        if (!lock)
+        {
+            msg = "Modelo mutex timeout";
+            return 503;
+        }
+
+        // Valida e monta o novo array sem modificar as regras ativas.
+        for (size_t i = 0; i < total; i++)
+        {
+            JsonObject obj = lista[i].as<JsonObject>();
+
+            if (obj.isNull() || !regraSyncValida(obj))
+            {
+                msg = "Regra invalida na posicao " + String(i);
+                return 422;
+            }
+
+            for (size_t j = 0; j < i; j++)
+            {
+                if (novas[j].id == obj["id"].as<int>())
+                {
+                    msg = "ID de regra duplicado";
+                    return 422;
+                }
+            }
+
+            regraLoadFromJSON(&novas[i], obj);
+        }
+    }
+
+    // Persistência > grava e verifica o arquivo temporário.
+    LittleFS.remove(REGRAS_TMP);
+
+    File arquivo = LittleFS.open(REGRAS_TMP, "w");
+    if (!arquivo)
+    {
+        msg = "Erro ao abrir arquivo temporario";
+        return 500;
+    }
+
+    size_t esperado = measureJson(pacote);
+    size_t gravado = serializeJson(pacote, arquivo);
+
+    arquivo.flush();
+    arquivo.close();
+
+    if (gravado != esperado)
+    {
+        LittleFS.remove(REGRAS_TMP);
+        msg = "Gravacao incompleta";
+        return 507;
+    }
+
+    File leitura = LittleFS.open(REGRAS_TMP, "r");
+    JsonDocument verificacao;
+
+    bool arquivoOK = leitura &&
+                     !deserializeJson(verificacao, leitura);
+
+    if (leitura)
+        leitura.close();
+
+    if (arquivoOK)
+    {
+        arquivoOK =
+            verificacao["revision"].as<String>() == revision &&
+            verificacao["regras"].as<JsonArray>().size() == total &&
+            measureJson(verificacao) == esperado;
+    }
+
+    if (!arquivoOK)
+    {
+        LittleFS.remove(REGRAS_TMP);
+        msg = "Falha na verificacao do arquivo";
+        return 500;
+    }
+
+    {
+        MutexLock lock(modeloMutex, "regrasSync aplica");
+        if (!lock)
+        {
+            LittleFS.remove(REGRAS_TMP);
+            msg = "Modelo mutex timeout";
+            return 503;
+        }
+
+        // Substituição > preserva o arquivo antigo para rollback.
+        if (LittleFS.exists(REGRAS_BAK) &&
+            !LittleFS.remove(REGRAS_BAK))
+        {
+            msg = "Nao foi possivel limpar backup antigo";
+            return 500;
+        }
+
+        bool tinhaArquivo = LittleFS.exists(REGRAS_PATH);
+
+        if (tinhaArquivo &&
+            !LittleFS.rename(REGRAS_PATH, REGRAS_BAK))
+        {
+            msg = "Nao foi possivel preservar regras antigas";
+            return 500;
+        }
+
+        if (!LittleFS.rename(REGRAS_TMP, REGRAS_PATH))
+        {
+            if (tinhaArquivo &&
+                !LittleFS.rename(REGRAS_BAK, REGRAS_PATH))
+            {
+                logaM(LOG_CRITICO, "Falha no rollback de automacoes!");
+            }
+
+            msg = "Nao foi possivel instalar novo arquivo";
+            return 500;
+        }
+
+        // Modelo > troca o array somente depois da persistência.
+        Regra *antigas = regras;
+        regras = novas.release();
+        regrasTotal = total;
+        strlcpy(regrasRevision, revision, sizeof(regrasRevision));
+
+        delete[] antigas;
+    }
+
+    LittleFS.remove(REGRAS_BAK);
+
+    logaM(LOG_NORMAL, "Sincronizadas %u regras, revision %.12s",
+          (unsigned)total, regrasRevision);
+
+    msg = "OK";
+
+    httpEnviaSSERefresh();
+    return 200;
 }
 
 int regraFindNextID()
