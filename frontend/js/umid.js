@@ -1,23 +1,17 @@
 let umidEditando = null;
 
 function umidGetCard(recurso) {
-  let online = true;
-  if (recurso.remoto) {
-    const nodo = eTomadaGetNodo(recurso.nodo);
-    if (nodo && !nodo.online) online = false;
-  }
-
   const power = recurso.device.estado;
   const fanPower =
     recurso.device.estadoFan == undefined ? -1 : recurso.device.estadoFan;
 
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;
-  card.className = `card cardUmidificador${recurso.remoto ? " cardRemoto" : ""}${!online ? " cardOffline" : ""}`;
+  card.className = `card cardUmidificador`;
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">
-    <div class="medio">Umid. ${recurso.id}${recurso.remoto ? ` em ${recurso.nodo}` : ""}</div>
+    <div class="medio">Umid. ${recurso.id}</div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
   <button class="editBtn" onclick="umidOpenEditModal('${recurso.id}')">✏️</button>

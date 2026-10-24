@@ -3,12 +3,6 @@ let sensorEditando = null;
 function sensorGetCard(recurso) {
   if (recurso.tipo != "SENSOR") return null;
 
-  let online = true;
-  if (recurso.remoto) {
-    const nodo = eTomadaGetNodo(recurso.nodo);
-    if (nodo && !nodo.online) online = false;
-  }
-
   let sensor = recurso.device;
   const tsOK = sensor.status == "OK";
   const card = document.createElement("div");
@@ -17,16 +11,11 @@ function sensorGetCard(recurso) {
       ? "de Chuva"
       : `${recurso.id} de ${sensor.categoria} ${sensor.tipo}`;
   card.id = `recursoCard-${recurso.id}`;
-  card.className =
-    `card cardSensor${!tsOK || !online ? " cardOffline" : ""}` +
-    (recurso.remoto ? " cardRemoto" : "");
+  card.className = `card cardSensor${!tsOK ? " cardOffline" : ""}`;
   card.innerHTML = `
 <div class="headerTop">
   <div>
-    <div class="medio">
-      Sensor ${nomeSensor}
-      ${recurso.remoto ? ` em ${recurso.nodo}` : ""}
-    </div>
+    <div class="medio">Sensor ${nomeSensor}</div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
   <button class="editBtn" onclick="sensorOpenEditModal('${recurso.id}')">✏️</button>

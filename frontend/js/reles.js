@@ -3,21 +3,15 @@ let releEditando = null;
 function releGetCard(recurso) {
   if (recurso.tipo != "RELE") return null;
 
-  let online = true;
-  if (recurso.remoto) {
-    const nodo = eTomadaGetNodo(recurso.nodo);
-    if (nodo && !nodo.online) online = false;
-  }
-
   let rele = recurso.device;
 
   const card = document.createElement("div");
   card.id = `recursoCard-${recurso.id}`;
-  card.className = `card cardRele${recurso.remoto ? " cardRemoto" : ""}${!online ? " cardOffline" : ""}`;
+  card.className = `card cardRele`;
   card.innerHTML = `
 <div class="headerTop">
   <div class="minHeight">
-    <div class="medio">Tomada ${recurso.id}${recurso.remoto ? ` em ${recurso.nodo}` : ""}</div>
+    <div class="medio">Tomada ${recurso.id}</div>
     <div class="title">${escapeHtml(recurso.nome || "")}</div>
   </div>
   <button class="editBtn" onclick="releOpenEditModal('${recurso.id}')">✏️</button>
