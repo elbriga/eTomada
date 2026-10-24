@@ -362,7 +362,7 @@ String regraAddAcaoCache(Regra *regra, int &count, AcaoPendente *acoes)
             {
                 // Corrigir o estado do chamador sem gerar eventos
                 // String msg2;
-                // recursoSet(regra->condicao.evento.recursoID, comando, msg2, false, false);
+                // recursoSet(regra->condicao.evento.recursoID, comando, msg2, false);
                 if (count < REGRAS_MAX_ACOES_PENDENTES - 1)
                     acaoPendenteAdiciona(count, acoes, regra, regra->condicao.evento.recursoID, comando.c_str(), 0, false);
                 else
@@ -542,7 +542,7 @@ void regrasProcessaEvento(Evento e)
                     }
                 }
 
-                if (!recursoSet(ap->recursoID, ap->comando, msg, ap->enviaEventos, ap->enviaEventos))
+                if (!recursoSet(ap->recursoID, ap->comando, msg, ap->enviaEventos))
                 {
                     logaM(LOG_AVISO, "ERRO regraProcessaEvento > [%s]", msg.c_str());
                     continue;

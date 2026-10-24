@@ -1,7 +1,6 @@
 #include <Arduino.h>
 
 #include "eTomada.h"
-#include "mestre.h"
 #include "loga.h"
 #include "prefs.h"
 #include "recurso.h"
@@ -119,7 +118,7 @@ void recursosZera()
   totRecursos = 0;
 }
 
-bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, bool enviaMestre)
+bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, bool enviaEventos)
 {
   recursoIDOut = "";
 
@@ -146,7 +145,7 @@ bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, boo
 
   if (estadoFan != "" && estadoFan != "null")
     estado += ":" + estadoFan;
-  return recursoSet(id.c_str(), estado, msgOut, enviaMestre);
+  return recursoSet(id.c_str(), estado, msgOut, enviaEventos);
 }
 
 bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
@@ -188,7 +187,7 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
   return ret;
 }
 
-bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaMestre, bool enviaEventos)
+bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaEventos)
 {
   // Recurso virtual __ALERTA__
   if (!strcmp(recursoID, "__ALERTA__"))
@@ -258,9 +257,9 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
 
     if (enviaEventos)
     {
-      eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, enviaMestre, true);
+      eventoPost(EVENTO_VALOR_MUDOU, recursoID, true, true);
       if (enviaToggle)
-        eventoPost(EVENTO_TOGGLE, recursoID, false, false, false); // RELES: Nao envia atualizacoes, mas serve para as regras
+        eventoPost(EVENTO_TOGGLE, recursoID, false, false); // RELES: Nao envia atualizacoes, mas serve para as regras
     }
   }
 
@@ -455,8 +454,8 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     rele->estado = novoEstado;
     if (enviaEventos && mudou)
     {
-      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false);
-      eventoPost(EVENTO_TOGGLE, recurso->id, false, true, false);
+      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, false);
+      eventoPost(EVENTO_TOGGLE, recurso->id, false, false);
     }
   }
   break;
@@ -478,7 +477,7 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     bool mudou = (sensor->valor != novoValor);
     sensor->valor = novoValor;
     if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false);
+      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, false);
   }
   break;
 
@@ -490,8 +489,8 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     botao->estado = novoEstado;
     if (enviaEventos && mudou)
     {
-      eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso->id, true, true, false);
-      eventoPost(EVENTO_TOGGLE, recurso->id, false, true, false);
+      eventoPost(botao->estado ? EVENTO_LIGOU : EVENTO_DESLIGOU, recurso->id, true, false);
+      eventoPost(EVENTO_TOGGLE, recurso->id, false, false);
     }
   }
   break;
@@ -519,7 +518,7 @@ String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool en
     }
 
     if (enviaEventos && mudou)
-      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false);
+      eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, false);
   }
   break;
   }
@@ -569,7 +568,7 @@ String recursoAtualizaConfigFromJSON(uint8_t *json)
   doc.clear();
 
   if (mudou)
-    eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, true, false); // Nao enviar para o server alteração de config
+    eventoPost(EVENTO_VALOR_MUDOU, recurso->id, true, false); // Nao enviar para o server alteração de config
 
   return "OK";
 }

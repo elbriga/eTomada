@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const nodos = [
-  "mestre",
+  "mic",
   "grow",
   "umid-grow",
   "terrario",
@@ -54,7 +54,6 @@ async function getSnapshot(nodo) {
       SINAL: json.wifiPower != null ? `${json.wifiPower} dBm` : "-",
       MODELO: json.device_model ?? "-",
       BOARD: json.device_board ?? "-",
-      //MESTRE: json.mestre ?? "-",
       UPTIME: formataUptime(json.uptime),
       //RECURSOS: json.recursos?.length ?? 0,
       MS: ms,

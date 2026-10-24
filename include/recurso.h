@@ -32,8 +32,8 @@ Recurso *recursoGet(const char *id);
 Recurso *recursoGetPorIndice(int posicao);
 
 // Altera o recurso > acoes
-bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, bool enviaMestre = true);
-bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaMestre = true, bool enviaEventos = true);
+bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, bool enviaEventos = true);
+bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaEventos = true);
 
 // Atualiza o recurso > eventos
 String recursoAtualizaFromJsonLocked(Recurso *recurso, JsonDocument doc, bool enviaEventos);
@@ -43,7 +43,6 @@ TipoRecurso recursoGetTipoFromStr(String tipoStr);
 JsonDocument recursoGetJSONDoc(Recurso *r);
 
 String recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento);
-String recursoEventoRecebido(uint8_t *json, IPAddress ip);
 
 String recursoAtualizaConfigFromJSON(uint8_t *json);
 

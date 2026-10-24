@@ -17,6 +17,29 @@ void serverInit()
     logaM(LOG_AVISO, "eTomada Server: %s", ETOMADA_SERVER);
 }
 
+void serverEnviaBoot()
+{
+    // Avisar nosso boot para o SERVER
+    JsonDocument jsonBoot;
+    jsonBoot["origem"] = eTomadaDeviceID();
+    jsonBoot["id"] = "ETOMADA";
+    jsonBoot["timestamp"] = millis();
+    jsonBoot["evento"] = "BOOT";
+    jsonBoot["device"]["tipo"] = "Full";
+    jsonBoot["device"]["uptime"] = millis();
+
+    String json;
+    serializeJson(jsonBoot, json);
+
+    serverEnviaEvento(json.c_str());
+}
+
+IPAddress serverGetIP()
+{
+    // TODO :: pegar da string
+    return IPAddress(10, 0, 0, 1);
+}
+
 void serverEnviaEvento(String payloadJSON)
 {
     String msg;

@@ -25,7 +25,7 @@
 // 4.0.0  - DEL mestre > Ave SERVER!
 
 #include "eTomada.h"
-#include "mestre.h"
+#include "server.h"
 #include "wifi.h"
 #include "rele.h"
 #include "tipoSensores.h"
@@ -41,7 +41,6 @@
 #include "util.h"
 #include "hardwareProfile.h"
 #include "sensorChuva.h"
-#include "server.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("eTOMADA", nivel, fmt, ##__VA_ARGS__)
@@ -80,7 +79,7 @@ void eTomadaInit()
 {
   TESTES(); // Centraliza os códigos de testes
 
-  mestreInit();
+  serverInit();
 
   eventosInit();
 
@@ -216,10 +215,6 @@ String eTomadaGetSnapshotJSON()
   doc["ip"] = WiFi.localIP().toString();
   doc["ssid"] = WiFi.SSID();
   doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
-
-  if (mestreAtivo())
-    doc["mestre"] = mestreGetID();
-
   doc["uptime"] = millis();
 
   String out;

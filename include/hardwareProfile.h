@@ -44,8 +44,8 @@ typedef struct
 
 #ifdef HW_LOLIN
 #include "hardware/lolin.h"
-#elif defined(HW_MESTRE)
-#include "hardware/mestre.h"
+#elif defined(HW_MIC)
+#include "hardware/mic.h"
 #elif defined(HW_TERRARIO)
 #include "hardware/terrario.h"
 #elif defined(HW_UMIDFANVALVE)

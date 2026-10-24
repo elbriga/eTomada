@@ -3,7 +3,7 @@
 #include <nvs.h>
 
 #include "eTomada.h"
-#include "mestre.h"
+#include "server.h"
 #include "loga.h"
 #include "wifi.h"
 #include "display.h"
@@ -136,6 +136,9 @@ void appInit()
 
   httpServerInit();
 
+  // Avisar o server que subimos!
+  serverEnviaBoot();
+
   if (!!regraTemAlerta())
     ledSetAnim(LED_ANIM_OFF);
 
@@ -223,7 +226,7 @@ void appLoop()
       {
         lastMinute = timeinfo.tm_min;
 
-        eventoPost(EVENTO_HORARIO, nullptr, false, false, false);
+        eventoPost(EVENTO_HORARIO, nullptr, false, false);
 
         int dbm = WiFi.RSSI();
         if (dbm < -70)

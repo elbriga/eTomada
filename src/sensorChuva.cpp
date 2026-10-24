@@ -115,5 +115,5 @@ void sensorChuvaLoopLocked()
   }
 
   if (mudou)
-    eventoPost(EVENTO_VALOR_MUDOU, SENSORCHUVA_RECURSOID, true, true, true);
+    eventoPost(EVENTO_VALOR_MUDOU, SENSORCHUVA_RECURSOID, true, true);
 }

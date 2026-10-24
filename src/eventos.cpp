@@ -4,7 +4,6 @@
 
 #include "eventos.h"
 #include "recurso.h"
-#include "mestre.h"
 #include "regras.h"
 #include "util.h"
 #include "loga.h"
@@ -65,8 +64,7 @@ const char *eventoGetTipoTxt(TipoEvento tipo)
     }
 }
 
-void eventoPost(TipoEvento tipo, const char *recursoID,
-                bool enviaSSE, bool enviaMestre, bool enviaServer)
+void eventoPost(TipoEvento tipo, const char *recursoID, bool enviaSSE, bool enviaServer)
 {
     if (!filaEventos)
     {
@@ -78,7 +76,6 @@ void eventoPost(TipoEvento tipo, const char *recursoID,
         .tipo = tipo,
         .recursoID = {0},
         .enviaSSE = enviaSSE,
-        .enviaMestre = enviaMestre,
         .enviaServer = enviaServer,
     };
     if (recursoID)
@@ -114,7 +111,7 @@ String eventoMockFromJson(uint8_t *json)
     if (recurso->tipo != RECURSO_BOTAO)
         return "Recurso nao eh botao!";
 
-    eventoPost(mock, recursoID.c_str(), false, true, true);
+    eventoPost(mock, recursoID.c_str(), false, true);
 
     return "OK";
 }
@@ -151,15 +148,10 @@ void eventosProcessaTask(void *)
                 if (evento.enviaSSE)
                     recursoEnviaSSE(evento.recursoID);
 
-                if (evento.enviaMestre || evento.enviaServer)
+                if (evento.enviaServer)
                 {
                     String eventoJSON = recursoGetJSONEvento(evento.recursoID, evento.tipo);
-
-                    if (evento.enviaMestre)
-                        mestreEnviaEvento(eventoJSON);
-
-                    if (evento.enviaServer)
-                        serverEnviaEvento(eventoJSON);
+                    serverEnviaEvento(eventoJSON);
                 }
             }
         }

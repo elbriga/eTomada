@@ -3,7 +3,6 @@
 #include <freertos/semphr.h>
 
 #include "eTomada.h"
-#include "mestre.h"
 #include "hardwareProfile.h"
 #include "sensor.h"
 #include "tipoSensores.h"
@@ -209,7 +208,7 @@ void sensoresAtualizaTask(void *args)
           sensor->ultimoEventoServer = agora;
         }
 
-        eventoPost(EVENTO_VALOR_MUDOU, rec->id, true, true, gravarEvento);
+        eventoPost(EVENTO_VALOR_MUDOU, rec->id, true, gravarEvento);
       }
     }
   }

@@ -1,9 +1,9 @@
 #pragma once
 #include "hardwareProfile.h"
 
-// C3-mini Novo Mestre sem recursos locais
+// C3-mini Novo MIC
 const HardwareProfile hardwareProfile = {
-    .modelo = "CONTROLE",
+    .modelo = "M1",
     .board = "esp32c3",
     .ledPin = 8,
     .ledInvertido = false,
@@ -18,4 +18,5 @@ const HardwareProfile hardwareProfile = {
         {255}, // FIM
     },
     .umidificador = {.onPin = 255}, // Sem
+    // TODO .mic
 };

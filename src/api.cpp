@@ -3,8 +3,8 @@
 
 #include "eTomada.h"
 #include "loga.h"
+#include "server.h"
 #include "http.h"
-#include "mestre.h"
 #include "regras.h"
 #include "wifi.h"
 #include "util.h"
@@ -58,14 +58,14 @@ void apiGetRecurso(AsyncWebServerRequest *request)
 
 void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
-  bool fromMestre = mestreAtivo() && (request->client()->remoteIP() == mestreGetIP());
+  bool fromServer = request->client()->remoteIP() == serverGetIP();
 
   String recursoID;
   String msg;
-  if (!recursoSetFromJSON(data, recursoID, msg, !fromMestre))
+  if (!recursoSetFromJSON(data, recursoID, msg, !fromServer))
     logaM(LOG_AVISO, "apiSetRecurso > recursoSetFromJSON > [%s]", msg.c_str());
 
-  if (fromMestre)
+  if (fromServer)
     msg = "SIM MESTRE:" + msg;
 
   JsonDocument resposta;
@@ -464,18 +464,6 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
 
     utilRestart("WiFi Change");
   }
-  else if (!doc["mestre"].isNull())
-  {
-    String mestre = doc["mestre"] | "";
-
-    Preferences prefs;
-    prefs.begin("eTomada", false);
-    prefs.putString("mestre1", mestre);
-    prefs.end();
-
-    request->send(200, "application/json", R"({"msg":"Mestre Configurado"})");
-    logaRequest(request, "200 OK");
-  }
   else if (!doc["logLevel"].isNull())
   {
     int logLevel = doc["logLevel"].as<int>();
@@ -486,10 +474,10 @@ void apiSetConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
   }
   else if (!doc["adminNewPass"].isNull())
   {
-    // verificar se é o mestre ou whitelist, para não testar a senha atual
+    // verificar se é o whitelist, para não testar a senha atual
     bool deFora = false;
     String remoteIP = httpGetClientIP(request, &deFora);
-    if (deFora || ((!mestreAtivo() || remoteIP != mestreGetIP().toString()) && remoteIP != "10.0.1.100"))
+    if (deFora || remoteIP != "10.0.1.100")
     {
       if (doc["adminPass"].as<String>() != httpGetSenha())
       {
