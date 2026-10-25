@@ -2,7 +2,6 @@
 #include "eventos.h"
 
 void serverInit();
-void serverEnviaBoot();
 
 IPAddress serverGetIP();
 String serverGetIPPortStr();

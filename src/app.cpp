@@ -137,8 +137,11 @@ void appInit()
 
   httpServerInit();
 
-  // Avisar o server que subimos!
-  serverEnviaBoot();
+  if (!WiFiGetModoAP())
+  {
+    // HTTP pronto > enviar snapshot de boot
+    serverEnviaSnapshot();
+  }
 
   ledIdle();
 

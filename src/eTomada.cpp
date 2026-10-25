@@ -91,8 +91,6 @@ void eTomadaInit()
   micInit();
 
   eTomadaLoadConfig();
-
-  serverEnviaSnapshot();
 }
 
 static int configLoadCount = 0;

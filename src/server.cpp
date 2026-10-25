@@ -1,5 +1,3 @@
-#include <ArduinoJson.h>
-
 #include "eTomada.h"
 #include "loga.h"
 #include "server.h"
@@ -25,23 +23,6 @@ void serverInit()
 String serverGetIPPortStr()
 {
     return serverIP.toString() + ":" + String(serverPort);
-}
-
-void serverEnviaBoot()
-{
-    // Avisar nosso boot para o SERVER
-    JsonDocument jsonBoot;
-    jsonBoot["origem"] = eTomadaDeviceID();
-    jsonBoot["id"] = "ETOMADA";
-    jsonBoot["timestamp"] = millis();
-    jsonBoot["evento"] = "BOOT";
-    jsonBoot["device"]["tipo"] = "Full";
-    jsonBoot["device"]["uptime"] = millis();
-
-    String json;
-    serializeJson(jsonBoot, json);
-
-    serverEnviaEvento(json.c_str());
 }
 
 IPAddress serverGetIP()
