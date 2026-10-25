@@ -31,6 +31,13 @@ typedef struct
 
 typedef struct
 {
+    int sckPin;
+    int wsPin;
+    int sdPin;
+} MicHW;
+
+typedef struct
+{
     const char *modelo; // Modelo do eTomada - config de reles, sensores e botoes
     const char *board;  // board do esp
     int ledPin;
@@ -40,6 +47,7 @@ typedef struct
     SensorHW sensores[MAX_SENSORES];
     BotaoHW botoes[MAX_BOTOES];
     UmidificadorHW umidificador; // se onPin != 255 && umidPin != 255 => eTomada Umidificador!
+    MicHW mic;                   // se sckPin != 255 => MIC!
 } HardwareProfile;
 
 #ifdef HW_LOLIN

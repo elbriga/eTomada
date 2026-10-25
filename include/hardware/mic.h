@@ -18,5 +18,9 @@ const HardwareProfile hardwareProfile = {
         {255}, // FIM
     },
     .umidificador = {.onPin = 255}, // Sem
-    // TODO .mic
+    .mic = {
+        .sckPin = 2,
+        .wsPin = 6,
+        .sdPin = 5,
+    },
 };

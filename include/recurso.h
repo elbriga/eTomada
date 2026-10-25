@@ -21,6 +21,7 @@ struct Recurso
     Sensor *sensor;
     Botao *botao;
     Umidificador *umid;
+    Microfone *mic; // TODO
   };
 };
 

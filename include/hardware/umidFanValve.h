@@ -22,4 +22,5 @@ const HardwareProfile hardwareProfile = {
         .umidPin = 4,
         .fanPin = 3,
     }, // Ativando umid com fan
+    .mic = {.sckPin = 255},
 };

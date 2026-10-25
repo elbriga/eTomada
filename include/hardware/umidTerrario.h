@@ -22,4 +22,5 @@ const HardwareProfile hardwareProfile = {
         .umidPin = 13,
         .fanPin = 255,
     }, // Ativando Umidificador sem FAN
+    .mic = {.sckPin = 255},
 };
