@@ -64,7 +64,7 @@ void httpServerInit()
     // Tratar o OPTIONS
     if (request->method() == HTTP_OPTIONS) {
       request->send(200);
-      logaRequest(request, "OPTIONS");
+      // logaRequest(request, "OPTIONS");
     } else {
       request->send(404);
       logaRequest(request, "404 Not Found");
