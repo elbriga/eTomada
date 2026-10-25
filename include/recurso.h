@@ -7,6 +7,7 @@
 #include "sensor.h"
 #include "botao.h"
 #include "umidificador.h"
+#include "mic.h"
 #include "tipoRecurso.h"
 #include "eventos.h"
 
@@ -21,7 +22,7 @@ struct Recurso
     Sensor *sensor;
     Botao *botao;
     Umidificador *umid;
-    Microfone *mic; // TODO
+    Microfone *mic;
   };
 };
 

@@ -11,6 +11,7 @@
 #include "util.h"
 #include "umidificador.h"
 #include "led.h"
+#include "mic.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RECURSO", nivel, fmt, ##__VA_ARGS__)
@@ -27,7 +28,8 @@ void recursosInit()
   int totSensoresLocais = sensoresGetCount();
   int totBotoesLocais = botoesGetCount();
 
-  totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais + (umidificadorAtivo() ? 1 : 0);
+  totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais +
+                (umidificadorAtivo() ? 1 : 0) + (micAtivo() ? 1 : 0);
 
   if (recursos)
     delete[] recursos;
@@ -69,6 +71,12 @@ void recursosInit()
   {
     Recurso *r = recursoAdd(prefs, RECURSO_UMIDIFICADOR, "UMIDIFICADOR");
     r->umid = umidificadorGet();
+  }
+
+  if (micAtivo())
+  {
+    Recurso *r = recursoAdd(prefs, RECURSO_MICROFONE, "MICROFONE");
+    r->mic = micGet();
   }
 
   prefs.end();
@@ -324,6 +332,8 @@ const char *recursoGetTipoStr(TipoRecurso tipo)
     return "BOTAO";
   case RECURSO_UMIDIFICADOR:
     return "UMIDIFICADOR";
+  case RECURSO_MICROFONE:
+    return "MICROFONE";
   default:
     return "TIPORECURSODESCONHECIDO";
   }
@@ -341,6 +351,8 @@ char recursoGetTipoLetra(TipoRecurso tipo)
     return 'B';
   case RECURSO_UMIDIFICADOR:
     return 'U';
+  case RECURSO_MICROFONE:
+    return 'M';
   default:
     return '0';
   }
@@ -356,6 +368,8 @@ TipoRecurso recursoGetTipoFromStr(String tipoStr)
     return RECURSO_BOTAO;
   if (tipoStr == "UMIDIFICADOR")
     return RECURSO_UMIDIFICADOR;
+  if (tipoStr == "MICROFONE")
+    return RECURSO_MICROFONE;
 
   return RECURSO_INVALIDO;
 }
@@ -385,6 +399,10 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
 
   case RECURSO_UMIDIFICADOR:
     doc["device"] = umidificadorGetJSONDoc(r, true);
+    break;
+
+  case RECURSO_MICROFONE:
+    doc["device"] = micGetJSONDoc(r, true);
     break;
 
   default:
@@ -432,6 +450,9 @@ String recursoGetJSONEvento(const char *recursoID, TipoEvento tipoEvento)
     case RECURSO_UMIDIFICADOR:
       device["estado"] = r->umid->estado;
       device["estadoFan"] = r->umid->estadoFan;
+      break;
+    case RECURSO_MICROFONE:
+      device["ativou"] = "TODO!";
       break;
     }
 
@@ -508,6 +529,9 @@ int recursoGetValor(Recurso *r)
 
   case RECURSO_UMIDIFICADOR:
     return r->umid->estado;
+
+  case RECURSO_MICROFONE:
+    return 0; // TODO?
 
   default:
     return -999;

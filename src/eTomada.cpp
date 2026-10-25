@@ -41,6 +41,7 @@
 #include "util.h"
 #include "hardwareProfile.h"
 #include "sensorChuva.h"
+#include "mic.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("eTOMADA", nivel, fmt, ##__VA_ARGS__)
@@ -86,6 +87,7 @@ void eTomadaInit()
   relesInit();
   sensoresInit();
   botoesInit();
+  micInit();
 
   eTomadaLoadConfig();
 

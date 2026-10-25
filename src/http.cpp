@@ -8,6 +8,7 @@
 #include "api.h"
 #include "ota.h"
 #include "dnsReverso.h"
+#include "mic.h"
 
 #define DEV // TODO :: remover
 
@@ -91,6 +92,7 @@ void httpServerInitModoAPI()
   httpServer.on("/api/setConfig", HTTP_POST, funcVazia, NULL, apiSetConfig);
   httpServer.on("/api/checkWWW", HTTP_GET, apiCheckWWW);
   httpServer.on("/api/boot", HTTP_GET, apiRegrasBoot);
+  httpServer.on("/api/mic/record", HTTP_GET, apiMicRecord);
 
   recoveryAPIRegister();
 
