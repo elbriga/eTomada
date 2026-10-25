@@ -9,7 +9,6 @@
 #include "wifi.h"
 #include "util.h"
 #include "ota.h"
-#include "apiInterna.h"
 #include "mutex.h"
 #include "recurso.h"
 

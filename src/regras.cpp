@@ -87,7 +87,7 @@ Regra *regrasCalculaEstadoAtual(Recurso *recursoIn, String &estadoAtualOut)
     for (int r = 0; r < regrasTotal; r++)
     {
         Regra *regra = &regras[r];
-        if (!regra->ativa || regra->remover)
+        if (!regra->ativa)
             continue;
 
         // Trabalhar com regras de HORARIO
@@ -242,24 +242,6 @@ Regra *regraGetPorIndice(int i)
     if (i >= 0 && i < regrasCount())
         return &regras[i];
 
-    return NULL;
-}
-
-Regra *regraGetPorRecurso(const char *idLocal)
-{
-    int tot = regrasCount();
-    for (int r = 0; r < tot; r++)
-    {
-        Regra *regra = &regras[r];
-        if (regra->condicao.tipo == COND_EVENTO && !strcmp(regra->condicao.evento.recursoID, idLocal))
-            return regra;
-        if (regra->acao.tipo == ACAO_ESTADO && !strcmp(regra->acao.recursoID, idLocal))
-            return regra;
-        if (regra->acao.tipo == ACAO_TIMER && !strcmp(regra->acao.recursoID, idLocal))
-            return regra;
-        if (!strcmp(regra->condicao.check.variavel, idLocal))
-            return regra;
-    }
     return NULL;
 }
 
@@ -429,7 +411,7 @@ void regrasProcessaEvento(Evento e)
         {
             Regra *regra = &regras[r];
 
-            if (!regra->ativa || regra->remover)
+            if (!regra->ativa)
                 continue;
 
             bool disparaAcao = false;
@@ -527,7 +509,7 @@ void regrasProcessaEvento(Evento e)
                         return;
 
                     Regra *regra = regraGet(ap->regraID);
-                    if (!regra || !regra->ativa || regra->remover)
+                    if (!regra || !regra->ativa)
                     {
                         logaM(LOG_AVISO, "Regra [%d] removida ou desativada!", ap->regraID);
                         continue;
@@ -751,7 +733,7 @@ void regraGetJS(Regra *r, JsonObject &obj)
     obj["acao"] = regraGetAcaoJSONDoc(r);
 }
 
-void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra)
+void regrasGetJSONDoc(JsonDocument &doc)
 {
     JsonArray regrasOut = doc.to<JsonArray>();
 
@@ -759,18 +741,8 @@ void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra)
     for (int r = 0; r < totRegras; r++)
     {
         Regra *regra = regraGetPorIndice(r);
-        if (regra->remover)
-            continue;
-
         JsonObject obj = regrasOut.add<JsonObject>();
         regraGetJS(regra, obj);
-    }
-
-    if (novaRegra)
-    {
-        // Add!
-        JsonObject obj = regrasOut.add<JsonObject>();
-        regraGetJS(novaRegra, obj);
     }
 }
 

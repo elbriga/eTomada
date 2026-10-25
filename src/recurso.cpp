@@ -5,7 +5,6 @@
 #include "prefs.h"
 #include "recurso.h"
 #include "http.h"
-#include "apiInterna.h"
 #include "eventos.h"
 #include "mutex.h"
 #include "agendamentos.h"
@@ -169,7 +168,10 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
     {
       UmidificadorEstado umidEstado = (UmidificadorEstado)estado.toInt();
       if (umidEstado < UMID_DESLIGADO || umidEstado > UMID_POWER5)
-        return "resursoSetLocked: Estado UMID invalido";
+      {
+        msgOut = "recursoSetLocalLocked: Estado UMID invalido";
+        return false;
+      }
 
       int temEstadoFan = estado.indexOf(':');
       if (temEstadoFan >= 0)

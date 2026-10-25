@@ -63,7 +63,6 @@ struct Regra
     uint16_t id;
     char nome[64];
     bool ativa;
-    bool remover;
 
     Condicao condicao;
     Acao acao;
@@ -79,8 +78,7 @@ String regrasGetRevision();
 int regrasCount();
 Regra *regraTemAlerta();
 
-void regrasGetJSONDoc(JsonDocument &doc, Regra *novaRegra = nullptr);
-Regra *regraGetPorRecurso(const char *idLocalRecurso);
+void regrasGetJSONDoc(JsonDocument &doc);
 
 void regrasProcessaEvento(Evento e);
 
