@@ -7,7 +7,7 @@
 #include <atomic>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <freertos/stream_buffer.h>
+#include <esp_heap_caps.h>
 
 #include "mic.h"
 #include "loga.h"
@@ -26,10 +26,9 @@ static Microfone mic = {.ligado = false};
 #define SAMPLE_RATE 16000
 #define DURACAO_SEG 3
 #define I2S_PORT I2S_NUM_0
-#define MIC_FIFO_BYTES 8192
 
-static StreamBufferHandle_t micFila = nullptr;
-
+static uint8_t *micWav = nullptr;
+static std::atomic_flag micLiberando = ATOMIC_FLAG_INIT;
 static std::atomic<bool> micOcupado{false};
 static std::atomic<bool> micTaskAtiva{false};
 static std::atomic<bool> micHTTPAtivo{false};
@@ -79,14 +78,6 @@ void micInit()
   if (err != ESP_OK)
   {
     logaM(LOG_CRITICO, "Erro i2s_set_pin: %d", err);
-    i2s_driver_uninstall(I2S_PORT);
-    return;
-  }
-
-  micFila = xStreamBufferCreate(MIC_FIFO_BYTES, 1);
-  if (!micFila)
-  {
-    logaM(LOG_CRITICO, "Erro criando buffer do microfone");
     i2s_driver_uninstall(I2S_PORT);
     return;
   }
@@ -164,18 +155,24 @@ static void wavHeader(uint8_t *h, uint32_t bytesAudio)
 
 static void micLiberaSePossivel()
 {
-  if (!micTaskAtiva.load() && !micHTTPAtivo.load())
-    micOcupado.store(false);
+  if (micTaskAtiva.load() || micHTTPAtivo.load())
+    return;
+
+  if (micLiberando.test_and_set())
+    return;
+
+  free(micWav);
+  micWav = nullptr;
+
+  micLiberando.clear();
+  micOcupado.store(false);
 }
 
-// Captura o audio fora da task do AsyncTCP.
 static void micCapturaTask(void *)
 {
   const uint32_t totalAmostras = SAMPLE_RATE * DURACAO_SEG;
   const uint32_t inicio = millis();
-
   uint32_t capturadas = 0;
-  bool erroI2S = false;
 
   while (capturadas < totalAmostras && !micCancelado.load())
   {
@@ -183,78 +180,56 @@ static void micCapturaTask(void *)
         std::min<uint32_t>(256, totalAmostras - capturadas);
 
     size_t bytesLidos = 0;
-    size_t n = 0;
 
-    if (!erroI2S)
+    esp_err_t err = i2s_read(
+        I2S_PORT,
+        amostras32,
+        quantidade * sizeof(int32_t),
+        &bytesLidos,
+        pdMS_TO_TICKS(1000));
+
+    if (err != ESP_OK || bytesLidos == 0)
     {
-      esp_err_t err = i2s_read(
-          I2S_PORT,
-          amostras32,
-          quantidade * sizeof(int32_t),
-          &bytesLidos,
-          pdMS_TO_TICKS(1000));
+      logaM(LOG_AVISO, "Erro na leitura I2S: %d", err);
 
-      if (err != ESP_OK || bytesLidos == 0)
-      {
-        logaM(LOG_AVISO, "Erro na leitura I2S: %d", err);
-        erroI2S = true;
-      }
-      else
-      {
-        n = bytesLidos / sizeof(int32_t);
-
-        for (size_t i = 0; i < n; i++)
-          amostras16[i] = converteAmostra(amostras32[i]);
-      }
-    }
-
-    // Em caso de erro, completa o WAV com silencio.
-    if (erroI2S)
-    {
-      n = quantidade;
-      memset(amostras16, 0, n * sizeof(int16_t));
-    }
-
-    const size_t totalBytes = n * sizeof(int16_t);
-    size_t enviados = 0;
-
-    // FIFO absorve diferencas de velocidade entre I2S e HTTP.
-    while (enviados < totalBytes && !micCancelado.load())
-    {
-      size_t bytes = xStreamBufferSend(
-          micFila,
-          (uint8_t *)amostras16 + enviados,
-          totalBytes - enviados,
-          pdMS_TO_TICKS(100));
-
-      enviados += bytes;
-
-      if (millis() - inicio > 15000)
-      {
-        logaM(LOG_AVISO, "Timeout no envio do audio");
-        break;
-      }
-    }
-
-    if (enviados != totalBytes)
+      // Completa o restante do arquivo com silencio.
+      memset(micWav + 44 + capturadas * sizeof(int16_t),
+             0,
+             (totalAmostras - capturadas) * sizeof(int16_t));
       break;
+    }
+
+    size_t n = std::min<size_t>(
+        bytesLidos / sizeof(int32_t), quantidade);
+
+    for (size_t i = 0; i < n; i++)
+      amostras16[i] = converteAmostra(amostras32[i]);
+
+    memcpy(
+        micWav + 44 + capturadas * sizeof(int16_t),
+        amostras16,
+        n * sizeof(int16_t));
 
     capturadas += n;
   }
 
-  logaM(LOG_NORMAL, "Gravacao finalizada: %lu amostras",
-        (unsigned long)capturadas);
+  uint32_t duracaoMs = millis() - inicio;
 
+  // Publica o audio completo para o callback HTTP.
   micFinalizado.store(true);
   micTaskAtiva.store(false);
   micLiberaSePossivel();
+
+  logaM(LOG_NORMAL, "Gravacao finalizada: %lu amostras em %lu ms",
+        (unsigned long)capturadas,
+        (unsigned long)duracaoMs);
 
   vTaskDelete(nullptr);
 }
 
 void apiMicRecord(AsyncWebServerRequest *request)
 {
-  if (!mic.ligado || !micFila)
+  if (!mic.ligado)
   {
     request->send(503, "text/plain", "Microfone indisponivel");
     return;
@@ -270,53 +245,46 @@ void apiMicRecord(AsyncWebServerRequest *request)
   const uint32_t bytesAudio = totalAmostras * sizeof(int16_t);
   const size_t tamanhoWav = 44 + bytesAudio;
 
-  xStreamBufferReset(micFila);
+  // Reserva memoria para a gravacao completa.
+  micWav = (uint8_t *)heap_caps_malloc(
+      tamanhoWav, MALLOC_CAP_8BIT);
+
+  if (!micWav)
+  {
+    logaM(LOG_CRITICO,
+          "Sem memoria para WAV! Maior bloco: %u",
+          (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+
+    micOcupado.store(false);
+    request->send(503, "text/plain", "Memoria insuficiente");
+    return;
+  }
+
+  wavHeader(micWav, bytesAudio);
 
   micCancelado.store(false);
   micFinalizado.store(false);
   micTaskAtiva.store(true);
   micHTTPAtivo.store(true);
 
-  // O callback HTTP apenas consome os bytes ja capturados.
+  // O HTTP so transmite depois da captura completa.
   AsyncWebServerResponse *response = request->beginResponse(
       "audio/wav",
       tamanhoWav,
-      [bytesAudio, tamanhoWav](uint8_t *buffer,
-                               size_t maxLen,
-                               size_t index) -> size_t
+      [tamanhoWav](uint8_t *buffer,
+                   size_t maxLen,
+                   size_t index) -> size_t
       {
+        if (!micFinalizado.load())
+          return RESPONSE_TRY_AGAIN;
+
         if (index >= tamanhoWav)
           return 0;
 
-        if (index < 44)
-        {
-          uint8_t header[44];
-          wavHeader(header, bytesAudio);
+        size_t n = std::min(maxLen, tamanhoWav - index);
+        memcpy(buffer, micWav + index, n);
 
-          size_t n = std::min(maxLen, size_t(44) - index);
-          memcpy(buffer, header + index, n);
-          return n;
-        }
-
-        size_t n = xStreamBufferReceive(
-            micFila,
-            buffer,
-            std::min(maxLen, tamanhoWav - index),
-            0);
-
-        if (n > 0)
-          return n;
-
-        // Captura encerrada: preserva o tamanho esperado do WAV.
-        if (micFinalizado.load())
-        {
-          n = std::min(maxLen, tamanhoWav - index);
-          memset(buffer, 0, n);
-          return n;
-        }
-
-        // Ainda nao ha amostras; tentar novamente sem bloquear.
-        return RESPONSE_TRY_AGAIN;
+        return n;
       });
 
   if (xTaskCreate(
@@ -328,9 +296,10 @@ void apiMicRecord(AsyncWebServerRequest *request)
           nullptr) != pdPASS)
   {
     delete response;
+
     micTaskAtiva.store(false);
     micHTTPAtivo.store(false);
-    micOcupado.store(false);
+    micLiberaSePossivel();
 
     request->send(503, "text/plain", "Erro criando task MIC");
     return;
