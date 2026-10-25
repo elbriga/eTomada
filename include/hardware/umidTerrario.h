@@ -5,9 +5,7 @@
 const HardwareProfile hardwareProfile = {
     .modelo = "U1",
     .board = "esp32",
-    .ledPin = 255, // Desligar o pisca!
-    .ledInvertido = false,
-    .ledRGB = false,
+    .led = {.pino = 255}, // Desligar o pisca!
     .reles = {
         {255, true}, // FIM
     },

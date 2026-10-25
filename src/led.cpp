@@ -6,6 +6,7 @@
 #include "loga.h"
 #include "led.h"
 #include "hardwareProfile.h"
+#include "regras.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("LED", nivel, fmt, ##__VA_ARGS__)
@@ -30,12 +31,12 @@ void ledInit()
   if (!ledAtivo())
     return;
 
-  logaM(LOG_NORMAL, "Ativando led%s de status em [%d]", (hardwareProfile.ledRGB ? " RGB" : ""), hardwareProfile.ledPin);
-  pinMode(hardwareProfile.ledPin, OUTPUT);
+  logaM(LOG_NORMAL, "Ativando led%s de status em [%d]", (hardwareProfile.led.rgb ? " RGB" : ""), hardwareProfile.led.pino);
+  pinMode(hardwareProfile.led.pino, OUTPUT);
 
-  if (hardwareProfile.ledRGB)
+  if (hardwareProfile.led.rgb)
   {
-    rgbLed = Adafruit_NeoPixel(1, hardwareProfile.ledPin, NEO_GRB + NEO_KHZ800);
+    rgbLed = Adafruit_NeoPixel(1, hardwareProfile.led.pino, NEO_GRB + NEO_KHZ800);
 
     rgbLed.begin();
     rgbLed.clear();
@@ -43,7 +44,7 @@ void ledInit()
   }
   else
   {
-    digitalWrite(hardwareProfile.ledPin, !hardwareProfile.ledInvertido);
+    digitalWrite(hardwareProfile.led.pino, !hardwareProfile.led.invertido);
   }
 
   ledSetAnim(LED_ANIM_BOOT); // Azul == Boot!
@@ -51,7 +52,7 @@ void ledInit()
 
 bool ledAtivo()
 {
-  return hardwareProfile.ledPin != 255;
+  return hardwareProfile.led.pino != 255;
 }
 
 int ledGetAnim()
@@ -80,6 +81,16 @@ void ledSetAnim(uint8_t num, uint8_t loop)
     rgbLedWrite(0, 0, 0);
 }
 
+void ledIdle()
+{
+  ledSetAnim(!regraTemAlerta() ? LED_ANIM_RUN : LED_ANIM_OFF);
+}
+
+void ledAlarm()
+{
+  ledSetAnim(LED_ANIM_ALARM);
+}
+
 void ledProcessa()
 {
   if (!ledAtivo())
@@ -92,7 +103,7 @@ void ledProcessa()
   struct timeval tv;
   gettimeofday(&tv, nullptr);
 
-  if (hardwareProfile.ledRGB)
+  if (hardwareProfile.led.rgb)
   {
     int oldFrame = led.frame;
     led.frame = (tv.tv_usec / 250000);
@@ -134,8 +145,8 @@ void ledProcessa()
     if (led.frame == 0 && oldFrame > 0 && led.loop > 0)
     {
       led.loop--;
-      if (!led.loop && led.anim != LED_ANIM_ALARM)
-        ledSetAnim(0);
+      if (!led.loop)
+        ledIdle();
     }
   }
   else
@@ -146,7 +157,7 @@ void ledProcessa()
     if (estado != led.state)
     {
       led.state = estado;
-      digitalWrite(hardwareProfile.ledPin, hardwareProfile.ledInvertido ? !led.state : led.state);
+      digitalWrite(hardwareProfile.led.pino, hardwareProfile.led.invertido ? !led.state : led.state);
     }
   }
 }

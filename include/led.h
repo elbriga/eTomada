@@ -9,6 +9,11 @@
 
 void ledInit();
 bool ledAtivo();
+
 void ledSetAnim(uint8_t num, uint8_t loop = 0);
 int ledGetAnim();
+
+void ledIdle();
+void ledAlarm();
+
 void ledProcessa();

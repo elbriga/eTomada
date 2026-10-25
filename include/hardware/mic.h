@@ -5,9 +5,11 @@
 const HardwareProfile hardwareProfile = {
     .modelo = "M1",
     .board = "esp32c3",
-    .ledPin = 8,
-    .ledInvertido = false,
-    .ledRGB = true,
+    .led = {
+        .pino = 8,
+        .invertido = false,
+        .rgb = true,
+    },
     .reles = {
         {255, true}, // FIM
     },

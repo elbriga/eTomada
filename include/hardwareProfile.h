@@ -1,10 +1,16 @@
 #pragma once
 
-#include <Arduino.h>
-
 #include "rele.h"
 #include "sensor.h"
 #include "botao.h"
+
+typedef struct
+{
+    int pino;
+    bool invertido;
+    bool rgb;
+} LedHW;
+
 typedef struct
 {
     int pino;
@@ -40,9 +46,7 @@ typedef struct
 {
     const char *modelo; // Modelo do eTomada - config de reles, sensores e botoes
     const char *board;  // board do esp
-    int ledPin;
-    bool ledInvertido;
-    bool ledRGB;
+    LedHW led;
     ReleHW reles[MAX_RELES];
     SensorHW sensores[MAX_SENSORES];
     BotaoHW botoes[MAX_BOTOES];

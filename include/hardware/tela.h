@@ -4,9 +4,11 @@
 const HardwareProfile hardwareProfile = {
     .modelo = "TELA",
     .board = "esp32dev",
-    .ledPin = 255,
-    .ledInvertido = false,
-    .ledRGB = false,
+    .led = {
+        .pino = 255,
+        .invertido = false,
+        .rgb = false,
+    },
     .reles = {
         {255, false},
     },

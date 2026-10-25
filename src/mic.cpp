@@ -17,6 +17,7 @@
 #include "loga.h"
 #include "hardwareProfile.h"
 #include "recurso.h"
+#include "led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("MIC", nivel, fmt, ##__VA_ARGS__)
@@ -200,6 +201,8 @@ static bool micPreparaGravacao()
 
 static bool micGravaWav()
 {
+  ledAlarm();
+
   const uint32_t totalAmostras = SAMPLE_RATE * DURACAO_SEG;
   const uint32_t inicio = millis();
   uint32_t capturadas = 0;
@@ -247,6 +250,8 @@ static bool micGravaWav()
 
   // Publica o audio completo para o callback HTTP.
   micFinalizado.store(true);
+
+  ledIdle();
 
   logaM(LOG_NORMAL, "Gravacao finalizada: %lu amostras em %lu ms",
         (unsigned long)capturadas,

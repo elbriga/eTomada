@@ -140,7 +140,7 @@ void appInit()
   // Avisar o server que subimos!
   serverEnviaBoot();
 
-  ledSetAnim(!regraTemAlerta() ? LED_ANIM_RUN : LED_ANIM_OFF);
+  ledIdle();
 
   logaTitulo("Setup OK!");
 }

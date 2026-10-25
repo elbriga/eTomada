@@ -159,7 +159,7 @@ void recoveryBootTick()
 
 static void recoveryLedLoop()
 {
-    if (hardwareProfile.ledPin == 255)
+    if (hardwareProfile.led.pino == 255)
         return;
 
     // Pisca rápido em recovery: 100 ms
@@ -171,8 +171,8 @@ static void recoveryLedLoop()
     ledUltimoEstado = estado;
 
     digitalWrite(
-        hardwareProfile.ledPin,
-        hardwareProfile.ledInvertido ? !estado : estado);
+        hardwareProfile.led.pino,
+        hardwareProfile.led.invertido ? !estado : estado);
 }
 
 // ============================================================
@@ -332,11 +332,11 @@ void recoveryInit()
     // Hardware seguro
     // --------------------------------------------------------
 
-    if (hardwareProfile.ledPin != 255)
+    if (hardwareProfile.led.pino != 255 && !hardwareProfile.led.rgb)
     {
-        pinMode(hardwareProfile.ledPin, OUTPUT);
+        pinMode(hardwareProfile.led.pino, OUTPUT);
         // LED aceso até conectar ao WiFi > loop
-        digitalWrite(hardwareProfile.ledPin, !hardwareProfile.ledInvertido);
+        digitalWrite(hardwareProfile.led.pino, !hardwareProfile.led.invertido);
     }
 
     // Por segurança, recovery sempre inicia com os reles desligados
