@@ -1,14 +1,18 @@
-#include <Arduino.h>
-#include <ArduinoJson.h>
-#include <ESPAsyncWebServer.h>
-#include <WiFi.h>
-#include <driver/i2s.h>
 #include <algorithm>
 #include <atomic>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_heap_caps.h>
+#include <driver/i2s.h>
 
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <HTTPClient.h>
+
+#include "eTomada.h"
+#include "server.h"
 #include "mic.h"
 #include "loga.h"
 #include "hardwareProfile.h"
@@ -26,6 +30,9 @@ static Microfone mic = {.ligado = false};
 #define SAMPLE_RATE 16000
 #define DURACAO_SEG 3
 #define I2S_PORT I2S_NUM_0
+
+static constexpr size_t MIC_TAMANHO_WAV =
+    44 + SAMPLE_RATE * DURACAO_SEG * sizeof(int16_t);
 
 static uint8_t *micWav = nullptr;
 static std::atomic_flag micLiberando = ATOMIC_FLAG_INIT;
@@ -168,7 +175,30 @@ static void micLiberaSePossivel()
   micOcupado.store(false);
 }
 
-static void micCapturaTask(void *)
+static bool micPreparaGravacao()
+{
+  // Reserva o WAV completo antes de iniciar a captura.
+  micWav = (uint8_t *)heap_caps_malloc(
+      MIC_TAMANHO_WAV, MALLOC_CAP_8BIT);
+
+  if (!micWav)
+  {
+    logaM(LOG_CRITICO,
+          "Sem memoria para WAV! Maior bloco: %u",
+          (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    return false;
+  }
+
+  wavHeader(micWav, MIC_TAMANHO_WAV - 44);
+
+  micCancelado.store(false);
+  micFinalizado.store(false);
+  micTaskAtiva.store(true);
+
+  return true;
+}
+
+static bool micGravaWav()
 {
   const uint32_t totalAmostras = SAMPLE_RATE * DURACAO_SEG;
   const uint32_t inicio = millis();
@@ -217,14 +247,112 @@ static void micCapturaTask(void *)
 
   // Publica o audio completo para o callback HTTP.
   micFinalizado.store(true);
-  micTaskAtiva.store(false);
-  micLiberaSePossivel();
 
   logaM(LOG_NORMAL, "Gravacao finalizada: %lu amostras em %lu ms",
         (unsigned long)capturadas,
         (unsigned long)duracaoMs);
 
+  return capturadas == totalAmostras && !micCancelado.load();
+}
+
+static void micCapturaTask(void *)
+{
+  micGravaWav();
+
+  // Publica o audio para o download HTTP.
+  micFinalizado.store(true);
+  micTaskAtiva.store(false);
+  micLiberaSePossivel();
+
   vTaskDelete(nullptr);
+}
+
+static void micAtivacaoTask(void *)
+{
+  logaM(LOG_NORMAL, "Ativacao de voz: iniciando gravacao");
+
+  bool completa = micGravaWav();
+
+  if (completa)
+  {
+    // Envia o WAV diretamente ao eTomadaServer.
+    HTTPClient http;
+    String url = String("http://") + serverGetIPPortStr() + "/api/mic/audio";
+
+    if (!http.begin(url))
+    {
+      logaM(LOG_AVISO, "Falha ao iniciar HTTP MIC");
+    }
+    else
+    {
+      http.setConnectTimeout(3000);
+      http.setTimeout(30000);
+
+      http.addHeader("Content-Type", "audio/wav");
+      http.addHeader("X-Device-ID", eTomadaDeviceID());
+
+      int status = http.POST(micWav, MIC_TAMANHO_WAV);
+
+      if (status == 200)
+      {
+        logaM(LOG_NORMAL,
+              "Audio enviado ao server (%u bytes)",
+              (unsigned)MIC_TAMANHO_WAV);
+      }
+      else
+      {
+        String erro = status < 0
+                          ? http.errorToString(status)
+                          : http.getString();
+
+        logaM(LOG_AVISO,
+              "Falha envio MIC: HTTP %d [%s]",
+              status, erro.c_str());
+      }
+
+      http.end();
+    }
+  }
+  else
+  {
+    logaM(LOG_AVISO, "Gravacao incompleta, envio cancelado");
+  }
+
+  // O buffer permanece valido ate o termino do POST.
+  micTaskAtiva.store(false);
+  micLiberaSePossivel();
+
+  vTaskDelete(nullptr);
+}
+
+MicAtivacaoResultado micAtivar()
+{
+  if (!mic.ligado)
+    return MicAtivacaoResultado::INDISPONIVEL;
+
+  if (micOcupado.exchange(true))
+    return MicAtivacaoResultado::OCUPADO;
+
+  if (!micPreparaGravacao())
+  {
+    micOcupado.store(false);
+    return MicAtivacaoResultado::SEM_MEMORIA;
+  }
+
+  if (xTaskCreate(
+          micAtivacaoTask,
+          "micActivate",
+          8192,
+          nullptr,
+          1,
+          nullptr) != pdPASS)
+  {
+    micTaskAtiva.store(false);
+    micLiberaSePossivel();
+    return MicAtivacaoResultado::ERRO_TASK;
+  }
+
+  return MicAtivacaoResultado::OK;
 }
 
 void apiMicRecord(AsyncWebServerRequest *request)
@@ -241,30 +369,14 @@ void apiMicRecord(AsyncWebServerRequest *request)
     return;
   }
 
-  const uint32_t totalAmostras = SAMPLE_RATE * DURACAO_SEG;
-  const uint32_t bytesAudio = totalAmostras * sizeof(int16_t);
-  const size_t tamanhoWav = 44 + bytesAudio;
-
-  // Reserva memoria para a gravacao completa.
-  micWav = (uint8_t *)heap_caps_malloc(
-      tamanhoWav, MALLOC_CAP_8BIT);
-
-  if (!micWav)
+  if (!micPreparaGravacao())
   {
-    logaM(LOG_CRITICO,
-          "Sem memoria para WAV! Maior bloco: %u",
-          (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-
     micOcupado.store(false);
     request->send(503, "text/plain", "Memoria insuficiente");
     return;
   }
 
-  wavHeader(micWav, bytesAudio);
-
-  micCancelado.store(false);
-  micFinalizado.store(false);
-  micTaskAtiva.store(true);
+  const size_t tamanhoWav = MIC_TAMANHO_WAV;
   micHTTPAtivo.store(true);
 
   // O HTTP so transmite depois da captura completa.
@@ -318,4 +430,32 @@ void apiMicRecord(AsyncWebServerRequest *request)
   logaM(LOG_NORMAL, "Iniciando gravacao...");
 
   request->send(response);
+}
+
+void apiMicActivate(AsyncWebServerRequest *request)
+{
+  MicAtivacaoResultado resultado = micAtivar();
+
+  if (resultado == MicAtivacaoResultado::OK)
+  {
+    request->send(
+        202,
+        "application/json",
+        R"({"ok":true,"msg":"Gravacao iniciada"})");
+    return;
+  }
+
+  if (resultado == MicAtivacaoResultado::OCUPADO)
+  {
+    request->send(
+        409,
+        "application/json",
+        R"({"ok":false,"msg":"Microfone ocupado"})");
+    return;
+  }
+
+  request->send(
+      503,
+      "application/json",
+      R"({"ok":false,"msg":"Microfone indisponivel"})");
 }

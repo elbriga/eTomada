@@ -93,6 +93,7 @@ void httpServerInitModoAPI()
   httpServer.on("/api/checkWWW", HTTP_GET, apiCheckWWW);
   httpServer.on("/api/boot", HTTP_GET, apiRegrasBoot);
   httpServer.on("/api/mic/record", HTTP_GET, apiMicRecord);
+  httpServer.on("/api/mic/activate", HTTP_GET, apiMicActivate);
 
   recoveryAPIRegister();
 
