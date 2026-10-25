@@ -1,6 +1,7 @@
 #pragma once
 
 #include <LittleFS.h>
+// TODO :: Usar sync
 #include <ESPAsyncWebServer.h>
 
 #define ETOMADA_HTTP_USERNAME "admin"
