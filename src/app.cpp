@@ -140,8 +140,7 @@ void appInit()
   // Avisar o server que subimos!
   serverEnviaBoot();
 
-  if (!!regraTemAlerta())
-    ledSetAnim(LED_ANIM_OFF);
+  ledSetAnim(!regraTemAlerta() ? LED_ANIM_RUN : LED_ANIM_OFF);
 
   logaTitulo("Setup OK!");
 }
@@ -211,8 +210,8 @@ void appLoop()
     {
       last10Second = timeinfo.tm_sec / 10;
 
-      if (!regraTemAlerta())
-        ledSetAnim(LED_ANIM_PISCA, 3);
+      // if (!regraTemAlerta())
+      //   ledSetAnim(LED_ANIM_PISCA, 3);
 
       sensoresAtualiza();
 
