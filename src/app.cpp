@@ -46,6 +46,8 @@ void appInit()
 
   ntpSetTZ(); // Podemos estar no RTC interno que reseta sem config de TZ
 
+  serverInit();
+
   // Inicializa o nivel de LOG e a Task de logs remotos, ela ira descartar logs enquanto sem wifi
   logaInit();
 
