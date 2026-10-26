@@ -83,7 +83,8 @@ void ledSetAnim(uint8_t num, uint8_t loop)
 
 void ledIdle()
 {
-  ledSetAnim(!regraTemAlerta() ? LED_ANIM_RUN : LED_ANIM_OFF);
+  bool pisca = false; //!!regraTemAlerta()
+  ledSetAnim(pisca ? LED_ANIM_RUN : LED_ANIM_OFF);
 }
 
 void ledAlarm()
