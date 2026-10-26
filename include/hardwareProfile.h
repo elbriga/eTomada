@@ -58,6 +58,8 @@ typedef struct
 #include "hardware/lolin.h"
 #elif defined(HW_MIC)
 #include "hardware/mic.h"
+#elif defined(HW_DEV)
+#include "hardware/dev.h"
 #elif defined(HW_TERRARIO)
 #include "hardware/terrario.h"
 #elif defined(HW_UMIDFANVALVE)
