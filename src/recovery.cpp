@@ -286,7 +286,7 @@ static void recoveryHttpInit()
                       String ssid = modoAP ? apSSID : WiFi.SSID();
 
                       String resposta;
-                      resposta.reserve(192);
+                      resposta.reserve(256);
 
                       resposta = F("{\"mode\":\"recovery\",\"ssid\":\"");
 
@@ -300,6 +300,10 @@ static void recoveryHttpInit()
 
                       resposta += F(",\"uptime\":");
                       resposta += millis();
+
+                      resposta += F(",\"mac\":\"");
+                      resposta += WiFi.macAddress();
+                      resposta += F("\"");
 
                       resposta += "}";
 
