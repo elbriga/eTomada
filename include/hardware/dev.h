@@ -3,7 +3,7 @@
 
 // C3-mini DEV02
 const HardwareProfile hardwareProfile = {
-    .modelo = "L1",
+    .modelo = "R2L1",
     .board = "esp32c3",
     .led = {
         .pino = 8,
@@ -11,7 +11,9 @@ const HardwareProfile hardwareProfile = {
         .rgb = true,
     },
     .reles = {
-        {255, true}, // FIM
+        {.pino = 5, .invertido = false},
+        {.pino = 6, .invertido = false},
+        {.pino = 255}, // FIM
     },
     .sensores = {
         {"", 255}, // Indicar Vazio

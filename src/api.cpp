@@ -57,32 +57,213 @@ void apiGetRecurso(AsyncWebServerRequest *request)
 
 void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
+  constexpr size_t MAX_JSON = 2048;
+  constexpr size_t MAX_RECURSOS = 16;
+
+  // Corpo HTTP > acumular os fragmentos antes de interpretar.
+  if (!total || total > MAX_JSON)
+  {
+    if (index == 0)
+      request->send(413, "application/json",
+                    R"({"msg":"Pacote muito grande"})");
+    return;
+  }
+
+  if (index == 0)
+    request->_tempObject = malloc(total + 1);
+
+  if (!request->_tempObject)
+  {
+    if (index == 0)
+      request->send(507, "application/json",
+                    R"({"msg":"Memoria insuficiente"})");
+    return;
+  }
+
+  if (index > total || len > total - index)
+  {
+    request->send(400, "application/json",
+                  R"({"msg":"Corpo HTTP invalido"})");
+    return;
+  }
+
+  memcpy((uint8_t *)request->_tempObject + index, data, len);
+  if (index + len < total)
+    return;
+
+  ((char *)request->_tempObject)[total] = '\0';
+
+  JsonDocument pacote;
+  if (deserializeJson(pacote, (char *)request->_tempObject, total))
+  {
+    request->send(400, "application/json",
+                  R"({"msg":"JSON invalido"})");
+    return;
+  }
+
   bool fromServer = request->client()->remoteIP() == serverGetIP();
 
-  String recursoID;
-  String msg;
-  if (!recursoSetFromJSON(data, recursoID, msg, !fromServer))
-    logaM(LOG_AVISO, "apiSetRecurso > recursoSetFromJSON > [%s]", msg.c_str());
-
-  if (fromServer)
-    msg = "SIM MESTRE:" + msg;
-
-  JsonDocument resposta;
-  resposta["msg"] = msg;
-  if (recursoID != "")
+  // Formato individual > manter compatibilidade com a API atual.
+  if (pacote["id"].is<const char *>())
   {
-    MutexLock lock(modeloMutex, "apiSetRecurso");
-    if (lock)
+    String recursoID, msg;
+
+    if (!recursoSetFromJSON(
+            (uint8_t *)request->_tempObject,
+            recursoID, msg, !fromServer))
+      logaM(LOG_AVISO, "apiSetRecurso > [%s]", msg.c_str());
+
+    if (fromServer)
+      msg = "SIM MESTRE:" + msg;
+
+    JsonDocument resposta;
+    resposta["msg"] = msg;
+
+    if (!recursoID.isEmpty())
     {
-      Recurso *rec = recursoGet(recursoID.c_str());
-      resposta["recurso"] = recursoGetJSONDoc(rec);
+      MutexLock lock(modeloMutex, "apiSetRecurso");
+      if (lock)
+      {
+        Recurso *rec = recursoGet(recursoID.c_str());
+        if (rec)
+          resposta["recurso"] = recursoGetJSONDoc(rec);
+      }
+    }
+
+    String payload;
+    serializeJson(resposta, payload);
+    request->send(200, "application/json", payload);
+    logaRequest(request, "200 " + msg);
+    return;
+  }
+
+  // Formato em lote > validar todos os identificadores antes de executar.
+  if (!pacote["recursos"].is<JsonArray>())
+  {
+    request->send(400, "application/json",
+                  R"({"msg":"Formato de comando invalido"})");
+    return;
+  }
+
+  JsonArrayConst itens = pacote["recursos"].as<JsonArrayConst>();
+
+  if (itens.size() == 0 || itens.size() > MAX_RECURSOS)
+  {
+    request->send(400, "application/json",
+                  R"({"msg":"Quantidade de recursos invalida"})");
+    return;
+  }
+
+  for (size_t i = 0; i < itens.size(); i++)
+  {
+    JsonVariantConst item = itens[i];
+
+    if (!item.is<JsonObjectConst>() ||
+        !item["id"].is<const char *>() ||
+        !item["estado"].is<const char *>())
+    {
+      request->send(400, "application/json",
+                    R"({"msg":"Item invalido: id e estado obrigatorios"})");
+      return;
+    }
+
+    const char *id = item["id"].as<const char *>();
+
+    if (!id[0] || strlen(id) >= 32)
+    {
+      request->send(400, "application/json",
+                    R"({"msg":"Identificador invalido"})");
+      return;
+    }
+
+    for (size_t j = 0; j < i; j++)
+    {
+      const char *anterior = itens[j]["id"].as<const char *>();
+
+      if (!strcmp(id, anterior))
+      {
+        request->send(400, "application/json",
+                      R"({"msg":"Recurso duplicado no lote"})");
+        return;
+      }
     }
   }
 
+  JsonDocument resposta;
+  JsonArray resultados = resposta["resultados"].to<JsonArray>();
+  int aplicados = 0;
+
+  // Executa cada recurso e retorna seu resultado individual.
+  for (JsonObjectConst item : itens)
+  {
+    String id = item["id"].as<String>();
+    String estado = item["estado"].as<String>();
+    String msg;
+    bool ok = false;
+
+    Recurso *recurso = recursoGet(id.c_str());
+
+    if (!recurso)
+      msg = "Recurso inexistente";
+    else if (recurso->tipo == RECURSO_RELE &&
+             estado != "ON" && estado != "OFF")
+      msg = "Estado de RELE invalido";
+    else if (recurso->tipo == RECURSO_UMIDIFICADOR &&
+             estado != "0" && estado != "1" &&
+             estado != "2" && estado != "3")
+      msg = "Estado de UMIDIFICADOR invalido";
+    else if (recurso->tipo != RECURSO_RELE &&
+             recurso->tipo != RECURSO_UMIDIFICADOR)
+      msg = "Tipo de recurso nao acionavel";
+    else
+      ok = recursoSet(id.c_str(), estado, msg, !fromServer);
+
+    JsonObject resultado = resultados.add<JsonObject>();
+    resultado["id"] = id;
+
+    // O estado observado precisa ser obtido sob o mutex.
+    bool confirmouLeitura = false;
+
+    if (recurso)
+    {
+      MutexLock lock(modeloMutex, "apiSetRecursoLote");
+
+      if (lock)
+      {
+        Recurso *atual = recursoGet(id.c_str());
+
+        if (atual)
+        {
+          resultado["recurso"] = recursoGetJSONDoc(atual);
+          confirmouLeitura = true;
+        }
+      }
+    }
+
+    if (ok && !confirmouLeitura)
+    {
+      ok = false;
+      msg = "Estado nao confirmado";
+    }
+
+    resultado["ok"] = ok;
+    resultado["msg"] = msg.isEmpty() ? (ok ? "OK" : "Falha") : msg;
+
+    if (ok)
+      aplicados++;
+  }
+
+  resposta["ok"] = aplicados == (int)itens.size();
+  resposta["total"] = itens.size();
+  resposta["aplicados"] = aplicados;
+
   String payload;
   serializeJson(resposta, payload);
+
   request->send(200, "application/json", payload);
-  logaRequest(request, "200 " + msg);
+  logaRequest(request,
+              "200 LOTE " + String(aplicados) +
+                  "/" + String(itens.size()));
 }
 
 void apiSetRecursoConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
