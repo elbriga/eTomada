@@ -19,10 +19,9 @@ const nodos = [
 
 const TIMEOUT = 3000;
 
-function formataUptime(s) {
-  if (s == null) return "-";
+function formataUptime(segundos) {
+  if (segundos == null) return "-";
 
-  const segundos = s / 1000;
   const dias = Math.floor(segundos / 86400);
   const horas = Math.floor((segundos % 86400) / 3600);
   const minutos = Math.floor((segundos % 3600) / 60);

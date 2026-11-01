@@ -31,9 +31,7 @@ function escapeHtml(str) {
     .replaceAll("'", "&#039;");
 }
 
-function formataTempo(millis) {
-  const secs = Math.floor(millis / 1000);
-
+function formataTempo(secs) {
   const dias = Math.floor(secs / 86400);
   const horas = Math.floor((secs % 86400) / 3600);
   const minutos = Math.floor((secs % 3600) / 60);

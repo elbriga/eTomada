@@ -43,6 +43,7 @@
 #include "hardwareProfile.h"
 #include "sensorChuva.h"
 #include "mic.h"
+#include "app.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("eTOMADA", nivel, fmt, ##__VA_ARGS__)
@@ -214,11 +215,10 @@ String eTomadaGetSnapshotJSON()
   doc["ip"] = WiFi.localIP().toString();
   doc["ssid"] = WiFi.SSID();
   doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
-  doc["uptime"] = millis();
+  doc["uptime"] = appUptimeSegundos();
 
   String out;
   serializeJson(doc, out);
-
   return out;
 }
 
