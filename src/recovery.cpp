@@ -312,7 +312,9 @@ static void recoveryHttpInit()
     httpServer.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
                   {
                     Serial.println("GET /");
-                    request->send(200, "text/plain", "eTomada Recovery"); });
+                    String body = "<h1>eTomada Recovery</h1><a href='/api/reboot'>reboot</a><br>uptime: " + 
+                                    String(millis());
+                    request->send(200, "text/html", body); });
 
     recoveryAPIRegister();
 
