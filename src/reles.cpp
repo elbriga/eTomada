@@ -107,10 +107,10 @@ bool releControla(Recurso *r, bool estado, String &msgOut)
     return false;
   }
 
-  if (estado == rele->estado) // TODO :: remover esse if?
+  if (estado == rele->estado)
   {
     msgOut = "Rele " + String(r->id) + " já " + (estado ? "Ligado" : "Desligado");
-    return false;
+    return true;
   }
 
   digitalWrite(rele->pino, rele->invertido ? !estado : estado);
