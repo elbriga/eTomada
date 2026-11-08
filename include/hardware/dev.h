@@ -16,7 +16,9 @@ const HardwareProfile hardwareProfile = {
         {.pino = 255}, // FIM
     },
     .sensores = {
-        {"", 255}, // Indicar Vazio
+        {"UmidXPTO", 0},
+        {"LUXXPTO", 0},
+        {"", 255},
     },
     .botoes = {
         {255}, // FIM
