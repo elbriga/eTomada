@@ -17,8 +17,9 @@ static int sensorUmidadeLer(Sensor *s)
 }
 
 TipoSensor sensorUmidade = {
-    "UmidXPTO",
-    "Umidade",
-    "%",
-    sensorUmidadeInit,
-    sensorUmidadeLer};
+    .nome = "UmidXPTO",
+    .tipo = "Umidade",
+    .unidade = "%",
+    .inicializaSensor = sensorUmidadeInit,
+    .lerSensor = sensorUmidadeLer,
+};
