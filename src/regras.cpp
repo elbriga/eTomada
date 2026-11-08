@@ -154,17 +154,6 @@ bool regrasBoot()
 
         logaM(LOG_DEBUG0, "== regrasBoot ==");
 
-        Regra *regraAlerta = regraTemAlerta();
-        if (regraAlerta && regraAlerta->condicao.tipo == COND_EVENTO)
-        {
-            Recurso *r = recursoGet(regraAlerta->condicao.evento.recursoID);
-            if (r)
-            {
-                bool alerta = recursoGetValor(r);
-                ledSetAnim(alerta ? LED_ANIM_ALARM : LED_ANIM_OFF);
-            }
-        }
-
         // Ajustar o estado dos RELEs conforme as regras de HORARIO para agora
         int totRecursos = recursosGetCount();
         for (int r = 0; r < totRecursos; r++)
@@ -250,19 +239,6 @@ int regrasCount()
     return regrasTotal;
 }
 
-Regra *regraTemAlerta()
-{
-    int tot = regrasCount();
-    for (int r = 0; r < tot; r++)
-    {
-        Regra *regra = &regras[r];
-        if (!strcmp(regra->acao.recursoID, "__ALERTA__"))
-            return regra;
-    }
-
-    return nullptr;
-}
-
 #define REGRAS_MAX_ACOES_PENDENTES 8
 struct AcaoPendente
 {
@@ -304,19 +280,6 @@ String regraAddAcaoCache(Regra *regra, int &count, AcaoPendente *acoes)
     {
     case ACAO_ESTADO:
     {
-        if (!strcmp(acao->recursoID, "__ALERTA__"))
-        {
-            // TODO :: Aterta esta sempre ignorando o comando e fazendo FOLLOW
-            Recurso *recAlerta = recursoGet(regra->condicao.evento.recursoID);
-            if (!recAlerta)
-                return "dispAcaoESTADO : Origem invalida?1";
-            int estado = recursoGetValor(recAlerta);
-            // ledSetAnim(estado ? LED_ANIM_ALARM : LED_ANIM_OFF);
-            if (!acaoPendenteAdiciona(count, acoes, regra, "__ALERTA__", estado ? "ON" : "OFF"))
-                return "Erro add AP";
-            break;
-        }
-
         Recurso *rec = recursoGet(acao->recursoID);
         if (!rec || rec->tipo != RECURSO_RELE)
             return "dispAcaoESTADO : Nao eh RELE!";
@@ -815,13 +778,6 @@ static bool regraSyncValida(JsonObject regra)
     if (!*destino || strlen(destino) >= 32)
         return false;
 
-    if (strcmp(destino, "__ALERTA__"))
-    {
-        Recurso *recurso = recursoGet(destino);
-        if (!recurso || recurso->tipo != RECURSO_RELE)
-            return false;
-    }
-
     if (!strcmp(tipoAcao, "ESTADO"))
     {
         const char *cmd = acao["comando"] | "";
@@ -835,8 +791,7 @@ static bool regraSyncValida(JsonObject regra)
 
     if (!strcmp(tipoAcao, "TIMER"))
     {
-        return strcmp(destino, "__ALERTA__") &&
-               acao["timer"].is<uint32_t>() &&
+        return acao["timer"].is<uint32_t>() &&
                acao["timer"].as<uint32_t>() > 0 &&
                acao["timer"].as<uint32_t>() <= 2147483U;
     }

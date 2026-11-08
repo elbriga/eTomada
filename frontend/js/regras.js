@@ -35,10 +35,9 @@ function regrasRenderFromSnapshot() {
   });
 }
 
-function regraPopulaComboRecursos(comboID, filtro, addAlerta) {
+function regraPopulaComboRecursos(comboID, filtro) {
   if (!filtro) filtro = (r) => true;
   var options = "<option value=''>Escolha um Recurso</option>\n";
-  if (addAlerta) options += "<option value='__ALERTA__'>Alerta!</option>\n";
   options += eTomadaData.recursos
     .filter(filtro)
     .map((r) => `<option value="${r.id}">${r.tipo} - ${r.nome}</option>`)
@@ -130,7 +129,6 @@ function regraOpenEditModal(regraID) {
   regraPopulaComboRecursos(
     "modalRegraAcaoEstadoRecurso",
     (r) => r.tipo == "RELE",
-    true,
   );
   document.getElementById("modalRegraAcaoEstadoRecurso").value =
     regra.acao.recurso;

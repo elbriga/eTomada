@@ -76,7 +76,6 @@ int regrasSubstituir(JsonDocument &pacote, String &msg);
 String regrasGetRevision();
 
 int regrasCount();
-Regra *regraTemAlerta();
 
 void regrasGetJSONDoc(JsonDocument &doc);
 

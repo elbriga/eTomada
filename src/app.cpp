@@ -161,6 +161,29 @@ uint64_t appUptimeSegundos()
   return acumuladoMs / 1000ULL;
 }
 
+String appUptimeStr()
+{
+  uint64_t uptimeSegundos = appUptimeSegundos();
+  uint32_t dias = uptimeSegundos / (24 * 3600);
+  uint32_t horas = (uptimeSegundos % (24 * 3600)) / 3600;
+  uint32_t minutos = (uptimeSegundos % 3600) / 60;
+  uint32_t segundos = uptimeSegundos % 60;
+
+  // mostrar dia apenas se tiver mais de 1 dia
+  if (dias > 0)
+  {
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "%u dias, %02u:%02u:%02u", dias, horas, minutos, segundos);
+    return String(buffer);
+  }
+  else
+  {
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%02u:%02u:%02u", horas, minutos, segundos);
+    return String(buffer);
+  }
+}
+
 void appLoop()
 {
   static int lastSecond = -1;
@@ -228,9 +251,6 @@ void appLoop()
 
       appUptimeSegundos(); // Atualiza o contador de uptime
 
-      // if (!regraTemAlerta())
-      //   ledSetAnim(LED_ANIM_PISCA, 3);
-
       sensoresAtualiza();
 
       if (!wifiModoAP)
@@ -276,6 +296,7 @@ void appLoop()
           logaTitulo("WiFi caiu!! Reconectar...");
           displayMostraMsg("Reconectando...", 6000);
           WiFiConnect();
+          wifiFora = 0;
         }
       }
       else
