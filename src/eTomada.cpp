@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 
-#define ETOMADA_VERSAO "4.0.3"
+#define ETOMADA_VERSAO "4.0.4"
 // 1.3.19 - Rede 10 com log server, mac no mDNS,
 // 1.3.20 - endpoint de UPLOAD de Firmware
 // 1.3.21 - sensor de corrent com task propria
@@ -25,6 +25,7 @@
 // 4.0.0  - DEL mestre > Ave SERVER!
 // 4.0.1  - Add recurso MIC
 // 4.0.3  - uptime em segundos sem overflow
+// 4.0.4  - Novo recurso LEDRGB e removido __ALERTA__
 
 #include "eTomada.h"
 #include "server.h"
@@ -216,7 +217,9 @@ String eTomadaGetSnapshotJSON()
   doc["ip"] = WiFi.localIP().toString();
   doc["ssid"] = WiFi.SSID();
   doc["wifiPower"] = WiFi.RSSI(); // TODO :: mostar na interface
+  doc["serverIP"] = serverGetIP().toString();
   doc["uptime"] = appUptimeSegundos();
+  doc["uptimeStr"] = appUptimeStr();
 
   String out;
   serializeJson(doc, out);

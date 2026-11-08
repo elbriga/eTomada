@@ -10,6 +10,7 @@
 #include "mic.h"
 #include "tipoRecurso.h"
 #include "eventos.h"
+#include "led.h"
 
 struct Recurso
 {
@@ -23,6 +24,7 @@ struct Recurso
     Botao *botao;
     Umidificador *umid;
     Microfone *mic;
+    LedRGB *led;
   };
 };
 

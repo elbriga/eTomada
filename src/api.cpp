@@ -205,16 +205,6 @@ void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, si
 
     if (!recurso)
       msg = "Recurso inexistente";
-    else if (recurso->tipo == RECURSO_RELE &&
-             estado != "ON" && estado != "OFF")
-      msg = "Estado de RELE invalido";
-    else if (recurso->tipo == RECURSO_UMIDIFICADOR &&
-             estado != "0" && estado != "1" &&
-             estado != "2" && estado != "3")
-      msg = "Estado de UMIDIFICADOR invalido";
-    else if (recurso->tipo != RECURSO_RELE &&
-             recurso->tipo != RECURSO_UMIDIFICADOR)
-      msg = "Tipo de recurso nao acionavel";
     else
       ok = recursoSet(id.c_str(), estado, msg, !fromServer);
 
@@ -223,15 +213,12 @@ void apiSetRecurso(AsyncWebServerRequest *request, uint8_t *data, size_t len, si
 
     // O estado observado precisa ser obtido sob o mutex.
     bool confirmouLeitura = false;
-
-    if (recurso)
+    if (ok && recurso)
     {
       MutexLock lock(modeloMutex, "apiSetRecursoLote");
-
       if (lock)
       {
         Recurso *atual = recursoGet(id.c_str());
-
         if (atual)
         {
           resultado["recurso"] = recursoGetJSONDoc(atual);

@@ -12,6 +12,7 @@
 #include "umidificador.h"
 #include "led.h"
 #include "mic.h"
+#include "led.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("RECURSO", nivel, fmt, ##__VA_ARGS__)
@@ -29,7 +30,7 @@ void recursosInit()
   int totBotoesLocais = botoesGetCount();
 
   totRecursos = totRelesLocais + totSensoresLocais + totBotoesLocais +
-                (umidificadorAtivo() ? 1 : 0) + (micAtivo() ? 1 : 0);
+                (umidificadorAtivo() ? 1 : 0) + (micAtivo() ? 1 : 0) + (ledEhRGB() ? 1 : 0);
 
   if (recursos)
     delete[] recursos;
@@ -77,6 +78,12 @@ void recursosInit()
   {
     Recurso *r = recursoAdd(prefs, RECURSO_MICROFONE, "MICROFONE");
     r->mic = micGet();
+  }
+
+  if (ledEhRGB())
+  {
+    Recurso *r = recursoAdd(prefs, RECURSO_LEDRGB, "LEDRGB");
+    r->led = ledGet();
   }
 
   prefs.end();
@@ -156,9 +163,9 @@ bool recursoSetFromJSON(uint8_t *json, String &recursoIDOut, String &msgOut, boo
 
 bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
 {
-  if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
+  if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR && recurso->tipo != RECURSO_LEDRGB)
   {
-    msgOut = "Erro recursoSetLocalLocked: Recurso nao eh RELE nem UMID";
+    msgOut = "Erro recursoSetLocalLocked: Recurso nao eh RELE nem UMID nem LEDRGB";
     return false;
   }
 
@@ -167,10 +174,8 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
     switch (recurso->tipo)
     {
     case RECURSO_RELE:
-    {
       ret = releControla(recurso, estado == "ON", msgOut);
-    }
-    break;
+      break;
 
     case RECURSO_UMIDIFICADOR:
     {
@@ -190,6 +195,10 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
       ret = umidificadorSetEstado(umidEstado, msgOut);
     }
     break;
+
+    case RECURSO_LEDRGB:
+      ret = ledSetAnim((LedAnim)estado.toInt(), 0, &msgOut);
+      break;
     }
   }
 
@@ -198,13 +207,6 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
 
 bool recursoSet(const char *recursoID, String estado, String &msgOut, bool enviaEventos)
 {
-  // Recurso virtual __ALERTA__
-  if (!strcmp(recursoID, "__ALERTA__"))
-  {
-    ledSetAnim(estado == "ON" ? LED_ANIM_ALARM : LED_ANIM_OFF);
-    return true;
-  }
-
   bool ret = false;
   bool enviaToggle = false;
   String estadoFinal = estado;
@@ -224,9 +226,9 @@ bool recursoSet(const char *recursoID, String estado, String &msgOut, bool envia
       return false;
     }
 
-    if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR)
+    if (recurso->tipo != RECURSO_RELE && recurso->tipo != RECURSO_UMIDIFICADOR && recurso->tipo != RECURSO_LEDRGB)
     {
-      msgOut = "recursoSet: Recurso nao eh RELE nem UMID";
+      msgOut = "recursoSet: Recurso nao eh RELE nem UMID nem LEDRGB";
       return false;
     }
 
@@ -334,6 +336,8 @@ const char *recursoGetTipoStr(TipoRecurso tipo)
     return "UMIDIFICADOR";
   case RECURSO_MICROFONE:
     return "MICROFONE";
+  case RECURSO_LEDRGB:
+    return "LEDRGB";
   default:
     return "TIPORECURSODESCONHECIDO";
   }
@@ -353,6 +357,8 @@ char recursoGetTipoLetra(TipoRecurso tipo)
     return 'U';
   case RECURSO_MICROFONE:
     return 'M';
+  case RECURSO_LEDRGB:
+    return 'L';
   default:
     return '0';
   }
@@ -370,6 +376,8 @@ TipoRecurso recursoGetTipoFromStr(String tipoStr)
     return RECURSO_UMIDIFICADOR;
   if (tipoStr == "MICROFONE")
     return RECURSO_MICROFONE;
+  if (tipoStr == "LEDRGB")
+    return RECURSO_LEDRGB;
 
   return RECURSO_INVALIDO;
 }
@@ -403,6 +411,10 @@ JsonDocument recursoGetJSONDoc(Recurso *r)
 
   case RECURSO_MICROFONE:
     doc["device"] = micGetJSONDoc(r, true);
+    break;
+
+  case RECURSO_LEDRGB:
+    doc["device"] = ledGetJSONDoc(r, true);
     break;
 
   default:
@@ -532,6 +544,9 @@ int recursoGetValor(Recurso *r)
 
   case RECURSO_MICROFONE:
     return 0; // TODO?
+
+  case RECURSO_LEDRGB:
+    return r->led->anim;
 
   default:
     return -999;

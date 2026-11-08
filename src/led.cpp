@@ -7,6 +7,7 @@
 #include "led.h"
 #include "hardwareProfile.h"
 #include "regras.h"
+#include "recurso.h"
 
 // Função de log para esta modulo
 #define logaM(nivel, fmt, ...) loga("LED", nivel, fmt, ##__VA_ARGS__)
@@ -25,6 +26,9 @@ typedef struct
 
 static LedT led = {};
 static Adafruit_NeoPixel rgbLed;
+
+// estado exportado para fora
+static LedRGB ledRGB;
 
 void ledInit()
 {
@@ -55,9 +59,19 @@ bool ledAtivo()
   return hardwareProfile.led.pino != 255;
 }
 
-int ledGetAnim()
+bool ledEhRGB()
 {
-  return led.anim;
+  return hardwareProfile.led.rgb;
+}
+
+LedRGB *ledGet()
+{
+  return &ledRGB;
+}
+
+LedAnim ledGetAnim()
+{
+  return ledRGB.anim;
 }
 
 void rgbLedWrite(uint8_t r, uint8_t g, uint8_t b)
@@ -69,27 +83,52 @@ void rgbLedWrite(uint8_t r, uint8_t g, uint8_t b)
   rgbLed.show();
 }
 
-void ledSetAnim(uint8_t num, uint8_t loop)
+bool ledSetAnim(LedAnim num, uint8_t loop, String *msgOut)
 {
-  if (num == LED_ANIM_OFF || (num >= 0 && num < TOT_ANIMS))
-    led.anim = num;
+  if (num < 0 || num >= TOT_ANIMS)
+  {
+    if (msgOut)
+      *msgOut = "ledSetAnim :: Anim invalida!";
+    return false;
+  }
+
+  led.anim = num;
+  ledRGB.anim = (LedAnim)led.anim;
+
   if (loop > 0 && loop < 11)
     led.loop = loop;
   led.frame = 999; // Forçar mudança
 
   if (num == LED_ANIM_OFF)
     rgbLedWrite(0, 0, 0);
+
+  if (msgOut)
+    *msgOut = "OK";
+  return true;
 }
 
 void ledIdle()
 {
-  bool pisca = false; //!!regraTemAlerta()
+  bool pisca = false;
   ledSetAnim(pisca ? LED_ANIM_RUN : LED_ANIM_OFF);
 }
 
 void ledAlarm()
 {
   ledSetAnim(LED_ANIM_ALARM);
+}
+
+JsonDocument ledGetJSONDoc(Recurso *r, bool full)
+{
+  JsonDocument doc;
+
+  LedRGB *l = r->led;
+  if (!l)
+    return doc;
+
+  doc["anim"] = l->anim;
+
+  return doc;
 }
 
 void ledProcessa()
@@ -112,24 +151,24 @@ void ledProcessa()
     bool r = false, g = false, b = false;
     switch (led.anim)
     {
-    case LED_ANIM_BOOT: // 1
+    case LED_ANIM_BOOT:
       b = led.frame % 2;
       break;
-    case LED_ANIM_ALARM: // 2
+    case LED_ANIM_ALARM:
       r = led.frame % 2;
       break;
-    case LED_ANIM_COLOR: // 3
+    case LED_ANIM_COLOR:
       r = led.frame == 0;
       g = led.frame == 1;
       b = led.frame == 2;
       break;
-    case LED_ANIM_PISCA: // 4
+    case LED_ANIM_PISCA:
       r = (tv.tv_usec / 50000) % 2;
       g = r;
       b = r;
       break;
 
-    case LED_ANIM_RUN: // 0
+    case LED_ANIM_RUN:
     default:
       g = led.frame == 0;
       break;
