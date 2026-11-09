@@ -197,7 +197,7 @@ bool recursoSetLocalLocked(Recurso *recurso, String estado, String &msgOut)
     break;
 
     case RECURSO_LEDRGB:
-      ret = ledSetAnim((LedAnim)estado.toInt(), 0, &msgOut);
+      ret = ledSetAnim(estado == "ON" ? LED_ANIM_ALARM : LED_ANIM_OFF, 0, &msgOut);
       break;
     }
   }
